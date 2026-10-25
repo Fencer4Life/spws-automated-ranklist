@@ -100,9 +100,10 @@ jobs:
         run: bash scripts/generate-manifest.sh "${{ steps.fingerprint.outputs.fingerprint }}"
 
       # --- Frontend build ---
+      # Node 24, as ci.yml tests on (WFNODE.01).
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -225,9 +226,11 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/configure-pages@v5
+      # The Pages actions at their first releases on the Node 24 runtime (WFNODE.01).
+      # upload-pages-artifact leaves dotfiles out since v4; frontend/dist holds none.
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/dist
 
@@ -253,7 +256,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # ─── Deploy CERT ──────────────────────────────────────────────────
   deploy-cert:

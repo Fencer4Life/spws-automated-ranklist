@@ -557,6 +557,28 @@ Acceptance IDs for [ADR-115](adr/115-equal-totals-share-a-place.md) and [doc/pla
 | RANK.TIE.07 | The seed export puts a tied pair in one tier, in the ranking's row order whatever their registration times. `fn_ftl_export_entries` and the Python generator from the `fn_ranking_ppw` rows down agree, and the TypeScript generator seeds the same case the same way. | pgTAP, pytest, Vitest | `supabase/tests/111_equal_totals_share_place.sql`, `python/tests/test_ftl_seed_orchestration.py`, `frontend/tests/ftlSeedExport.test.ts` | **Landed** (2026-10-18, LOCAL) |
 | RANK.TIE.08 | The season rules modal states the rule in Polish and English, for every season. | Vitest | `frontend/tests/SeasonRulesModal.test.ts` | **Landed** (2026-10-18, LOCAL) |
 
+## GitHub Actions workflows and the repository (WF*, REPO.*)
+
+Checks over the workflow files and the tracked tree, run in CI with pytest. The workflow page [doc/handbook/reference/workflow-catalog.html](handbook/reference/workflow-catalog.html) describes each workflow; the decisions are in [doc/plans/github-actions-w2-sign-off-2026-10-25.html](plans/github-actions-w2-sign-off-2026-10-25.html), [doc/plans/w2-follow-up-2026-10-25.html](plans/w2-follow-up-2026-10-25.html) and [doc/plans/evf-closed-events-differences-2026-10-25.html](plans/evf-closed-events-differences-2026-10-25.html).
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| WFALERT.01 | Every job that writes ends in a failure alert to Telegram, as its last step or a later job that needs it, so a red run is never silent. | pytest | `python/tests/test_workflow_alerts.py` | **Landed** (2026-10-25) |
+| WFALERT.02 | The security-posture alert fires for the posture check only, not for an earlier failure such as a migration that failed to apply. | pytest | `python/tests/test_workflow_alerts.py` | **Landed** (2026-10-25) |
+| WFALERT.03 | An HTML alert escapes the log lines it quotes, so Telegram accepts a message that holds a tag-like word from a traceback. | pytest | `python/tests/test_workflow_alerts.py` | **Landed** (2026-10-25) |
+| WFPUSH.01 | Every workflow that pushes to `main` retries when another commit lands there first. | pytest | `python/tests/test_workflow_alerts.py` | **Landed** (2026-10-25) |
+| WFCRON.01–03 | No cron fires at minute 0, where GitHub delays and drops scheduled runs most (01); the start-list capture's first and final flags name its own earliest and latest crons (02); a time a workflow names is one of its crons (03). | pytest | `python/tests/test_workflow_schedules.py` | **Landed** (2026-10-25) |
+| WFDEPS.01 | Every job installs each third-party package its Python imports, directly or through the in-repo modules it loads. | pytest | `python/tests/test_workflow_python_deps.py` | **Landed** (2026-10-25) |
+| WFLANE.01 | Every member of a lane two workflows share keeps its place in the queue (`queue: max`), so a waiting job is never cancelled by a newer one. | pytest | `python/tests/test_workflow_lanes.py` | **Landed** (2026-10-25) |
+| WFPIPE.01 | A step that pipes a command into `tee` runs with `shell: bash` (pipefail), so a failed command fails the step. | pytest | `python/tests/test_workflow_shell_safety.py` | **Landed** (2026-10-25) |
+| WFINJ.01 | A workflow input reaches a script only through `env:`, never as an expression inside the script text. | pytest | `python/tests/test_workflow_shell_safety.py` | **Landed** (2026-10-25) |
+| WFEXPR.01 | No value holds an empty `${{ }}`, which GitHub refuses even in a `#` line of a script, so the workflow would not start. | pytest | `python/tests/test_workflow_shell_safety.py` | **Landed** (2026-10-25) |
+| WFPERM.01 | `contents: write` stands at the top of a workflow only when a job that inherits it pushes. | pytest | `python/tests/test_workflow_shell_safety.py` | **Landed** (2026-10-25) |
+| WFSETUP.01 | The Supabase CLI comes from `supabase/setup-cli@v3` at one pinned version (2.116.0) in all four uses (N1 A). | pytest | `python/tests/test_workflow_runners.py` | **Landed** (2026-10-25) |
+| WFRUN.01 | Every job names `runs-on: ubuntu-24.04`; a move to a newer image is made on a pull request (N2 A). | pytest | `python/tests/test_workflow_runners.py` | **Landed** (2026-10-25) |
+| WFNODE.01 | Every `setup-node` step runs Node 24, and every action is at a release that runs on the Node 24 runtime (the Pages actions: `configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5`); an action not yet checked fails until its runtime is read (the user, 25 Oct 2026). | pytest | `python/tests/test_workflow_runners.py` | **Landed** (2026-10-25) |
+| REPO.01 | No dependency folder is tracked: no path under `node_modules/` or `.venv/` is in git, so a new worktree links the shared folder (G1 A). | pytest | `python/tests/test_repo_hygiene.py` | **Landed** (2026-10-25) |
+
 ## Results links set in Admin only (CALURL.*)
 
 Acceptance IDs for [ADR-117](adr/117-results-links-admin-only.md) and [doc/plans/pzsz-results-url-rca-2026-10-25.html](plans/pzsz-results-url-rca-2026-10-25.html). FR-160. CALURL.09 is not used.

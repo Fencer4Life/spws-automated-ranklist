@@ -135,28 +135,30 @@
     <span class="pill good"><span class="dot"></span>CERT = PROD · 833 of 833 rows</span>
     <span class="pill good"><span class="dot"></span>25 events match EVF · 461 results</span>
     <span class="pill good"><span class="dot"></span>Signed off · C1 done on CERT + PROD</span>
-    <span class="pill warn"><span class="dot"></span>2 new questions · H2b, U1</span>
+    <span class="pill good"><span class="dot"></span>H2b, U1 answered</span>
+    <span class="pill warn"><span class="dot"></span>1 new question · G1</span>
   </div>
 
   <hr class="rule">
 
   <section id="since">
     <p class="kicker">§ 0 · since your sign-off (&ldquo;accept all your recommendations&rdquo;, 25 Oct)</p>
-    <h2>C1 is done, P7 is built, H2 needs two more answers</h2>
+    <h2>Every answer is applied: C1 and U1 on CERT and PROD, P7 released; one new question</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>What happened</th></tr></thead>
       <tbody>
         <tr><td><b>C1</b></td><td><b>Done and read back on CERT, then PROD.</b> Each event was read first (unchanged since the check), then <code>fn_complete_event</code> for PEW8es-2025-2026 and PEW9efs-2025-2026, and for DMEW-2025-2026 the guarded PLANNED &rarr; IN_PROGRESS update, then <code>fn_complete_event</code>. All three read COMPLETED in <code>tbl_event</code> and in <code>vw_calendar</code>, which the site reads, on both; brackets and results unchanged (2/6, 9/16, 0/0).</td></tr>
         <tr><td><b>O1, H1, H3</b></td><td>Kept as stored. Nothing written.</td></tr>
-        <tr><td><b>H2</b></td><td><b>The stored FTL page is not Stockholm&rsquo;s.</b> Read through the pipeline&rsquo;s signed-in FTL client, reading only: the address on PEW9ef-2023-2024 is the schedule of an event on <b>6 January 2024</b> (men&rsquo;s épée Cat3: 46 competitors, VAN DEN BERG 1st, KRZEMIŃSKI 3rd). That is Guildford 2024, EVF event 58, which we hold as PEW25e-2023-2024 (dated 6 Jan 2024, no address of its own). Stockholm 2024 is not on Engarde under the names of its 2025 and 2026 editions (<code>sthlm/sivo2025</code> exists: WENDT 1st, KRZEMIŃSKI 3rd, a year later). No organiser page for Stockholm 2024 was found, so the row cannot be corrected from an organiser&rsquo;s source, and EVF is not a repair source (R1 B). Two questions below.</td></tr>
+        <tr><td><b>H2</b></td><td><b>The stored FTL page is not Stockholm&rsquo;s.</b> Read through the pipeline&rsquo;s signed-in FTL client, reading only: the address on PEW9ef-2023-2024 is the schedule of an event on <b>6 January 2024</b> (men&rsquo;s épée Cat3: 46 competitors, VAN DEN BERG 1st, KRZEMIŃSKI 3rd). That is Guildford 2024, EVF event 58, which we hold as PEW25e-2023-2024 (dated 6 Jan 2024, no address of its own). Stockholm 2024 is not on Engarde under the names of its 2025 and 2026 editions (<code>sthlm/sivo2025</code> exists: WENDT 1st, KRZEMIŃSKI 3rd, a year later). No organiser page for Stockholm 2024 was found, so the row cannot be corrected from an organiser&rsquo;s source, and EVF is not a repair source (R1 B). H2b and U1 below are both answered.</td></tr>
         <tr><td><b>P7</b></td><td><b>Built test-first</b> (EVFCHK.08&ndash;10 seen failing, then passing). Run over this report&rsquo;s data, the check now pairs all 47 events: 26 match (Plovdiv joins the 25), 2 are named as EVF counting an unplaced fencer (RUSEV at Dublin, FOUILLARD at the Criterium), 13 differ (groups H and W, and the Madrid, Terni and Napoli fencers EVF places and the organiser does not), 6 have nothing from EVF, 0 are left unpaired. ADR-053&rsquo;s amendment, Appendix C, the workflows page and the RTM are updated; the RTM also gains the rows P5 and R1 should have added (EVFCHK.01&ndash;07, REVCHK.01&ndash;04).</td></tr>
       </tbody>
     </table></div>
     <div class="tablewrap"><table>
-      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Answer · outcome</th></tr></thead>
       <tbody>
-        <tr><td><b>H2b</b></td><td>KRZEMIŃSKI&rsquo;s row at Stockholm 2024 (ours 1st, 126.66; EVF 3rd, 72.36, WENDT 1st), with no organiser page found</td><td><b>A</b> leave it as stored, as R1 A does for every event without an organiser source<br><b>B</b> correct it from EVF as a one-off exception to R1 B: place 3, 72.36, CERT then PROD</td><td><span class="chip never">A</span></td></tr>
-        <tr><td><b>U1</b></td><td>The address stored on PEW9ef-2023-2024 is Guildford 2024&rsquo;s FTL schedule, so a later repair from it would read another event</td><td><b>A</b> clear it (<code>url_event</code> to NULL) on CERT then PROD, read first and read back<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>H2b</b></td><td>KRZEMIŃSKI&rsquo;s row at Stockholm 2024 (ours 1st, 126.66; EVF 3rd, 72.36, WENDT 1st), with no organiser page found</td><td><b>A</b> leave it as stored, as R1 A does for every event without an organiser source<br><b>B</b> correct it from EVF as a one-off exception to R1 B: place 3, 72.36, CERT then PROD</td><td><span class="chip never">A</span> (25 Oct, &ldquo;proceed as recommended&rdquo;): the row stays as stored; nothing written.</td></tr>
+        <tr><td><b>U1</b></td><td>The address stored on PEW9ef-2023-2024 is Guildford 2024&rsquo;s FTL schedule, so a later repair from it would read another event</td><td><b>A</b> clear it (<code>url_event</code> to NULL) on CERT then PROD, read first and read back<br><b>B</b> leave it</td><td><span class="chip never">A</span> (25 Oct): <b>done.</b> Read first on both (the one address, no other link, no bracket address); cleared with an update guarded on the exact stored address, CERT 09:50, then PROD 09:51 UTC; reads NULL in <code>tbl_event</code> and in <code>vw_calendar</code> on both. PEW25e-2023-2024 and the six brackets are untouched.</td></tr>
+        <tr><td><b>G1</b></td><td><b>Found while making this update:</b> 4,577 files of <code>frontend/node_modules</code> are tracked in git (added in <code>3b029e44</code> on 3 Jul, <code>02550d90</code> on 5 Jul and <code>323d685e</code> on 5 Sep), although <code>.gitignore</code> lists <code>node_modules/</code>. Every new worktree checks out that partial copy (148 of the 169 packages; <code>@supabase/supabase-js</code> is missing), so Vitest and svelte-check fail there until the shared <code>node_modules</code> is linked in its place, which I did for this update, committing nothing of it.</td><td><b>A</b> stop tracking them: <code>git rm -r --cached frontend/node_modules</code>, so the files stay on disk and only git forgets them; its own commit and release<br><b>B</b> leave them tracked, and link the shared <code>node_modules</code> into each new worktree by hand</td><td><span class="chip never">A</span> (rec.)</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -261,10 +263,10 @@
 
   <section id="state">
     <p class="kicker">§ 6 · releases</p>
-    <h2>N1 and N2 are on main; P6 is on PROD; one release waits for approval</h2>
+    <h2>Everything is on PROD</h2>
     <ul>
       <li><b>N1 + N2</b>: PR <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/20">#20</a> passed all 4 checks, then went to main as <code>b70cbe8a</code>; preflight green (17 of 17); main CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40174807689">40174807689</a> success, pgTAP booted with <code>setup-cli@v3</code>.</li>
-      <li><b>Release lane</b>: <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40146148809">40146148809</a> (P6) went to PROD on your approval: <code>24779589</code>, fingerprint <code>f778e575&hellip;</code>, deploy record pushed on attempt 1. <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40174944458">40174944458</a> (P5, T2, R1, N1, N2) is green through CERT, the first release on <code>setup-cli@v3</code>, and waits for your PROD approval. P7 and this sheet follow as one more release after it.</li>
+      <li><b>Release lane</b>: <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40146148809">40146148809</a> (P6) went to PROD on your approval: <code>24779589</code>, fingerprint <code>f778e575&hellip;</code>, deploy record pushed on attempt 1. <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40174944458">40174944458</a> (P5, T2, R1, N1, N2) is green through CERT, the first release on <code>setup-cli@v3</code>, and went to PROD on your approval (<code>de41974</code>, the same fingerprint, attempt 1). <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40179676821">40179676821</a> (P7 and this sheet, main <code>9f3d5a20</code>): CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40179544489">40179544489</a> green, CERT and then PROD deployed <code>9f3d5a2</code>, fingerprint <code>f778e575&hellip;</code>, deploy record pushed on attempt 1. The first live parity check (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40179393075">40179393075</a>, 09:08 UTC, before P7) read 19 events, none with results on PROD yet, without an error.</li>
     </ul>
   </section>
 
@@ -272,8 +274,7 @@
     <p class="kicker">§ 7 · your steps</p>
     <h2>Waiting on you</h2>
     <ul>
-      <li>H2b and U1 in § 0.</li>
-      <li>The PROD approvals in § 6.</li>
+      <li>G1 in § 0.</li>
       <li>Paste <code>scripts/gas_telegram_bot.js</code> into the Apps Script project; ask GitHub Support to purge the old commits and the 19 <code>refs/pull/*</code>.</li>
     </ul>
   </section>
