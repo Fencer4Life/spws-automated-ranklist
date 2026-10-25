@@ -101,7 +101,7 @@ jobs:
 
       # --- Frontend build ---
       # Node 24, as ci.yml tests on (WFNODE.01).
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
