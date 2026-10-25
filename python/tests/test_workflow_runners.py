@@ -8,6 +8,16 @@ pinned at one value in every use (ci.yml says why: it decides which Postgres boo
 WFRUN.01 (N2 A): `ubuntu-latest` moves to Ubuntu 26 from 19 October 2026 without
 notice, so a release could change image mid-way. Every job names ubuntu-24.04, what
 the runs used until then; a move to 26.04 is made deliberately, on a pull request.
+
+WFNODE.01 (the user, 25 Oct 2026: "lets bump up the Node.js version"): the Release
+build warned that actions/configure-pages@v5 and actions/upload-artifact@v4 (inside
+actions/upload-pages-artifact@v3) target Node.js 20, which GitHub has deprecated and
+already overrides with Node 24; actions/deploy-pages@v4 targets it too. Node 20 itself
+reached its end of life in April 2026, and the frontend was built and tested on it.
+Every setup-node step now runs Node 24, and every action is at a release whose
+action.yml runs on Node 24 or is a composite of such actions (read from each action's
+repository, 25 Oct 2026). An action not in the table fails the test until its runtime
+has been read and it is added.
 """
 
 from __future__ import annotations
@@ -38,6 +48,41 @@ def test_WFSETUP_01_the_supabase_cli_comes_from_setup_cli_v3_at_one_pinned_versi
     assert len(uses) == 4
     assert {step["uses"] for _, step in uses} == {"supabase/setup-cli@v3"}
     assert {str((step.get("with") or {}).get("version")) for _, step in uses} == {"2.116.0"}
+
+
+# The first major of each action whose action.yml runs on Node 24 (or, for a
+# composite, whose inner actions do).
+NODE24_FROM = {
+    "actions/checkout": 5,
+    "actions/setup-node": 5,
+    "actions/setup-python": 6,
+    "actions/configure-pages": 6,
+    "actions/upload-pages-artifact": 5,
+    "actions/deploy-pages": 5,
+    "supabase/setup-cli": 3,
+}
+
+
+def test_WFNODE_01_node_24_and_no_action_on_the_node_20_runtime():
+    steps = [
+        (f"{file}:{job_name}", step)
+        for file, job_name, job in _jobs()
+        for step in job.get("steps") or []
+        if "uses" in step
+    ]
+    node = {
+        str((step.get("with") or {}).get("node-version"))
+        for _, step in steps
+        if str(step["uses"]).startswith("actions/setup-node@")
+    }
+    assert node == {"24"}
+    offenders = []
+    for where, step in steps:
+        action, _, ref = str(step["uses"]).partition("@")
+        major = int(ref.lstrip("v").split(".")[0]) if ref.lstrip("v")[:1].isdigit() else -1
+        if action not in NODE24_FROM or major < NODE24_FROM[action]:
+            offenders.append(f"{where}: {step['uses']}")
+    assert offenders == []
 
 
 def test_WFRUN_01_every_job_names_ubuntu_24_04():
