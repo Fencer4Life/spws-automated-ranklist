@@ -2,17 +2,20 @@
 Tests for python/pipeline/commit_lifecycle.py — Phase 4 (ADR-046, ADR-053)
 post-commit chain: cascade rename + EVF parity gate + combined Telegram.
 
-Plan IDs P4.CL.1 – P4.CL.7.
+Plan IDs P4.CL.1–2 and P4.CL.5–7; REVCHK.01–03 replace P4.CL.3–4.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from python.pipeline.commit_lifecycle import (
     run_post_commit_hooks,
 )
+
+MODULE = Path(__file__).resolve().parents[1] / "pipeline" / "commit_lifecycle.py"
 
 # ---------------------------------------------------------------------------
 # Fixture builders
@@ -83,8 +86,12 @@ class TestCascade:
 
 
 class TestParityGate:
-    def test_evf_parity_pass_promotes(self):
-        """P4.CL.3 EVF event + parity PASS → fn_promote_evf_published called + status flip recorded."""
+    """REVCHK.01–03: the review CLI's post-commit EVF parity check reports and writes
+    nothing (R1 A on doc/plans/w2-follow-up-2026-10-25.html, 25 Oct 2026; ADR-053
+    amendment). It replaces P4.CL.3–4, which pinned the promotion to EVF_PUBLISHED
+    and the parity note: results reach PROD only through promote (ADR-113 §8)."""
+
+    def test_REVCHK_01_a_pass_is_reported_and_nothing_is_written(self):
         db = MagicMock()
         db.event_results_for_parity.return_value = [
             {
@@ -94,12 +101,6 @@ class TestParityGate:
                 "num_final_score": 50.0,
             },
         ]
-        db.promote_evf_published.return_value = {
-            "id_event": 7,
-            "fencers_overwritten": 1,
-            "old_status": "ENGINE_COMPUTED",
-            "new_status": "EVF_PUBLISHED",
-        }
         ctx = _ctx(event_code="PEW3-2025-2026")
         evf = [{"name": "Adam Kowalski", "pos": 1, "points": 50.0}]
         notifier = MagicMock()
@@ -110,11 +111,14 @@ class TestParityGate:
 
         assert out.parity_ran is True
         assert out.parity_passed is True
-        db.promote_evf_published.assert_called_once()
-        notifier.notify_evf_promoted.assert_called_once()
+        assert out.fencers_overwritten == 0
+        db.promote_evf_published.assert_not_called()
+        db.annotate_parity_fail.assert_not_called()
+        notifier.notify_evf_promoted.assert_not_called()
+        [message] = [c.args[0] for c in notifier.success.call_args_list]
+        assert "PEW3-2025-2026" in message and "nothing written" in message
 
-    def test_evf_parity_fail_annotates(self):
-        """P4.CL.4 EVF event + parity FAIL → fn_annotate_parity_fail called; no promote."""
+    def test_REVCHK_02_a_difference_is_reported_and_nothing_is_written(self):
         db = MagicMock()
         db.event_results_for_parity.return_value = [
             {
@@ -138,9 +142,19 @@ class TestParityGate:
 
         assert out.parity_ran is True
         assert out.parity_passed is False
-        db.annotate_parity_fail.assert_called_once()
+        assert out.parity_notes and "Jan Nowak" in out.parity_notes
+        db.annotate_parity_fail.assert_not_called()
         db.promote_evf_published.assert_not_called()
         notifier.notify_evf_parity_fail.assert_called_once()
+
+    def test_REVCHK_03_the_hooks_call_no_parity_writer(self):
+        source = MODULE.read_text(encoding="utf-8")
+        for writer in (
+            "promote_evf_published",
+            "annotate_parity_fail",
+            "update_event_parity_notes",
+        ):
+            assert writer not in source
 
     def test_non_evf_event_skips_parity(self):
         """P4.CL.5 SPWS event + evf_results passed → parity stays inert."""

@@ -8,9 +8,9 @@ This module owns the orchestration:
   1. If ctx.pew_cascade_pending was set by Stage 7, call
      db.pew_recompute_event_code(id_event). Capture renamed-to txt_code.
   2. If the event is EVF-organized and we have a fetched-from-EVF parity
-     payload, run check_parity(local, evf). On PASS, promote (overwrite
-     scores + flip status to EVF_PUBLISHED). On FAIL, annotate
-     txt_parity_notes.
+     payload, run check_parity(local, evf) and report the outcome. It writes
+     nothing: no score is overwritten and no parity note stored (ADR-053
+     amendment of 2026-10-25; results reach PROD only through promote).
   3. Emit a single combined Telegram message via TelegramNotifier.notify_event_commit
      so commit + cascade + parity reach the operator as one event.
 
@@ -56,7 +56,7 @@ def run_post_commit_hooks(
 
     Args:
         db: DbConnector with pew_recompute_event_code, event_results_for_parity,
-            promote_evf_published, annotate_parity_fail, find_event_by_code.
+            find_event_by_code.
         ctx: PipelineContext from run_pipeline (has event, pew_cascade_pending).
         summary: ingestion counts for the Telegram batch line
                  (matched / pending / auto_created / skipped).
@@ -96,41 +96,24 @@ def run_post_commit_hooks(
             out.parity_result = parity
             out.parity_passed = parity.overall_pass
 
+            # Reports only (REVCHK.01–03, ADR-053 amendment 2026-10-25): results
+            # reach PROD only through promote (ADR-113 §8), so a pass overwrites
+            # no score and a difference writes no note.
+            shown = out.cascade_renamed_to or event_code
             if parity.overall_pass:
-                # Promotion payload — local id_fencer + EVF score
-                evf_by_name = {_fold(r.get("name")): r for r in evf_results}
-                payload: list[dict] = []
-                for lr in local:
-                    e = evf_by_name.get(_fold(lr.get("fencer_name")))
-                    if e is None:
-                        continue
-                    payload.append(
-                        {
-                            "id_fencer": lr.get("id_fencer"),
-                            "int_place": lr.get("int_place"),
-                            "num_final_score": float(e.get("points", 0) or 0),
-                        }
-                    )
-                promoted = db.promote_evf_published(id_event, payload)
-                out.fencers_overwritten = int(promoted.get("fencers_overwritten", len(payload)))
                 if notifier is not None:
-                    notifier.notify_evf_promoted(
-                        out.cascade_renamed_to or event_code, out.fencers_overwritten
+                    notifier.success(
+                        f"{shown}: EVF parity passed — every result carries EVF's place "
+                        "and points; nothing written."
                     )
             else:
-                # Build parity_notes summary
                 fail_lines = [f"[{f.sub_check}] {f.fencer_name}" for f in parity.fail_details]
                 notes = "; ".join(fail_lines[:10])
                 if len(fail_lines) > 10:
                     notes += f"; +{len(fail_lines) - 10} more"
                 out.parity_notes = notes
-                db.annotate_parity_fail(id_event, notes)
                 if notifier is not None:
-                    notifier.notify_evf_parity_fail(
-                        out.cascade_renamed_to or event_code,
-                        parity.fail_details,
-                        notes,
-                    )
+                    notifier.notify_evf_parity_fail(shown, parity.fail_details, notes)
         except Exception as e:  # pragma: no cover — defensive
             out.warnings.append(f"EVF parity gate failed: {e}")
 
@@ -169,38 +152,3 @@ def _organizer_code(event: dict) -> str:
     if code.startswith("MSW"):
         return "FIE"
     return "UNKNOWN"
-
-
-# Cheap fold for cross-source name matching (mirrors evf_parity's _fold).
-import unicodedata as _ud  # noqa: E402  (deliberate local import near use)
-
-_PL = str.maketrans(
-    {
-        "Ą": "A",
-        "Ć": "C",
-        "Ę": "E",
-        "Ł": "L",
-        "Ń": "N",
-        "Ó": "O",
-        "Ś": "S",
-        "Ź": "Z",
-        "Ż": "Z",
-        "ą": "a",
-        "ć": "c",
-        "ę": "e",
-        "ł": "l",
-        "ń": "n",
-        "ó": "o",
-        "ś": "s",
-        "ź": "z",
-        "ż": "z",
-    }
-)
-
-
-def _fold(s: str | None) -> str:
-    if not s:
-        return ""
-    s = s.translate(_PL)
-    nfkd = _ud.normalize("NFKD", s)
-    return "".join(c for c in nfkd if not _ud.combining(c)).strip().lower()

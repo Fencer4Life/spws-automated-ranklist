@@ -180,7 +180,7 @@ class TelegramNotifier:
         if cascade_renamed_to:
             lines.append(f"  • PEW cascade: txt_code → {cascade_renamed_to}")
         if parity_passed is True:
-            lines.append("  • EVF parity ✅ — promoted to EVF_PUBLISHED")
+            lines.append("  • EVF parity ✅ — every result carries EVF's values; nothing written")
         elif parity_passed is False:
             lines.append("  • EVF parity 🚨 FAIL — see follow-up alert")
         self._send("\n".join(lines))

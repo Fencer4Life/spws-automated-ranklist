@@ -1,6 +1,6 @@
 # ADR-053: EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle
 
-**Status:** Accepted (amended 2026-10-25 — the daily sweep is a read-only parity check: it reports on Telegram and promotes and annotates nothing; see the amendment)
+**Status:** Accepted (amended 2026-10-25 — the daily sweep and the review's post-commit gate are read-only parity checks: they report and promote and annotate nothing; see the amendment)
 **Date:** 2026-05-02
 **Relates to:** ADR-028 (EVF calendar/results import — amended), ADR-038 (EVF intake POL-only — affirmed and clarified), ADR-050 (unified ingestion pipeline — complemented), ADR-052 (URL→data validation — runs at Stage 7, complementary)
 
@@ -179,5 +179,5 @@ The sweep's fetch read each event's `url_event`, the organiser's page, as EVF re
 - **What it writes.** Nothing: no promotion to `EVF_PUBLISHED`, no `txt_parity_notes`, no audit row. The database functions for those writes stay; the sweep no longer calls them. An EVF event's `txt_source_status` therefore stays `ENGINE_COMPUTED`.
 - **Lane and colour.** It stays in `prod-write`, so it never reads PROD while a promote or the PROD drain is part-way through. A run is red only when a read fails.
 - **Superseded here:** for the daily sweep, the promotion on PASS, the annotation on FAIL, the 30-day EVF-empty annotation and their audit rows. [ADR-060](060-evf-parity-delta-md.md)'s delta report, proposed for the sweep, was never built; the check reports on Telegram only.
-- **Not changed:** the post-commit gate of the interactive review (`commit_lifecycle.run_post_commit_hooks`), which runs when an operator reads an event from EVF's API in `review_cli`.
+- **The review's post-commit gate reports too** (R1 A on `doc/plans/w2-follow-up-2026-10-25.html`, the same day). When an operator commits an event read from EVF's API in `review_cli`, `commit_lifecycle.run_post_commit_hooks` still runs `check_parity` and reports the outcome on Telegram and in the review, but overwrites no score, sets no `EVF_PUBLISHED` and writes no `txt_parity_notes`. The batch ingest never reaches that path. Nothing sets `EVF_PUBLISHED` any more; the value and its database functions stay. Tests: pytest REVCHK.01–04 (`test_commit_lifecycle.py`, `test_notifications.py`) replace P4.CL.3–4.
 - **Tests.** pytest EVFCHK.01–07 (`python/tests/test_evf_parity_sweep.py`) replace P4.SW.1–6; EVFCHK.07 also covers `read_committed` for an event that has no tournament yet.
