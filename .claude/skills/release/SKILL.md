@@ -70,10 +70,18 @@ pass"; quote its summary rather than asserting it.
   `python/tests/test_github_workflows_page.py` (GHWF.01–06) fails until the page lists every
   workflow file with its name, schedule, calls and lanes.
 - Use a focused commit message that describes the actual change.
+- Name the branch after what it changes and write its description before preflight
+  (`git branch --edit-description`: a title of up to 72 characters, a blank line, then a few
+  sentences on what was wrong and what it does now). Preflight's "branch, merge and release
+  named" gate runs `scripts/branch_description.py check` and prints the merge, CI and Release
+  titles; read them before integrating. The integrate script merges with that description.
 
 ## Push and operate workflows
 
 - Recheck branch and remote immediately before pushing.
+- Push the integration branch to main with `git push origin <integration-branch>:main`
+  (`integration/main:main` in the dedicated integration worktree); the pre-push hook refuses
+  `HEAD:main` there.
 - Push only the intended commit or branch.
 - Observe all triggered CI and release runs to completion.
 - For failures, fetch failing job logs and return to diagnosis.

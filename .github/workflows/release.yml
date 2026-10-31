@@ -1,4 +1,8 @@
 name: Release
+# Each run is titled after the merge it releases: the CI run's title, which is
+# the merge commit's first line (scripts/branch_description.py). GitHub renders
+# run-name as text; it is never run as a command.
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Release · manual dispatch by {0}', github.actor) || format('Release · {0}', github.event.workflow_run.display_title) }}
 
 on:
   workflow_run:

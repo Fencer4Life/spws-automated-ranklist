@@ -1,0 +1,231 @@
+<meta charset="utf-8">
+<title>Branch names and merge messages — plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Integration · preflight · Plan — signed off 31 Oct</p>
+  <h1>Every branch, merge and release says what it fixes</h1>
+  <p class="dek">Your request (31 Oct): from the branch name alone you should understand the fix; the merge GitHub shows should explain it in a few sentences; and releases are named the same way, checked by preflight. Today the merge message is git's default, so GitHub titles the CI run <b>"Merge branch 'claude/pew-madrid-engarde' into integration/main"</b> and the Release run just <b>"Release"</b>. This plan makes the explanation part of preflight and carries it onto main's merge commit and both runs. <b>No code is written until you sign it off.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: B1 A, B2 A, B3 A ("I sign it")</span>
+    <span class="pill"><code>scripts/preflight.sh</code> · <code>scripts/integrate-agent-branch.sh</code></span>
+    <span class="pill">Claude and Codex branches alike</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Three decisions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>B1</b></td><td>Where does the explanation live until the merge?</td><td><b>A</b> In git's own branch description (<code>git branch --edit-description</code>). It is stored in the repository's shared config, so the integration checkout reads what the worker wrote, and it adds no file to the repository.<br><b>B</b> A small file committed on the branch, e.g. <code>doc/changes/&lt;branch&gt;.md</code>: kept in the tree forever.<br><b>C</b> The branch's last commit message: wrong when a branch has several commits.</td><td><span class="chip never">A</span> It is exactly what git provides for this, and nothing extra lands on main except the merge message itself.</td></tr>
+        <tr><td><b>B2</b></td><td>What does preflight enforce?</td><td><b>A</b> Fail the gate when: the description is missing; its title is longer than 72 characters or starts with "Merge"; the explanation under it has fewer than two sentences; or the branch name is a session name (<code>session-…</code>), a date, or fewer than three words.<br><b>B</b> Warn only.</td><td><span class="chip never">A</span> A warning is what let today's merge through. A script cannot judge whether a name is <em>good</em>, only reject the known-bad shapes; choosing the words stays my job, and the description makes it reviewable.</td></tr>
+        <tr><td><b>B3</b></td><td>Codex branches too?</td><td><b>A</b> Yes: one integration script serves both agents; AGENTS.md and the handbook page on Claude and Codex collaboration say so.<br><b>B</b> Claude branches only.</td><td><span class="chip never">A</span> Same script, same main, same reader.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What you would see</p>
+    <h2>Today's release, as it would have looked</h2>
+    <p><b>Branch:</b> <code>claude/weapon-from-title-every-engine</code> instead of <code>claude/pew-madrid-engarde</code>.</p>
+    <p><b>The merge on main</b>: its first line is the title GitHub shows for the CI and Release runs and in main's history; the rest shows on the commit page.</p>
+    <pre class="trace">Title's weapon wins over the declared one in every engine that states both
+
+PEW Madrid 2026's Engarde list declares "EPEE MALE 2" as sabre. Ingestion
+took that, so KORONA Przemysław's épée result would have gone into men's
+sabre V2, and the event would have been refused once the real sabre V2
+finished. Engarde, d'Artagnan and FencingTime XML now take the weapon the
+title names when it names one, and report every override. Run over every
+stored source, the rule changes nothing else.
+
+Branch: claude/weapon-from-title-every-engine</pre>
+    <p><b>The runs GitHub lists</b> for that push:</p>
+    <pre class="trace">CI       Title's weapon wins over the declared one in every engine that states both
+Release  Release · Title's weapon wins over the declared one in every engine that states both</pre>
+    <p>Today they read "Merge branch 'claude/pew-madrid-engarde' into integration/main" and "Release".</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · How</p>
+    <h2>The rule and where it is enforced</h2>
+    <ol class="steps">
+      <li><b>Naming.</b> A worker branch is named after the change once its purpose is known, <code>claude/&lt;what-it-changes&gt;</code>, renamed with <code>git branch -m</code> before preflight if it started under another name.</li>
+      <li><b>Describing.</b> Before preflight, the worker writes the branch description: a title of up to 72 characters saying what changes, then a few sentences on why, what was wrong and what it does now.</li>
+      <li><b>Preflight gate</b> "branch, merge and release named (integrate)" in <code>scripts/preflight.sh</code>, beside the existing <code>git diff --check (integrate)</code>: checks B2 on the current branch and prints the names the push will carry: the merge title, the CI run's title and the Release run's title. Skipped with <code>--ci-only</code>, since CI runs on main, not on a worker branch.</li>
+      <li><b>Integration.</b> <code>scripts/integrate-agent-branch.sh</code> refuses a branch without a valid description (the same check), and merges with the description as the message, followed by <code>Branch: &lt;name&gt;</code>, instead of <code>--no-edit</code>. The check lives in one script both use, so they cannot disagree.</li>
+      <li><b>Release naming.</b> <code>.github/workflows/release.yml</code> gets <code>run-name: Release · ${{ github.event.workflow_run.display_title }}</code>: the CI run's title, which is the merge title. A manual dispatch reads "Release · manual dispatch by &lt;who&gt;". The release-record commits that follow a release go through a described branch like any other change, so they are named the same way.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Tests first, each seen failing</p>
+    <h2>In <code>python/tests/test_agent_worktree_operating_structure.py</code>, run in throwaway git repositories as the existing integration tests are</h2>
+    <ul>
+      <li>A described branch integrates, and main's merge commit carries its title, explanation and <code>Branch:</code> line.</li>
+      <li>A branch without a description, with a title over 72 characters or starting "Merge", or with a one-sentence explanation, is refused, and nothing is merged.</li>
+      <li>A session-named, date-named or two-word branch is refused.</li>
+      <li>The preflight gate passes and fails on the same cases, and prints the merge, CI and Release titles.</li>
+      <li><code>release.yml</code> names its run from <code>workflow_run.display_title</code>, with the manual-dispatch fallback (read from the workflow file, as the existing workflow tests do).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Records</p>
+    <h2>Documentation, in the same change</h2>
+    <ul>
+      <li>AGENTS.md and <code>doc/claude/planning.md</code>: name the branch after the change; write its description before preflight.</li>
+      <li>Handbook <code>operations/claude-codex-collaboration</code> (the integration procedure), <code>reference/workflow-catalog</code> (the Release run's name) and the release skill's checklist.</li>
+      <li>RTM rows for the tests; <code>scripts/preflight.sh</code> exit 0 before the push.</li>
+      <li>Memory: the naming and description rule, so every later session follows it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Not in this plan</p>
+    <h2>What stays as it is</h2>
+    <ul>
+      <li>Today's merge <code>5c9fae61</code> keeps its default title: changing it would rewrite main's history (a force-push).</li>
+      <li>The automated <code>chore: … [skip ci]</code> commits that workflows push (reconcile logs, tracking) are not branches and are unchanged.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Built · 31 Oct</p>
+    <h2>What landed, and one issue found on the way</h2>
+    <ul>
+      <li><code>scripts/branch_description.py</code>, the one check: <code>check [&lt;branch&gt;]</code> applies B2 and prints the merge, CI and Release titles; <code>message &lt;branch&gt;</code> gives the merge message, the description with <code>Branch:</code> added as a trailer, so a <code>Co-Authored-By:</code> line stays a trailer.</li>
+      <li><code>scripts/integrate-agent-branch.sh</code> refuses a branch the check fails (nothing merged) and merges with <code>-F</code> that message instead of <code>--no-edit</code>.</li>
+      <li><code>scripts/preflight.sh</code>: the gate "branch, merge and release named (integrate)"; on <code>main</code> or <code>integration/main</code> it shows SKIP, not a silent pass.</li>
+      <li><code>.github/workflows/release.yml</code>: <code>run-name: Release · &lt;CI run's title&gt;</code>, or "Release · manual dispatch by &lt;who&gt;". GitHub renders it as text; nothing runs it.</li>
+      <li>Tests NAMING.01–05 (<code>python/tests/test_agent_worktree_operating_structure.py</code>): seen failing first, then green with the rest of the file. The existing integrate test now describes its branch and uses a three-word name, since B2 refuses the old two-word, undescribed one.</li>
+      <li>Records: AGENTS.md, <code>doc/claude/planning.md</code>, the release skill, the handbook's Claude–Codex page and workflow catalog, RTM NFR-16 with NAMING.01–05.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Found: three places told the integrator to push <code>HEAD:main</code></p>
+      <p>The integrate script's closing line, AGENTS.md and the handbook's Claude–Codex page (the timeline, the diagram, the command block and the checklist) said <code>git push origin HEAD:main</code>. In the dedicated integration worktree on <code>integration/main</code>, <code>.githooks/pre-push</code> refuses that, because it compares the pushed local ref with the checkout's branch; it cost two failed pushes on 9 Sep. <b>Fixed:</b> the script prints <code>git push origin &lt;its branch&gt;:main</code>, and the documents say <code>&lt;integration-branch&gt;:main</code>.</p>
+    </div>
+  </section>
+
+  <p class="foot">plan · branch-names-and-merge-messages · 31 Oct 2026 · signed 31 Oct 2026</p>
+</div>

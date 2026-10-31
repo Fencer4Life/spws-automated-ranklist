@@ -119,6 +119,16 @@ if [[ $CI_ONLY -eq 0 ]]; then
   # Trailing whitespace blocks scripts/integrate-agent-branch.sh, which runs
   # `git diff --check` before it will merge a task branch.
   gate "git diff --check (integrate)" bash -c 'git fetch origin main -q 2>/dev/null; git diff --check origin/main...HEAD'
+  # The branch's name and description become main's merge title and explanation,
+  # and GitHub titles the CI and Release runs with it; scripts/integrate-agent-
+  # branch.sh refuses a branch this check fails. The check prints those titles.
+  # main and integration/main are where branches are merged, not worker branches.
+  current_branch=$(git symbolic-ref --quiet --short HEAD || true)
+  if [[ "$current_branch" == "main" || "$current_branch" == "integration/main" ]]; then
+    RESULTS+=("SKIP  branch, merge and release named (integrate) — $current_branch is not a worker branch")
+  else
+    gate "branch, merge and release named (integrate)" python3 scripts/branch_description.py check
+  fi
 fi
 
 # ---------------------------------------------------------------------------
