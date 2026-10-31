@@ -292,5 +292,29 @@ Release  Release · Title's weapon wins over the declared one in every engine th
     </div>
   </section>
 
+  <section>
+    <p class="kicker">11 · Three ADRs checked against the code · 31 Oct</p>
+    <h2>What each one decided, what runs, and what is still open</h2>
+    <p>Checked through the docs index and the code graph, then confirmed in the files: the migrations against PROD's applied list in <code>deployed_migrations.json</code> (228 entries), the code and tests each ADR names, the RTM, and each ADR's own amendments and open items. Nothing has been changed.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ADR</th><th>What runs today</th><th>What is still open</th></tr></thead>
+      <tbody>
+        <tr><td><b>ADR-079</b> event self-registration and identity</td><td>Phases 1–2 and every amendment (5 Jul, 9 Aug, 17 Aug, 28 Aug, two on 2 Sep, 13 Sep, 3 Oct): 15 registration migrations, every one in PROD's applied list; <code>RegistrationForm.svelte</code>, <code>RegistrationModal.svelte</code>, <code>frontend/register.html</code>; 8 pgTAP files (49, 57–59, 75, 78, 98, 101); RTM FR-120–FR-130 Covered (FR-127's "Superseded" concerns the seed exporter, not this).</td><td>Phases 4/5, the magic-link e-mail of §2. Never built; since 17 Aug it no longer gates anything (an unmatched entrant registers with no e-mail). The ADR keeps it as a future, optional strengthening: its <code>reg_verify_*</code> texts are retained "when magic-link delivery ships" (lines 209–210). <b>Also:</b> the ADR's own status says "Proposed", but Appendix C says "Draft"; the two disagree.</td></tr>
+        <tr><td><b>ADR-084</b> calendar barrel and event card</td><td>The design and every amendment (28 Aug, 29 Aug month drum, 2 Sep, 6 Sep weapon filter, 6 Oct downward time and arrows) are what the site shows: <code>CalendarBarrel.svelte</code>, <code>EventCard.svelte</code>, <code>CountryFlag.svelte</code>, <code>lib/calendarMonths.ts</code> (the planned <code>calendarQuarters.ts</code>, renamed when the drum moved to months); 7 test files; released 6 Oct (main <code>1346bd92</code>) with 1,225 Vitest and 62 Playwright tests passing.</td><td>Three refinements the ADR itself names as open: item 1 (what the card opens on), item 2 (a past season's anchor) and D4 (the card's edge, waiting for your screenshot).</td></tr>
+        <tr><td><b>ADR-105</b> international results keep the source bracket</td><td>Everything: the rule and plan signed 1–2 Oct (D1–D4 A); migration <code>20261001000002_international_field_size.sql</code> in PROD's applied list; the tests it names (<code>test_international_field.py</code>, <code>test_international_intake.py</code>, pgTAP 86 and 88); the repair finished 3 Oct, every international event identical on LOCAL, CERT and PROD; the 31 Oct weapon amendment on main with WPN.TITLE.01–07.</td><td>Nothing in the ADR. Its status says only that "this text awaits sign-off". The defects it lists as deliberately not fixed (domestic place drift, planned separately; PSW routing) are not open items of this decision.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decide</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>ADR-079</b></td><td>Status of event self-registration</td><td><b>A</b> Accepted for what runs (Phases 1–2 and the amendments); Phases 4/5, the optional magic-link e-mail, stay recorded as deferred, unchanged, in the ADR and in Appendix C.<br><b>B</b> Keep Proposed until Phases 4/5 ship; Appendix C is corrected from "Draft" to "Proposed" to match the ADR.</td><td><span class="chip never">A</span> Everything the ADR decides for registration runs on PROD; the e-mail step is already described as optional and future, so Accepted with it deferred states exactly that.</td></tr>
+        <tr><td><b>ADR-084</b></td><td>Status of the calendar barrel and card</td><td><b>A</b> Accepted; open items 1, 2 and D4 stay open, as written.<br><b>B</b> Keep Draft until all three are settled.</td><td><span class="chip never">A</span> The site shows this design (last released 6 Oct); the three items refine it and are already named as open in the ADR.</td></tr>
+        <tr><td><b>ADR-105</b></td><td>Status of international results keeping the source bracket</td><td><b>A</b> Accepted (rule and plan signed 1–2 Oct; released and repaired 3 Oct).<br><b>B</b> Keep Draft.</td><td><span class="chip never">A</span> Nothing in it is unbuilt or undecided; only the text's own sign-off is missing.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Whatever you choose, the change is documentation only: each ADR's status line, its Appendix C row and the regenerated pages, so its Release skips every deploy.</p>
+    <p><span class="pill"><span class="dot"></span>Signed 31 Oct: ADR-079 A, ADR-084 A, ADR-105 A ("All three A")</span> Each ADR's status line and Appendix C row now read Accepted: ADR-079 with Phases 4/5, the optional magic-link e-mail, recorded as deferred; ADR-084 with open items 1, 2 and D4 still open; ADR-105 with nothing open. Appendix C's ADR-079 row no longer disagrees with the ADR.</p>
+  </section>
+
   <p class="foot">plan · branch-names-and-merge-messages · 31 Oct 2026 · signed 31 Oct 2026 · released 31 Oct 2026</p>
 </div>
