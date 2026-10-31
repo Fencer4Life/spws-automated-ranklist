@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="e56146066f62811d6e34b3d377af4e2891a154b8e7deb250bb0779d4ec6fa9d0">
+<meta name="doc-source-sha256" content="9386956db31c649c8985de552eae317f715b400e5ae9eb31ee59bf6501b491d5">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1111,7 +1111,7 @@
 <td>Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); <code>scripts/branch_description.py check</code> fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on <code>main</code> is the description with a <code>Branch:</code> line, and the CI and Release runs carry its title</td>
 <td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A</td>
 <td>NAMING.01–05</td>
-<td>Covered (built 2026-10-31, LOCAL)</td>
+<td>Covered (released 2026-10-31, main 05caf9f0)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3713,35 +3713,35 @@
 <td>A described branch integrates; the merge commit's title is the description's title, its body the explanation, and its trailers <code>Branch: &lt;name&gt;</code> beside the description's own (<code>Co-Authored-By:</code>).</td>
 <td>pytest</td>
 <td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 05caf9f0)</td>
 </tr>
 <tr>
 <td>NAMING.02</td>
 <td>The integrate script refuses a branch with no description, a title over 72 characters or starting &quot;Merge&quot;, or an explanation of fewer than two sentences, and merges nothing.</td>
 <td>pytest</td>
 <td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 05caf9f0)</td>
 </tr>
 <tr>
 <td>NAMING.03</td>
 <td>It refuses a session-named, date-named or two-word branch, however well described.</td>
 <td>pytest</td>
 <td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 05caf9f0)</td>
 </tr>
 <tr>
 <td>NAMING.04</td>
 <td><code>scripts/branch_description.py check</code> fails an undescribed branch and, for a described one, prints the merge, CI and Release titles; <code>scripts/preflight.sh</code> runs that same check.</td>
 <td>pytest</td>
 <td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 05caf9f0)</td>
 </tr>
 <tr>
 <td>NAMING.05</td>
 <td><code>release.yml</code> titles its run &quot;Release · &quot; and the triggering CI run's title, or &quot;Release · manual dispatch by <who>&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 05caf9f0)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3756,5 +3756,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>e56146066f62811d6e34b3d377af4e2891a154b8e7deb250bb0779d4ec6fa9d0</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>9386956db31c649c8985de552eae317f715b400e5ae9eb31ee59bf6501b491d5</code></footer>
 </div></body></html>
