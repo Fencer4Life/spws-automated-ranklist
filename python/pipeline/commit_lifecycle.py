@@ -135,20 +135,13 @@ def run_post_commit_hooks(
 
 
 def _organizer_code(event: dict) -> str:
-    """Derive organizer code from event dict.
-
-    Supports two shapes: explicit `txt_organizer_code` field, or by-prefix
-    inference from `txt_code` (PPW/MPW = SPWS, PEW/MEW = EVF, MSW = FIE).
+    """The event's organizer: its stored `txt_organizer_code`, else the one the
+    organizer registry names for its code family (ADR-119 §2), else "UNKNOWN".
     """
+    from python.pipeline import organizers
+
     if not event:
         return "UNKNOWN"
     if event.get("txt_organizer_code"):
         return str(event["txt_organizer_code"]).upper()
-    code = (event.get("txt_code") or "").upper()
-    if code.startswith(("PPW", "MPW")):
-        return "SPWS"
-    if code.startswith(("PEW", "MEW")):
-        return "EVF"
-    if code.startswith("MSW"):
-        return "FIE"
-    return "UNKNOWN"
+    return organizers.organizer_of(event.get("txt_code"))

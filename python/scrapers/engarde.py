@@ -191,9 +191,12 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
         if reason is None and (weapon is None or gender is None):
             reason = "no weapon or gender"
         if reason is not None:
-            skipped.append(
-                {"slug": slug, "name": title, "weapon": weapon, "url": url, "reason": reason}
-            )
+            entry = {"slug": slug, "name": title, "weapon": weapon, "url": url, "reason": reason}
+            if reason.startswith("not completed"):
+                # Engarde's own finished signal (ADR-119 §1, D14 A): the event
+                # is not over while this competition runs.
+                entry.update(finished=False, state=state)
+            skipped.append(entry)
             continue
         y, m, d = (int(x) for x in comp.get("date", "").split())
         final = {

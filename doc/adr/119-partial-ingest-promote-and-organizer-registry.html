@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="119-partial-ingest-promote-and-organizer-registry.md">
+<meta name="adr-source-sha256" content="7ee18186a05dd5d63fb14d79de67d1f2e17a8eeee6d5ec821ee8da9e02fb4802">
+<title>ADR-119 · Partial Ingest and Promote — Only Final Brackets, One Organizer Registry, One Engine Contract</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 119</p><h1>Partial Ingest and Promote — Only Final Brackets, One Organizer Registry, One Engine Contract</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Proposed (decisions D1–D14 signed by the user in chat on 2026-10-31: D1–D12 &quot;All as recommended&quot;, then D13 A and D14 A, on <code>doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</code>; the same day R1 A, &quot;R1 A, release it&quot;: the end-date clause of §1's 60-minute rule, plan §03b). Built in three releases. Release 1 (§1, §2 and §5) is built test-first; §3 follows in release 2 and §4 in release 3. Accepted on the user's sign-off after release 3 has carried its first event.</dd></div><div><dt>Date</dt><dd class="">2026-10-31</dd></div><div><dt>Source</dt><dd class=""><code>119-partial-ingest-promote-and-organizer-registry.md</code></dd></div><div><dt>Length</dt><dd class="">86 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (decisions D1–D14 signed by the user in chat on 2026-10-31: D1–D12 &quot;All as recommended&quot;, then D13 A and D14 A, on <code>doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</code>; the same day R1 A, &quot;R1 A, release it&quot;: the end-date clause of §1's 60-minute rule, plan §03b). Built in three releases. Release 1 (§1, §2 and §5) is built test-first; §3 follows in release 2 and §4 in release 3. Accepted on the user's sign-off after release 3 has carried its first event.
+<strong>Date:</strong> 2026-10-31
+<strong>Amends:</strong> <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (§7: what counts as final is the engine's answer, and a bracket from an engine that gives none waits for the sightings rule), <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> (§1: the driver is chosen by the registry's route class; §2: a bracket from an engine other than FTL is no longer final once published; §6: the daily close selects by the registry), <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (§5.2: an event is international by its organizer's route class, and IMEW and IMSW get their true organizer), <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> (the 2026-10-03 amendment's &quot;final&quot;: the engine's answer, not FTL's row alone), <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> (the FIE amendment's types are the registry's FIE-like organizers' types; still MSW and PSW)
+<strong>Relates to:</strong> <a href="117-results-links-admin-only.html">ADR-117</a> (a person sets the results link; §4's sync waits for it), <a href="118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a> (a new organizer's calendar scraper writes under its contract), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> §8 and <a href="089-event-weapons-and-card-header.html">ADR-089</a> §5 (the calendar card's <code>panelType</code> stays a code-prefix heuristic for the tile colour), <a href="066-min-participants-ingestion-gate.html">ADR-066</a> (the minimum-participant routing is not a registry fact), <a href="028-evf-calendar-results-import.html">ADR-028</a> (the types EVF's results API scores are not either), <a href="008-psw-msw-international-pool.html">ADR-008</a> (MSW and PSW are the FIE's; the old &quot;PS&quot; sheet was the EVF Criterium, stored as PEW10), <a href="046-pew-weapon-suffix.html">ADR-046</a> (the weapon-rename exception asks the registry for the PEW family), <a href="053-evf-parity-gate.html">ADR-053</a> (the post-commit parity report reaches IMEW and DMEW events), <a href="019-domestic-only-fencer-seed.html">ADR-019</a> and <a href="020-seed-generator-domestic-auto-create.html">ADR-020</a> (the seed tools read the registry's domestic types), <a href="083-server-enforced-authorization.html">ADR-083</a> (the sighting table is deny-by-default), <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> and <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a> (the roster route, unchanged), <a href="072-cdc-recompute-debounce.html">ADR-072</a> (§3's CERT drain, release 2)
+<strong>Source:</strong> <code>doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</code>, <code>python/pipeline/organizers.py</code>, <code>python/pipeline/international_sources.py</code>, <code>supabase/migrations/20261031000003_listing_sighting.sql</code>, <code>doc/handbook/reference/organizers-and-engines.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-run-takes-only-final-brackets-and-every-engine-answers-when-a-bracket-is-final-d1-a-d2-b-d14-a">1 · A run takes only final brackets, and every engine answers when a bracket is final (D1 A, D2 B, D14 A)</a></li><li class="depth-3"><a href="#2-one-organizer-registry-d13-a">2 · One organizer registry (D13 A)</a></li><li class="depth-3"><a href="#3-one-apply-on-both-sides-d3-a-d4-a-d10-a-release-2">3 · One apply on both sides (D3 A, D4 A, D10 A; release 2)</a></li><li class="depth-3"><a href="#4-the-results-sync-d5-d9-a-d12-a-release-3">4 · The results sync (D5–D9 A, D12 A; release 3)</a></li><li class="depth-3"><a href="#5-every-run-says-what-it-is-g6">5 · Every run says what it is (G6)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The user wants a multi-day event ingested several times while it runs: each run takes the tournaments that have finished, and the next run takes the rest. Promote follows each ingest. A failed ingest must not reach PROD, and the end state is a GitHub Actions workflow that ingests and promotes by itself. New organizers are coming: USA Fencing and the French veterans federation were named.</p>
+<p>Part of this already worked on 31 Oct 2026. A domestic or PZSz ingest kept only the listings whose FTL schedule row said Finished (<a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7). PPS1e-2026-2027 had been ingested and promoted twice: run 7 with one listing final, run 8 with both, and CERT and PROD both hold run 8's fingerprint <code>fecaf3f0174b</code>. The plan found nine gaps; release 1 closes four of them, and the audit during the build found four more.</p>
+<ul>
+<li><strong>G3. A running Engarde final completed its event.</strong> The Engarde reader skips a competition that is not completed (<code>python/scrapers/engarde.py</code>), a signal as good as FTL's. The lifecycle treated a listing as not final only when its skip reason was FTL's exact text, so the day after the end date an event with a final still running was COMPLETED. Error 7 of <code>doc/plans/ingestion-source-errors-findings-2026-10-31.html</code> shows it.</li>
+<li><strong>G5. Four engines say nothing.</strong> 4fence, Ophardt, d'Artagnan and EVF's results API were read as final once published. Ophardt transmits live, so a provisional ranking would have reached PROD.</li>
+<li><strong>G6. Every run had the same title.</strong> Neither <code>ingest-event.yml</code> nor <code>promote.yml</code> set a run name; the Actions list read &quot;Ingest event (NEW pipeline, from URL)&quot; twenty times.</li>
+<li><strong>G9. Five places guessed the organizer from the code.</strong> <code>stages._organizer_for_event</code>, the twelve-prefix type table, <code>FIE_TYPES</code>, the daily close's <code>ROUTE_CODES</code> and <code>_is_international_intake</code> each matched prefixes. The organizer they guessed disagreed with the stored one for IMEW, IMSW, PSW and DMEW, and an event of a new federation was refused before its first read.</li>
+<li><strong>G10–G13, found during the build.</strong> The post-commit hooks read IMEW, DMEW, IMSW, PSW and the PZSz families as UNKNOWN, so the EVF parity report skipped IMEW and DMEW events (<code>commit_lifecycle._organizer_code</code>). The PEW weapon-rename exception matched any code starting with PEW (<code>url_validation._is_pew</code>). Five historical seed tools wrote organizers by hand: MSW and PSW under EVF, PSW under SPWS, IMEW and the PZSz families under SPWS. The domestic fencer scan of <a href="019-domestic-only-fencer-seed.html">ADR-019</a> looked for a GPW code that no file holds, and missed every 2023/24 Grand Prix.</li>
+<li><strong>Also found.</strong> The daily close re-read an event of several sources in a different order from the ingest, so its schedule hash could differ (FINAL.07). The matcher's international set lacked PSW.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-a-run-takes-only-final-brackets-and-every-engine-answers-when-a-bracket-is-final-d1-a-d2-b-d14-a">1 · A run takes only final brackets, and every engine answers when a bracket is final (D1 A, D2 B, D14 A)</h3>
+<ul>
+<li><strong>Partial in what it reads, whole in what it writes.</strong> A run reads every listing and takes the final ones; the event is written as one replace. The next run holds everything the last one held plus what has finished since. §3 makes that write one transaction on CERT, as it already is on PROD.</li>
+<li><strong>The engine contract.</strong> <code>ENGINES</code> in <code>python/pipeline/international_sources.py</code> lists every results engine and whether it says when a bracket is final. FTL does: its schedule row says Finished. Engarde does: the competition's state is completed. 4fence, Ophardt, d'Artagnan, EVF's results API and a single results page do not.</li>
+<li><strong>Not final is one reason.</strong> A bracket that is not final is skipped with a reason starting &quot;not final&quot;: FTL's unchanged text, &quot;not final (Engarde shows it <state>)&quot;, or &quot;not final (no finished signal; its content is not yet 60 minutes old)&quot;. <code>lifecycle.is_not_final</code> reads the prefix, so any such skip keeps the event IN_PROGRESS and the daily close leaves it open.</li>
+<li><strong>For an engine that says nothing, the reader that asks decides:</strong></li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Who reads</th>
+<th>A bracket is final when</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The live ingest on CERT</td>
+<td>its exact content was first seen at least 60 minutes ago, or today in Warsaw is past the event's end date</td>
+<td><code>Sightings</code>, <code>sightings_for</code></td>
+</tr>
+<tr>
+<td>Promote's plan on PROD</td>
+<td>the CERT run took exactly this content of it</td>
+<td><code>TakenByRun</code>, from the run's recorded rounds</td>
+</tr>
+<tr>
+<td>The daily close</td>
+<td>it is published (the close runs after the end date)</td>
+<td><code>SETTLED</code></td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>The sightings store.</strong> <code>tbl_listing_sighting</code> holds one row per event code, listing key and content hash, with the first and last time it was seen; a new hash is a new row, so a changed bracket starts its hour again. <code>fn_listing_sighting_record</code> inserts or touches the row and returns the first time. RLS is on, nothing is granted to <code>anon</code> or <code>authenticated</code>, <code>service_role</code> may select, insert and update, and nothing deletes a sighting (migration <code>20261031000003_listing_sighting.sql</code>). Only the live ingest writes sightings, so they live on CERT (and LOCAL); promote's plan never writes one, and the PROD seed export never carries the table (FINAL.08).</li>
+<li><strong>One hash everywhere.</strong> Ingest, promote's plan and the daily close read an event's sources in the same order and classify them source by source, so its schedule hashes the same in all three. FTL's not-final text is unchanged, because recorded runs hash it (FINAL.06).</li>
+</ul>
+<h3 id="2-one-organizer-registry-d13-a">2 · One organizer registry (D13 A)</h3>
+<p><code>python/pipeline/organizers.py</code> holds every organizer on the results route, its route class and the code families of its events. No other module matches an event-code prefix.</p>
+<ul>
+<li><strong>Route classes.</strong> <code>domestic</code> (SPWS: every row, the keep-rule and the birth-year split), <code>roster</code> (PZSz: a row only when a stored start list confirms it, <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>) and <code>international</code> (EVF, FIE and every federation to come: one tournament per source bracket, our fencers admitted by identity). <code>fie_like</code> marks the organizers admitted under <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>'s FIE amendment.</li>
+<li><strong>Families.</strong> A family is the code's first segment, matched whole, with its tournament type and organizer: PPW, MPW (SPWS); PPS, MPS (PZSz); PEW, MEW, IMEW (EVF); MSW, IMSW, PSW (FIE). Two families are registered and never ingested: DMEW, EVF's team championship, and GP, the 2023/24 Grand Prix rounds, which PROD stores under SPWS and the historical seed tools still read.</li>
+<li><strong>Unregistered.</strong> <code>VFC-2023-2024</code> is the one stored code of no family: an event row with no bracket, whose type nothing stored records. The registry names nothing for it, so code that asks gets UNKNOWN. The old spreadsheets' &quot;PS&quot; sheet is unregistered too; <a href="008-psw-msw-international-pool.html">ADR-008</a> records it as the EVF Criterium, stored as PEW10.</li>
+<li><strong>Readers.</strong> The organizer, the tournament type, the international check, the FIE flag, the daily close's selection (<code>route_code_regex</code>), the matcher's domestic and international sets, the post-commit hooks, the PEW rename exception and the historical tools all ask the registry. <code>require_route</code> refuses an event of no family, or of a family not ingested, by name before anything is read or recorded.</li>
+<li><strong>A new organizer</strong> is one <code>Organizer</code>, its <code>Family</code> entries, its <code>tbl_organizer</code> row, its tournament type with its scoring configuration (an ADR of its own), and its calendar scraper (its own plan, under <a href="118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>). A results reader is needed only for an engine not yet in <code>ENGINES</code>. The drivers, promote, the daily close and the run record do not change. <code>doc/handbook/reference/organizers-and-engines.html</code> carries both registries and the checklist.</li>
+<li><strong>Not registry facts.</strong> <a href="066-min-participants-ingestion-gate.html">ADR-066</a>'s minimum routing sends PSW to the domestic minimum while the route calls PSW international; the database holds it per type (pgTAP SS26.TYPE.02) and <code>scrapers/base.check_min_participants</code> agrees with it. The types EVF's results API scores (PEW, MEW, MSW) are EVF's calendar, not the route (<a href="028-evf-calendar-results-import.html">ADR-028</a>). ROUTE.ORG.06 names both as the only sets of their kind outside the registry.</li>
+<li><strong>The calendar card</strong> keeps <code>panelType</code>, a code-prefix heuristic for the tile colour (<a href="089-event-weapons-and-card-header.html">ADR-089</a> §5). It shows an unknown code in the PPW style, so a new organizer's card colour is decided with that organizer's calendar plan.</li>
+</ul>
+<h3 id="3-one-apply-on-both-sides-d3-a-d4-a-d10-a-release-2">3 · One apply on both sides (D3 A, D4 A, D10 A; release 2)</h3>
+<p>An ingest on CERT becomes the plan with the recording connector followed by <code>fn_promote_event_apply</code> on CERT, the function promote uses on PROD, so a failed ingest writes nothing. The apply deletes the event's tournaments the plan does not name before the fingerprint check (replace semantics, G1). Promote records its outcome on the CERT run row (<code>jsonb_promote</code>): applied, skipped or refused, the reason, the fingerprint, the Actions run and the time. Built in release 2.</p>
+<h3 id="4-the-results-sync-d5-d9-a-d12-a-release-3">4 · The results sync (D5–D9 A, D12 A; release 3)</h3>
+<p>A scheduled <code>results-sync.yml</code> runs hourly from 09:13 to 22:13 in Warsaw. It takes each active-season event on the route from its first day to the day after its end date, one at a time, but only an event with a results link on CERT or PROD (or an EVF id): the link is the switch. For each event it reads, compares with the last run, and when something changed it refreshes CERT, ingests, gates and promotes. Telegram gets one line per event only when something changed or failed. A failure pauses the event until a person resumes it with <code>sync &lt;code&gt;</code> or a manual ingest. <code>RESULTS_SYNC=off</code> stops the schedule. No public log line names a fencer or a birth year. Built in release 3.</p>
+<h3 id="5-every-run-says-what-it-is-g6">5 · Every run says what it is (G6)</h3>
+<p><code>ingest-event.yml</code> runs as &quot;Ingest · <code>&quot; and <code>promote.yml</code> as &quot;Promote · <code>&quot;, with &quot; · dry run&quot; for a dry run. This follows the rule set for CI and the Release on the same day (NAMING.01–07, <code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code>): a run's title says what it is.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Tournament-level incremental writes (D1 B).</strong> Rejected: a run record and a promote per tournament would double the comparison paths; one atomic replace per event keeps one invariant.</li>
+<li><strong>Final once published for engines without a signal (D2 A).</strong> Rejected: Ophardt transmits live, so a provisional ranking would reach PROD for an hour before being replaced.</li>
+<li><strong>The 60-minute rule for every engine (D2 C).</strong> Rejected: FTL and Engarde say when a bracket is final, and waiting an hour on them delays every Saturday final for nothing.</li>
+<li><strong>The registry as a database table, editable in Admin (D13 B).</strong> Rejected: a new organizer needs a release for its calendar scraper anyway; a module is tested like code, and a table adds schema and a cache for no operational gain.</li>
+<li><strong>Leave the prefixes and add each organizer by hand (D13 C).</strong> Rejected: five places disagreed already, and a new federation was refused before its first read.</li>
+<li><strong>Keep FTL's flag and Engarde's skip text as two special cases (D14 B).</strong> Rejected: that is how G3 arose, a signal that existed and was ignored.</li>
+<li><strong>A type-to-organizer map for the historical tools.</strong> Rejected during the build: a federation added later may reuse an existing type (ROUTE.ORG.04's fixture does), so a type cannot name its organizer. The tools ask the registry with the event code.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>New files.</strong> <code>python/pipeline/organizers.py</code>; <code>supabase/migrations/20261031000003_listing_sighting.sql</code>; <code>doc/handbook/reference/organizers-and-engines.html</code>.</li>
+<li><strong>Changed code.</strong> <code>international_sources.py</code> (the engine contract, the three finality rules, source-by-source classification); <code>promotion/lifecycle.py</code> (<code>is_not_final</code>, <code>not_final_at</code>, <code>SEEN_ONCE</code>); <code>promotion/close.py</code>, <code>run_record.py</code>, <code>plan.py</code>, <code>replay.py</code>; <code>ingest_cli.py</code> (<code>require_route</code> first, the driver by route class, the live sightings); <code>stages.py</code>, <code>db_connector.py</code> (<code>record_listing_sighting</code>), <code>international_admission.py</code>, <code>joined_brackets/__init__.py</code>, <code>commit_lifecycle.py</code>, <code>url_validation.py</code>, <code>review_cli.py</code>, <code>scrapers/engarde.py</code>, <code>matcher/pipeline.py</code>; nine tools under <code>python/tools/</code> read the registry; both workflows set a run name.</li>
+<li><strong>Tests.</strong> pytest FINAL.01–04, 04b–04e, 06–08 (<code>test_results_finality.py</code>, <code>test_promotion_replay.py</code>); ENGINE.01–03; ROUTE.ORG.01–13 (<code>test_organizer_registry.py</code>); RUNNAME.01–02 (<code>test_workflow_run_names.py</code>); pgTAP <code>119_listing_sighting.sql</code> (FINAL.05, the sightings store). Fifteen earlier tests that pinned the old contract were updated (SRC.05–07, SRC.10, CLOSE.01, REPLAY.09).</li>
+<li><strong>Behaviour.</strong> An Engarde event with a running final stays IN_PROGRESS. A 4fence, Ophardt, d'Artagnan, EVF-API or single-page bracket reaches a live CERT ingest an hour after its content stops changing, or at once after the end date. The EVF parity report reaches IMEW and DMEW events. A historical tool re-run would file MSW, IMSW, PSW and IMEW events under their true organizers and skip a sheet the registry does not know with a warning; closed seasons are never re-ingested, so no stored data changes.</li>
+<li><strong>Not changed.</strong> <code>panelType</code> in the frontend (§2); the PZSz start-list capture; FTL's not-final text.</li>
+<li><strong>Releases 2 and 3</strong> carry §3 and §4, with their amendments to ADR-108 §4, §6 and §9, ADR-113 §7, ADR-077 §1 and ADR-072.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ul>
+<li>§3 and §4 are decided and not yet built. Release 2 is next; it is rehearsed on LOCAL before release.</li>
+<li>The calendar card's colour for a new organizer: decided with that organizer's calendar plan, with a before-and-after sheet for the user.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="118-event-details-cert-to-prod-scraper-contract.html">← ADR-118: Event Details Written on CERT Reach PROD, and Every Calendar Scraper Writes Them Under One Contract</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>119-partial-ingest-promote-and-organizer-registry.md</code> · source SHA-256 <code>7ee18186a05dd5d63fb14d79de67d1f2e17a8eeee6d5ec821ee8da9e02fb4802</code></footer>
+</div></body></html>

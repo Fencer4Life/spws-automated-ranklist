@@ -16,12 +16,17 @@ Structure differences from 2024-2025 Excel:
 
 import json
 import re
+import sys
 from datetime import date, datetime
 from pathlib import Path
 
 import openpyxl
 import psycopg2
 from rapidfuzz import fuzz
+
+# The repository root, so the organizer registry imports when this runs as a script.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from python.pipeline import organizers  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Config
@@ -336,7 +341,8 @@ def main():
         event_code = f"{code}-2025-2026"
         tourn_code = f"{code}-V2-M-EPEE-2025-2026"
 
-        organizer_raw = "EVF" if ttype in ("PEW", "MEW", "MSW") else "SPWS"
+        # The registry's organizer (ADR-119 §2); it used to give MSW to EVF.
+        organizer_raw = organizers.organizer_of(event_code)
 
         lines += [
             f"-- ---- {sheet_name}: {human_name} ({loc}) ----",

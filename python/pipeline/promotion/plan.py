@@ -311,6 +311,7 @@ def plan_event(
     pzsz_event: int | None = None,
     pzsz_start_lists: Mapping[tuple[str, str], Any] | None = None,
     sources: Sequence[Mapping[str, Any]] | None = None,
+    taken: Iterable[Mapping[str, Any]] | None = None,
 ) -> Plan:
     """Plan the CERT run of `event_code` on PROD. `prod` is read only; `url_event`
     is the URL the CERT run ingested; `created` its created fencers; `pzsz_event`
@@ -318,17 +319,23 @@ def plan_event(
     `pzsz_start_lists` the stored versions it used, read from CERT by their
     hashes (ADR-112 §4). The plan never fetches pzszerm.pl. `sources` are the
     result slots and URLs an international run read (ADR-113): the plan reads
-    exactly them, and a blank PROD slot takes the run's URL."""
-    from python.pipeline import ingest_cli
+    exactly them, and a blank PROD slot takes the run's URL. `taken` are the
+    run's rounds: a bracket from an engine without a finished signal is taken
+    exactly when the run took the same content (ADR-119 §1)."""
+    from python.pipeline import ingest_cli, organizers
+    from python.pipeline.international_sources import TakenByRun
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
-    from python.pipeline.stages import _is_international_intake, _organizer_for_event
 
     recorder = RecordingConnector(prod, created)
     event = recorder.find_event_by_code(event_code)
     if event is None:
         raise PlanRefused("precondition", f"Event {event_code} does not exist on PROD.")
-    international = _is_international_intake(event)
+    try:
+        route = organizers.require_route(event_code)
+    except ValueError as e:
+        raise PlanRefused("precondition", str(e)) from e
+    international = route == organizers.INTERNATIONAL
     if international and sources is None:
         sources = [{"slot": "url_event", "url": url_event}] if url_event else []
     # ADR-086's fill-blank tier: PROD takes the CERT run's URL when it has none.
@@ -339,7 +346,7 @@ def plan_event(
             f"PROD's url_event for {event_code} is {current}; the CERT run ingested {url_event}. "
             "Correct the URL on one of them and re-run the CERT ingestion.",
         )
-    if _organizer_for_event(event) == "PZSz":
+    if route == organizers.ROSTER:
         # PROD's row may lack id_pzsz_event (it reached PROD's calendar only
         # with ADR-087's amendment of 2026-10-06): the plan then takes the CERT
         # run's. Only the plan's copy of the event takes the id; nothing is
@@ -384,6 +391,7 @@ def plan_event(
         post_run=False,
         pzsz_start_lists=pzsz_start_lists,
         sources=sources if international else None,
+        finality=TakenByRun(taken or []) if international else None,
     )
     listings = log.listings()
     end = event.get("dt_end") or event.get("dt_start")

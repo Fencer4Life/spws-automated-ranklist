@@ -1,4 +1,6 @@
 name: Promote Event to PROD
+# ADR-119 §5 (gap G6): the Actions list names each run's event, and a dry run.
+run-name: Promote · ${{ inputs.event_code }}${{ inputs.dry_run && ' · dry run' || '' }}
 
 # ADR-108 §6: promote replays the latest verified CERT run of one event on PROD.
 # It copies nothing from CERT. `resolve` finds the run and its commit (read only);

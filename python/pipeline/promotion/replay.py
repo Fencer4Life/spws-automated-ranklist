@@ -360,6 +360,7 @@ def replay(
             created=master.get("created") or [],
             pzsz_event=listings.get("pzsz_event"),
             pzsz_start_lists=pzsz_lists,
+            taken=listings.get("rounds") or [],
             **extra,
         )
     except PlanRefused as e:

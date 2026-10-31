@@ -107,7 +107,11 @@ if [ -f "$RTM" ]; then
   # 158 since 2026-10-18: +FR-159 (equal totals share a place; ADR-115).
   # 159 since 2026-10-25: +FR-160 (results links are set by a person; calendar
   #   automation writes only the organizer's letter; ADR-117).
-  EXPECTED=160
+  # 160 since 2026-10-31: +FR-161 (event details written on CERT reach PROD,
+  #   one contract for every calendar scraper; ADR-118).
+  # 161 since 2026-10-31: +FR-162 (only final brackets, one engine contract, one
+  #   organizer registry; ADR-119 release 1).
+  EXPECTED=161
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

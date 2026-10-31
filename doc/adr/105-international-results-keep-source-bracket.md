@@ -164,3 +164,7 @@ FTL states the weapon once (the bracket name) and the EVF results API has no tit
 **Evidence.** Run read-only over every source CERT stores, the rule changes nothing: 220 of 220 competitions in the 11 stored Engarde tournaments, 16 of 16 in the stored d'Artagnan index, and 38 of 54 FencingTime XML files agree; the other 16 XML files have an empty `AltName` and keep `Arme`. Madrid 2026 is the only disagreement found.
 
 **Tests.** `python/tests/test_weapon_title_wins.py` (WPN.TITLE.01–07).
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §2) — §5.2 reads the organizer registry
+
+`stages._is_international_intake` asks whether the event's organizer is on the international route of `python/pipeline/organizers.py`, and `_organizer_for_event` returns the registry's organizer: IMEW is EVF's and IMSW the FIE's, no longer UNKNOWN. The international events are the same: PEW, MEW, IMEW, MSW, IMSW and PSW. Tests: ROUTE.ORG.01.

@@ -5,7 +5,7 @@
 **Amends:** [ADR-108](108-promote-replays-verified-cert-ingestion.md) (§2: `ingest` runs the refresh from PROD itself; §9 and the amendment of 2026-10-06: EVF and FIE events are on the route, nothing refuses them), [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md) (§6: "EVF moves onto it in the next plan" is done, and FIE with it; Open items, out of scope: the daily close now covers PZSz, EVF and FIE events), [ADR-105](105-international-results-keep-source-bracket.md) (§5.6: the international flow exists and the URL path ingests an international event; §5.3 and §5.4 hold on the new path), [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (the paths that store an international row: the EVF sync no longer stores one), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (§5: the EVF results pass compares and reports, it writes no result), [ADR-028](028-evf-calendar-results-import.md) (Results Scraping and `evf-results-import`: EVF's results are read by `ingest` when an event has no result URL; the sync imports none)
 **Relates to:** [ADR-025](025-event-centric-ingestion-telegram.md) (the `ingest` and `promote` commands, whose texts now name every organizer), [ADR-066](066-min-participants-ingestion-gate.md) (the minimum of 1 that marks a bracket with no fencer of ours), [ADR-072](072-cdc-recompute-debounce.md) (the refresh and the ingest share `cert-write`), [ADR-077](077-event-lifecycle-season-skeletons.md) (the lifecycle the daily close applies), [ADR-112](112-pzsz-start-lists-are-stored-inputs.md) (the stored PZSz inputs, unchanged), [ADR-008](008-psw-msw-international-pool.md) (MSW and PSW are the FIE's)
 **Source:** `doc/plans/ingest-and-promote-every-organizer-2026-10-17.html`
-**Amended by:** [ADR-117](117-results-links-admin-only.md) (§7, D2 A: the refresh `ingest` runs first also copies the event's results links from PROD's Admin).
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (§7, D2 A: the refresh `ingest` runs first also copies the event's results links from PROD's Admin); [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) (§1, §2, §6: the organizer registry chooses the driver and the daily close's events; a bracket is final by its engine).
 
 ## Context
 
@@ -135,3 +135,11 @@ The runner stays, for LOCAL work and for repairing a past-season event at the us
 ## Amendment (2026-10-25, [ADR-117](117-results-links-admin-only.md) D2 A) — the refresh also copies the event's results links
 
 The refresh of §7 now copies, in an apply with an event and after the registrations, the event's five results slots from PROD to CERT through `fn_copy_event_result_links`: PROD's links replace CERT's, compacted, and a PROD without a link leaves CERT's alone. A plain `ingest <code>` therefore reads the link an administrator set in PROD's Admin. The refresh report gains a `results links:` line. Tests: CALURL.20, pgTAP CALURL.22.
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §1–§2) — the registry chooses the driver, and a bracket is final by its engine
+
+- **§1.** The driver is chosen by the organizer's route class in `python/pipeline/organizers.py`, not by a type test in `stages`. An event of no registered family, or of a family that is not ingested, is refused by name before anything is read or recorded (`organizers.require_route`).
+- **§2.** "Its brackets are final once published" no longer holds. Engarde says when a competition is completed; for an engine that says nothing, the live ingest takes a bracket once its content has been unchanged for 60 minutes or the end date has passed, and promote's plan takes what the CERT run took.
+- **§6.** The daily close selects with the registry's one expression (`organizers.route_code_regex`); the families are the same ten.
+
+Tests: ROUTE.ORG.01–13, FINAL.01–08, ENGINE.01–03.

@@ -21,12 +21,17 @@ The file is auto-loaded by `supabase db reset` via config.toml sql_paths glob.
 
 import argparse
 import re
+import sys
 from datetime import date, datetime
 from pathlib import Path
 
 import openpyxl
 import psycopg2
 from rapidfuzz import fuzz
+
+# The repository root, so the organizer registry imports when this runs as a script.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from python.pipeline import organizers  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Config
@@ -67,8 +72,9 @@ SHEET_MAP = {
 
 MATCH_THRESHOLD = 70  # minimum fuzzy score to accept a match
 
-# Reuse domestic/international distinction from the live pipeline (ADR-020)
-DOMESTIC_TYPES = {"PPW", "MPW"}
+# Reuse domestic/international distinction from the live pipeline (ADR-020),
+# which reads the organizer registry (ADR-119 §2).
+DOMESTIC_TYPES = organizers.domestic_types()
 
 # Age category → minimum age (youngest boundary) — mirrors pipeline.py
 _CATEGORY_MIN_AGE = {
@@ -424,7 +430,8 @@ def main():
         loc_raw = data["location"]
         loc_sql = sq(loc_raw) if loc_raw else "NULL"
 
-        organizer_raw = "EVF" if ttype in ("PEW", "MEW") else "SPWS"
+        # The registry's organizer (ADR-119 §2); it used to give PSW to SPWS.
+        organizer_raw = organizers.organizer_of(event_code)
         loc_comment = f" ({loc})" if loc and loc != "?" else ""
 
         header_lines = [

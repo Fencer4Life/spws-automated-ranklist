@@ -208,6 +208,7 @@ class _PlanFn:
         pzsz_event=None,
         pzsz_start_lists=None,
         sources=None,
+        taken=None,
     ):
         self.calls.append(
             {
@@ -218,6 +219,7 @@ class _PlanFn:
                 "pzsz_event": pzsz_event,
                 "pzsz_start_lists": pzsz_start_lists,
                 "sources": sources,
+                "taken": taken,
             }
         )
         if isinstance(self.plan, Exception):
@@ -382,6 +384,8 @@ class TestPlanCompare:
                 "pzsz_event": None,
                 "pzsz_start_lists": None,
                 "sources": None,
+                # ADR-119 §1: what the run took, for engines without a signal.
+                "taken": _run()["jsonb_listings"]["rounds"],
             }
         ]
 
@@ -395,6 +399,14 @@ class TestPlanCompare:
         listings = {**_listings(A="h1", B="h2"), "sources": sources}
         _, parts = _replay(cert=FakeSide("cert", run=_run(jsonb_listings=listings)))
         assert parts["plan_fn"].calls[0]["sources"] == sources
+
+    def test_the_plan_takes_what_the_cert_run_took(self):
+        """FINAL.04e (ADR-119 §1) — replay hands the plan the run's rounds, so a
+        bracket from an engine without a finished signal is taken on PROD
+        exactly when the CERT run took the same content."""
+        listings = _listings(A="h1", B="h2")
+        _, parts = _replay(cert=FakeSide("cert", run=_run(jsonb_listings=listings)))
+        assert parts["plan_fn"].calls[0]["taken"] == listings["rounds"]
 
     def test_the_plan_gets_the_pzsz_event_the_cert_run_read(self):
         """PZSZ.ROUTE.02 — a PZSz run records the PZSz event whose start lists

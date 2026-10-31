@@ -23,9 +23,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from python.matcher.fuzzy_match import MatchResult, find_best_match, parse_scraped_name
+from python.pipeline import organizers as _organizers
 
-DOMESTIC_TYPES = {"PPW", "MPW"}
-INTERNATIONAL_TYPES = {"PEW", "MEW", "MSW"}
+# Both from the organizer registry (ADR-119 §2); until 31 Oct 2026 the
+# international set lacked PSW.
+DOMESTIC_TYPES = _organizers.domestic_types()
+INTERNATIONAL_TYPES = set(_organizers.international_types())
 
 # Age category → minimum age (youngest boundary). Retained for any caller
 # that needs the band's lower edge; the *estimate* now uses the midpoint.

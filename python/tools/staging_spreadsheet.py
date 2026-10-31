@@ -26,6 +26,7 @@ from __future__ import annotations
 # only, since it's the only one that touches odfpy.
 # pyright: reportGeneralTypeIssues=false
 import argparse
+import sys
 from pathlib import Path
 
 from odf import config
@@ -33,6 +34,10 @@ from odf.opendocument import OpenDocumentSpreadsheet
 from odf.style import Style, TableCellProperties, TextProperties
 from odf.table import DatabaseRange, DatabaseRanges, Table, TableCell, TableRow
 from odf.text import P
+
+# The repository root, so the organizer registry imports when this runs as a script.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from python.pipeline import organizers  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Column definitions
@@ -918,9 +923,7 @@ def _apply_event_overrides(events: list[dict], overrides_dir: Path) -> int:
             "event_prefix": prefix,
             "name": vals.get("name", prefix),
             "season_code": season_code,
-            "organizer": "SPWS"
-            if prefix in ("GPW", "MPW") or prefix.startswith(("GP", "PPW"))
-            else "EVF",
+            "organizer": _organizer_code(prefix),
             "location": "",
             "country": "",
             "dt_start": "",
@@ -1140,12 +1143,13 @@ def _currency_to_db(currency: str) -> str | None:
 
 
 def _organizer_code(event_prefix: str) -> str:
-    """Derive organizer from event prefix."""
-    if event_prefix.startswith(("PEW", "MEW")):
-        return "EVF"
-    if event_prefix.startswith(("PSW", "MSW", "PS", "IMSW")):
-        return "FIE"
-    return "SPWS"
+    """The organizer the registry names for an event prefix (ADR-119 §2).
+
+    It used to guess by prefix and filed IMEW, the PZSz families and anything
+    unknown under SPWS; a family the registry does not know now reads UNKNOWN,
+    whose missing tbl_organizer row stops the generated INSERT.
+    """
+    return organizers.organizer_of(event_prefix)
 
 
 def _sq(s: str | None) -> str:

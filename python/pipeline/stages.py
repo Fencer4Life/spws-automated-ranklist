@@ -46,26 +46,12 @@ _VCAT_TOKEN = re.compile(r"v[0-4]", re.IGNORECASE)
 
 
 def _organizer_for_event(event: dict | None) -> str:
-    """Derive organizer (SPWS/EVF/FIE) from event txt_code prefix.
+    """The organizer of the event's code family (SPWS, PZSz, EVF, FIE, ...),
+    from the organizer registry (ADR-119 §2), or "UNKNOWN". The IMEW, IMSW,
+    PSW and DMEW codes have their true organizer, as PROD stores it."""
+    from python.pipeline.organizers import organizer_of
 
-    PPW/MPW = SPWS domestic.
-    PEW/MEW = EVF.
-    MSW     = FIE veterans circuit.
-
-    Returns "UNKNOWN" if event missing or code prefix unrecognized.
-    """
-    if event is None:
-        return "UNKNOWN"
-    code = (event.get("txt_code") or "").upper()
-    if code.startswith(("PPW", "MPW")):
-        return "SPWS"
-    if code.startswith(("PEW", "MEW")):
-        return "EVF"
-    if code.startswith("MSW"):
-        return "FIE"
-    if code.startswith(("PPS", "MPS")):
-        return "PZSz"
-    return "UNKNOWN"
+    return organizer_of((event or {}).get("txt_code"))
 
 
 def _is_domestic(event: dict | None) -> bool:
@@ -76,17 +62,12 @@ def _is_domestic(event: dict | None) -> bool:
 
 
 def _is_international_intake(event: dict | None) -> bool:
-    """True if the event's type is international (PEW, MEW, MSW, PSW).
+    """True if the event is on the international route: EVF's and the FIE's
+    events (PEW, MEW, IMEW, MSW, IMSW, PSW) and any federation registered as
+    international (ADR-105 §5.2, ADR-119 §2)."""
+    from python.pipeline.organizers import INTERNATIONAL, route_of
 
-    Keyed on the tournament type rather than the organizer prefix, so the
-    IMEW/IMSW alternation codes, which `_organizer_for_event` reports as
-    UNKNOWN, are international too (ADR-105 §5.2).
-    """
-    from python.pipeline.db_connector import derive_tourn_type_from_event_code
-    from python.pipeline.joined_brackets import INTERNATIONAL_TYPES
-
-    code = (event or {}).get("txt_code")
-    return bool(code) and derive_tourn_type_from_event_code(code) in INTERNATIONAL_TYPES
+    return route_of((event or {}).get("txt_code")) == INTERNATIONAL
 
 
 def _admit_international_rows(
@@ -686,8 +667,8 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
     # ADR-038: skip international/EXCLUDED events. Derive organizer from the
     # admin-canonical event code (available at construction; ctx.event isn't
     # resolved until S2, keeping S0 source-agnostic).
-    # Keyed on the type as well: the IMEW/IMSW alternation codes report an
-    # UNKNOWN organizer, and Stage 0 then created every participant (ADR-105).
+    # Keyed on the route as well, so a federation registered as international
+    # is skipped too (ADR-105, ADR-119 §2).
     event_ref = {"txt_code": ctx.event_code}
     if _organizer_for_event(event_ref) in ("EVF", "FIE") or _is_international_intake(event_ref):
         return
@@ -1080,8 +1061,8 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
     triples = _admit_international_rows(ctx, rows, fencer_db, db)
     rows = [(cat, r) for cat, r, _a in triples]
 
-    # V0/EVF check FIRST — halt before fetching fencer DB. Keyed on the type,
-    # so the IMEW/IMSW alternation codes are checked too.
+    # V0/EVF check FIRST — halt before fetching fencer DB. Keyed on the route
+    # too, so every international organizer's events are checked.
     if organizer in ("EVF", "FIE") or _is_international_intake(ctx.event):
         # Both predicates are False for a None event.
         assert ctx.event is not None

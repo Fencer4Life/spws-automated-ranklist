@@ -1,0 +1,533 @@
+<meta charset="utf-8">
+<title>Partial ingest, partial promote, and a results sync that runs itself</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingest · Promote · GitHub Actions · Brainstorm plan, rev 3</p>
+  <h1>Partial ingest, partial promote, and a results sync that runs itself</h1>
+  <p class="dek">A multi-day event is ingested <b>as many times as it takes</b>, each time only the tournaments the organiser has finished; every ingest that is clean is promoted to PROD; a failed ingest <b>writes nothing</b>; and a scheduled workflow does the whole cycle <b>without a Telegram command</b>, saying something only when something changed or broke.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot" style="background:var(--good)"></span>Signed 31 Oct: D1–D12 all A ("All as recommended"), D13 A, D14 A · release 1 built and documented</span>
+    <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 4: R1 A signed 31 Oct ("R1 A, release it") · releasing release 1</span>
+    <span class="pill warn"><span class="dot"></span>9 gaps found in today's route · 4 more found while building (G10–G13)</span>
+    <span class="pill"><span class="dot"></span>rev 3: USA Fencing, the French veterans federation and any later organizer</span>
+    <span class="pill">read-only research · CERT runs 1–8 · PROD read 31 Oct</span>
+    <span class="pill">main <code>82b6ba78</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · The one-sentence design</p>
+    <h2>Partial in what it reads, whole in what it writes, and one route end to end</h2>
+    <p>Every cycle reads the event's sources and takes <b>only the listings the engine says are final</b>. What it writes is the <b>whole event as of now</b>, in one transaction, on CERT exactly as promote already does on PROD (<code>fn_promote_event_apply</code>, ADR-108 §6). So CERT always equals exactly one recorded run, PROD always equals one earlier or the same run, a failure leaves either environment untouched, and "partial promote" is simply promote replaying the newest run while the event is still IN_PROGRESS. The sync workflow runs that cycle every hour for every event in its window and reports by exception.</p>
+    <div class="note accent">
+      <p class="lede">Why not tournament-by-tournament writes</p>
+      <p>Today's invariant — one result fingerprint per event, the same SQL function on CERT and PROD, promote refusing anything it cannot reproduce — is what makes PROD trustworthy (ADR-108 §1, §6). Per-tournament bookkeeping would need per-tournament fingerprints, per-tournament promote records and a second comparison path. The event-level write already gives the outcome you asked for: run 1 stores the two finished listings, run 2 stores four, run 3 stores six, and each promote carries exactly that. That is D1.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Fourteen decisions, each with a recommendation — twelve signed, two new</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Decided in chat, 31 Oct</th><th>Where it lands</th></tr></thead>
+      <tbody>
+        <tr><td>"Adding the ingest link to CERT is the enabler."</td><td>The results link is the switch: an event enters the sync the moment its link is on CERT, set in CERT's Admin or in PROD's Admin and copied by the cycle's refresh (ADR-117 D2 A). §04.1 step 1, G7.</td></tr>
+        <tr><td>"No results link? The workflow skips the whole run."</td><td>Not selected, not refreshed, not read, not mentioned. The daily "no link" reminder I had planned is dropped. §04.1 step 1.</td></tr>
+        <tr><td>"So the ingest is not failing a million times on the same error."</td><td>D8 A: a failure pauses the event until a person resumes it; you hear it once. §04.8.</td></tr>
+        <tr><td>"I plan to add new organizers and calendar scrapers, like USA Fencing or the French veterans federation. Make sure this mechanism is ready."</td><td>D13 and D14 below, G9, §04.10: the route reads organizers from one registry instead of code prefixes, and every results engine answers one finality question. Adding an organizer touches the registry and its own scraper, never the sync.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Signed 31 Oct 2026: D1–D12 all A ("All as recommended"); D13 A, D14 A</p>
+      <p>The build follows §07: release 1 (final means final), release 2 (one apply on both sides), release 3 (the sync). Each is preflighted, pushed to main from the integration checkout, and verified on CERT and PROD before the next starts.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>D1</b></td><td>The unit of a partial ingest.</td><td><b>A</b> The listing is the unit of <em>reading</em> (only final ones are taken); the event is the unit of <em>writing</em> (one atomic replace per run), as today.<br><b>B</b> Tournament-level incremental writes with per-tournament run records and promotes.</td><td><span class="chip never">A</span> Same outcome, one invariant, one comparison path (§00).</td></tr>
+        <tr><td><b>D2</b></td><td>What "final" means per engine (§04.2).</td><td><b>A</b> The engine's own signal where it has one — FTL's <i>Finished</i> row, Engarde's <code>etat="completed"</code> — both feeding the one lifecycle rule; elsewhere a bracket is final once published (today's rule).<br><b>B</b> A, and for the engines without a signal (4fence, Ophardt, d'Artagnan, EVF's API) a bracket is taken only when the same content was already seen at least 60 minutes earlier (a sightings table on CERT).<br><b>C</b> The 60-minute rule for every engine.</td><td><span class="chip never">B</span> Ophardt transmits live; a half-finished ranking would reach PROD for an hour, then be replaced. B costs one cycle of delay on those four engines only.</td></tr>
+        <tr><td><b>D3</b></td><td>The CERT ingest becomes atomic (§04.3).</td><td><b>A</b> Ingest on CERT = plan with the recording connector + <code>fn_promote_event_apply</code> on CERT, the very function promote uses on PROD. A failure writes nothing.<br><b>B</b> Keep live per-listing writes; on failure restore CERT from the previous run's recorded rows.<br><b>C</b> Keep as is: the gate blocks promote, an operator re-ingests.</td><td><span class="chip never">A</span> "Rolls back failed ingests" becomes PostgreSQL's job; ingest and promote stop being two code paths (G2).</td></tr>
+        <tr><td><b>D4</b></td><td>Replace semantics on PROD (G1).</td><td><b>A</b> The apply deletes the event's tournaments the plan does not name (with their results) before the fingerprint check — the mirror of CERT's wipe.<br><b>B</b> Refuse as today (fingerprint mismatch, no way forward but hand surgery).</td><td><span class="chip never">A</span> A listing the organiser renames or a keep-rule owner that changes must not strand PROD.</td></tr>
+        <tr><td><b>D5</b></td><td>The shape of the automation (§04.5).</td><td><b>A</b> <code>ingest-event.yml</code> gains a <code>sync</code> mode and calls <code>promote.yml</code> as a reusable workflow after a clean run; a new scheduled <code>results-sync.yml</code> runs that for every in-window event, one at a time.<br><b>B</b> A scheduler that probes read-only and dispatches the two workflows separately (reads every listing twice).<br><b>C</b> One new job in one new lane for both environments.</td><td><span class="chip never">A</span> Lanes stay as ADR-108 §9 set them; one Actions run shows one event's whole cycle under one title.</td></tr>
+        <tr><td><b>D6</b></td><td>Cadence and window.</td><td><b>A</b> Hourly, 09:13–22:13 Warsaw in both DST states (cron <code>13 8-20 * * *</code> UTC); an event is in window from its first day to the day after its end date.<br><b>B</b> Five runs a day, as the PZSz start-list capture.<br><b>C</b> Every 30 minutes.</td><td><span class="chip never">A</span> GitHub starts crons 0.2–3.5 h late (measured on the PZSz capture); hourly is the honest minimum for a Saturday's finals. A cycle with no event in window exits in seconds.</td></tr>
+        <tr><td><b>D7</b></td><td>What Telegram gets from a sync cycle (§04.6).</td><td><b>A</b> One short line per event, only when something changed or failed; the full staging report stays in Storage and is linked.<br><b>B</b> The full staging report every time, as a manual <code>ingest</code> sends today.<br><b>C</b> Failures only.</td><td><span class="chip never">A</span> Thirteen cycles a day must not mean thirteen reports; a manual <code>ingest</code> keeps sending the full report.</td></tr>
+        <tr><td><b>D8</b></td><td>After a failed cycle (your words: "not failing a million times on the same error").</td><td><b>A</b> The failure <b>pauses the event</b>: the sync skips it, silently, until a person resumes it with <code>sync &lt;code&gt;</code>, or with a manual <code>ingest &lt;code&gt;</code> that finishes. The one message you get carries the reason and the resume command; the day's first cycle names every paused event while the pause lasts.<br><b>B</b> Pause, but lift it on its own when the source input changes (a new listing finished).<br><b>C</b> Retry hourly and say it once per 6 hours.</td><td><span class="chip never">A</span> A source outage and a data refusal look the same to a machine; a person decides. B would retry a data refusal on every new listing. The PPS1s runs 2–4 failed three times on one cause; A says it once and waits.</td></tr>
+        <tr><td><b>D9</b></td><td>Telegram commands.</td><td><b>A</b> <code>ingest</code> and <code>promote</code> stay exactly as they are; a new <code>sync [&lt;code&gt;]</code> runs one cycle now, for one event or every in-window event.<br><b>B</b> Replace <code>ingest</code> with the sync.</td><td><span class="chip never">A</span> The manual route is the override and the rehearsal tool.</td></tr>
+        <tr><td><b>D10</b></td><td>Where a promote's outcome is recorded (G4).</td><td><b>A</b> On the CERT run row, a new <code>jsonb_promote</code> written by promote through the Management API: applied / skipped / refused, the reason, the fingerprint, the Actions run URL, the time.<br><b>B</b> Infer it from fingerprints and the GitHub run list.</td><td><span class="chip never">A</span> The run row becomes the one ledger the sync, the daily close and Admin read.</td></tr>
+        <tr><td><b>D11</b></td><td>The record.</td><td><b>A</b> A new ADR-119, amending ADR-108 (§4, §6, §7, §9), ADR-113 (§7), ADR-077 (§1) and ADR-072 (the drains).<br><b>B</b> Amendments to those four only.</td><td><span class="chip never">A</span> Four ADRs change and a workflow is born; a reader needs one place.</td></tr>
+        <tr><td><b>D12</b></td><td>What the public Actions log may show (G8).</td><td><b>A</b> No fencer name and no birth year in any log line: a refusal ends the job with its kind and listing, no traceback; the names stay in Telegram and in the Storage report, as they are today.<br><b>B</b> Leave the traceback as it is.</td><td><span class="chip never">A</span> The repository is public, so its run logs are. Today a <code>ListingRefused</code> traceback names a member and a birth-year range in them.</td></tr>
+        <tr><td><b>D13</b></td><td><b>New.</b> Where the route learns an organizer (G9, §04.10).</td><td><b>A</b> One registry, <code>python/pipeline/organizers.py</code>: per organizer code (as in <code>tbl_organizer</code>) its route class — <i>domestic</i> (the keep-rule and the birth-year split: SPWS), <i>roster admission</i> (a stored start list decides: PZSz), <i>international</i> (one tournament per source bracket, admitted by identity: EVF, FIE and every federation to come) — its code families with their tournament types, and its admission flag (FIE-like or not). Everything that reads a prefix today reads the registry; a test pins today's twelve prefixes exactly and asserts every organizer row on LOCAL is registered. A new organizer is one entry.<br><b>B</b> The same registry as a database table, editable in Admin.<br><b>C</b> Leave the prefixes in the five places and add each organizer by hand.</td><td><span class="chip never">A</span> A new organizer needs a release anyway, for its calendar scraper; a module is tested like code, and B adds schema and a cache for no operational gain.</td></tr>
+        <tr><td><b>D14</b></td><td><b>New.</b> The engine contract (G5, §04.2, §04.10).</td><td><b>A</b> Every results reader — FTL, Engarde, 4fence, Ophardt, d'Artagnan, EVF's API, and any new one — answers one question per bracket: <code>finished</code> is <code>True</code> or <code>False</code> from the engine's own signal, or <code>None</code> when the engine has none, which the 60-minute rule (D2 B) handles. The lifecycle, the daily close and the sync read only that flag. A new engine is one reader, one fixture and one line in the handbook's engine table.<br><b>B</b> Keep FTL's flag and Engarde's skip text as the two special cases and add each engine's case where it appears.</td><td><span class="chip never">A</span> G3 is what B produces: a signal that exists and is ignored. USA Fencing publishes on FencingTimeLive, so it has the signal already; the French federation's engine is assessed with its scraper plan and plugs in either way.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What already works, verified</p>
+    <h2>The route is already partial for FTL events, and a second promote has already run</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fact</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>A domestic ingest keeps only listings whose FTL schedule row says <i>Finished</i>; the rest are skipped as "not final" and keep the event IN_PROGRESS.</td><td><code>ingest_cli.py:833–841</code>, <code>lifecycle.py:34–44</code>; ADR-108 §7</td></tr>
+        <tr><td>Each ingest with <code>--replace</code> wipes the event's results and tournaments and re-ingests every final listing: run N+1 holds everything run N held plus what finished since.</td><td><code>ingest_cli.py:843–845</code>, <code>_wipe_event_live</code> at <code>:512</code></td></tr>
+        <tr><td>The run is recorded before the first write and closed FINISHED or FAILED with every listing's hash; a second run of the same event abandons an older one still RUNNING.</td><td><code>20261003000014_ingest_run.sql:239–313</code>, <code>run_record.py</code></td></tr>
+        <tr><td>Promote replays the latest CERT run on PROD in one transaction and accepts PROD holding an <em>earlier FINISHED run's</em> result as the prior — "day 2 of a multi-day event".</td><td><code>replay.py:144–166</code>; <code>20261003000017_promote_apply.sql:145–158</code>; ADR-108 §6.3</td></tr>
+        <tr><td><b>It has happened once.</b> PPS1e-2026-2027: run 7 (25 Oct 14:01, 1 listing final, 1 not) was promoted at 14:06/14:08; run 8 (26 Oct 05:56, both listings) replaced it. CERT and PROD both hold <code>fecaf3f0174b</code>, run 8's fingerprint, COMPLETED.</td><td>CERT <code>tbl_ingest_run</code> rows 7–8; <code>promote.yml</code> runs 40200704056, 40200812256; PROD read 31 Oct</td></tr>
+        <tr><td>Every active-season event with results holds the same fingerprint on CERT and PROD (PPW1, MSW, PPS1f, PPS1e).</td><td>CERT and PROD, read 31 Oct</td></tr>
+        <tr><td>The daily close completes an event the morning after its end date when every listing is final, nothing was published since the CERT run, and both environments hold its result.</td><td><code>close.py:77–133</code>, <code>event-close.yml</code>; ADR-108 §7, ADR-113 §6</td></tr>
+        <tr><td>Writers are serialised: refresh + CERT ingest + CERT drain in <code>cert-write</code>; promote + PROD drain + daily close in <code>prod-write</code>; every member keeps every waiting job.</td><td><code>test_workflow_lanes.py</code> WFLANE.01; ADR-108 §9</td></tr>
+        <tr><td>The operator's route is two Telegram commands per cycle: <code>ingest &lt;code&gt;</code>, then <code>promote &lt;code&gt;</code>.</td><td><code>gas_telegram_bot.js:103–106, 183–216</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · What is missing</p>
+    <h2>Seven gaps, each with its evidence</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">G1</span> PROD never loses a tournament the new run no longer has</p>
+      <p>CERT's replace wipes the whole event first. PROD's apply knows six operations — insert a fencer, move a birth year, find or create a tournament, ingest a tournament's results (which deletes that tournament's old rows, <code>20261003000001_…:453</code>), set a URL, set the sources — and no delete (<code>20261003000017_promote_apply.sql:186–248</code>). A listing renamed by the organiser, or a category whose keep-rule owner changed between runs, leaves a tournament on PROD that CERT does not have; the fingerprint check then refuses the promote (<code>:250–254</code>), correctly, and nothing but hand surgery can move it on. D4.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">G2</span> A CERT ingest wipes before it reads, and commits listing by listing</p>
+      <p>The wipe at <code>ingest_cli.py:843</code> runs before the per-listing fetches at <code>:861</code> and the per-listing commits at <code>:907</code>; the international and PZSz drivers do the same (<code>:1016</code>, <code>:1260</code>). FTL dropping on listing 5 of 14, or a <code>ListingRefused</code> there, leaves CERT holding four listings of a FAILED run. Promote is blocked (the latest run has no fingerprint), the daily close says "ingest CERT again" — but CERT itself is neither the old state nor the new one until someone acts. D3.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">G3</span> An Engarde final still running does not keep the event IN_PROGRESS</p>
+      <p>Engarde publishes a state per competition and the reader skips anything not <code>completed</code> (<code>engarde.py:176, 182–183</code>) — a finality signal as good as FTL's. But the lifecycle counts a listing as not final only when its skip reason equals FTL's text (<code>lifecycle.py:24, 65</code>), so the day after the end date the event is COMPLETED with a final still running. Proven this morning as error 7 of <code>doc/plans/ingestion-source-errors-findings-2026-10-31.html</code>. D2.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G4</span> Nothing records a promote's outcome</p>
+      <p>The gate writes its outcome on the run row only through a writable transport (<code>gate.py:577</code>); promote reads CERT read-only (<code>replay.py:663</code>), so even that is skipped there. The daily close infers the state from fingerprints. An automation that must not repeat a refusal every hour needs to know a promote was tried and why it refused. D10.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G5</span> Four engines have no finality signal</p>
+      <p>4fence (<code>f=clafinale</code>), Ophardt (a results page with a "Last transmission" stamp, <code>ophardt.py:230–239</code>), d'Artagnan (<code>&lt;id&gt;-rankings.html</code>) and EVF's API are read as "final once published" (<code>international_sources.py:107–108, 127</code>). Ophardt transmits live. Nothing in the code can tell a provisional ranking from a final one. D2.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G6</span> Every ingest and promote run has the same title</p>
+      <p>Neither workflow sets <code>run-name</code>: the Actions list reads "Ingest event (NEW pipeline, from URL)" twenty times (run list, 31 Oct). With a cycle an hour, the list must say the event and what the cycle did — the rule you set this morning for CI and Release (NAMING.01–07).</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">G7</span> The results link is the switch (decided by you, 31 Oct)</p>
+      <p>A person sets the link (ADR-117). On PROD today none of the next fourteen events has one, Madrid included. Under your decision an event without a link is not in the sync at all: not selected, not refreshed, not read, not mentioned. The moment its link is on CERT — set in CERT's Admin, or in PROD's Admin and copied by the cycle's refresh (ADR-117 D2 A) — the next cycle takes it. The select step reads the link on both environments, so a link set on PROD enables the event before any refresh has copied it.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">G9</span> The route learns the organizer from the event code, in five places</p>
+      <p><code>stages._organizer_for_event</code> maps PPW/MPW, PEW/MEW, MSW and PPS/MPS to SPWS, EVF, FIE and PZSz and answers UNKNOWN otherwise (<code>stages.py:48–76</code>); <code>_is_international_intake</code> asks <code>derive_tourn_type_from_event_code</code>, a twelve-prefix table that returns None for anything else, which the fail-closed minimum-participants gate turns into a refusal (<code>db_connector.py:904–926</code>, <code>stages.py:78–90</code>); the international driver picks FIE or EVF from <code>FIE_TYPES</code> (<code>ingest_cli.py:1020</code>, <code>international_admission.py:55, 148</code>); the daily close selects by <code>ROUTE_CODES</code>, a regex of the same prefixes (<code>close.py:39, 215</code>); and <code>tbl_organizer</code> has four rows (EVF, FIE, PZSz, SPWS) and no column saying how an organizer's events are ingested. A USA Fencing event today would be refused before its first read, whatever its link. D13.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G8</span> A refusal's traceback is public</p>
+      <p>The repository is public, so every Actions log is. The ingest's own log lines name listings, categories, tournament ids, N and fault kinds, never a fencer (<code>ingest_cli.py:377–381</code>; the PPS1e log of 26 Oct shows "EPEE/F: 76 starters, stored 2026-10-23…" and nothing more about them). But a <code>ListingRefused</code> ends the job with a traceback, and its message names the fencer and the birth years that decided it (<code>core/contract.py:65–76</code>; the runbook's first check is "the last line of the traceback"). D12.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03b · Found while building release 1 (rev 4, 31 Oct)</p>
+    <h2>One decision, signed A; four more gaps, all fixed in release 1</h2>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>R1</b></td><td>D2 B says a bracket from an engine without a signal is taken only once the same content was seen 60 minutes earlier. The build adds one clause: <b>once the event's end date has passed (today in Warsaw is later), such a bracket is taken at once.</b></td><td><b>A</b> Keep the clause, as built.<br><b>B</b> Remove it: a bracket first seen after the event still waits an hour.</td><td><span class="chip never">A</span> After the end date nothing is still being fenced, and the daily close already takes every published bracket then. Without the clause, the usual "ingest the day after" would skip every 4fence, Ophardt, d'Artagnan and EVF-API bracket on its first run and need a second ingest an hour later.<br><b>Signed A</b> by the user in chat on 31 Oct 2026: "R1 A, release it".</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">G10</span> The post-commit hooks and the PEW rename exception guessed by prefix</p>
+      <p><code>commit_lifecycle._organizer_code</code> read IMEW, DMEW, IMSW, PSW and the PZSz families as UNKNOWN, so the EVF parity report skipped IMEW and DMEW events. <code>url_validation._is_pew</code> treated any code starting with PEW as a PEW event. <b>Fixed:</b> both ask the registry (ROUTE.ORG.07, ROUTE.ORG.08).</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G11</span> The matcher kept its own type sets</p>
+      <p><code>matcher/pipeline.py</code> held the domestic types by hand and an international set without PSW. <b>Fixed:</b> both come from the registry (ROUTE.ORG.06, ROUTE.ORG.09).</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G12</span> Five historical seed tools wrote organizers by hand</p>
+      <p>They filed MSW and PSW under EVF, PSW under SPWS, and IMEW and the PZSz families under SPWS. A type cannot name its organizer once a later federation reuses a type, so the tools now ask the registry with the event code. The 2023/24 Grand Prix (GP1–GP8, all stored under SPWS) is registered as a closed family, never ingested. VFC-2023-2024 (an event row with no bracket) and the old "PS" sheet (the EVF Criterium, stored as PEW10, ADR-008) stay unregistered and read UNKNOWN, which stops their insert or skips them with a warning. No stored data changes: closed seasons are never re-ingested (ROUTE.ORG.11, ROUTE.ORG.06).</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G13</span> The domestic fencer scan missed every 2023/24 Grand Prix</p>
+      <p><code>sort_and_clean_fencers.py</code> looked for "GPW", a code no file holds, so a fencer whose only domestic start was a GP round would have been dropped from ADR-019's domestic seed. <b>Fixed:</b> a result is domestic when the registry files its family under SPWS (ROUTE.ORG.12).</p>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">Also</span> Fixed in the same release</p>
+      <ul>
+        <li>The daily close re-read an event of several sources in another order than the ingest, so its schedule hash could differ (FINAL.07).</li>
+        <li>The RTM's coverage summary was one Covered row short since FR-161, and the FR roster check had no line for FR-161; both corrected with FR-162.</li>
+        <li>The test-and-traceability handbook page called 1026 the current pgTAP total (it is 1570); the event-status page said the lifecycle rule runs after domestic ingestion only (it runs after every ingestion); the type table's docstring called PSW a school championship.</li>
+        <li>Nothing pinned that the sightings stay out of the PROD seed; FINAL.08 does now.</li>
+      </ul>
+      <p class="lede" style="margin-top:12px">Checked and kept apart, with their reasons on the handbook page</p>
+      <ul>
+        <li>ADR-066's minimum routing sends PSW to the domestic minimum (pgTAP SS26.TYPE.02); it is a scoring setting, not a registry fact (ROUTE.ORG.10).</li>
+        <li>The types EVF's results API scores (PEW, MEW, MSW) are EVF's calendar (ADR-028).</li>
+        <li>The calendar card's <code>panelType</code> still colours a tile by code prefix and shows an unknown code in the PPW style (ADR-087 §8, ADR-089 §5). It is UI, so it gets its own before-and-after sheet with the first new organizer's calendar plan.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · The design</p>
+    <h2>One cycle, the same for every organiser and engine</h2>
+
+    <h3>04.1 · The cycle</h3>
+    <ol class="steps">
+      <li><b>Select</b> (read-only, CERT): active-season events on the route (<code>close.ROUTE_CODES</code>), not COMPLETED or CANCELLED, first day ≤ today ≤ end date + 1 in Warsaw, decided by the moment the cron was due (the PZSz capture's rule, <code>pzsz_start_list_store.select_window_events</code>). Only an event with a results link on CERT or on PROD (or, for an EVF or FIE event, an EVF results id) is selected: the link is the switch (G7). A paused event (D8) is skipped. The repository variable <code>RESULTS_SYNC=off</code> ends every scheduled cycle here; a manual run ignores it.</li>
+      <li><b>Read</b>: the schedule and every listing, through the same readers the ingest uses; <code>split_final</code> by the engine's signal (D2); the 60-minute sightings rule for engines without one (D2 B); the schedule hash and every listing hash exactly as the run record computes them.</li>
+      <li><b>Compare</b> with the latest FINISHED CERT run's <code>jsonb_listings</code>. Same hashes and PROD holds that run's fingerprint → <b>nothing to do, no write, no message</b>. Same hashes, PROD behind → go to step 8. Different → continue. A PZSz round's start-list hash is part of the comparison, so a new stored version of a start list alone starts a cycle (§04.9).</li>
+      <li><b>Refresh</b> CERT from PROD with <code>--auto</code>, as <code>ingest-event.yml</code> does (ADR-113 §7). A renumbering stops here, reported once (D8).</li>
+      <li><b>Open the run</b> (<code>fn_ingest_run_open</code>): inputs and roster snapshot, after the refresh.</li>
+      <li><b>Plan</b>: the same driver (<code>_ingest_event_rounds</code>) with the <code>RecordingConnector</code> against CERT, fed the listings read in step 2. New fencers take ids reserved from CERT's sequence (§04.3).</li>
+      <li><b>Apply</b> on CERT: <code>fn_promote_event_apply</code> with no expected fingerprint (it returns the one it produced), the prior = the previous FINISHED run's fingerprint, and the replace semantics of D4. One call, one transaction. Then CERT's recompute queue is drained in the same job (<code>drain_recompute_queue</code>, debounce 0, as promote drains PROD), the run closes FINISHED with the fingerprint, the gate runs and records its outcome. A raise anywhere: the run closes FAILED, CERT is exactly what it was, and the sync pauses the event (D8).</li>
+      <li><b>Promote</b>: <code>promote.yml</code> as a reusable workflow, unchanged in substance — gate, plan on PROD, source check, dry apply, apply, drain, compare — plus the ledger write (D10).</li>
+      <li><b>Report</b>: one line per event (D7, §04.6). Then the seed export, as today.</li>
+    </ol>
+    <p>Steps 2–7 are the CERT ingest; the manual <code>ingest &lt;code&gt;</code> runs exactly them, without step 3's silence and with the full report. Steps 8–9 are promote. The sync is the cycle in a loop.</p>
+
+    <h3>04.2 · Final, per engine (D2)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Engine</th><th>Signal today</th><th>Under this plan</th></tr></thead>
+      <tbody>
+        <tr><td><b>FTL</b> (SPWS, PZSz, some EVF)</td><td>The schedule row says <i>Finished</i>; a listing on two days needs both rows.</td><td>Unchanged. The one rule.</td></tr>
+        <tr><td><b>Engarde</b></td><td><code>etat="completed"</code> keeps; anything else skipped as "not completed (&lt;state&gt;)" — and ignored by the lifecycle (G3).</td><td>The skip carries the lifecycle's NOT_FINAL reason; <code>read_schedule</code> gives each competition <code>finished</code> from its state. An event with a running final stays IN_PROGRESS on CERT, PROD and in the daily close.</td></tr>
+        <tr><td><b>4fence</b></td><td>Final classification page, taken once it parses.</td><td rowspan="4">Taken only when the same listing hash was first seen ≥ 60 min ago (<code>tbl_listing_sighting</code>: event, listing key, sha256, first seen, last seen; CERT only, service role, never in the seed). A listing seen for the first time is skipped as "not final (seen once)" and keeps the event IN_PROGRESS, so the daily close waits for it too.</td></tr>
+        <tr><td><b>Ophardt</b></td><td>Results page; "Last transmission" gives only the date.</td></tr>
+        <tr><td><b>d'Artagnan</b></td><td><code>&lt;id&gt;-rankings.html</code>, taken once it parses.</td></tr>
+        <tr><td><b>EVF results API</b></td><td>Taken once EVF has rows.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>As built (rev 4).</b> The waiting skip reads "not final (no finished signal; its content is not yet 60 minutes old)" and Engarde's "not final (Engarde shows it &lt;state&gt;)"; the lifecycle, the run record and the daily close read the prefix "not final", so FTL's recorded text stays unchanged. Once the event's end date has passed, a bracket without a signal is taken at once (R1, §03b). Promote's plan never reads or writes a sighting: it takes exactly the brackets, with exactly the content, the CERT run took. The daily close takes everything published; a bracket the last CERT run left waiting changes the schedule hash, so the close reports "ingest CERT and promote again" instead of closing. The sightings never enter the PROD seed (FINAL.08).</p>
+    <p>What I could not verify today: what Ophardt, 4fence and d'Artagnan serve <em>during</em> a competition, because no event on those engines is live. The 60-minute rule is the honest answer to not knowing; the build step for D2 includes watching the first live event on each engine and recording what the page shows mid-tournament.</p>
+
+    <h3>04.3 · The CERT ingest becomes plan + apply (D3)</h3>
+    <ul>
+      <li><b>Reading is separated from committing.</b> <code>_ingest_event_rounds</code> is split: a reader that returns the schedule, the final listings with their parses and hashes, and the skips (one per driver: domestic, PZSz, international); and the committer that runs the flow per listing. Plan mode and the live ingest both take pre-read listings, the way plan mode already takes the PZSz start lists and the international sources.</li>
+      <li><b>Ids on CERT.</b> <code>RecordingConnector.insert_fencer</code> takes an id from the CERT run's <code>created</code> list on PROD; on CERT there is no earlier run, so the connector asks the target for the next sequence value (a new connector method <code>reserve_fencer_id</code>, one <code>nextval</code>; sequences do not roll back, which is harmless) and the apply inserts with that id, as it does on PROD.</li>
+      <li><b><code>fn_promote_event_apply</code> changes in three places</b>, each with pgTAP first: (a) <code>p_expected_fingerprint</code> NULL means "compute and return"; (b) D4's delete of tournaments the plan does not name, before the fingerprint; (c) the operation list gains <code>set_event_source_url</code> for slots 2–5 where the migration of 17 Oct put it. The function's name stays: it is the one apply of a planned ingestion, whatever the target.</li>
+      <li><b>The run record</b> opens after the refresh and before the plan (its roster snapshot must see the refresh), and closes FINISHED after the apply with the fingerprint the apply returned, or FAILED with the error and the listings it read — complete, because everything was read first.</li>
+      <li><b>After the apply</b>, in the ingest job: the CERT drain to empty, the gate with a writable transport (its outcome lands on the row), the staging report to Storage, the joining check, Telegram per D7. The <code>--replace</code> flag becomes implicit for a recorded run and is refused with <code>--record-run</code> (nothing to wipe: the apply replaces).</li>
+      <li><b>The 8-second limit</b> of the service-role API holds on CERT as on PROD (ADR-108 §6, decision B). PPW1 fit at 58 writes; a direct connection stays the way out for an event that does not, and the plan names it in the refusal.</li>
+      <li><b>LOCAL</b> takes the same path with <code>--record-run local</code>; the Phase 5 runner is untouched.</li>
+    </ul>
+
+    <h3>04.4 · The promote ledger (D10)</h3>
+    <p><code>tbl_ingest_run.jsonb_promote</code>: <code>{ts, outcome: applied|skipped|refused, fingerprint, reason, run_url}</code>, written by <code>replay()</code> at the end of every attempt through a second Management-API transport that is not read-only, used for this one write; a failure to write it is logged, never a promote failure. <code>fn_ingest_run_promote(id, jsonb)</code>, service role. The daily close reads it to say "promote refused at 14:08: &lt;reason&gt;" instead of "PROD does not hold the CERT run's result".</p>
+
+    <h3>04.5 · The workflows (D5, D6, D9)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Workflow</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>ingest-event.yml</code></td><td>Gains <code>on: workflow_call</code> beside <code>workflow_dispatch</code>, an input <code>mode</code> (<code>manual</code>, the default: today's behaviour; <code>sync</code>: silent when nothing changed, one-line report, promote after), and <code>run-name: Ingest · &lt;code&gt; · &lt;mode&gt;</code>. A job <code>promote</code> after <code>ingest-event</code>, <code>if: inputs.mode == 'sync' &amp;&amp; the run FINISHED and the gate passed</code>, <code>uses: ./.github/workflows/promote.yml</code> with <code>secrets: inherit</code>. The ingest job keeps <code>cert-write</code>; the promote job's lane comes from the called workflow.</td></tr>
+        <tr><td><code>promote.yml</code></td><td>Gains <code>on: workflow_call</code>, <code>run-name: Promote · &lt;code&gt;</code>, the ledger write. Nothing else.</td></tr>
+        <tr><td><code>results-sync.yml</code> (new)</td><td>Cron <code>13 8-20 * * *</code> (D6) and <code>workflow_dispatch</code> with an optional <code>event_code</code>. Job <code>select</code> (read-only SQL through the Management API, no lane) outputs the in-window events as a JSON matrix; job <code>cycle</code> runs the matrix with <code>max-parallel: 1</code>, each element <code>uses: ./.github/workflows/ingest-event.yml</code> with <code>mode: sync</code>. <code>run-name: Results sync · &lt;n&gt; event(s) in window</code>. A manual run with a code syncs that one event, in window or not, and lifts its pause first (D8). The repository variable <code>RESULTS_SYNC=off</code> makes every scheduled cycle exit at the select step; a manual run still works.</td></tr>
+        <tr><td>Lanes</td><td>Unchanged membership; the new workflow holds none itself. WFLANE.01 is extended: a reusable workflow's job keeps <code>queue: max</code>. <b>To verify in the first build step</b>, on a branch, with a dry dispatch: that GitHub honours the called jobs' concurrency groups. If it does not, D5 B (the scheduler dispatches the two workflows by <code>workflow_dispatch</code>, which the GITHUB_TOKEN may do) is the fallback, with the double read it costs.</td></tr>
+        <tr><td>Telegram (D9)</td><td><code>sync [&lt;code&gt;]</code> in <code>scripts/gas_telegram_bot.js</code> dispatches <code>results-sync.yml</code>; <code>/help</code> explains the three. You paste the file into Apps Script, as for ADR-113.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>04.6 · What Telegram says (D7)</h3>
+    <pre class="trace">✅ PPW2-2026-2027 · cycle 14:13 · CERT run 12 · promoted to PROD (41 writes)
+   new: Men's Epee V2 (18), Men's Epee V3 (11) · 5 listings not final · report: staging-reports/PPW2-2026-2027/full.md
+
+❌ PEW3ef-2026-2027 · cycle 17:13 · CERT run 15 FAILED, CERT unchanged (run 14 stands), PROD keeps run 14
+   ListingRefused [identity] Women's Foil V1: KOWALSKA Anna declared 1979, the bracket allows 1966–1975
+   PAUSED. Fix it, then send: sync PEW3ef-2026-2027
+
+⏸ PPS2e-2026-2027 · cycle 10:13 · nothing written
+   the PROD→CERT refresh needs the administrator (stopped_renumbering; 2 fencers)
+   PAUSED. Apply the refresh, then send: sync PPS2e-2026-2027
+
+☀ 09:13 · in window: PPW2-2026-2027 (syncing) · PEW3ef-2026-2027 (PAUSED since yesterday 17:13: identity, Women's Foil V1)</pre>
+    <p>A cycle that changes nothing says nothing. A failure is said once, and the event waits for you (D8). A manual <code>ingest</code> keeps today's full report.</p>
+
+    <h3>04.7 · Error handling, case by case</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Situation</th><th>CERT</th><th>PROD</th><th>Said, then</th></tr></thead>
+      <tbody>
+        <tr><td>A source is unreachable (FTL login, Engarde 500)</td><td>No run opened; unchanged</td><td>Unchanged</td><td>Once; the event pauses</td></tr>
+        <tr><td>A listing is refused (identity, joined bracket, PENDING row)</td><td>Run FAILED, nothing written</td><td>Unchanged</td><td>Once, with the fix; pauses</td></tr>
+        <tr><td>The apply's API call is cut off (8 s)</td><td>Rolled back, run FAILED</td><td>Unchanged</td><td>Once, naming the direct-connection way out; pauses</td></tr>
+        <tr><td>The apply's call ends without an answer</td><td>CERT is read again: if it holds the plan's fingerprint the run is FINISHED, else FAILED</td><td>Unchanged</td><td>Only if FAILED; then pauses</td></tr>
+        <tr><td>The refresh would renumber or leaves someone unpaired</td><td>Nothing written</td><td>Unchanged</td><td>Once; pauses until you apply the refresh and resume</td></tr>
+        <tr><td>The gate blocks (an estimated birth year, a score the engine does not reproduce…)</td><td>Run FINISHED, gate recorded</td><td>Unchanged; promote not attempted</td><td>Once, with the finding; pauses</td></tr>
+        <tr><td>Promote refused (source changed since the run, master-data diff, PROD holds a foreign result)</td><td>Ahead of PROD</td><td>Unchanged; ledger: refused + reason</td><td>Once, with the reason; pauses</td></tr>
+        <tr><td>No PZSz start list was ever stored</td><td>Nothing written</td><td>Unchanged</td><td>Once, with the saved-page <code>store</code> command; pauses</td></tr>
+        <tr><td>The organiser corrects a listing after a promote</td><td>Next cycle: new run</td><td>Next promote replaces; COMPLETED steps back to IN_PROGRESS for the write and forward by the rule</td><td>One line</td></tr>
+        <tr><td>A manual <code>ingest</code> runs during a sync cycle</td><td>The newer run abandons the older RUNNING one; the older apply refuses on the prior fingerprint</td><td>Unchanged</td><td>The manual run's report; a finished manual run lifts the event's pause</td></tr>
+        <tr><td>Nothing changed</td><td>Untouched</td><td>Untouched</td><td>Nothing</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>04.8 · How you are told, and how a broken event stops</h3>
+    <ul>
+      <li><b>Telegram, the admin chat</b> — every line of §04.6: a promote, a failure with its reason and the resume command, and the day's first cycle naming what is in window and what is paused. The daily close keeps its own messages after an end date, unchanged.</li>
+      <li><b>The Actions list</b> — each run titled by its event and mode (<code>Ingest · PPS2e-2026-2027 · sync</code>, <code>Promote · PPS2e-2026-2027</code>, <code>Results sync · 2 events in window</code>), red when a cycle failed, green when it changed nothing. No more twenty identical titles (G6).</li>
+      <li><b>The ledger on CERT</b> — the run row: <code>txt_status</code>, <code>txt_error</code>, <code>jsonb_gate</code>, <code>jsonb_promote</code> (D10); and <code>tbl_results_sync_event</code> (one row per event, service role, CERT only): <code>paused_at</code>, <code>paused_reason</code> (kind, listing, one sentence), <code>paused_by_run</code> (the Actions run URL), <code>last_cycle_at</code>, <code>last_verdict</code>. Admin can show it later; the daily close quotes it.</li>
+      <li><b>The pause</b> (D8) — any failed step of a cycle pauses the event. The select step skips a paused event, so nothing runs and nothing repeats. It is lifted by <code>sync &lt;code&gt;</code> (the manual dispatch of <code>results-sync.yml</code> with a code clears the pause before its cycle), or by a manual <code>ingest &lt;code&gt;</code> whose run finishes (the ingest job clears it on FINISHED). A pause is never lifted by time or by the organiser publishing more.</li>
+      <li><b>The switch</b> — the repository variable <code>RESULTS_SYNC</code>: set to <code>off</code>, every scheduled cycle exits at the select step with one log line and no message. For a day you want the machine quiet, without editing a workflow. A manual run ignores it.</li>
+      <li><b>What never notifies</b> — a cycle that changes nothing; an event without a results link (your decision); a paused event, after its first message, except in the morning line.</li>
+    </ul>
+
+    <h3>04.9 · PZSz start lists and birth years</h3>
+    <p>Managed, by the machinery you already signed, reused unchanged; the sync adds three explicit rules and stores nothing new about a person.</p>
+    <ul>
+      <li><b>Unchanged.</b> ADR-111: a PZSz row is stored only when surname, first name and the start list's birth year match exactly one fencer of ours; everything else is skipped, with no PENDING row, no new fencer, no changed year. ADR-112: the start lists are stored inputs on CERT, as printed name and <em>year</em> only (the date is validated, then dropped, ADR-078), insert-only, one version per content hash, service role, never in the seed and never in the repository. ADR-116: the capture workflow reads them with the browser engine five times a day, from D−4 to noon on the event's last day (K2 A).</li>
+      <li><b>In a cycle, the reader phase</b> is today's <code>_pzsz_start_lists_for_cert</code> (<code>ingest_cli.py:1098–1128</code>): one capture attempt over plain HTTP (on a gated day "not read from pzszerm.pl now", as on 26 Oct), then the newest stored version per weapon and gender. None ever stored → the cycle fails with nothing written, the message carries the saved-page <code>store</code> command, and the event pauses (§04.7).</li>
+      <li><b>The start-list hash is part of the compare.</b> Each round records <code>start_list_sha256</code> (<code>:1250</code>, <code>run_record.py:189–190</code>); promote already refuses a list that changed between the run and the promote (<code>replay.py:193–195</code>). The sync's step 3 compares it too, so a late entry or a corrected year stored by the 10:11 capture makes the 11:13 cycle re-ingest even when FTL's listing is unchanged. The admission then reads the new year: a namesake told apart differently is a different result, and promote replaces.</li>
+      <li><b>The CERT plan gets the lists the reader read</b>, exactly as promote's plan gets them by hash from CERT (<code>plan.py:342–368</code>, <code>replay.py:199–226</code>); neither fetches pzszerm.pl. Promote is unchanged, PROMO.REPLAY.29–31 stay green.</li>
+      <li><b>Timing.</b> The capture's last attempt is the run due before noon on the last day; the sync's cycles from 09:13 try the capture themselves until that window closes, then read the stored version. A list that appears only after noon is the fatal case ADR-112's red alarm already covers.</li>
+      <li><b>Nothing new about a person.</b> The sightings table (D2 B) holds listing keys and content hashes, and PZSz events use FTL, which has a finality signal, so it is never consulted for them. <code>tbl_results_sync_event</code> holds an event code, times, a reason and a URL. The run log prints counts and capture times ("EPEE/F: 76 starters, stored 2026-10-23…"). The one-line message names the listing and the counts. A refusal's fencer name goes to Telegram and the Storage report only (D12) — and a PZSz admission never refuses on identity, it skips.</li>
+    </ul>
+
+    <h3>04.10 · New organizers and new engines (D13, D14)</h3>
+    <p>Two registries, and nothing else on the route knows a name. The sync never learns an organizer at all: it selects every active-season event with a results link, asks the organizer registry which driver to run, and asks the engine contract which brackets are final.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Registry</th><th>What it holds</th><th>Who reads it</th></tr></thead>
+      <tbody>
+        <tr><td><code>organizers.py</code> (D13)</td><td>Per organizer code: route class (<i>domestic</i> · <i>roster admission</i> · <i>international</i>); code families → tournament type (today's twelve prefixes, pinned by test); admission flag (FIE-like: no PPW/MPW-start requirement under ADR-106's FIE amendment); the calendar scraper that owns its events (name only, for the handbook and the digest).</td><td><code>derive_tourn_type_from_event_code</code>, <code>_organizer_for_event</code>, <code>_is_international_intake</code>, <code>is_fie_type</code>, the daily close's selection (replacing <code>ROUTE_CODES</code>), the sync's select, the international driver's organizer label.</td></tr>
+        <tr><td>The engine table (D14)</td><td>Per results engine: how brackets are listed, how <code>finished</code> is answered (signal, or none → the 60-minute rule), the fixture that proves it. Lives in the handbook; enforced by the readers' shared return shape and a test over every reader.</td><td><code>international_sources.read_brackets</code> / <code>read_schedule</code>, <code>lifecycle.split_final</code>, the daily close, the sync.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Adding an organizer, after this plan</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Needed?</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>A row in <code>tbl_organizer</code></td><td><span class="chip fill">yes</span></td><td>As for PZSz (migration <code>20260903000001</code>).</td></tr>
+        <tr><td>Its code family and tournament type, with the type's scoring configuration</td><td><span class="chip fill">yes, its own ADR</span></td><td>Which engine scores a USA Fencing veteran event, and at what multiplier, is governance (as PPS/MPS were: ADR-087, ADR-100, migrations <code>20260919000003–4</code>). A new type is an enum value and a configuration row; reusing an existing international type is a decision, not a default.</td></tr>
+        <tr><td>One entry in <code>organizers.py</code></td><td><span class="chip fill">yes</span></td><td>Route class, families, admission flag. The only code the route needs.</td></tr>
+        <tr><td>Its calendar scraper</td><td><span class="chip fill">yes, its own plan</span></td><td>Writes events through the ADR-118 contract (<code>fn_calendar_apply_fields</code>), allocates codes in its family, never sets the results link (ADR-117).</td></tr>
+        <tr><td>A results reader</td><td><span class="chip warn">only for a new engine</span></td><td>USA Fencing publishes on FencingTimeLive: nothing to write. A federation on an engine we do not read yet gets a reader, a fixture and its finality answer (D14).</td></tr>
+        <tr><td>Changes to the ingest drivers, the lifecycle, the daily close, promote, the sync, the pause, the ledger, the messages</td><td><span class="chip never">none</span></td><td>They read the two registries.</td></tr>
+        <tr><td>The calendar's organizer hue and registry chip</td><td><span class="chip warn">UI, separate</span></td><td><code>panelType()</code> switches on the code prefix (ADR-087 §8); the card is not this plan's.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The two cases you named.</b> <i>USA Fencing</i>: route class international (our fencers' rows only, by identity, ADR-105 and ADR-106), engine FTL with its <i>Finished</i> signal, so the sync treats a US veteran circuit event exactly as it treats PEW Madrid on FTL — once its organizer row, code family and type exist. <i>The French veterans federation</i>: the same route class; which engine it publishes on is established with its scraper plan, and if that engine has no finality signal the 60-minute rule applies with no further code. Neither needs the sync, the pause or the ledger to change.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Walk-throughs</p>
+    <h2>Four events, cycle by cycle</h2>
+    <h3>A two-day PPW on FTL (Saturday épée, Sunday foil and sabre)</h3>
+    <ul>
+      <li><b>Sat 13:13</b> — 3 of 12 listings Finished. Run 10 on CERT (3 listings, 6 brackets after the split); gate passed; promoted; PROD IN_PROGRESS. One line.</li>
+      <li><b>Sat 14:13–16:13</b> — nothing new. Silent.</li>
+      <li><b>Sat 17:13</b> — 6 Finished. Run 11 replaces run 10 on CERT; promote replaces on PROD with prior = run 10's fingerprint. One line: "new: …".</li>
+      <li><b>Sun 19:13</b> — all 12 Finished; the end date has not passed, so IN_PROGRESS. Run 13; promoted.</li>
+      <li><b>Mon 05:17</b> — the daily close: every listing final, schedule unchanged, both hold run 13 → COMPLETED on CERT and PROD.</li>
+      <li><b>Mon 10:13</b> — the sync's last cycle for this event (end date + 1): nothing changed; silent. Tuesday it is out of window.</li>
+    </ul>
+    <h3>A PZSz event whose page shows the JavaScript check</h3>
+    <ul>
+      <li>The start lists were captured in the D−4 window (ADR-116). Each cycle reads the FTL schedule; the PZSz admission reads the stored list. Works as today, hourly.</li>
+      <li>A late entry stored by the 10:11 capture changes the start-list hash; the 11:13 cycle re-ingests and promote replaces. If no list was ever stored, the cycle fails with nothing written, the message carries the saved-page <code>store</code> command (ADR-112 §6), and the event is paused until you resume it.</li>
+    </ul>
+    <h3>An Engarde event with a running final (Madrid)</h3>
+    <ul>
+      <li>Madrid has no results link today and is not synced (G7, one line a day). E1 of this morning's findings page stands: nothing ingests Madrid until the label errors are decided. That plan is separate and comes first for Madrid.</li>
+      <li>When a link is set on any Engarde event: competitions in state <code>completed</code> are taken; a running final is "not final" and keeps the event IN_PROGRESS on both environments and in the daily close (G3 fixed).</li>
+    </ul>
+    <h3>An organiser's correction on Tuesday, after COMPLETED</h3>
+    <ul>
+      <li>The event is out of the sync's window. The correction surfaces on the next manual <code>ingest</code> or when the EVF parity sweep reports a place difference (ADR-086). Not automated here: the window is the event's days plus one, on purpose. If you want corrections caught for longer, say so and D6 gets a tail (for example end date + 7, at one cycle a day).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Tests first</p>
+    <h2>RED before GREEN, every one of them</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>IDs</th><th>What they prove</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>FINAL.01–06</td><td>Engarde's non-completed state is NOT_FINAL to the lifecycle; <code>read_schedule</code> carries <code>finished</code> per engine; the daily close keeps an event with a running Engarde final; the sightings rule skips a first sighting and takes a 60-minute-old one; the sighting store upserts and never deletes; FTL unchanged.</td><td>pytest <code>test_results_finality.py</code>; pgTAP <code>119_listing_sighting.sql</code></td></tr>
+        <tr><td>CERTAPPLY.01–10</td><td>The reader returns listings and hashes without a write; the live ingest with <code>--record-run</code> opens the run after the refresh, plans with reserved ids, applies in one call, drains, gates, closes FINISHED with the apply's fingerprint; a refused listing closes FAILED with nothing written (the fixture event's rows are unchanged, asserted); an uncertain call re-reads CERT; <code>--replace</code> with <code>--record-run</code> is refused; <b>plan, then apply on CERT equals today's live run on PPW1 2026/27 on LOCAL</b>, fingerprint for fingerprint (the ADR-108 acceptance, re-run).</td><td>pytest <code>test_cert_apply.py</code>, <code>plan_check.py</code></td></tr>
+        <tr><td>APPLY.REPLACE.01–05</td><td>A tournament the plan does not name is deleted with its results; one the plan names is kept and replaced; NULL expected fingerprint returns the computed one; a dry run still raises; slots 2–5 unchanged.</td><td>pgTAP <code>120_promote_apply_replace.sql</code></td></tr>
+        <tr><td>LEDGER.01–04</td><td><code>fn_ingest_run_promote</code> writes outcome, reason, fingerprint, URL and time; <code>replay</code> records applied, skipped and refused; a ledger write failure never fails a promote; the daily close quotes the ledger's reason.</td><td>pgTAP <code>121_ingest_run_promote.sql</code>; pytest <code>test_promotion_replay.py</code>, <code>test_promotion_close.py</code></td></tr>
+        <tr><td>SYNC.SEL.01–05</td><td>The window by due moment, both DST states; COMPLETED and CANCELLED excluded; a manual code outside the window included; events without a link listed once on the day's first cycle; the matrix JSON shape.</td><td>pytest <code>test_results_sync.py</code></td></tr>
+        <tr><td>SYNC.CYCLE.01–07</td><td>No change → no run, no message; CERT ahead of PROD → promote only; changed → ingest then promote; a PZSz start-list hash change alone → ingest; the one-line message's content for each outcome; the manual mode keeps the full report; the promote job runs only after FINISHED + gate passed.</td><td>pytest <code>test_results_sync.py</code>, <code>test_workflow_lanes.py</code> (WFLANE.02: the three workflows' triggers, run-names and lanes)</td></tr>
+        <tr><td>SYNC.PAUSE.01–06</td><td>A FAILED run, a refresh stop, a gate block and a promote refusal each pause the event with a reason and the run URL; a paused event is not selected; <code>sync &lt;code&gt;</code> lifts the pause before its cycle; a manual <code>ingest</code> that finishes lifts it; the day's first cycle names every paused event; <code>RESULTS_SYNC=off</code> ends a scheduled cycle at the select step and a manual run ignores it.</td><td>pytest <code>test_results_sync.py</code>; pgTAP <code>122_results_sync_event.sql</code></td></tr>
+        <tr><td>SYNC.PZSZ.01–04</td><td>The reader hands the CERT plan the stored lists it read; the compare includes <code>start_list_sha256</code>; no stored list → FAILED, nothing written, the store command in the message, the event paused; promote's by-hash read is unchanged (PROMO.REPLAY.29–31 stay green).</td><td>pytest <code>test_results_sync.py</code>, <code>test_pzsz_routing.py</code></td></tr>
+        <tr><td>ROUTE.ORG.01–06</td><td>The registry pins today's twelve prefixes to their types, organizers and route classes exactly (a table-driven test, one row per prefix); every organizer row on LOCAL is registered; an event of an unregistered organizer is refused by name before any read; a fifth, fixture organizer (route class international, a code family of its own) is ingested on LOCAL through the international driver, planned and applied, with no change outside the registry; the daily close and the sync select by the registry, not a regex; <code>is_fie_type</code> and the driver's organizer label read the registry.</td><td>pytest <code>test_organizer_registry.py</code>, <code>test_route_international.py</code>, <code>test_promotion_close.py</code></td></tr>
+        <tr><td>ENGINE.01–03</td><td>Every reader returns <code>finished</code> as <code>True</code>, <code>False</code> or <code>None</code> for every bracket (asserted over all six readers' fixtures); <code>split_final</code> and the daily close treat <code>None</code> by the 60-minute rule and <code>False</code> as not final; the handbook's engine table lists exactly the readers the code has.</td><td>pytest <code>test_results_finality.py</code></td></tr>
+        <tr><td>LOG.PRIV.01–02</td><td>A <code>ListingRefused</code> ends the ingest job with its kind and listing on stdout and no traceback; the fencer's name and years reach Telegram and the Storage report only. The captured stdout of a PZSz fixture cycle contains no starter's name or year.</td><td>pytest <code>test_cert_apply.py</code>, <code>test_results_sync.py</code></td></tr>
+        <tr><td>GAS.SYNC.01</td><td><code>sync</code> dispatches <code>results-sync.yml</code> with or without a code; <code>/help</code> names the three commands.</td><td>pytest <code>test_gas_bot.py</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>Spec Appendix D's pgTAP total moves by the observed count, never an estimate. The gate for every release is <code>scripts/preflight.sh</code> exit 0, all 19 gates.</p>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Build, in three releases</p>
+    <h2>Each release stands on its own and is verified on PROD before the next</h2>
+    <ol class="steps">
+      <li><b>Release 1 — final means final, and the route reads registries (D2, D13, D14, G3, G5, G6, G9).</b> FINAL.*, ENGINE.*, ROUTE.ORG.*: the engine contract across the six readers, the sightings table, the organizer registry replacing the five prefix tables (behaviour pinned before the move), <code>run-name</code> on both workflows, the daily close reading the sightings and the registry. Docs-light: ADR-119 drafted (status Draft) with this section in force; handbook lifecycle page and workflow catalog. Verified by a manual <code>ingest</code> of the next FTL event and by the Engarde fixture (Madrid's competition list from this morning's scratch copy, nothing live).<br><b>Status, 31 Oct (rev 4): built test-first and documented; R1 signed A; released through the integration checkout.</b> RED seen for every new test before its code. On LOCAL: pytest 2402 passed, 14 skipped; pgTAP 1570 of 1570 in 120 files (pgTAP 119 the sightings store); Ruff, BasedPyright and postgrestools clean. The documentation went beyond "docs-light", because the audit touched more than the lifecycle: ADR-119 is recorded as <i>Proposed</i> (the renderer's status vocabulary; Accepted after release 3, as planned), with amendments to ADR-077, ADR-105, ADR-106, ADR-108 §7 and ADR-113 §1, §2 and §6; FR-162 and its acceptance IDs; spec Appendices C and D; a new handbook page, <a href="../handbook/reference/organizers-and-engines.html">Organizers and results engines</a>, pinned to the code by ROUTE.ORG.13 and ENGINE.03; and the lifecycle, ingestion, runbook, codebase-map, security-posture, workflow-catalog and traceability pages.</li>
+      <li><b>Release 2 — one apply on both sides (D3, D4, D10, G1, G2, G4).</b> The reader/committer split, reserved ids, the three apply changes, the ledger, the CERT drain and gate inside the ingest job. Rehearsed on LOCAL: <code>plan_check</code> on PPW1 2026/27 (plan + apply equals the live run), then a recorded LOCAL run of the next event, then <code>replay --prod-target local</code>. Released; then a manual <code>ingest</code> + <code>promote</code> of the next real event, watched in the foreground, CERT and PROD compared by fingerprint.</li>
+      <li><b>Release 3 — the sync (D5–D9, G7).</b> <code>workflow_call</code> on both workflows, <code>results-sync.yml</code>, the one-line messages, the pause and its resume, the <code>RESULTS_SYNC</code> switch, D12's log rule, the GAS <code>sync</code> command. Proved first on a branch with a dry dispatch (lanes honoured, matrix one at a time), then released, then left to run through the next in-window event with you watching the Actions list and Telegram. ADR-119 Accepted on your sign-off after that event.</li>
+    </ol>
+    <div class="note warn">
+      <p class="lede">What runs first for real</p>
+      <p>The next events with a results link will be whichever you set a link on. On PROD today none of the next fourteen has one, so the sync has nothing to do until you set one: the link is the switch (G7), and the next cron picks the event up. Madrid waits for E1 of the findings page regardless.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Documentation coherence gate</p>
+    <h2>Every current page says the new thing, in the present tense</h2>
+    <ul>
+      <li><b>ADR-119</b> (new, <code>new-adr</code> procedure, Markdown + generated twin): the cycle, the engine contract and finality per engine, the organizer registry and the three route classes, the atomic CERT apply, the ledger, the sync workflow, the message rule, the pause. <b>Amends</b> ADR-108 §4 (the run closes with the apply's fingerprint; <code>jsonb_promote</code>), §6 (replace semantics; the apply on CERT), §7 (final per engine; the sightings rule), §9 (the sync's place in the lanes); ADR-113 §7 (the refresh inside the cycle); ADR-077 §1 (who sets IN_PROGRESS: the apply, on both); ADR-072 (the CERT drain inside the ingest job, as promote drains PROD). <b>Relates to</b> ADR-117 (a person sets the link; the sync waits for it), ADR-112 (start lists unchanged), ADR-116 (the window-by-due-moment rule reused), ADR-086 (the parity sweep stays the late catch), ADR-118 (a new calendar scraper's contract), ADR-087 and ADR-100 (the PZSz precedent for adding an organizer; <code>_organizer_for_event</code> and <code>derive_tourn_type_from_event_code</code> now read the registry).</li>
+      <li><b>Handbook, new reference page</b> <code>reference/organizers-and-engines.html</code>: the organizer registry as a table, the three route classes, the engine table with each engine's finality answer and fixture, and the "adding an organizer" checklist of §04.10. The documentation map gains the page.</li>
+      <li><b>Specification</b>: Appendix C row for ADR-119 and the amended rows of 108, 113, 077, 072; Appendix D pgTAP totals. The spec is at 1574 of 1620 lines; this adds about 5.</li>
+      <li><b>RTM</b>: FR-162 "Partial ingest, atomic CERT apply and the results sync" with the IDs of §06; FR-86 and FR-156 rows amended.</li>
+      <li><b>Handbook</b>: <code>reference/workflow-catalog.html</code> (three workflows, run names, lanes), <code>operations/operator-runbooks.html</code> (the sync, the three commands, the pause and its resume, the <code>RESULTS_SYNC</code> switch, what each line means), <code>reference/event-status-lifecycle.html</code> (final per engine; the apply sets the status on CERT too), <code>subsystems/ingestion.html</code> (read, then plan, then apply), <code>reference/security-posture.html</code> (the two new tables and the functions, service role; no log line names a person).</li>
+      <li><b>Release skill</b> (both copies, byte-identical, NAMING.06): the sync's run names.</li>
+      <li><code>python scripts/check_docs.py</code>, <code>scripts/check-coherence.sh</code>, <code>scripts/refresh-graph.sh</code> and <code>python3 tools/docs-search/ingest.py</code> before every commit; archive superseded prose rather than append.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Boundaries</p>
+    <h2>Deliberately untouched</h2>
+    <ul>
+      <li>The Phase 5 runner and past-season repairs (ADR-113 §9).</li>
+      <li>Scoring, identity rules, the joined-bracket rules, the PZSz admission.</li>
+      <li>The label errors of <code>doc/plans/ingestion-source-errors-findings-2026-10-31.html</code> (E1, E2): a separate decision. This plan makes the <em>when</em> safe, not the <em>what</em>.</li>
+      <li>The calendar mirror, the EVF and PZSz syncs, the seed export's shape.</li>
+      <li>Closed seasons: never re-ingested, LOCAL included.</li>
+      <li>A new organizer's tournament type, its scoring configuration and its calendar hue: each organizer's own ADR, as ADR-087 and ADR-100 were for PZSz. This plan makes the route and the sync indifferent to who the organizer is; it does not decide how a foreign federation's event is scored.</li>
+      <li>The USA Fencing and French federation calendar scrapers themselves: their own plans, on the ADR-118 contract.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Not established</p>
+    <h2>What this page does not know</h2>
+    <ul>
+      <li>Whether GitHub honours job-level concurrency inside a called reusable workflow (release 3, step 1 verifies; D5 B is the fallback).</li>
+      <li>What Ophardt, 4fence and d'Artagnan serve while a competition runs (D2 B is the hedge; recorded at the first live event on each).</li>
+      <li>Whether the largest PPW of the season fits the API's 8-second apply (PPW1 did at 58 writes); the refusal names the direct-connection way out.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · partial ingest, partial promote, results sync · 31 Oct 2026 · rev 3 (rev 2: the link is the switch, a failure pauses the event, D12 the public log; rev 3: D13 the organizer registry, D14 the engine contract) · research read-only (RAG: ADR-108, 113, 077, 072, handbook lifecycle, runbooks, workflow catalog; graph: ingest_cli, promotion/*, promote_apply, ingest_run; CERT runs 1–8; PROD events read 31 Oct)</p>
+</div>

@@ -547,8 +547,16 @@ class Fetcher:
                     ftl_source_name=comp["title"],
                 )
             )
+        # A competition still running keeps its state, so the route knows the
+        # event is not over (ADR-119 §1).
         skipped = [
-            {"weapon": s["weapon"], "name": s["name"], "url": s["url"], "reason": s["reason"]}
+            {
+                "weapon": s["weapon"],
+                "name": s["name"],
+                "url": s["url"],
+                "reason": s["reason"],
+                **{k: s[k] for k in ("finished", "state") if k in s},
+            }
             for s in not_finals
         ]
         return results, skipped

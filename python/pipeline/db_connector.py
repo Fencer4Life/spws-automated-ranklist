@@ -130,6 +130,16 @@ class DbConnector:
         resp = self._sb.rpc("fn_pzsz_start_list_store", {"p_list": payload}).execute()
         return bool((resp.data or {}).get("stored"))
 
+    def record_listing_sighting(self, event_code: str, listing_key: str, sha256: str) -> str:
+        """Record that the ingest saw this content of a bracket now, for an
+        engine without a finished signal; returns when it was first seen
+        (ADR-119 §1, D2 B)."""
+        resp = self._sb.rpc(
+            "fn_listing_sighting_record",
+            {"p_event_code": event_code, "p_listing_key": listing_key, "p_sha256": sha256},
+        ).execute()
+        return str(resp.data)
+
     def fetch_pzsz_start_lists(self, id_pzsz_event: int) -> list[dict]:
         """Every stored start-list version of a PZSz event; the ingest keeps
         the newest per weapon and gender (ADR-112 §3)."""
@@ -902,73 +912,19 @@ def get_min_participants(db: DbConnector, id_season: int, tourn_type: str | None
 
 
 def derive_tourn_type_from_event_code(event_code: str) -> str | None:
-    """Map a `tbl_event.txt_code` to its tournament type for ADR-066 routing.
+    """The tournament type an event code stands for (ADR-046), or None.
 
-    Active season uses prefixes (per ADR-046 + spec):
-      - PPW{N} (domestic Puchar Polski Weteranów)            → PPW
-      - MPW (Mistrzostwa Polski Weteranów championship)      → MPW
-      - PSW (Mistrzostwa Szkolne Weteranów school champ)     → PSW
-      - PEW{N}{efs}* (international circuit)                  → PEW
-      - MEW (international individual championship)          → MEW
-      - IMEW (alternation pair with DMEW; individual)        → MEW
-      - DMEW (international team championship)               → MPW (team semantics)
-      - MSW (international SuperSenior championship)         → MSW
-      - IMSW (alternation pair; individual SuperSenior)      → MSW
-      - PPS{round}[W|M]{efs}* (PZSz Puchar Polski Seniorów)  → PPS
-      - MPS[W|M]{efs}* (PZSz Mistrzostwa Polski Seniorów, no round) → MPS
-
-    Returns None for codes that don't match any known prefix. As of the
-    2026-09-19/20 fail-closed rewrite (design step 6, ADR-100),
-    `get_min_participants` RAISES `UnconfiguredTournamentType` for a None
-    type rather than silently defaulting to threshold=1 — a stale claim this
-    docstring used to make.
+    Read from the organizer registry, `python/pipeline/organizers.py`, which
+    holds every code family and its type (ADR-119 §2): PPW{N} and MPW (SPWS),
+    PPS{N}[W|M]{efs} and MPS[W|M]{efs} (PZSz), PEW{N}{efs}, MEW, IMEW and DMEW
+    (EVF; DMEW, the team championship, has team semantics, MPW), MSW, IMSW and
+    PSW (FIE). A None type makes `get_min_participants` raise
+    `UnconfiguredTournamentType` rather than admit everything (fail closed,
+    2026-09-19, ADR-100).
     """
-    if not event_code:
-        return None
-    prefix = event_code.split("-", 1)[0]
-    if prefix.startswith("PPW") and prefix[3:].isdigit():
-        return "PPW"
-    if prefix == "MPW":
-        return "MPW"
-    if prefix == "PSW":
-        return "PSW"
-    if prefix.startswith("PEW"):
-        rest = prefix[3:]
-        head = ""
-        for ch in rest:
-            if ch.isdigit():
-                head += ch
-            else:
-                break
-        suffix = rest[len(head) :]
-        if head and (not suffix or all(c in "efs" for c in suffix.lower())):
-            return "PEW"
-    if prefix == "MEW" or prefix == "IMEW":
-        return "MEW"
-    if prefix == "DMEW":
-        return "MPW"
-    if prefix == "MSW" or prefix == "IMSW":
-        return "MSW"
-    if prefix.startswith("PPS"):
-        rest = prefix[3:]
-        head = ""
-        for ch in rest:
-            if ch.isdigit():
-                head += ch
-            else:
-                break
-        suffix = rest[len(head) :]
-        if suffix[:1] in ("W", "M"):
-            suffix = suffix[1:]
-        if head and (not suffix or all(c in "efs" for c in suffix.lower())):
-            return "PPS"
-    if prefix.startswith("MPS"):
-        rest = prefix[3:]
-        if rest[:1] in ("W", "M"):
-            rest = rest[1:]
-        if not rest or all(c in "efs" for c in rest.lower()):
-            return "MPS"
-    return None
+    from python.pipeline.organizers import tournament_type
+
+    return tournament_type(event_code)
 
 
 def gate_below_min_participants(

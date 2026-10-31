@@ -41,6 +41,7 @@ from python.matcher.fuzzy_match import (
     find_best_match,
     fold_diacritics,
 )
+from python.pipeline import organizers as _organizers
 
 STORED = "STORED"
 PENDING = "PENDING"
@@ -49,10 +50,10 @@ REJECTED = "REJECTED"
 _FEDERATION_FOLD = {"PL": "POL"}
 _FEDERATION = re.compile(r"[A-Z]{3}")
 
-# The FIE's tournament types: the World Championships (the IMSW code derives
-# to MSW) and the Veterans World Cup (ADR-008). Their entries come from the
+# The FIE's tournament types (MSW, the IMSW code included, and PSW, ADR-008),
+# from the organizer registry (ADR-119 §2). Their entries come from the
 # national federations, at most 4 per individual bracket.
-FIE_TYPES = frozenset({"MSW", "PSW"})
+FIE_TYPES = _organizers.fie_like_types()
 FIE_MAX_PER_FEDERATION = 4
 
 
@@ -146,8 +147,9 @@ def alias_matches(
 
 
 def is_fie_type(tournament_type: str | None) -> bool:
-    """True for the FIE's tournament types (MSW, PSW)."""
-    return (tournament_type or "").upper() in FIE_TYPES
+    """True for an FIE-like organizer's tournament type (MSW, PSW), read from
+    the organizer registry at the call (ADR-119 §2)."""
+    return _organizers.fie_like_type(tournament_type)
 
 
 def admit(
