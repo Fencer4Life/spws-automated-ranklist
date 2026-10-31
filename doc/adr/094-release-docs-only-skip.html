@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="13e317da990ae527594e4eb0a27f8cb7db8b25d95d76060d694a2e33dc49661e">
+<meta name="adr-source-sha256" content="ba18d5d904e5298f6c04f3cc652bdbf6c0555ce0fe5cc2b5a8c7dd36186f83af">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">235 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">259 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#amendment-2026-10-24-the-range-starts-at-the-commit-prod-last-deployed">Amendment (2026-10-24) — the range starts at the commit PROD last deployed</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#amendment-2026-10-24-the-range-starts-at-the-commit-prod-last-deployed">Amendment (2026-10-24) — the range starts at the commit PROD last deployed</a></li><li class="depth-2"><a href="#amendment-2026-10-31-agent-tooling-is-not-deployable">Amendment (2026-10-31) — agent tooling is not deployable</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>release.yml</code> runs on every completed <code>CI</code> run on <code>main</code> (<code>workflow_run</code>), and
 <code>build</code> had <code>if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'</code> — i.e. it ran whenever CI
@@ -63,11 +63,13 @@ needed none beyond <code>contents</code>, <code>pages</code>, <code>id-token</co
 <p>The script takes an event name and a base/head SHA pair (env-overridable,
 which is what makes it unit-testable without a GitHub Actions runner) and
 <code>git diff --name-only</code>s the range. A path is <strong>non-deployable</strong> only if it
-matches <code>^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)</code>
+matches <code>^(doc/|\.claude/|\.agents/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)</code>
 — this is a path-prefix test, not an extension test, so it catches both the
 Markdown source and the generated HTML twin (ADR-082) under <code>doc/</code>, without
 needing to enumerate extensions. The two root-level JSON files are the
-Release workflow's own tracking bookkeeping (§2026-09-13 amendment below).
+Release workflow's own tracking bookkeeping (§2026-09-13 amendment below);
+<code>.claude/</code> and <code>.agents/</code> are the agents' own skills and settings
+(§2026-10-31 amendment below).
 Everything else — including <code>frontend/public/*.html</code>
 (<code>tabela-punktacji.html</code>, <code>kalkulator-punktow.html</code>; ADR-085, ADR-092), which
 <em>is</em> built into the Pages artifact — counts as deployable. <code>deploy=false</code> only
@@ -221,6 +223,26 @@ tracking on every deploy; since ADR-011's amendment of 2026-10-25 the record
 and the CERT manifest are written by <code>scripts/commit-tracking.sh</code>, tested in
 <code>python/tests/test_release_tracking_commit.py</code>.</p>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-31-agent-tooling-is-not-deployable">Amendment (2026-10-31) — agent tooling is not deployable</h2>
+<p>Observed 31 Oct 2026: the change that taught both release skills to name CI
+and Release runs (main <code>32214f5c</code>) touched only <code>.claude/skills/release/</code>,
+<code>.agents/skills/release/</code> and <code>doc/</code>, yet the gate deployed it, because neither
+directory was in §3's pattern. The Release built, redeployed CERT and Pages and
+waited for a PROD approval, with nothing to ship. <code>.claude/</code> holds Claude's
+skills, settings and <code>launch.json</code>; <code>.agents/</code> holds Codex's skills. No
+workflow, build step or deployed artifact reads either (<code>.github/</code> and the
+frontend build were searched); the root <code>AGENTS.md</code> and <code>CLAUDE.md</code> were
+already exempt for the same reason.</p>
+<p><strong>Decision</strong> (signed 31 Oct 2026, N2 A in
+<code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code> §09):
+<code>non_deployable_pattern</code> gains <code>\.claude/</code> and <code>\.agents/</code>, as directory
+prefixes only, so a root file merely named like them (<code>.claude-notes.md</code>,
+<code>.agentsrc</code>) still deploys. Tests in <code>python/tests/test_release_docs_only_gate.py</code>
+(RTM NAMING.07): <code>test_agent_tooling_only_range_skips_deployment</code> (seen failing
+first) and <code>test_root_files_named_like_agent_tooling_still_deploy</code>. The change
+that landed this rule touched <code>scripts/release-gate.sh</code> and tests, so it deployed
+as it should.</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ul>
 <li>Whether the same gate should also suppress <code>evf-sync.yml</code>/<code>pzsz-sync.yml</code>'s
@@ -232,5 +254,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>13e317da990ae527594e4eb0a27f8cb7db8b25d95d76060d694a2e33dc49661e</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>ba18d5d904e5298f6c04f3cc652bdbf6c0555ce0fe5cc2b5a8c7dd36186f83af</code></footer>
 </div></body></html>

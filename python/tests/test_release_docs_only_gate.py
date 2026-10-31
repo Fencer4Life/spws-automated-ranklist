@@ -136,6 +136,35 @@ def test_release_tracking_files_only_range_skips_deployment(repo: Path, tmp_path
     assert deploy == "false", log
 
 
+def test_agent_tooling_only_range_skips_deployment(repo: Path, tmp_path: Path) -> None:
+    """NAMING.07 (plan doc/plans/branch-names-and-merge-messages-2026-10-31.html
+    §10, N2 A): .claude/ and .agents/ hold the agents' skills and settings,
+    which nothing builds or deploys. Before this, a change to them alone ran
+    the whole Release and asked for PROD approval (main 32214f5c, 31 Oct)."""
+    base = _git(repo, "rev-parse", "HEAD")
+    head = _commit(
+        repo,
+        [
+            ".claude/skills/release/SKILL.md",
+            ".claude/settings.json",
+            ".agents/skills/release/SKILL.md",
+            "doc/plans/branch-names-and-merge-messages-2026-10-31.html",
+        ],
+        "agent skills and their plan",
+    )
+    deploy, log = _run_gate(repo, tmp_path, **_range_env(base, head))
+    assert deploy == "false", log
+
+
+def test_root_files_named_like_agent_tooling_still_deploy(repo: Path, tmp_path: Path) -> None:
+    """NAMING.07: the exemption is the two directories, not every root name
+    that starts the same way."""
+    base = _git(repo, "rev-parse", "HEAD")
+    head = _commit(repo, [".claude-notes.md", ".agentsrc"], "lookalike root files")
+    deploy, log = _run_gate(repo, tmp_path, **_range_env(base, head))
+    assert deploy == "true", log
+
+
 def test_mixed_documentation_and_code_deploys(repo: Path, tmp_path: Path) -> None:
     """One deployable path in the range is enough to release."""
     base = _git(repo, "rev-parse", "HEAD")

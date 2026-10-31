@@ -60,11 +60,13 @@ needed none beyond `contents`, `pages`, `id-token`).
 The script takes an event name and a base/head SHA pair (env-overridable,
 which is what makes it unit-testable without a GitHub Actions runner) and
 `git diff --name-only`s the range. A path is **non-deployable** only if it
-matches `^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)`
+matches `^(doc/|\.claude/|\.agents/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)`
 — this is a path-prefix test, not an extension test, so it catches both the
 Markdown source and the generated HTML twin (ADR-082) under `doc/`, without
 needing to enumerate extensions. The two root-level JSON files are the
-Release workflow's own tracking bookkeeping (§2026-09-13 amendment below).
+Release workflow's own tracking bookkeeping (§2026-09-13 amendment below);
+`.claude/` and `.agents/` are the agents' own skills and settings
+(§2026-10-31 amendment below).
 Everything else — including `frontend/public/*.html`
 (`tabela-punktacji.html`, `kalkulator-punktow.html`; ADR-085, ADR-092), which
 *is* built into the Pages artifact — counts as deployable. `deploy=false` only
@@ -225,6 +227,28 @@ that `release.yml` reads no CI run history and holds no `actions: read`.
 tracking on every deploy; since ADR-011's amendment of 2026-10-25 the record
 and the CERT manifest are written by `scripts/commit-tracking.sh`, tested in
 `python/tests/test_release_tracking_commit.py`.
+
+## Amendment (2026-10-31) — agent tooling is not deployable
+
+Observed 31 Oct 2026: the change that taught both release skills to name CI
+and Release runs (main `32214f5c`) touched only `.claude/skills/release/`,
+`.agents/skills/release/` and `doc/`, yet the gate deployed it, because neither
+directory was in §3's pattern. The Release built, redeployed CERT and Pages and
+waited for a PROD approval, with nothing to ship. `.claude/` holds Claude's
+skills, settings and `launch.json`; `.agents/` holds Codex's skills. No
+workflow, build step or deployed artifact reads either (`.github/` and the
+frontend build were searched); the root `AGENTS.md` and `CLAUDE.md` were
+already exempt for the same reason.
+
+**Decision** (signed 31 Oct 2026, N2 A in
+`doc/plans/branch-names-and-merge-messages-2026-10-31.html` §09):
+`non_deployable_pattern` gains `\.claude/` and `\.agents/`, as directory
+prefixes only, so a root file merely named like them (`.claude-notes.md`,
+`.agentsrc`) still deploys. Tests in `python/tests/test_release_docs_only_gate.py`
+(RTM NAMING.07): `test_agent_tooling_only_range_skips_deployment` (seen failing
+first) and `test_root_files_named_like_agent_tooling_still_deploy`. The change
+that landed this rule touched `scripts/release-gate.sh` and tests, so it deployed
+as it should.
 
 ## Open items
 
