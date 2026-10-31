@@ -159,6 +159,13 @@ def _render_automation_gaps(m) -> str:
         gaps.append(
             f"- **{len(dropped)} pools-only round(s) dropped** (no DE — qualification phase)."
         )
+    notes = m["weapon_notes"]
+    if notes:
+        gaps.append(
+            f"- **{len(notes)} bracket(s) took the weapon their title names**, not the "
+            "one the source declared (WPN.TITLE): "
+            + "; ".join(f"{n['name']} — {n['note']}" for n in notes)
+        )
     dups = [c for c in m["created"] if c.get("near_miss") and (c["near_miss"].get("name"))]
     if dups:
         gaps.append(
@@ -651,7 +658,9 @@ STAGING_TEMPLATE = [
 ]
 
 
-def _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions=None) -> dict:
+def _assemble(
+    event_code, db, bracket_reports, schedule_skips, source_decisions=None, weapon_notes=None
+) -> dict:
     brackets = [_bracket_model(r) for r in bracket_reports]
 
     matches_flat = [(mm, b["label"]) for b in brackets for mm in b["matches"]]
@@ -733,6 +742,7 @@ def _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions=
         "pool_rounds": pool_rounds,
         "schedule_skips": schedule_skips or [],
         "source_decisions": source_decisions or [],
+        "weapon_notes": weapon_notes or [],
         "fencer_by_id": fencer_by_id,
         "null_by": null_by,
         "estimated_by": estimated_by,
@@ -749,10 +759,12 @@ def render_staging_md(
     stamp,
     source_decisions=None,
     extra_sections=None,
+    weapon_notes=None,
 ) -> str:
     """The report. `extra_sections` are lines rendered before the footer: an
-    EVF or FIE event's international section (ADR-113)."""
-    m = _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions)
+    EVF or FIE event's international section (ADR-113). `weapon_notes` are the
+    brackets whose title's weapon overrode the declared one (WPN.TITLE)."""
+    m = _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions, weapon_notes)
     lines = [f"# Automation report — {event_code}", "", f"_Generated {stamp} (UTC)_", ""]
     for heading, renderer in STAGING_TEMPLATE:
         if not heading and extra_sections:
@@ -799,6 +811,7 @@ class StagingFormatter(BasePlugin):
             stamp,
             source_decisions=ctx.get("_source_decisions"),
             extra_sections=ctx.get("_international_section"),
+            weapon_notes=ctx.get("_weapon_notes"),
         )
         write_for_event(
             event_code,

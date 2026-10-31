@@ -240,6 +240,8 @@ def ingest_xml_unified(
         if getattr(parsed, "is_pool_only_qualifier", False):
             print(f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)")
             continue
+        if parsed.weapon_note:
+            print(f"  {p_str}: weapon {parsed.weapon_note}")
 
         ctx, _ = session.run_iteration(parsed)
         print(
@@ -308,6 +310,8 @@ def ingest_via_flow(
         if getattr(parsed, "is_pool_only_qualifier", False):
             print(f"  {p_str}: SKIPPED (pool-only qualifier — no DE bracket)")
             continue
+        if parsed.weapon_note:
+            print(f"  {p_str}: weapon {parsed.weapon_note}")
 
         ctx = _run_parsed_through_flow(
             parsed, event_code, season_end_year, overrides, db, label=p_str
@@ -458,6 +462,14 @@ def _fire_staging_report(
     international = section_lines(event.get("txt_code") or "", pairs)
     if international:
         ctx.data["_international_section"] = international
+    # WPN.TITLE: every bracket whose title's weapon overrode the declared one.
+    weapon_notes = [
+        {"name": parsed.tournament_name or parsed.source_url or "?", "note": parsed.weapon_note}
+        for parsed, _ in pairs
+        if parsed is not None and getattr(parsed, "weapon_note", None)
+    ]
+    if weapon_notes:
+        ctx.data["_weapon_notes"] = weapon_notes
     if schedule_skips:
         ctx.data["_schedule_skips"] = schedule_skips
     if source_decisions:
@@ -987,6 +999,9 @@ def _ingest_international_event_rounds(
     print(f"discovered {len(recs)} bracket(s), {len(skipped)} skipped")
     for s in [*skipped, *unparseable]:
         print(f"  skip {s['name']!r}: {s['reason']}")
+    for r in recs:
+        if note := getattr(r["_base"], "weapon_note", None):
+            print(f"  weapon {r['name']!r}: {note}")
     if run is not None:
         run.add_sources(sources)
         run.add_schedule(kept, skipped)

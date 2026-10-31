@@ -278,3 +278,7 @@ Phase 5.5 closes the remaining gaps preventing CERT-only operation:
 - `evf_parity_sweep.py` wiring: build ParityChange list → call `parity_delta.render` → upload + Telegram.
 - GAS Telegram commands + `/help` rewrite.
 - Ops manual update + LOCAL/CERT smoke runs.
+
+## Amendment (2026-10-31) — FencingTime XML: the weapon `AltName` names wins over `Arme`
+
+A FencingTime XML file states its weapon twice, `Arme` and the typed `AltName` ("SZPADA MĘŻCZYZN v2"). When `AltName` names exactly one weapon, that weapon is the bracket's, and an override is reported (`ParsedTournament.weapon_note`, the ingest log and the staging report); otherwise `Arme` stands. `parse` and `parse_xml_metadata` in `python/scrapers/fencingtime_xml.py` both follow it. The rule, its reason (PEW Madrid 2026) and the other engines are in [ADR-105](105-international-results-keep-source-bracket.md), amendment of 2026-10-31. Tests: WPN.TITLE.05.

@@ -1,0 +1,284 @@
+<meta charset="utf-8">
+<title>Ingestion source errors — findings</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · every engine · Findings — no fixes</p>
+  <h1>Organiser mistakes reach the ranklist unchecked</h1>
+  <p class="dek">PEW Madrid's men's épée V2 is marked <b>sabre</b> in Engarde. Our pipeline would store KORONA Przemysław's épée result as sabre, or refuse the whole event. Behind that one case: <b>the pipeline's own label check never compares weapon, gender or category</b>, and international admission ignores gender and weapon. This page lists only what is proven, with the proof. <b>No fix is proposed here.</b></p>
+  <div class="meta">
+    <span class="pill danger"><span class="dot"></span>9 errors proven</span>
+    <span class="pill warn"><span class="dot"></span>10 engines and routes without a cross-check</span>
+    <span class="pill">read-only · LOCAL = PROD copy of 31 Oct</span>
+    <span class="pill">main <code>4f92e717</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Two decisions, about establishing errors, not fixing them</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>E1</b></td><td>Madrid today: may an ingest of <code>PEW2efs-2026-2027</code> run on CERT before the errors are decided?</td><td><b>A</b> No. Nothing ingests Madrid until you decide the fixes. Results wait on Engarde; the ranklist changes only on promote.<br><b>B</b> Yes, on today's code (error 3 happens).</td><td><span class="chip never">A</span> On today's code KORONA's result is stored as sabre, or the event is refused (§02, error 3).</td></tr>
+        <tr><td><b>E2</b></td><td>Establish whether the stored ranklist already holds errors like these?</td><td><b>A</b> A read-only audit: for every stored international event, re-read its source pages and compare every label each source states (§04) with the bracket we stored. For every stored bracket, all seasons, compare our own data: each fencer's gender, confirmed birth year under the organiser's age rule, and weapon history. Report on its own .html page. No writes; no re-ingest of closed seasons.<br><b>B</b> Stop at what this page proves.</td><td><span class="chip never">A</span> This page proves the checks are missing. Only an audit shows whether that has already cost the ranklist anything.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Errors, each proven</p>
+    <h2>Nine errors</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1</span> Madrid's source marks men's épée V2 as sabre</p>
+      <p>Engarde's competition list (<code>getCompeForDisplay</code>, read 31 Oct 09:28 CET) has <code>compe="epeemale2"</code>, title "EPEE MALE 2", <b><code>arme="s"</code></b>, <code>sexe="m"</code>. It is épée:</p>
+      <ul>
+        <li>Engarde numbers competitions in order: <code>5912E1</code> EPEE MALE 1 (<code>arme="e"</code>), <code>5912E3</code> EPEE MALE 2, <code>5912E4</code> EPEE MALE 3-4 (<code>arme="e"</code>);</li>
+        <li>it starts at 09:00 with the épée pools; every sabre competition starts at 15:00 or later;</li>
+        <li>its own page heading says "EPEE MALE 2".</li>
+      </ul>
+      <p>The same comparison of title against <code>arme</code> on 7 earlier Engarde tournaments (Madrid 2024 and 2025, Criterium 2025 and 2026, Stockholm 2026, Faches 2026, Budapest 2025) finds no disagreement. This one is new.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">2</span> It hits one of our fencers</p>
+      <p>Engarde's entry list for EPEE MALE 2 includes <b>KORONA Przemyslaw, POL</b>. In our data he is #139: born 1976 (confirmed), men's, an SPWS starter, with 51 épée, 39 foil and 1 sabre result. For season 2026/27 his birth year gives V2, so identity admits him to this bracket.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">3</span> Our Engarde reader would store it as sabre, then refuse the event</p>
+      <p><code>parse_competition_list</code> takes the weapon from <code>arme</code> (<code>python/scrapers/engarde.py</code>, <code>ENGARDE_WEAPON_MAP.get(comp.get("arme"))</code>). Run on a scratch copy of Madrid's real list, with the brackets marked completed:</p>
+      <pre class="trace">1. EPEE MALE 2 finished            -> ('EPEE MALE 2', <b>'SABRE'</b>, 'M', 'V2')
+2. + TABLE SABRE MALE 2 finished   -> ('TABLE SABRE MALE 2', 'SABRE', 'M', 'V2'), ('EPEE MALE 2', <b>'SABRE'</b>, 'M', 'V2')
+   event REFUSED: Event 'PEW2efs-2026-2027' has two sources for one bracket SABRE/M/V2:
+   …/tablesabremale2 and …/epeemale2. … <b>Nothing was written.</b></pre>
+      <p>So an ingest between the two finals stores KORONA's épée result as a <b>men's sabre V2</b> result. Any ingest after TABLE SABRE MALE 2 finishes (it starts at 17:00) writes nothing for all of Madrid.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">4</span> The URL→data check (Stage 7, ADR-052) cannot check weapon, gender or category</p>
+      <p>It runs inside <code>ValidateCounts</code> in all three ingestion flows (<code>python/pipeline/engine/rulebook.py</code>: domestic, PZSz, international). It compares the parse with <code>ctx.event</code>, the <code>tbl_event</code> row (<code>stages.py:939</code>). It reads <code>enum_weapon</code>, <code>enum_gender</code>, <code>enum_age_category</code> and <code>txt_city</code> from that row (<code>url_validation.py:292, 324, 341</code>). <code>tbl_event</code> has none of those columns: it has <code>arr_weapons</code>, <code>txt_country</code> and <code>txt_location</code>. Each check reads None and returns. Run on Madrid's real event row:</p>
+      <pre class="trace">('SABRE','M','V2')  halts: []  warns: []
+('EPEE','F','V4')   halts: []  warns: []
+('FOIL','M',<b>'V9'</b>)  halts: []  warns: []        ← a category that does not exist
+date one year off  -> halts: ['Date 2025-10-31 outside ±1 day of event window']</pre>
+      <p>Only the date (and country) are ever checked.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">5</span> When Stage 7 does object, the data is written anyway</p>
+      <p>A Stage 7 halt becomes the fault <code>URL_DATA_MISMATCH</code>; a count difference of more than one becomes <code>COUNT_MISMATCH</code>. Both resolve to <code>accept_parsed</code> (<code>python/pipeline/plugins/remediation.py:77–81, 105–106</code>), which says: "the flow commits the parsed result as-is; the loud part is the ALWAYS escalation." The bracket is written; a message is sent.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">6</span> International admission ignores the bracket's gender and weapon</p>
+      <p><code>admit(name, country, category, season_end_year, roster, spws_starters, tournament_type)</code> (<code>international_admission.py:153</code>) has no gender or weapon parameter. Identity is surname, first given name, and a birth year fitting the category. The roster it receives is every fencer, men and women (<code>stages.py:122</code>, <code>db_connector.fetch_fencer_db</code>). The rule "a man never in a women's bracket" (ADR-064) is applied only in the domestic matcher. That is why error 3 stores KORONA without complaint, and why a women's bracket labelled men's would admit our women.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">7</span> An Engarde event can be completed with a final still running</p>
+      <p>The lifecycle counts a listing as not final only when its skip reason equals FTL's <code>NOT_FINAL</code> (<code>python/pipeline/promotion/lifecycle.py:24, 65</code>). Engarde skips a running final as <code>not completed (&lt;state&gt;)</code> (<code>engarde.py:171</code>). Given one committed bracket and one Engarde final still running, the day after the end date:</p>
+      <pre class="trace">Engarde final still running, day after the end date -> <b>COMPLETED</b> []</pre>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">8</span> A title with three or four categories is read as two</p>
+      <p><code>parse_engarde_category</code> reads "FOIL MALE 1-2-3-4" as V1, V2 and "SABRE FEMALE 1-2-3" as V1, V2 (Madrid's real list). Both are skipped as combined either way; only the skip reason in the staging report is wrong.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">9</span> PROD's PPS1e ingest sources are stale (left by my close on 26 Oct)</p>
+      <p>The reconcile log <code>doc/staging/reconcile/SPWS-2026-2027.20261030-131647Z.md</code> lists <code>json_ingest_sources</code> as different: CERT says both listings were committed; PROD still says women's épée was "dropped, not final".</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · How error 1 was found</p>
+    <h2>By eye, not by any check</h2>
+    <p>I printed Madrid's competition list one row per competition (slug, title, <code>arme</code>, <code>sexe</code>, state, date) to see how the reader would classify it. The <code>arme</code> column read <code>s</code> on the EPEE MALE 2 row. I then confirmed it with Engarde's numbering, the start time, the page heading and the comparison over 7 other tournaments (error 1). Nothing in the pipeline would have flagged it; errors 4 and 6 are why.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Every engine</p>
+    <h2>Where each bracket's label comes from, and what the source offers to check it</h2>
+    <p>A bracket's label is its weapon, gender, category and date. "Never compared" means I found no code that compares it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Engine / route</th><th>Label comes from</th><th>A second statement in the same source, never compared</th></tr></thead>
+      <tbody>
+        <tr><td><b>FTL</b> (SPWS, PZSz, international)</td><td>The listing name only (<code>parse_tournament_name</code>, <code>scrape_ftl_event_urls.py:304</code>). No gender word → men's (ADR-063 amendment); no category digit → combined V0–V4. Date from the schedule's day heading.</td><td>None independent: the results page <code>&lt;title&gt;</code> is the same name, and a results row has only <code>country, excluded, id, name, place</code>. Per-fencer age markers are compared with the category (ADR-065), domestic splitter only.</td></tr>
+        <tr><td><b>Engarde</b></td><td>Weapon from <code>arme</code>; gender from the title over <code>sexe</code> (ENG.EVT.03, Budapest 2025 had <code>sexe="f"</code> on men's épée); category from title or slug; date per competition.</td><td>The title's weapon word, Engarde's competition number, start time, and the printed count ("Overall ranking (57 fencers)").</td></tr>
+        <tr><td><b>4fence</b></td><td>The URL parameters we try for every weapon, gender and category (<code>generate_fourfence_urls</code>, <code>populate_tournament_urls.py:149</code>).</td><td>The page prints its own label and date: <code>Spada Maschile Cat.1 40+</code>, <code>&lt;title&gt;2026-03-08-07 Napoli …</code>.</td></tr>
+        <tr><td><b>Ophardt</b></td><td>Words of the competition's title on the tournament page, "Foil Men's O50" (<code>parse_tournament_competitions</code>, <code>ophardt.py:172</code>); date "dd.mm." plus the year from "Last transmission".</td><td>The results page's own heading, in the organiser's language, with a full date: "Florett Herren V50 Einzel München (GER) December 8, 2024".</td></tr>
+        <tr><td><b>d'Artagnan</b></td><td>One word search over the whole box text (<code>dartagnan.py:110–112</code>), which holds both the typed <code>&lt;h3&gt;</code> and the declared line; category from the <code>&lt;h3&gt;</code>; no date.</td><td>Each box has a declared line under the typed title: <code>&lt;h3&gt;Men Epee V1&lt;/h3&gt; männlich, Degen</code>. The two are searched as one text, never compared. <i>(Corrected: this row first said "nothing independent".)</i></td></tr>
+        <tr><td><b>EVF results API</b></td><td>The competition's <code>weaponId</code> / <code>categoryId</code>; each row's <code>weapon_abbr</code> silently overrides the weapon and sets the gender, and an unknown code becomes women unless it starts with M (<code>evf_results.py:335–340</code>).</td><td>Each fencer's date of birth (<code>fencer_dob</code>).</td></tr>
+        <tr><td><b>FencingTime XML</b></td><td>Weapon from <code>Arme</code>; a gender word in <code>AltName</code> silently overrides <code>Sexe</code>; category from <code>AltName</code>; date from <code>Date</code> (<code>fencingtime_xml.py:279–292</code>). The code says "<code>AltName</code>/<code>Sexe</code> are unreliable across event organizers".</td><td>The weapon word in <code>AltName</code> / <code>TitreLong</code>; each fencer's <code>DateNaissance</code>.</td></tr>
+        <tr><td><b>File import</b> (CSV, XLSX, JSON)</td><td>The operator; the file has name, place and country only.</td><td>Nothing.</td></tr>
+        <tr><td><b>cert_ref</b></td><td>Our own stored rows.</td><td>Nothing.</td></tr>
+        <tr><td><b>PZSz route</b></td><td>The FTL name gives weapon and gender, which choose the pzszerm.pl start list the rows are matched against.</td><td>A mislabelled bracket is matched against the wrong list and stores almost nothing, without a message.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Event-level and later checks that exist, and what they miss</h3>
+    <ul>
+      <li><b>Event identity</b> (<code>source_identity.py</code>: date, name, weapons; REPAIR.URL.01–03) runs only in <code>tools/set_event_source_urls.py</code> and <code>tools/phase5_runner.py</code>, never during an ingest.</li>
+      <li><b>Two sources for one bracket</b> and <b>a bracket without one category</b> refuse the event (<code>international_sources.py</code>); a bracket whose weapon is not the event's is skipped (INTL.WPN.01). In Madrid these see only the labels the reader chose, which is how error 3 ends in a refusal.</li>
+      <li><b>EVF parity sweep</b> (<code>evf_parity_sweep.py</code>, daily, read-only) compares PROD's results with EVF's rows of the same weapon, gender, category, place and surname. It would show a mislabel only after the result is on PROD, once EVF publishes, as a Telegram message.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Checked, not errors</p>
+    <h2>What I looked at and found consistent</h2>
+    <ul>
+      <li><b>No man is stored in a women's bracket</b>, any season. Budapest's three men in V2 women's épée (ATANASSOW, KORONA Przemysław, WIERZBICKI) were repaired on 1 Oct.</li>
+      <li><b>5 women in men's domestic tournaments</b> (GP3 and GP6 2023/24, PPW5 2024/25, two in PPW5 2025/26). They fit ADR-034 and the ADR-063 amendment: a bracket without a gender word is stored as men's, and a woman's points move to the women's list or are dropped. Not checked one by one.</li>
+      <li><b>5 international results outside a naive birth-year category</b> (LEAHEY IMEW 2023/24; KROCHMALSKI, KORONA ×2 IMSW 2025/26; TECŁAW MSW 2026/27). All at championships. Admission accepts the season's end year or the year before (<code>international_admission._fits</code>), so these fit.</li>
+      <li><b>16 results in a weapon the fencer fenced only once</b> (fencers with 5 or more results; MPW, championships). They look like real extra-weapon starts. Not proven either way.</li>
+      <li><b>The Engarde reader parses live pages correctly.</b> N matched CERT on 16 of 16 stored brackets (Madrid 2025: 9 of 9; Criterium 2026: 7 of 7).</li>
+      <li>Our own data can speak to a bracket's label: 371 of 373 fencers have a gender; 273 of 328 fencers with results have fenced only one weapon.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · My earlier statements, corrected</p>
+    <h2>Four things I said that were wrong</h2>
+    <ul>
+      <li>"5 results on PROD sit in a tournament whose gender isn't the fencer's; nothing ever flagged them." They fit ADR-034 and ADR-063 (§05). I had not read those ADRs.</li>
+      <li>"Stage 7 lets the sabre label through because Madrid's weapons include sabre." It never compares the weapon at all (error 4).</li>
+      <li>This morning's readiness sheet proposed fixing the Engarde reader alone. It is on hold: the errors are not specific to Engarde (§04).</li>
+      <li>"d'Artagnan offers nothing independent." It declares weapon and gender on a line of their own ("männlich, Degen") under the typed title (§04, corrected row).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Not yet established</p>
+    <h2>What this page does not know</h2>
+    <ul>
+      <li>Whether any <b>stored</b> bracket, in any engine or season, already carries a wrong label: E2's audit.</li>
+      <li>Whether Madrid's other brackets hold mistakes that only the results will show (who is in each one). The results are not published yet.</li>
+      <li>Whether past 4fence, Ophardt, EVF API or FencingTime XML sources ever stated two different labels for one bracket. That is part of E2's audit.</li>
+    </ul>
+  </section>
+
+  <p class="foot">findings · ingestion-source-errors · 31 Oct 2026 · read-only · no fixes</p>
+</div>

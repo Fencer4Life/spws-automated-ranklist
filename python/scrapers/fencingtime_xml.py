@@ -135,14 +135,18 @@ def parse_xml_metadata(file_bytes: bytes) -> dict:
     Returns:
         dict with keys: weapon, gender, date, title, alt_name, federation.
     """
+    from python.pipeline.weapon_words import weapon_from_title
+
     root = _parse_root(file_bytes)
     arme = root.attrib.get("Arme", "")
     sexe = root.attrib.get("Sexe", "")
     alt_name = root.attrib.get("AltName", "")
 
-    # Map weapon code to English
+    # Map weapon code to English; a weapon AltName names wins (WPN.TITLE).
     weapon_map = {"E": "EPEE", "F": "FOIL", "S": "SABRE"}
-    weapon = weapon_map.get(arme, arme)
+    weapon, weapon_note = weapon_from_title(weapon_map.get(arme), alt_name)
+    if weapon is None:
+        weapon = arme
 
     # Map gender — prefer AltName parsing over Sexe (which can be 'X')
     gender = sexe
@@ -151,7 +155,7 @@ def parse_xml_metadata(file_bytes: bytes) -> dict:
             gender = en_gender
             break
 
-    return {
+    metadata = {
         "weapon": weapon,
         "gender": gender,
         "date": root.attrib.get("Date", ""),
@@ -159,6 +163,9 @@ def parse_xml_metadata(file_bytes: bytes) -> dict:
         "alt_name": alt_name,
         "federation": root.attrib.get("Federation", ""),
     }
+    if weapon_note:
+        metadata["weapon_note"] = weapon_note
+    return metadata
 
 
 def detect_categories_from_altname(alt_name: str) -> list[str]:
@@ -275,13 +282,14 @@ def parse(
     root = _parse_root(file_bytes)
     tireurs = root.find("Tireurs")
 
-    # Metadata from root attrs:
-    arme = root.attrib.get("Arme", "")
-    weapon_map = {"E": "EPEE", "F": "FOIL", "S": "SABRE"}
-    weapon = weapon_map.get(arme) or None
+    from python.pipeline.weapon_words import weapon_from_title
 
+    # Metadata from root attrs; a weapon AltName names wins over Arme (WPN.TITLE).
     sexe = root.attrib.get("Sexe", "")
     alt_name = root.attrib.get("AltName", "")
+    arme = root.attrib.get("Arme", "")
+    weapon_map = {"E": "EPEE", "F": "FOIL", "S": "SABRE"}
+    weapon, weapon_note = weapon_from_title(weapon_map.get(arme) or None, alt_name)
     gender = sexe if sexe in ("M", "F") else None
     for pl_gender, en_gender in _GENDER_MAP.items():
         if pl_gender in alt_name.upper():
@@ -345,5 +353,6 @@ def parse(
         parsed_date=parsed_date,
         category_hint=category_hint,
         source_url=source_url,
+        weapon_note=weapon_note,
         is_pool_only_qualifier=is_pool_only,
     )

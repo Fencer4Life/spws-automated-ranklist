@@ -478,7 +478,9 @@ class Fetcher:
                 continue
             results.append(
                 _annotate_parsed(
-                    _dc.replace(parsed, tournament_name=comp["title"]),
+                    _dc.replace(
+                        parsed, tournament_name=comp["title"], weapon_note=comp.get("weapon_note")
+                    ),
                     weapon=comp["weapon"],
                     gender=comp["gender"],
                     age_category=comp["category"],
@@ -531,7 +533,10 @@ class Fetcher:
         for comp in finals:
             per_parsed = parse_html(self._get(comp["url"]), source_url=comp["url"])
             per_parsed = _dc.replace(
-                per_parsed, tournament_name=comp["title"], parsed_date=comp["date"]
+                per_parsed,
+                tournament_name=comp["title"],
+                parsed_date=comp["date"],
+                weapon_note=comp.get("weapon_note"),
             )
             results.append(
                 _annotate_parsed(
