@@ -247,5 +247,27 @@ Release  Release · Title's weapon wins over the declared one in every engine th
     </ul>
   </section>
 
+  <section>
+    <p class="kicker">09 · The release skills · 31 Oct</p>
+    <h2>CI and Release naming in the skill that runs preflight, for Claude and Codex</h2>
+    <p>Your request: add the CI and Release naming to the preflight skill. Preflight is run by the <b>release</b> skill, which exists twice: <code>.claude/skills/release/SKILL.md</code> (Claude) and <code>.agents/skills/release/SKILL.md</code> (Codex).</p>
+    <ul>
+      <li><b>Done:</b> a section "Name the change before preflight": the branch name, the description, the three titles <code>branch_description.py check</code> prints, where GitHub takes each title from (the merge's first line; <code>release.yml</code>'s <code>run-name</code>), and how to preview whether the Release deploys. The push step now checks each run's title against what preflight printed, and the hand-off links each run with its title.</li>
+      <li><b>Done:</b> Codex's copy is now identical to Claude's.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Found on the way, both fixed in the same change</p>
+      <p><b>G1.</b> Codex's release skill had none of the naming rule: in the naming change I updated only Claude's copy, although B3 A binds Codex too. It also still hand-picked gates and never named <code>scripts/preflight.sh</code>, against AGENTS.md (“use preflight before any commit or push … never a hand-copied subset”), so Codex would have met the naming gate only at integration.</p>
+      <p><b>G2.</b> The skill's “What preflight covers” list missed five of preflight's 19 gates: the LOCAL stack matching CI's, the postgrestools hard gate, the anon allowlist, the scoring pages matching <code>scoring.ts</code>, and the naming gate. It now lists all 19, and the per-file postgrestools line says which SQL the hard gate does not cover (seeds and other SQL).</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decide</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>N1</b></td><td>Stop the two release skills drifting again?</td><td><b>A</b> Test NAMING.06: both release skills are identical and each tells the agent to run <code>scripts/preflight.sh</code> and <code>scripts/branch_description.py check</code> and to check the "Release · " title (seen failing first against the old Codex copy).<br><b>B</b> No test; rely on review.</td><td><span class="chip never">A</span> GHWF.06 checks only the catalog link, which is how both drifts went unnoticed.</td></tr>
+        <tr><td><b>N2</b></td><td>This push touches only <code>.claude/</code>, <code>.agents/</code> and <code>doc/</code>, but the Release's docs-only list (ADR-094) does not include <code>.claude/</code> or <code>.agents/</code>, so it builds and deploys and asks you to approve PROD for no code change.</td><td><b>A</b> Its own change: add <code>.claude/</code> and <code>.agents/</code> to the docs-only list in <code>scripts/release-gate.sh</code>, test first, with an ADR-094 amendment.<br><b>B</b> Leave it: the gate fails open by design, and an agent-tooling change costs one routine release.</td><td><span class="chip never">A</span> Agent skills and settings never reach CERT or PROD; a release for them is noise in the list you asked to make readable.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
   <p class="foot">plan · branch-names-and-merge-messages · 31 Oct 2026 · signed 31 Oct 2026 · released 31 Oct 2026</p>
 </div>
