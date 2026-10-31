@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="bd9d49dd40ae2a39f3042c00d5a2ac8fc0d5763c65515fd5892a9e137c627160">
+<meta name="doc-source-sha256" content="b62da72c5f02950c6868731082d01c652652a0fb73e63928fbc74c9532d5f8f4">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1111,7 +1111,7 @@
 <td>Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); <code>scripts/branch_description.py check</code> fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on <code>main</code> is the description with a <code>Branch:</code> line, and the CI and Release runs carry its title</td>
 <td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A</td>
 <td>NAMING.01–07</td>
-<td>Covered (NAMING.01–05 released 2026-10-31, main 05caf9f0; NAMING.06–07 built 2026-10-31, LOCAL)</td>
+<td>Covered (released 2026-10-31: NAMING.01–05 main 05caf9f0, NAMING.06–07 main be5c8136)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3748,14 +3748,14 @@
 <td>Claude's and Codex's release skills (<code>.claude/skills/release/SKILL.md</code>, <code>.agents/skills/release/SKILL.md</code>) are byte-identical and carry &quot;Name the change before preflight&quot;, <code>scripts/preflight.sh</code>, <code>scripts/branch_description.py check</code> and the &quot;Release · &quot; title.</td>
 <td>pytest</td>
 <td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main be5c8136)</td>
 </tr>
 <tr>
 <td>NAMING.07</td>
 <td>A Release range touching only <code>.claude/</code> and <code>.agents/</code> (with <code>doc/</code>) skips the deploy (ADR-094 amendment 2026-10-31); a root file merely named like them (<code>.claude-notes.md</code>, <code>.agentsrc</code>) still deploys.</td>
 <td>pytest</td>
 <td><code>python/tests/test_release_docs_only_gate.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main be5c8136)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3770,5 +3770,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>bd9d49dd40ae2a39f3042c00d5a2ac8fc0d5763c65515fd5892a9e137c627160</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b62da72c5f02950c6868731082d01c652652a0fb73e63928fbc74c9532d5f8f4</code></footer>
 </div></body></html>

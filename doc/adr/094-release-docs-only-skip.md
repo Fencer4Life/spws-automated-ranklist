@@ -1,6 +1,6 @@
 # ADR-094: Release Gate Skips Build/Deploy for Documentation-Only CI Runs
 
-**Status:** Draft (proposed 2026-09-13; awaiting sign-off)
+**Status:** Accepted (drafted 2026-09-13 and in force since; signed off 2026-10-31, N3 A in `doc/plans/branch-names-and-merge-messages-2026-10-31.html` §10)
 **Date:** 2026-09-13
 **Amends:** [ADR-011](011-artifact-release-pipeline.md) — the release trigger is no longer "CI success on `main`" alone; a `gate` job now decides whether `build` runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (security posture checks stay inside `deploy-cert`/`deploy-prod`, unaffected by this gate, which runs strictly before `build`)

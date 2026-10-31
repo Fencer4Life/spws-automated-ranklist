@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="ba18d5d904e5298f6c04f3cc652bdbf6c0555ce0fe5cc2b5a8c7dd36186f83af">
+<meta name="adr-source-sha256" content="ea28fe0c34308b7537c448e53b70d27b6d4e157a29ee9e4c311fa057b205f162">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">259 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-09-13 and in force since; signed off 2026-10-31, N3 A in <code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code> §10)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">259 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (drafted 2026-09-13 and in force since; signed off 2026-10-31, N3 A in <code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code> §10)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
 <strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (security posture checks stay inside <code>deploy-cert</code>/<code>deploy-prod</code>, unaffected by this gate, which runs strictly before <code>build</code>)
@@ -254,5 +254,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>ba18d5d904e5298f6c04f3cc652bdbf6c0555ce0fe5cc2b5a8c7dd36186f83af</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>ea28fe0c34308b7537c448e53b70d27b6d4e157a29ee9e4c311fa057b205f162</code></footer>
 </div></body></html>
