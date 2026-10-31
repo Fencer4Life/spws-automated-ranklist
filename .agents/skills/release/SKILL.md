@@ -56,8 +56,9 @@ the explanation (NFR-16, NAMING.01–05; `doc/plans/branch-names-and-merge-messa
 - Where the titles come from: the CI run takes the merge commit's first line; `release.yml`'s
   `run-name` makes the Release run "Release · <CI run title>", or "Release · manual dispatch by
   <who>" for a manual dispatch.
-- Say in the description whether the Release deploys. Only `doc/`, `CLAUDE.md`, `AGENTS.md`,
-  `README.md` and the two tracking files skip it (ADR-094); preview the decision with
+- Say in the description whether the Release deploys. Only `doc/`, `.claude/`, `.agents/`,
+  `CLAUDE.md`, `AGENTS.md`, `README.md` and the two tracking files skip it (ADR-094); preview
+  the decision with
   `RELEASE_GATE_EVENT=workflow_run RELEASE_GATE_HEAD_SHA=$(git rev-parse HEAD)
   GITHUB_OUTPUT=<temp file> bash scripts/release-gate.sh`.
 

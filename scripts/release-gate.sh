@@ -75,10 +75,13 @@ fi
 # the repo root rather than under doc/ — so before this exemption, any one
 # of them landing inside a later diff range (e.g. from an unrelated Release
 # run shortly before a genuinely docs-only push) silently defeated this
-# gate's whole purpose (observed 2026-09-13). Everything else — including
+# gate's whole purpose (observed 2026-09-13). The .claude/ and .agents/
+# directories hold Claude's and Codex's skills and settings, which nothing
+# builds or deploys (ADR-094 amendment 2026-10-31); only the directories, so a
+# root file named like them still deploys. Everything else — including
 # the one frontend path that IS published (frontend/public/*.html, e.g. the
 # scoring annex) — still deploys.
-non_deployable_pattern='^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)'
+non_deployable_pattern='^(doc/|\.claude/|\.agents/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)'
 
 deployable="$(grep -Ev "$non_deployable_pattern" <<<"$changed" || true)"
 

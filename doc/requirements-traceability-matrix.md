@@ -193,7 +193,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | NFR-13 | Shadow DOM isolation (host CSS does not leak) | §5, §6 | 8.55–8.61 | Covered (M8) |
 | NFR-14 | Security posture machine-verified against the **live** environment on every release, blocking the release on regression and alerting via Telegram | ADR-083 §6 | pgTAP 52.1–52.12; `scripts/check-security-posture.sh` run in `release.yml` deploy-cert/deploy-prod | Covered |
 | NFR-15 | Static checks are hard gates with zero findings: postgrestools (type check, plpgsql_check, lint) over every migration after the configured baseline and every pgTAP file, proven live by canaries; svelte-check with `--fail-on-warnings`; Ruff, Ruff format and BasedPyright over `python/ scripts/ tools/`; Python deprecation warnings from project code fail pytest; coherence gate 4 (a migration change comes with a documentation change) fails the run over the range a push or pull request brings | User directive 2026-10-24; [plan](plans/ftl-seed-email-removal-2026-10-24.html) §13; [workflow page plan](plans/github-actions-workflows-page-2026-10-24.html) W2 #8 | `python/tests/test_static_check_gates.py` GATE.01–GATE.06; `python/tests/test_coherence_migration_gate.py` COH.01–COH.05; `scripts/check-postgrestools.sh` in `scripts/preflight.sh` and `ci.yml` test-db; svelte-check in preflight and `ci.yml` test-frontend | Covered |
-| NFR-16 | Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); `scripts/branch_description.py check` fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on `main` is the description with a `Branch:` line, and the CI and Release runs carry its title | User directive 2026-10-31; [plan](plans/branch-names-and-merge-messages-2026-10-31.html) B1–B3 A | NAMING.01–05 | Covered (released 2026-10-31, main 05caf9f0) |
+| NFR-16 | Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); `scripts/branch_description.py check` fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on `main` is the description with a `Branch:` line, and the CI and Release runs carry its title | User directive 2026-10-31; [plan](plans/branch-names-and-merge-messages-2026-10-31.html) B1–B3 A | NAMING.01–07 | Covered (NAMING.01–05 released 2026-10-31, main 05caf9f0; NAMING.06–07 built 2026-10-31, LOCAL) |
 
 ## Coverage Summary
 
@@ -671,7 +671,7 @@ Acceptance IDs for [ADR-118](adr/118-event-details-cert-to-prod-scraper-contract
 
 ## Branch, merge and release names (NAMING.*)
 
-Acceptance IDs for NFR-16 and [doc/plans/branch-names-and-merge-messages-2026-10-31.html](plans/branch-names-and-merge-messages-2026-10-31.html) (signed 31 Oct 2026, B1–B3 A). The integration tests run in throwaway repositories.
+Acceptance IDs for NFR-16 and [doc/plans/branch-names-and-merge-messages-2026-10-31.html](plans/branch-names-and-merge-messages-2026-10-31.html) (signed 31 Oct 2026, B1–B3 A; N1–N2 A, §09–10). The integration tests run in throwaway repositories.
 
 | Acceptance IDs | Contract | Layer | File | Status |
 |----------------|----------|-------|------|--------|
@@ -680,6 +680,8 @@ Acceptance IDs for NFR-16 and [doc/plans/branch-names-and-merge-messages-2026-10
 | NAMING.03 | It refuses a session-named, date-named or two-word branch, however well described. | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Released** (2026-10-31, main 05caf9f0) |
 | NAMING.04 | `scripts/branch_description.py check` fails an undescribed branch and, for a described one, prints the merge, CI and Release titles; `scripts/preflight.sh` runs that same check. | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Released** (2026-10-31, main 05caf9f0) |
 | NAMING.05 | `release.yml` titles its run "Release · " and the triggering CI run's title, or "Release · manual dispatch by <who>". | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Released** (2026-10-31, main 05caf9f0) |
+| NAMING.06 | Claude's and Codex's release skills (`.claude/skills/release/SKILL.md`, `.agents/skills/release/SKILL.md`) are byte-identical and carry "Name the change before preflight", `scripts/preflight.sh`, `scripts/branch_description.py check` and the "Release · " title. | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Built, LOCAL** (2026-10-31) |
+| NAMING.07 | A Release range touching only `.claude/` and `.agents/` (with `doc/`) skips the deploy (ADR-094 amendment 2026-10-31); a root file merely named like them (`.claude-notes.md`, `.agentsrc`) still deploys. | pytest | `python/tests/test_release_docs_only_gate.py` | **Built, LOCAL** (2026-10-31) |
 
 ## Cross-references
 

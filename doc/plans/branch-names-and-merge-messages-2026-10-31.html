@@ -264,7 +264,25 @@ Release  Release · Title's weapon wins over the declared one in every engine th
       <thead><tr><th>#</th><th>Decide</th><th>Options</th><th>Recommendation</th></tr></thead>
       <tbody>
         <tr><td><b>N1</b></td><td>Stop the two release skills drifting again?</td><td><b>A</b> Test NAMING.06: both release skills are identical and each tells the agent to run <code>scripts/preflight.sh</code> and <code>scripts/branch_description.py check</code> and to check the "Release · " title (seen failing first against the old Codex copy).<br><b>B</b> No test; rely on review.</td><td><span class="chip never">A</span> GHWF.06 checks only the catalog link, which is how both drifts went unnoticed.</td></tr>
-        <tr><td><b>N2</b></td><td>This push touches only <code>.claude/</code>, <code>.agents/</code> and <code>doc/</code>, but the Release's docs-only list (ADR-094) does not include <code>.claude/</code> or <code>.agents/</code>, so it builds and deploys and asks you to approve PROD for no code change.</td><td><b>A</b> Its own change: add <code>.claude/</code> and <code>.agents/</code> to the docs-only list in <code>scripts/release-gate.sh</code>, test first, with an ADR-094 amendment.<br><b>B</b> Leave it: the gate fails open by design, and an agent-tooling change costs one routine release.</td><td><span class="chip never">A</span> Agent skills and settings never reach CERT or PROD; a release for them is noise in the list you asked to make readable.</td></tr>
+        <tr><td><b>N2</b></td><td>The skills push touched only <code>.claude/</code>, <code>.agents/</code> and <code>doc/</code>, but the Release's docs-only list (ADR-094) does not include <code>.claude/</code> or <code>.agents/</code>, so it builds and deploys and asks you to approve PROD for no code change.</td><td><b>A</b> Its own change: add <code>.claude/</code> and <code>.agents/</code> to the docs-only list in <code>scripts/release-gate.sh</code>, test first, with an ADR-094 amendment.<br><b>B</b> Leave it: the gate fails open by design, and an agent-tooling change costs one routine release.</td><td><span class="chip never">A</span> Agent skills and settings never reach CERT or PROD; a release for them is noise in the list you asked to make readable.</td></tr>
+      </tbody>
+    </table></div>
+    <p><span class="pill"><span class="dot"></span>Signed 31 Oct: N1 A, N2 A ("I Approve")</span> The skills push went out first as main <code>32214f5c</code>; Release 41205564673 deployed CERT and Pages and, after your approval, PROD.</p>
+  </section>
+
+  <section>
+    <p class="kicker">10 · N1 and N2 · 31 Oct</p>
+    <h2>The two release skills stay in step; agent tooling no longer deploys</h2>
+    <ul>
+      <li><b>N1, test NAMING.06</b> (<code>python/tests/test_agent_worktree_operating_structure.py</code>): Claude's and Codex's release skills are byte-identical and carry "Name the change before preflight", <code>scripts/preflight.sh</code>, <code>scripts/branch_description.py check</code> and the "Release · " title. Seen failing against Codex's copy as it was before <code>32214f5c</code>.</li>
+      <li><b>N2, test NAMING.07</b> (<code>python/tests/test_release_docs_only_gate.py</code>): a range touching only <code>.claude/</code> and <code>.agents/</code> (with <code>doc/</code>) skips the deploy, while a root file that only looks like them (<code>.claude-notes.md</code>, <code>.agentsrc</code>) still deploys. Seen failing first; then <code>scripts/release-gate.sh</code>'s non-deployable pattern gains the two directory prefixes. Nothing in <code>.github/</code> or the build reads either directory.</li>
+      <li><b>Records:</b> ADR-094 amendment (31 Oct) and its §3 pattern; Appendix C's ADR-094 row; the handbook's environments-and-release page, whose list of skipped paths also lacked the two tracking files exempt since 13 Sep (fixed with it), and the workflow catalog's Release block; both release skills; RTM NFR-16 with NAMING.06–07.</li>
+      <li>This change itself touches <code>scripts/release-gate.sh</code> and tests, so its own Release deploys and asks for your PROD approval once more.</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decide</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>N3</b></td><td>Found while amending it: ADR-094 still reads "Draft (proposed 2026-09-13; awaiting sign-off)", in the ADR and in Appendix C, although its gate has decided every Release since 13 Sep and it has been amended twice.</td><td><b>A</b> Mark it Accepted (in force since 13 Sep 2026), ADR and Appendix C, in its own small records change.<br><b>B</b> Leave it as Draft.</td><td><span class="chip never">A</span> A Draft status on a decision that has run for seven weeks misleads the next reader; only you can sign it.</td></tr>
       </tbody>
     </table></div>
   </section>

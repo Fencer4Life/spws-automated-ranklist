@@ -1,11 +1,11 @@
 """Acceptance tests for the Codex/Claude Git worktree operating structure.
 
-NAMING.01–05 (plan doc/plans/branch-names-and-merge-messages-2026-10-31.html,
-signed 31 Oct 2026, B1–B3 A): a worker branch is named after what it changes
-and described in git's branch description; scripts/branch_description.py
+NAMING.01–06 (plan doc/plans/branch-names-and-merge-messages-2026-10-31.html,
+signed 31 Oct 2026, B1–B3 A, N1 A): a worker branch is named after what it
+changes and described in git's branch description; scripts/branch_description.py
 checks both, preflight and the integrate script run that one check, the merge
-on main carries the description and a Branch: line, and release.yml names
-its run after the merge title.
+on main carries the description and a Branch: line, release.yml names its run
+after the merge title, and Claude's and Codex's release skills teach it alike.
 """
 
 from __future__ import annotations
@@ -388,3 +388,22 @@ def test_NAMING_05_the_release_run_is_named_after_the_merge_title():
     assert "github.event.workflow_run.display_title" in run_name
     assert "Release · " in run_name
     assert "manual dispatch by" in run_name and "github.actor" in run_name
+
+
+RELEASE_SKILLS = (".claude/skills/release/SKILL.md", ".agents/skills/release/SKILL.md")
+
+
+def test_NAMING_06_claude_and_codex_release_skills_teach_the_same_naming():
+    """The release skill runs preflight for Claude and, as a second copy, for
+    Codex. Codex's copy drifted twice unnoticed (no preflight, then no naming;
+    plan §09 G1), so the two must stay byte-identical and carry the procedure."""
+    claude, codex = ((ROOT / path).read_text(encoding="utf-8") for path in RELEASE_SKILLS)
+
+    assert codex == claude, "the Codex release skill differs from Claude's; copy one over the other"
+    for step in (
+        "## Name the change before preflight",
+        "scripts/preflight.sh",
+        "scripts/branch_description.py check",
+        "Release · ",
+    ):
+        assert step in claude, step

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="50003f5058f543e90a5e875d03d5fad902622d72ec40ecbfa70260275ac7560a">
+<meta name="doc-source-sha256" content="3c144a4e1413e6d398431ca5cf74eba0de3552b01cc367142a6bf4ac86980458">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -3060,7 +3060,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 <tr>
 <td><a href="adr/094-release-docs-only-skip.html">ADR-094</a></td>
 <td><strong>Draft</strong> (proposed 2026-09-13; awaiting sign-off). <strong>Release gate skips build/deploy for documentation-only CI runs.</strong> <code>release.yml</code>'s <code>build</code> job ran on every green <code>CI</code> completion on <code>main</code> regardless of what changed, so a <code>doc/</code>-only or root-Markdown-only commit still walked the full build → deploy-pages/deploy-cert/deploy-prod chain — a frontend rebuild, CERT/PROD fingerprint verification, Edge Function redeploys, and the security-posture check on both cloud environments, none of which differ from what is already live. A new <code>gate</code> job resolves the diff range since CI's previous completed run on <code>main</code> (<code>workflow_run</code> carries no <code>before</code> SHA, unlike the <code>push</code> event <code>ci.yml</code> reads) and runs <code>scripts/release-gate.sh</code>, which treats a path as non-deployable only under the `^(doc/</td>
-<td>CLAUDE.md$</td>
+<td>.claude/</td>
 </tr>
 </tbody>
 </table></div>
@@ -3116,5 +3116,5 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>50003f5058f543e90a5e875d03d5fad902622d72ec40ecbfa70260275ac7560a</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>3c144a4e1413e6d398431ca5cf74eba0de3552b01cc367142a6bf4ac86980458</code></footer>
 </div></body></html>
