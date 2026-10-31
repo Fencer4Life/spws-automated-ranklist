@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="116-pzsz-calendar-browser-read-and-letter-passes.md">
-<meta name="adr-source-sha256" content="0c180f7920976efd40f77ff99e3934dd661b0517bc456f7e2e01a462647283cf">
+<meta name="adr-source-sha256" content="a15e2d3552052b9ea23006c5e26740ff9800f5eed7e0e9a0ca49817e5ce090d8">
 <title>ADR-116 · The PZSz calendar reads past the gate with a browser engine, and reads the organizer letter in four abstaining passes</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -184,10 +184,10 @@
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-31-adr-118-118-event-details-cert-to-prod-scraper-contract-md-rule-8-is-removed-the-address-follows-cert-s-write-time-for-every-organizer">Amendment (2026-10-31, <a href="118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>) — rule 8 is removed; the address follows CERT's write time for every organizer</h2>
 <p><strong>§2.</strong> <code>url_invitation</code> and <code>num_entry_fee</code> are no longer fill-blank-only (rule 8, <code>_FILL_BLANK</code> in <code>pzsz_sync.py</code>). They follow rules 2–6 like the other decided fields: a value the run wrote follows the source when it changes, a value a person set stays (rule 3), and a value with no provenance counts as a person's. An event page in the letter counts as empty. Pass 0 decides the letter first, so the passes read the letter that will be held. <code>decide()</code> loses its <code>fill_blank_only</code> parameter.</p>
-<p><strong>§6 is superseded.</strong> The PZSz-only overwrite of <code>txt_venue_address</code> on PROD gives way to the rule for every organizer: PROD takes CERT's nine event details, the address among them, when CERT wrote them later than PROD did. A payload from before ADR-118 keeps §6.</p>
+<p><strong>§6 is superseded.</strong> The PZSz-only overwrite of <code>txt_venue_address</code> on PROD gives way to the rule for every organizer: PROD takes CERT's nine event details, the address among them, when CERT wrote them later than a person last changed them on PROD. A payload from before ADR-118 keeps §6.</p>
 <p><strong>Tests.</strong> pytest <code>TestRule8Removed</code> in <code>test_pzsz_write_rules.py</code>, the two rewritten cases in <code>test_pzsz_sync.py</code>, and CALSYNC.45–49 (<code>test_calendar_scraper_contract.py</code>).</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="115-equal-totals-share-a-place.html">← ADR-115: Equal Totals Share a Place; the Next Place Skips</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="117-results-links-admin-only.html">→ ADR-117: Results Links Are Set in Admin Only; Calendar Automation Writes Only the Organizer&#x27;s Letter</a></nav>
-<footer class="foot">Generated from <code>116-pzsz-calendar-browser-read-and-letter-passes.md</code> · source SHA-256 <code>0c180f7920976efd40f77ff99e3934dd661b0517bc456f7e2e01a462647283cf</code></footer>
+<footer class="foot">Generated from <code>116-pzsz-calendar-browser-read-and-letter-passes.md</code> · source SHA-256 <code>a15e2d3552052b9ea23006c5e26740ff9800f5eed7e0e9a0ca49817e5ce090d8</code></footer>
 </div></body></html>
