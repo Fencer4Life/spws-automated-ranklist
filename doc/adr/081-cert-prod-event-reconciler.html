@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="081-cert-prod-event-reconciler.md">
-<meta name="adr-source-sha256" content="ae9b95497d6aff02591f050362d38225ac4c960aa5c317c3c69ce41805f6dd9e">
+<meta name="adr-source-sha256" content="3d1c1ce25babbb82f600a0ef2e36a7a93231eeb3763e9de0b4ca3ccfad251dfe">
 <title>ADR-081 · CERT→PROD Event Reconciler</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -141,9 +141,9 @@ DETAIL: Key (id_season, id_prior_event)=(4, 66) already exists.
 <p>§3's fill-blank tier keeps one exception for <code>url_invitation</code>: when PROD holds a calendar page (a pzszerm.pl or veteransfencing.eu event page) and CERT holds a letter, the UPDATE replaces PROD's value. Any other PROD value stays and an empty one is filled, as before (migration <code>20261025000003</code>, pgTAP CALURL.23).</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-31-adr-118-118-event-details-cert-to-prod-scraper-contract-md-cert-s-newer-details-reach-prod">Amendment (2026-10-31, <a href="118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>) — CERT's newer details reach PROD</h2>
-<p>§3's split no longer applies to the nine event details: the name, dates, city, country, weapons, venue address, letter, the organizer's registration link, and the fee with its currency. The UPDATE compares when each side last wrote them (CERT's time arrives in the payload as <code>ts_details_set</code>; PROD's is <code>fn_event_details_set_at</code>). When CERT wrote later, PROD takes every one CERT holds; when PROD wrote later, PROD keeps its values and only an empty field is filled. A blank on CERT never clears PROD, our own <code>register.html?event=</code> link is never copied or replaced, and a calendar page on PROD still gives way to a letter (ADR-117 D7 A). The other fields keep §3 as amended. An event with nothing to change is no longer written: the UPDATE set <code>ts_updated</code> on every event on every run (ADR-118 F2). A payload without <code>ts_details_set</code> keeps the earlier rules.</p>
+<p>§3's split no longer applies to the nine event details: the name, dates, city, country, weapons, venue address, letter, the organizer's registration link, and the fee with its currency. The UPDATE compares when each side last wrote them (CERT's time arrives in the payload as <code>ts_details_set</code>; PROD's is the latest change a person made there, <code>fn_event_details_set_at</code>, so the mirror's own copies do not count; ADR-118 amendment F9). When CERT wrote later, PROD takes every one CERT holds; when PROD wrote later, PROD keeps its values and only an empty field is filled. A blank on CERT never clears PROD, our own <code>register.html?event=</code> link is never copied or replaced, and a calendar page on PROD still gives way to a letter (ADR-117 D7 A). The other fields keep §3 as amended. An event with nothing to change is no longer written: the UPDATE set <code>ts_updated</code> on every event on every run (ADR-118 F2). A payload without <code>ts_details_set</code> keeps the earlier rules.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="080-clean-roster-ftl-seeding.html">← ADR-080: Clean-Roster FTL Seeding</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="082-markdown-source-generated-html-docs.html">→ ADR-082: Markdown-Source, Generated-HTML Documentation Standard</a></nav>
-<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>ae9b95497d6aff02591f050362d38225ac4c960aa5c317c3c69ce41805f6dd9e</code></footer>
+<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>3d1c1ce25babbb82f600a0ef2e36a7a93231eeb3763e9de0b4ca3ccfad251dfe</code></footer>
 </div></body></html>

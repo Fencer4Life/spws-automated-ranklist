@@ -128,7 +128,12 @@
     <span class="pill"><span class="dot"></span>signed 31 Oct: fields rows 1–9</span>
     <span class="pill"><span class="dot"></span>Signed 31 Oct: S1 A, S2 A, S3 A</span>
     <span class="pill">EVF · PZSz · USA Fencing next</span>
-    <span class="pill">found along the way: F1–F7</span>
+    <span class="pill">found along the way: F1–F10</span>
+    <span class="pill"><span class="dot"></span>Released 31 Oct: main 179b9846</span>
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: R A (done)</span>
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: F9 (built on LOCAL)</span>
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: F10 A</span>
+    <span class="pill"><span class="dot"></span>Open: F8</span>
     <span class="pill"><span class="dot"></span>Signed 31 Oct: F6 C</span>
   </div>
 
@@ -294,7 +299,7 @@
         <tr><td><b>CALSYNC.20–39</b></td><td>pgTAP <code>118_calendar_field_contract.sql</code></td><td>The shared write function: an empty field fills; a source change replaces the scraper's value; a person's value is held and reported once; a blank never clears; our link is refused; a value a person changes between read and write wins; the first run seeds the state from the audit; a field outside the nine is refused. CALSYNC.39 runs <code>fn_ingest_evf_calendar</code> and checks it no longer clears a city or country (F1).</td></tr>
         <tr><td><b>CALSYNC.40–50</b></td><td>pytest <code>test_calendar_scraper_contract.py</code></td><td>Our link and event pages recognised; EVF's details mapped to the columns and sent through the shared write; the EVF refresh and identity sync no longer carrying them; a held value reported on Telegram; PZSz without rule 8 (link and fee follow the source when the run wrote them, a person's value stays); and the promote read and payload (CALSYNC.50).</td></tr>
         <tr><td><b>ph3.2–ph3.22b</b></td><td>pgTAP <code>19_phase3_wizard.sql</code></td><td>F4: all 25 checks counted.</td></tr>
-        <tr><td>rewritten</td><td>pgTAP <code>68.3</code>; the EVF refresh assertions in <code>12_evf_import.sql</code> (12.10–12.13) and <code>15_event_multi_url.sql</code> (15.6); pytest <code>PZSZ.RUN.08</code> and <code>PZSZ.RUN.09</code></td><td>They pin today's fill-blank and rule-8 behaviour. Each rewrite is named in the ADR amendment that changes the rule.</td></tr>
+        <tr><td>rewritten</td><td>pgTAP <code>CALURL.10–11</code> (<code>114</code>), <code>12.10</code>, <code>evf.37</code> (<code>18</code>), <code>50.1–50.2</code>; pytest <code>evf.55</code>, <code>CALURL.02</code>, and the PZSz rule-8 cases (<code>TestRule8Removed</code>, two cases in <code>test_pzsz_sync.py</code>)</td><td>They pinned the fill-blank and rule-8 behaviour. Corrected 31 Oct: this row first named the assertions I expected to rewrite. Of those, PZSZ.RUN.08–09 were rewritten (the two <code>test_pzsz_sync.py</code> cases); 68.3, 12.11–12.13 and 15.6 stayed valid and are unchanged. ADR-118's Consequences name the real list.</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -315,9 +320,84 @@
     <ol class="steps">
       <li>Branch <code>claude/cert-event-details-reach-prod-every-scraper</code>. The merge message and the Release run say what changes and why (your 31 Oct naming rule, done by hand for now).</li>
       <li><code>scripts/preflight.sh</code> exits 0, then integration, then a push to main. CI and the Release are watched in the foreground. The PROD deploy is yours to approve.</li>
-      <li>The next EVF or PZSz sync applies the contract on CERT, and its mirror run carries the result to PROD. On your go, I run <code>promote-calendar.yml</code> by hand instead.</li>
+      <li>The next EVF or PZSz sync applies the contract on CERT, and its mirror run carries the result to PROD. <code>promote-calendar.yml</code> runs only when a sync calls it (<code>workflow_call</code>), so a run today means dispatching <code>evf-sync.yml</code> on your go.</li>
       <li>Verification goes through PROD's <code>vw_calendar</code> (what the calendar reads) and the reconcile log. F1's three rows are restored on CERT on your go.</li>
     </ol>
+  </section>
+
+  <section>
+    <p class="kicker">12 · After the release · read 31 Oct, 11:50 UTC</p>
+    <h2>Released; F1's restore needs one answer</h2>
+    <p>Main <code>179b9846</code>. CI run 41197336804 and Release run 41197505747 green; you approved PROD and it deployed at 11:48 UTC. CERT and PROD both hold <code>fn_calendar_apply_fields</code>, <code>fn_event_details_set_at</code>, the new mirror and <code>tbl_calendar_field_state</code> (read-only checks). No sync has run since, so PROD still shows Madrid's August letter, Skopje's V2 and PEW5's postcode address; all three rows carry the same <code>ts_updated</code>, 30 Oct 13:16:44, F2's every-row rewrite.</p>
+    <p><b>F1 as the data stands.</b> The plan assumed three blank cities and countries. The audit shows EVF wrote the cities back on 4 Sep; only the countries are still blank.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>A person set, 9 Aug</th><th>CERT now</th><th>PROD now</th></tr></thead>
+      <tbody>
+        <tr><td>PEW13es (Athens)</td><td>city Ateny, country Grecja</td><td>city Athens (EVF, 4 Sep), country blank</td><td>Athens, Grecja</td></tr>
+        <tr><td>PEW17efs (Toronto)</td><td>city Toronto, country Kanada</td><td>city Toronto (EVF, 4 Sep), country blank</td><td>Toronto, Kanada</td></tr>
+        <tr><td>PEW8efs (Finland)</td><td>country Finlandia (no city)</td><td>both blank</td><td>no city, Finlandia</td></tr>
+      </tbody>
+    </table></div>
+    <p>A write through <code>scripts/cloud-sql.sh</code> is audited with no person, so on its own the contract would count the restored value as the scraper's. The restore therefore also marks each restored field as a person's in <code>tbl_calendar_field_state</code> (no scraper value).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>R</b></td><td>What F1's restore writes on CERT</td><td><b>A</b> Exactly what the person set and F1 removed: PEW13 city Ateny and country Grecja, PEW17 country Kanada, PEW8 country Finlandia, each marked as the person's. The EVF sync then keeps them and reports EVF's "Athens" once. At the next mirror PROD's PEW13 city becomes Ateny (it shows Athens today).<br><b>B</b> The three countries only, as A; PEW13 keeps EVF's "Athens".<br><b>C</b> Nothing now.<br>With A or B, I then dispatch <code>evf-sync.yml</code>, so the first run under the contract and its mirror happen today, and verify PROD through <code>vw_calendar</code>.</td><td><span class="chip never">Recommend A</span> It puts back what the defect removed and nothing else. B keeps a value EVF wrote only because F1 had blanked the person's.</td></tr>
+      </tbody>
+    </table></div>
+    <p>A's statement, one atomic query; each update fires only on the value read above:</p>
+    <pre><code>WITH u13 AS (UPDATE tbl_event SET txt_location = 'Ateny', txt_country = 'Grecja', ts_updated = NOW()
+              WHERE txt_code = 'PEW13es-2026-2027' AND txt_location = 'Athens' AND txt_country IS NULL
+              RETURNING txt_code, txt_location, txt_country),
+     u17 AS (UPDATE tbl_event SET txt_country = 'Kanada', ts_updated = NOW()
+              WHERE txt_code = 'PEW17efs-2026-2027' AND txt_country IS NULL
+              RETURNING txt_code, txt_location, txt_country),
+     u8  AS (UPDATE tbl_event SET txt_country = 'Finlandia', ts_updated = NOW()
+              WHERE txt_code = 'PEW8efs-2026-2027' AND txt_country IS NULL
+              RETURNING txt_code, txt_location, txt_country),
+     st  AS (INSERT INTO tbl_calendar_field_state (id_event, txt_field, txt_scraper, txt_value)
+              SELECT e.id_event, f.field, 'EVF', NULL
+                FROM tbl_event e
+                JOIN (VALUES ('PEW13es-2026-2027', 'txt_location'), ('PEW13es-2026-2027', 'txt_country'),
+                             ('PEW17efs-2026-2027', 'txt_country'), ('PEW8efs-2026-2027', 'txt_country'))
+                       AS f(code, field) ON f.code = e.txt_code
+              ON CONFLICT (id_event, txt_field) DO UPDATE
+                SET txt_value = NULL, txt_reported = NULL, ts_written = NOW()
+              RETURNING id_event, txt_field)
+SELECT 'event' AS kind, txt_code AS what FROM u13 UNION ALL SELECT 'event', txt_code FROM u17
+UNION ALL SELECT 'event', txt_code FROM u8 UNION ALL SELECT 'state', id_event || ':' || txt_field FROM st;</code></pre>
+    <p>B drops PEW13's city from both the update and the state rows. Undo: the audit keeps every old value.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F8</span> Seven events on the public calendar show no flag and an untranslated country</p>
+      <p>The card turns the stored country into a flag and a translated name through <code>countryCode()</code> (<code>frontend/src/lib/calendarMonths.ts:658</code>, map <code>ISO_BY_COUNTRY</code> at line 90; <code>EventCard.svelte:260</code>), and shows the raw text when the map has no entry. The map has no entry for <code>PL</code> or <code>North Macedonia</code>. On PROD that is PPS1e, PPS1f, PPS1s, PPS2e, PPS2f and PPS2s (stored as <code>PL</code>) and Skopje, IMEW (read 31 Oct). The cause is that no rule sets the stored form: CERT holds English names, Polish names (Polska, Słowacja, GRUZJA in capitals), the code PL and Poland, so Poland alone is written three ways, and the map has to guess each new spelling. <b>Open:</b> it needs its own plan, because it changes the calendar card (your before/after sheet first) and the stored data on CERT and PROD. I recommend that plan make the country a contract field: one stored form (the ISO code), written so by every scraper and the Admin editor, a one-time normalisation, and the card reading the code. I write it next unless you say otherwise.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">13 · The first run · 31 Oct, 11:55–11:58 UTC</p>
+    <h2>R A is done; the first run shows F9, a defect in my build</h2>
+    <p><b>R A on CERT</b> (one atomic statement, <code>CLOUD_SQL_CONFIRM</code>): PEW13es city Ateny and country Grecja, PEW17efs country Kanada, PEW8efs country Finlandia, and four state rows marking them as the person's. <code>vw_calendar</code> on CERT shows exactly those values.</p>
+    <p><b>evf-sync.yml</b>, dispatched in calendar mode (run 41198873894, green): on CERT, written 0, held 1 (PEW13's city: EVF says Athens, the person's Ateny stays, reported once). The first run seeded 116 state rows. The mirror then updated <b>one</b> event on PROD: PEW13es, now Ateny, Grecja. Madrid, Skopje and PEW5 did not change.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F9</span> PROD's time counts the mirror's own copies, so PROD looks newer than CERT</p>
+      <p>§02 says PROD keeps its values when <b>a person</b> edited PROD after CERT's last write. I built <code>fn_event_details_set_at</code> to read <b>every</b> audited change on PROD, including the mirror's. Each mirror run that copies a CERT write therefore makes PROD newer than that write. Madrid and Skopje: CERT wrote their details on 6 Oct at 12:53:51, the mirror copied them to PROD at 13:00:13, so PROD now counts as six minutes newer and keeps the August letter and V2. PEW5: CERT 5 Sep 19:20, PROD 26 Oct 13:23 (a mirror write). No person has changed these on PROD since 5 Sep. The tests missed it: pgTAP 117's only automated PROD write is older than CERT's, and nothing tests a newer one.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Fix</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>F9</b></td><td>Make the code do what §02 says</td><td><b>Tests first, each seen failing:</b> pgTAP CALSYNC.17, a mirror write on PROD after CERT's write does not make PROD newer, and CERT's letter reaches PROD (Madrid's real shape); CALSYNC.18, a person's PROD edit after CERT's write still keeps PROD; CALSYNC.19, an event no person ever changed on PROD takes CERT's details.<br><b>Then:</b> a new migration replaces <code>fn_event_details_set_at</code> with <code>fn_event_details_set_by_person_at</code>: the latest change to any of the nine made by a person on PROD (<code>txt_admin_user</code> set), and none when no person ever changed them. The new name says what it now answers. The mirror calls it; CERT newer means CERT's time is later than that, or no person ever edited PROD. CERT's side is unchanged: every write on CERT counts, a scraper's or a person's.<br><b>Records:</b> ADR-118 amendment, handbook tier text, FR-161 and CALSYNC rows, Appendix C, the pgTAP total and its note on the baseline history page.<br><b>Then:</b> preflight, commit, your go to push, CI and Release watched, your PROD approval, <code>evf-sync.yml</code> dispatched, PROD checked through <code>vw_calendar</code>: Madrid's October letter, Skopje's V3, PEW5's CERT address.</td><td><b>Signed 31 Oct, built:</b> CALSYNC.17 and 19 (and 13's count) seen failing on LOCAL, then green after migration <code>20261031000002_prod_details_time_counts_people_only.sql</code>; CALSYNC.18 passed before and after, as the guard it is. pgTAP 1558, all pass. Records updated: ADR-118 (status: released; amendment F9), ADR-081, 116, 117, the handbook, FR-161 and CALSYNC rows, Appendix C and D, and the baseline history. Branch <code>claude/prod-details-time-counts-people-only</code>.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F10</span> Preflight: the released migration still calls the function F9 drops</p>
+      <p>Preflight's postgrestools gate checks every migration after its cut-off (<code>postgres-language-server.jsonc</code>, <code>migrations.after</code> = 20261022000000) against today's schema. <code>20261031000001</code>, now applied on CERT and PROD (<code>deployed_migrations.json</code>, fingerprint <code>b5c92af6…</code>), calls <code>fn_event_details_set_at</code> at line 453, and F9 drops that function: 1 finding, gate red. Applied migrations are never edited. Everything else passes: pgTAP 1558, pytest, vitest, docs, coherence.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>F10</b></td><td>How F9 lands without the gate losing anything</td><td><b>A</b> Keep the name <code>fn_event_details_set_at</code> and give it the corrected meaning (a person's changes on that environment only, NULL when none), with a comment saying so; no new name. The released body resolves to the corrected function, and the gate keeps checking every file it checks today.<br><b>B</b> Keep the new name and move the cut-off to 20261031000001. The gate stops checking the seven applied migrations of 24–31 Oct, so a later schema change that breaks a function still defined only there (<code>fn_calendar_apply_fields</code>, <code>fn_copy_event_result_links</code>, <code>fn_first_name_initial_capitals</code>) would no longer be caught.<br><b>C</b> Keep the new name and leave the old function in place with its old meaning, called by nothing.</td><td><b>Decided: A</b> (in chat, 31 Oct). Built: migration <code>20261031000002</code> redefines <code>fn_event_details_set_at</code> with a comment stating the meaning; the interim <code>…_by_person_at</code> and the drop are gone; test 114 is unchanged from main; CALSYNC.01–19 pass. My recommendation was A: it changes the content, not the gate, and leaves no dead code. It costs the rename you signed in F9: the name says less than <code>…_by_person_at</code>, so the comment, the handbook and ADR-118 state the meaning. B loosens the gate; C keeps a function that answers the wrong question.</td></tr>
+      </tbody>
+    </table></div>
   </section>
 
   <section>

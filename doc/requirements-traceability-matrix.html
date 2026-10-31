@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="7bdfff318ed76cf092c600e4d6f7d6e3accde589b5a90731dcfea7a11e162087">
+<meta name="doc-source-sha256" content="a7104deb8a97d3ec40aad2b0290f054a38dca0612544ebad0af27b5ff5f641b7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>675 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>676 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -984,7 +984,7 @@
 | FR-158 | <strong><code>ingest</code> starts from PROD's master data, and only ingest and promote write results.</strong> <code>ingest-event.yml</code> refreshes CERT from PROD before the ingestion and applies the refresh only when it renumbers nobody and leaves nobody unpaired; otherwise it stops before any write and Telegram reports why. The daily EVF sync writes no result and tells the operator to ingest; <code>evf-results-import</code> only compares; <code>scrape-tournament.yml</code> writes CERT only. The bot's <code>ingest</code>, <code>promote</code> and <code>/help</code> texts name every organizer. | <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §7–§8, ADR-108 §2 | ROUTE.REFRESH.01–04, ROUTE.WRITERS.01–04, ROUTE.BOT.01 | Covered (2026-10-17, LOCAL) |
 | FR-159 | <strong>Equal totals share a place; the next place skips.</strong> Every ranking function returns <code>RANK() OVER (ORDER BY total DESC)</code>, so two fencers on the same total share a place and the next place is further down by the number sharing it (16, 16, 18). A shared place lists alphabetically by the shown name in Polish order. The rule applies to every season, and the season rules modal states it. In the FTL seed files a shared place is one tier, in the ranking's row order, in both generators. | <a href="adr/115-equal-totals-share-a-place.html">ADR-115</a> | RANK.TIE.01–08 | Covered (2026-10-18, LOCAL) |
 | FR-160 | <strong>Results links (URL wyników) are set by a person; calendar automation writes only the organizer's letter.</strong> No calendar automation writes <code>url_event</code> … <code>url_event_5</code>, before or after the event: not the EVF sync (create, reuse, refresh, date self-heal), the PZSz create or the CERT→PROD calendar mirror. A results link comes from Admin, the <code>url_event</code> input of <code>ingest-event.yml</code>, or promote's fill of an empty PROD slot from the CERT run. Calendar pages already stored in an open season's results slots are cleared once, unless an admin save set them. The URL ingestion refuses a link that is not an FTL schedule and a schedule that lists nothing, before anything is saved or wiped. <strong>Amended 2026-10-25 (D2 A, D7 A, ADR-117 amendment):</strong> the refresh that runs before every CERT ingest copies the event's results links from PROD when PROD holds one, and the PZSz &quot;send the ingest&quot; notice reads PROD's link, read only; the CERT→PROD mirror replaces a calendar page in PROD's URL komunikatu with CERT's letter. | <a href="adr/117-results-links-admin-only.html">ADR-117</a>, ADR-039, ADR-040, ADR-081, ADR-087, ADR-113, ADR-116 | CALURL.01–08, CALURL.10–23 | Covered (CALURL.01–19 released 2026-10-25, main 3bd13c4e, CERT + PROD; CALURL.20–23 released 2026-10-25, main 09179f2c, CERT + PROD) |
-| FR-161 | <strong>Event details written on CERT reach PROD on the next run, and every calendar scraper writes them under one contract.</strong> The nine event details are the name, the start and end dates, the city, the country, the weapons, the venue address, the invitation letter, the organizer's registration link and the entry fee with its currency. The CERT→PROD calendar mirror takes every one CERT holds when CERT wrote them later than PROD did (the latest audited change to any of the nine, else the row's creation); when PROD wrote later, PROD keeps its values and only an empty field is filled. A blank on CERT never clears PROD. Our own <code>register.html?event=</code> link is never copied or replaced, and a calendar page on PROD gives way to a letter. An event with nothing to change is not written. On CERT every calendar scraper (EVF, PZSz and every future one) follows one contract: an empty field takes the source's value, and an event page in the letter counts as empty; a source that changed replaces the scraper's own value; a value a person set is kept and the source's different value is reported once on Telegram; a blank from the source clears nothing; our own link is never written. | <a href="adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>, ADR-028, ADR-043, ADR-079, ADR-081, ADR-086, ADR-088, ADR-089, ADR-116, ADR-117 | CALSYNC.01–16, CALSYNC.20–50 | Covered (built 2026-10-31, LOCAL; release pending) |</p>
+| FR-161 | <strong>Event details written on CERT reach PROD on the next run, and every calendar scraper writes them under one contract.</strong> The nine event details are the name, the start and end dates, the city, the country, the weapons, the venue address, the invitation letter, the organizer's registration link and the entry fee with its currency. The CERT→PROD calendar mirror takes every one CERT holds when CERT wrote them (its latest audited change to any of the nine) later than a person last changed them on PROD, or when no person ever did: the mirror's own copies do not count. When a person changed them on PROD later, PROD keeps its values and only an empty field is filled. A blank on CERT never clears PROD. Our own <code>register.html?event=</code> link is never copied or replaced, and a calendar page on PROD gives way to a letter. An event with nothing to change is not written. On CERT every calendar scraper (EVF, PZSz and every future one) follows one contract: an empty field takes the source's value, and an event page in the letter counts as empty; a source that changed replaces the scraper's own value; a value a person set is kept and the source's different value is reported once on Telegram; a blank from the source clears nothing; our own link is never written. | <a href="adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>, ADR-028, ADR-043, ADR-079, ADR-081, ADR-086, ADR-088, ADR-089, ADR-116, ADR-117 | CALSYNC.01–50 | Covered (CALSYNC.01–16 and 20–50 released 2026-10-31, main 179b9846, CERT + PROD; CALSYNC.17–19, F9, built 2026-10-31, LOCAL) |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery by e-mail, ADR-080 §5); removed 2026-10-24 — the e-mail path is closed, and the seed files stay generated and downloadable from the shared link (FR-136).</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Current totals are in the Coverage Summary below, computed from the rows. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong> <strong>FR-155–FR-156 added 2026-10-06 (ADR-111); covered on LOCAL the same day, with a rehearsal on Poznań's real start lists.</strong> <strong>NFR-15 added 2026-10-24 (static checks are hard gates).</strong></p>
 </blockquote>
@@ -3533,7 +3533,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</h2>
-<p>Acceptance IDs for <a href="adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a> and <a href="plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html">doc/plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html</a>. FR-161. CALSYNC.17–19 are not used. The plan's F4 (<code>supabase/tests/19_phase3_wizard.sql</code> counted 5 of its 25 checks) is fixed in the same change; its checks keep their IDs.</p>
+<p>Acceptance IDs for <a href="adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a> and <a href="plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html">doc/plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html</a>. FR-161. CALSYNC.17–19 are the F9 amendment. The plan's F4 (<code>supabase/tests/19_phase3_wizard.sql</code> counted 5 of its 25 checks) is fixed in the same change; its checks keep their IDs.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -3547,49 +3547,56 @@
 <tbody>
 <tr>
 <td>CALSYNC.01–02</td>
-<td>CERT wrote its letter after PROD did, so PROD takes it (Madrid); a PROD letter that came with the row dates from <code>ts_created</code> (Skopje).</td>
+<td>CERT wrote its letter after PROD did, so PROD takes it (Madrid); a PROD letter no person changed gives way to CERT's later one (Skopje).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.03–05</td>
 <td>PROD written later than CERT keeps its details; CERT newer, all nine follow CERT; a blank on CERT never clears PROD (S1 A).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.06–07</td>
 <td>PROD's own registration link is never replaced; our own registration link on CERT is never copied.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.08–09</td>
 <td>Values compare as their type (50.0 from CERT equals PROD's 50); an event with nothing to change is not written (F2).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.10</td>
 <td>A payload without <code>ts_details_set</code> keeps the earlier rules (fill-blank, D7 A).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.11–12</td>
 <td>The registration switch, deadline, account and results link stay PROD's; a later PROD change outside the nine does not make PROD newer.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.13–16</td>
 <td>The updated count is the events that actually changed; a blank-only payload writes nothing; the name follows CERT when CERT is newer; a repeated run is a no-op.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
+</tr>
+<tr>
+<td>CALSYNC.17–19</td>
+<td>F9: a mirror write on PROD after CERT's write does not make PROD newer (Madrid's shape); a person's PROD edit after CERT's write keeps PROD, whatever the mirror wrote since; an event no person changed on PROD takes CERT's details.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/117_mirror_cert_event_details.sql</code></td>
 <td><strong>Built, LOCAL</strong> (2026-10-31)</td>
@@ -3599,84 +3606,84 @@
 <td><code>fn_calendar_apply_fields</code>: an empty field takes the source's value, recorded as the scraper's; a source that changed replaces the scraper's value.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.23–25</td>
 <td>A person's value is kept; the source's different value is reported; a blank from the source clears nothing.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.26–28</td>
 <td>Our own registration link on CERT is never replaced, a source never writes it, and it is not reported as held.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.29</td>
 <td>An event page in the letter counts as empty (C1, ADR-117 D7 A).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.30–32</td>
 <td>With no state, a value a person last set is the person's and a value automation set is the scraper's; the same value seeds the state and writes nothing.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.33–35</td>
 <td>Values compare as their type (50.0 = 50, <code>{FOIL,EPEE}</code> = <code>{EPEE,FOIL}</code>); a repeated run writes and reports nothing again; a newer different source value is reported again.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.36–38</td>
 <td>A field outside the nine is refused; the write function is <code>service_role</code> only; the state table is closed to <code>anon</code> and <code>authenticated</code>.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.39</td>
 <td>The EVF calendar ingest no longer writes an existing event's details, so it cannot clear a city or country a person set (F1).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/118_calendar_field_contract.sql</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.40–41</td>
 <td>Our registration link and the calendar pages are recognised; an EVF event's details map to the columns, blanks to nothing and our link to nothing, weapons left to the code plan (C2).</td>
 <td>pytest</td>
 <td><code>python/tests/test_calendar_scraper_contract.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.42–44</td>
 <td>The EVF run writes its details through <code>fn_calendar_apply_fields</code>; the refresh and the identity sync no longer carry them; a held value is reported on Telegram.</td>
 <td>pytest</td>
 <td><code>python/tests/test_calendar_scraper_contract.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.45–49</td>
 <td>PZSz without rule 8: a link the run wrote follows the listing's new link and the passes read the new letter; a link a person set stays and the passes read it; an event page in the letter counts as empty (C1); a fee the run wrote follows the letter; a fee with no provenance is a person's and stays.</td>
 <td>pytest</td>
 <td><code>python/tests/test_calendar_scraper_contract.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 <tr>
 <td>CALSYNC.50</td>
 <td><code>promote.py --mode calendar</code> reads when CERT last wrote each event's details and sends it as <code>ts_details_set</code>.</td>
 <td>pytest</td>
 <td><code>python/tests/test_calendar_scraper_contract.py</code></td>
-<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+<td><strong>Released</strong> (2026-10-31, main 179b9846, CERT + PROD)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3691,5 +3698,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7bdfff318ed76cf092c600e4d6f7d6e3accde589b5a90731dcfea7a11e162087</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a7104deb8a97d3ec40aad2b0290f054a38dca0612544ebad0af27b5ff5f641b7</code></footer>
 </div></body></html>
