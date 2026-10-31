@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="dbf7b1941868a944412ec3085b16b8c227796216649b959467977b1dc993de4a">
+<meta name="doc-source-sha256" content="accf1d258635e676e738d9bd9c26c821f1494686c984a71eb0adbfa6bee4ce67">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -985,7 +985,7 @@
 | FR-159 | <strong>Equal totals share a place; the next place skips.</strong> Every ranking function returns <code>RANK() OVER (ORDER BY total DESC)</code>, so two fencers on the same total share a place and the next place is further down by the number sharing it (16, 16, 18). A shared place lists alphabetically by the shown name in Polish order. The rule applies to every season, and the season rules modal states it. In the FTL seed files a shared place is one tier, in the ranking's row order, in both generators. | <a href="adr/115-equal-totals-share-a-place.html">ADR-115</a> | RANK.TIE.01–08 | Covered (2026-10-18, LOCAL) |
 | FR-160 | <strong>Results links (URL wyników) are set by a person; calendar automation writes only the organizer's letter.</strong> No calendar automation writes <code>url_event</code> … <code>url_event_5</code>, before or after the event: not the EVF sync (create, reuse, refresh, date self-heal), the PZSz create or the CERT→PROD calendar mirror. A results link comes from Admin, the <code>url_event</code> input of <code>ingest-event.yml</code>, or promote's fill of an empty PROD slot from the CERT run. Calendar pages already stored in an open season's results slots are cleared once, unless an admin save set them. The URL ingestion refuses a link that is not an FTL schedule and a schedule that lists nothing, before anything is saved or wiped. <strong>Amended 2026-10-25 (D2 A, D7 A, ADR-117 amendment):</strong> the refresh that runs before every CERT ingest copies the event's results links from PROD when PROD holds one, and the PZSz &quot;send the ingest&quot; notice reads PROD's link, read only; the CERT→PROD mirror replaces a calendar page in PROD's URL komunikatu with CERT's letter. | <a href="adr/117-results-links-admin-only.html">ADR-117</a>, ADR-039, ADR-040, ADR-081, ADR-087, ADR-113, ADR-116 | CALURL.01–08, CALURL.10–23 | Covered (CALURL.01–19 released 2026-10-25, main 3bd13c4e, CERT + PROD; CALURL.20–23 released 2026-10-25, main 09179f2c, CERT + PROD) |
 | FR-161 | <strong>Event details written on CERT reach PROD on the next run, and every calendar scraper writes them under one contract.</strong> The nine event details are the name, the start and end dates, the city, the country, the weapons, the venue address, the invitation letter, the organizer's registration link and the entry fee with its currency. The CERT→PROD calendar mirror takes every one CERT holds when CERT wrote them (its latest audited change to any of the nine) later than a person last changed them on PROD, or when no person ever did: the mirror's own copies do not count. When a person changed them on PROD later, PROD keeps its values and only an empty field is filled. A blank on CERT never clears PROD. Our own <code>register.html?event=</code> link is never copied or replaced, and a calendar page on PROD gives way to a letter. An event with nothing to change is not written. On CERT every calendar scraper (EVF, PZSz and every future one) follows one contract: an empty field takes the source's value, and an event page in the letter counts as empty; a source that changed replaces the scraper's own value; a value a person set is kept and the source's different value is reported once on Telegram; a blank from the source clears nothing; our own link is never written. | <a href="adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>, ADR-028, ADR-043, ADR-079, ADR-081, ADR-086, ADR-088, ADR-089, ADR-116, ADR-117 | CALSYNC.01–50 | Covered (CALSYNC.01–16 and 20–50 released 2026-10-31, main 179b9846, CERT + PROD; CALSYNC.17–19, F9, released 2026-10-31, main 5c37a5ca) |
-| FR-162 | <strong>A run takes only final brackets, every results engine says when a bracket is final, and the results route reads one organizer registry.</strong> A bracket is final when its engine says so: FTL when its schedule row says Finished, Engarde when the competition is completed. For an engine that says nothing (4fence, Ophardt, d'Artagnan, EVF's results API, a single results page), the live CERT ingest takes a bracket once its exact content has been unchanged for 60 minutes or the event's end date has passed; promote's plan takes exactly what the CERT run took; the daily close takes what is published. A bracket that is not final is skipped with a reason starting &quot;not final&quot; and keeps the event IN_PROGRESS. Sightings are stored on CERT in <code>tbl_listing_sighting</code>, written only by <code>service_role</code> through <code>fn_listing_sighting_record</code>, and never deleted. Every organizer on the route, its route class (domestic, roster, international) and the code families of its events live in <code>python/pipeline/organizers.py</code>; no other module matches an event-code prefix, and an event of no registered family is refused by name before anything is read. A new organizer is one registry entry plus its own organizer row, tournament type and calendar scraper. Every ingest and promote run is titled with its event code. | <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §1, §2, §5, ADR-108 §7, ADR-113, ADR-105, ADR-106 | FINAL.01–08 (FINAL.05 is pgTAP 119.1–119.4), ENGINE.01–03, ROUTE.ORG.01–13, RUNNAME.01–02 | Covered (2026-10-31, LOCAL) |</p>
+| FR-162 | <strong>A run takes only final brackets, every results engine says when a bracket is final, and the results route reads one organizer registry.</strong> A bracket is final when its engine says so: FTL when its schedule row says Finished, Engarde when the competition is completed. For an engine that says nothing (4fence, Ophardt, d'Artagnan, EVF's results API, a single results page), the live CERT ingest takes a bracket once its exact content has been unchanged for 60 minutes or the event's end date has passed; promote's plan takes exactly what the CERT run took; the daily close takes what is published. A bracket that is not final is skipped with a reason starting &quot;not final&quot; and keeps the event IN_PROGRESS. Sightings are stored on CERT in <code>tbl_listing_sighting</code>, written only by <code>service_role</code> through <code>fn_listing_sighting_record</code>, and never deleted. Every organizer on the route, its route class (domestic, roster, international) and the code families of its events live in <code>python/pipeline/organizers.py</code>; no other module matches an event-code prefix, and an event of no registered family is refused by name before anything is read. A new organizer is one registry entry plus its own organizer row, tournament type and calendar scraper. Every ingest and promote run is titled with its event code. | <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §1, §2, §5, ADR-108 §7, ADR-113, ADR-105, ADR-106 | FINAL.01–08 (FINAL.05 is pgTAP 119.1–119.4), ENGINE.01–03, ROUTE.ORG.01–13, RUNNAME.01–02 | Covered (released 2026-10-31, main 87ec5348, CERT + PROD) |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery by e-mail, ADR-080 §5); removed 2026-10-24 — the e-mail path is closed, and the seed files stay generated and downloadable from the shared link (FR-136).</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Current totals are in the Coverage Summary below, computed from the rows. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong> <strong>FR-155–FR-156 added 2026-10-06 (ADR-111); covered on LOCAL the same day, with a rehearsal on Poznań's real start lists.</strong> <strong>NFR-15 added 2026-10-24 (static checks are hard gates).</strong> <strong>FR-161 added 2026-10-31 (ADR-118); FR-162 added the same day (ADR-119 release 1), when the summary below was found one Covered row short and corrected.</strong></p>
 </blockquote>
@@ -3779,77 +3779,77 @@
 <td>A running Engarde final keeps its event IN_PROGRESS; the readers keep its state; the daily close leaves the event open.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_finality.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FINAL.04, 04b–04d</td>
 <td>The sightings rule: a bracket from an engine without a signal waits 60 minutes unless the event is over (04); EVF's results follow it (04b); promote's plan takes exactly what the CERT run took, by key and content hash, and writes no sighting (04c); the live ingest records its sightings on its own database, and the event has ended the day after its end date in Warsaw (04d).</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_finality.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FINAL.04e</td>
 <td>Replay hands promote's plan the CERT run's rounds, so the plan takes exactly what the run took.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_replay.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FINAL.05 (119.1–119.4)</td>
 <td><code>tbl_listing_sighting</code>: RLS on, closed to <code>anon</code> and <code>authenticated</code>, <code>service_role</code> without DELETE; <code>fn_listing_sighting_record</code> keeps the first sighting, moves the last, starts a new row for new content and refuses a malformed hash.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/119_listing_sighting.sql</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FINAL.06–07</td>
 <td>FTL's not-final reason and a schedule's hash are unchanged; an event of several sources hashes alike in the ingest and the daily close.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_finality.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FINAL.08</td>
 <td>The PROD seed export never names the sightings table, and an export of an empty database carries no trace of it.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_finality.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>ENGINE.01, 01b, 02–03</td>
 <td>Every engine is classified and answers whether a bracket is final, and a signalling engine marks every bracket it gives finished (01, 01b); an engine without a signal cannot be read without a finality rule (02); the handbook's engine table lists exactly <code>ENGINES</code> (03).</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_finality.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>ROUTE.ORG.01–05</td>
 <td>Every code family keeps its type and gets its true organizer; the registry agrees with the PROD seed; an unregistered family is refused by name before anything is read; a fifth organizer needs nothing outside the registry; the daily close selects by it.</td>
 <td>pytest</td>
 <td><code>python/tests/test_organizer_registry.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>ROUTE.ORG.06–12</td>
 <td>No module under <code>python/</code> matches a code prefix or writes an organizer by hand (two other facts named); the post-commit hooks, the PEW rename exception, the matcher, the staging tool and the domestic fencer scan read the registry; the minimum helper routes as the database does.</td>
 <td>pytest</td>
 <td><code>python/tests/test_organizer_registry.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>ROUTE.ORG.13</td>
 <td>The handbook's organizer and family tables list exactly the registry.</td>
 <td>pytest</td>
 <td><code>python/tests/test_organizer_registry.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 <tr>
 <td>RUNNAME.01–02</td>
 <td><code>ingest-event.yml</code> and <code>promote.yml</code> title each run with its event code, and a dry run says so.</td>
 <td>pytest</td>
 <td><code>python/tests/test_workflow_run_names.py</code></td>
-<td>Covered (2026-10-31, LOCAL)</td>
+<td><strong>Released</strong> (2026-10-31, main 87ec5348, CERT + PROD)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3864,5 +3864,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>dbf7b1941868a944412ec3085b16b8c227796216649b959467977b1dc993de4a</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>accf1d258635e676e738d9bd9c26c821f1494686c984a71eb0adbfa6bee4ce67</code></footer>
 </div></body></html>
