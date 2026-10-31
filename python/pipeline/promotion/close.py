@@ -34,10 +34,15 @@ from python.pipeline.promotion import lifecycle
 from python.pipeline.promotion.run_record import schedule_sha256
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]+$")
-# ADR-113: every organizer's events: SPWS (PPW, MPW), PZSz (PPS, MPS), EVF
-# (PEW, MEW, the IMEW code) and FIE (MSW, PSW, the IMSW code).
-ROUTE_CODES = r"^(PPW|MPW|PPS|MPS|PEW|MEW|IMEW|MSW|PSW|IMSW)[0-9A-Za-z]*-"
 Schedule = tuple[list[dict], list[dict]]
+
+
+def route_code_regex() -> str:
+    """Every event code the route carries, from the organizer registry
+    (ADR-113 §6, ADR-119 §2): SPWS, PZSz, EVF, FIE and any organizer added."""
+    from python.pipeline.organizers import route_code_regex as _regex
+
+    return _regex()
 
 
 class CloseFailed(RuntimeError):
@@ -101,6 +106,8 @@ def check(
     listings = run.get("listings") or {}
     if listings.get("sources") is not None:
         if read_sources is None:
+            # The close runs after the end date, so every published bracket of
+            # an engine without a finished signal is settled (ADR-119 §1).
             from python.pipeline.international_sources import read_schedule as _read_sources
 
             read_sources = _read_sources
@@ -109,9 +116,12 @@ def check(
         kept, skipped = read_schedule(run["url_event"])
     kept, not_final = lifecycle.split_final(kept)
     skipped = [*skipped, *not_final]
-    if not_final:
-        reasons.append(f"not final yet: {', '.join(s['name'] for s in not_final)}")
-    late = lifecycle.last_day([*kept, *not_final])
+    # Every engine's not-final bracket: FTL's from its schedule row, and an
+    # Engarde competition still running, which the reader already skipped.
+    waiting = [s for s in skipped if lifecycle.is_not_final(s.get("reason"))]
+    if waiting:
+        reasons.append(f"not final yet: {', '.join(s['name'] for s in waiting)}")
+    late = lifecycle.last_day([*kept, *waiting])
     if late and late > end.isoformat():
         reasons.append(
             f"a listing is dated {late}, after the end date {end.isoformat()}: "
@@ -212,7 +222,7 @@ class SqlEnv:
             self.transport.fetch_json(
                 "SELECT coalesce(jsonb_agg(e.txt_code ORDER BY e.txt_code), '[]'::jsonb) AS j "
                 "FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season "
-                f"WHERE s.bool_active AND e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{ROUTE_CODES}' "
+                f"WHERE s.bool_active AND e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{route_code_regex()}' "
                 f"AND e.dt_end < DATE '{today.isoformat()}'"
             )
             or []

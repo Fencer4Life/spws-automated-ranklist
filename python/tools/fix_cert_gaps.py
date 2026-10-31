@@ -19,6 +19,7 @@ import argparse
 import sys
 import time
 
+from python.pipeline import organizers
 from python.tools.audit_results import (
     ENVS,
     fetch_tournaments_with_urls,
@@ -103,7 +104,7 @@ def fix_tournament(
     except Exception as e:
         return {"code": code, "error": str(e), "inserted": 0, "skipped": 0}
 
-    if pol_only and tournament["enum_type"] in ("PEW", "MEW", "MSW", "PSW"):
+    if pol_only and tournament["enum_type"] in organizers.international_types():
         scraped = [r for r in scraped if r.get("country", "") == "POL"]
 
     db_results = fetch_db_results_detailed(ref, code)

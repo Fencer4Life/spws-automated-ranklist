@@ -22,9 +22,15 @@ from pathlib import Path
 import openpyxl
 from rapidfuzz import fuzz
 
-# Add project python dir to path for imports
+# Add project python dir to path for imports, and the repository root for the
+# organizer registry.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from python.pipeline import organizers
+
 from matcher.fuzzy_match import fold_diacritics, normalize_name
+
+_TXT_CODE = re.compile(r"txt_code = '([^']+)'")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SEED_PATH = PROJECT_ROOT / "supabase" / "seed_tbl_fencer.sql"
@@ -62,7 +68,7 @@ ALIASES = {
 
 
 def scan_ppw_mpw_fencer_ids(data_dir: Path) -> set[int]:
-    """Scan all data SQL files and return fencer IDs that appear in PPW/MPW/GPW results.
+    """Scan all data SQL files and return fencer IDs that appear in SPWS results.
 
     Derives the domestic fencer set dynamically from actual data files,
     so the set never goes stale (ADR-019).
@@ -83,13 +89,13 @@ def scan_ppw_mpw_fencer_ids(data_dir: Path) -> set[int]:
                     # Check tournament code in the SELECT line (i+1 or i+2)
                     for j in range(i + 1, min(i + 3, len(lines))):
                         if "txt_code" in lines[j]:
-                            code_line = lines[j]
-                            # PPW/MPW/GPW are domestic; PEW/MEW/PSW/MSW/IMEW/IMSW are international
-                            is_domestic = any(t in code_line for t in ["PPW", "MPW", "GPW"])
-                            is_international = any(
-                                t in code_line for t in ["PEW", "MEW", "PSW", "MSW", "IMEW", "IMSW"]
-                            )
-                            if is_domestic and not is_international:
+                            # A result is domestic when the registry files its
+                            # code family under SPWS (ADR-119 §2), as the
+                            # pipeline's own check does. The substring test this
+                            # replaces looked for GPW, which no file holds, and
+                            # missed every 2023/24 Grand Prix (GP1..GP8).
+                            code = _TXT_CODE.search(lines[j])
+                            if code and organizers.organizer_of(code.group(1)) == "SPWS":
                                 ppw_mpw_ids.add(fid)
                             break
 

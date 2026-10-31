@@ -14,7 +14,12 @@ Usage (called from staging_spreadsheet.py populate mode):
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+# The repository root, so the organizer registry imports however this is loaded.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from python.pipeline import organizers  # noqa: E402
 
 # Weapon name mapping (Polish → English)
 WEAPON_MAP = {"SZPADA": "EPEE", "FLORET": "FOIL", "SZABLA": "SABRE"}
@@ -277,7 +282,9 @@ def build_events_from_tournaments(tournaments: list[dict]) -> list[dict]:
                 "name": t["event_prefix"],
                 "dt_start": t["dt_tournament"],
                 "dt_end": t["dt_tournament"],
-                "organizer": "SPWS" if t["type"] in ("PPW", "MPW") else "EVF",
+                # The registry's organizer (ADR-119 §2); it used to give MSW
+                # and PSW to EVF.
+                "organizer": organizers.organizer_of(t["event_prefix"]),
                 "status": "COMPLETED",
             }
         else:
@@ -309,9 +316,9 @@ def determine_import_status(result_count: int | None) -> str:
 def extract_fencers_from_results(tournaments: list[dict]) -> list[dict]:
     """Collect unique fencers from SPWS-organized tournament source files.
 
-    Only includes fencers who participated in PPW, GPW, or MPW tournaments
-    (SPWS-organized events). Fencers who only appear in international events
-    (PEW, MEW, PSW, MSW) are excluded.
+    Only includes fencers who participated in a domestic tournament (the
+    registry's domestic types, PPW and MPW; ADR-119 §2). Fencers who only
+    appear in international events (PEW, MEW, PSW, MSW) are excluded.
 
     Args:
         tournaments: list of tournament dicts with source_file and import_status.
@@ -322,8 +329,9 @@ def extract_fencers_from_results(tournaments: list[dict]) -> list[dict]:
     """
     from scrapers.fencingtime_xml import parse_fencingtime_xml_enriched
 
-    # Only extract fencers from SPWS-organized tournament types
-    _SPWS_TYPES = {"PPW", "GPW", "MPW"}
+    # Only extract fencers from domestic tournament types. The old set also
+    # held GPW, a type no tournament carries (the GP rounds are PPW).
+    _SPWS_TYPES = organizers.domestic_types()
 
     seen: dict[tuple[str, str], dict] = {}  # (surname_upper, first_upper) → fencer
 
@@ -372,7 +380,7 @@ _excel_fencer_cache: set[str] = set()
 
 
 def _extract_fencers_from_excel(xlsx_path: Path, seen: dict) -> None:
-    """Extract fencer names from PPW/GPW/MPW sheets in an Excel workbook."""
+    """Extract fencer names from the domestic (PPW, MPW) sheets of a workbook."""
     import openpyxl
 
     from tools.import_events_from_excel import (
@@ -381,7 +389,7 @@ def _extract_fencers_from_excel(xlsx_path: Path, seen: dict) -> None:
         detect_layout,
     )
 
-    _SPWS_TYPES = {"PPW", "GPW", "MPW"}
+    _SPWS_TYPES = organizers.domestic_types()
 
     # Skip if already processed this file
     path_str = str(xlsx_path)

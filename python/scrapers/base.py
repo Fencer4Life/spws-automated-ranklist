@@ -68,8 +68,10 @@ def check_min_participants(
 ) -> dict:
     """Check if a tournament meets the minimum participant threshold.
 
-    EVF tournaments (PEW, MEW, MSW) require min_evf participants.
-    Domestic tournaments (PPW, MPW) require min_ppw participants.
+    PEW, MEW and MSW tournaments require min_evf participants; every other
+    type, PSW included, requires min_ppw. This is ADR-066's threshold routing,
+    which the database holds per type and pgTAP SS26.TYPE.02 pins; it is not
+    the organizer registry's international set (ROUTE.ORG.10).
     """
     evf_types = {"PEW", "MEW", "MSW"}
     if tournament_type in evf_types:

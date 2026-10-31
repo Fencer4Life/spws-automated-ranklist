@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-id" content="HB-REF-ORGANIZERS">
+<meta name="doc-status" content="current">
+<meta name="doc-type" content="reference">
+<meta name="doc-owner" content="Pipeline">
+<meta name="last-verified" content="2026-10-31">
+<meta name="source-globs" content="python/pipeline/organizers.py; python/pipeline/international_sources.py; python/pipeline/promotion/lifecycle.py; supabase/migrations/*listing_sighting*">
+<meta name="review-triggers" content="An organizer, code family, tournament type or results engine added or changed; a finality rule or the settle time changed; any new code that reads an event-code prefix">
+<title>Organizers and Results Engines · SPWS Handbook</title>
+<link rel="stylesheet" href="../../adr/assets/adr.css"><link rel="stylesheet" href="../assets/handbook.css">
+</head>
+<body><div class="page">
+<header class="handbook-header mast"><div class="mast-main"><nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Reference</span></nav><p class="eyebrow">Reference · Results route · Registries</p><h1>Organizers and results engines</h1><p class="dek">Who organizes an event, what its code stands for, how its results are ingested, and when one of its brackets counts as final.</p><div class="doc-meta"><span>Two registries, one page</span><span>Checked by ROUTE.ORG.13 and ENGINE.03</span></div></div><aside class="facts" data-frame="handbook" aria-label="Page metadata"><dl><div><dt>Status</dt><dd class="current">Current</dd></div><div><dt>Owner</dt><dd class="">Pipeline</dd></div><div><dt>Type</dt><dd class="">Reference</dd></div><div><dt>Last verified</dt><dd class="">31 October 2026</dd></div><div><dt>Page id</dt><dd class="">HB-REF-ORGANIZERS</dd></div></dl></aside></header>
+<div class="layout" data-frame="handbook"><nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#purpose">Purpose</a></li><li class="depth-2"><a href="#routes">Route classes</a></li><li class="depth-2"><a href="#organizers">The organizers</a></li><li class="depth-2"><a href="#families">The code families</a></li><li class="depth-2"><a href="#engines">The results engines</a></li><li class="depth-2"><a href="#finality">When a bracket is final</a></li><li class="depth-2"><a href="#adding-an-organizer">Adding an organizer</a></li><li class="depth-2"><a href="#adding-an-engine">Adding a results engine</a></li><li class="depth-2"><a href="#look-alikes">Sets that look like the registry and are not</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-2"><a href="#decisions">Related decisions</a></li><li class="depth-2"><a href="#change-triggers">Change triggers</a></li></ol></nav><main>
+
+<section id="purpose">
+<p class="kicker">Why this page exists</p>
+<h2>Purpose</h2>
+<p>An event's code says three things: who organizes the event, which tournament type its results score as, and how those results reach the ranklist. A bracket's results engine says a fourth: whether the bracket is final yet. Two registries in the code hold these facts, and nothing else states them.</p>
+<ul>
+<li><code>python/pipeline/organizers.py</code> holds the organizers on the results route, their route class and the code families of their events.</li>
+<li><code>ENGINES</code> in <code>python/pipeline/international_sources.py</code> holds the results engines and whether each one says when a bracket is final.</li>
+</ul>
+<p>The tables below repeat both registries for readers. ROUTE.ORG.13 and ENGINE.03 fail when a table and the code disagree. Adding an organizer or an engine starts here (<a href="../../adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a>).</p>
+</section>
+
+<section id="routes">
+<p class="kicker">Three ways in</p>
+<h2>Route classes</h2>
+<p>Every organizer belongs to one route class. The class decides how a bracket's rows become our results, and which driver ingests the event.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Route</th><th>Organizers</th><th>Which rows are ours</th><th>Engines read</th><th>Driver</th></tr></thead>
+<tbody>
+<tr><td><code>domestic</code></td><td>SPWS</td><td>Every row. A row is matched to the roster or creates a fencer (<a href="../../adr/020-seed-generator-domestic-auto-create.html">ADR-020</a>); a combined pool is split by birth year.</td><td>The event's FTL schedule</td><td><code>_ingest_event_rounds</code></td></tr>
+<tr><td><code>roster</code></td><td>PZSz</td><td>A row only when a stored start list confirms its surname, first name and birth year (<a href="../../adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>, <a href="../../adr/112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>).</td><td>The event's FTL schedule</td><td><code>_ingest_pzsz_event_rounds</code></td></tr>
+<tr><td><code>international</code></td><td>EVF, FIE, and any federation added later</td><td>Our fencers' rows, admitted by identity (<a href="../../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>). One tournament per source bracket, with the source N and place (<a href="../../adr/105-international-results-keep-source-bracket.html">ADR-105</a>).</td><td>Any engine in the engine table</td><td><code>_ingest_international_event_rounds</code></td></tr>
+</tbody></table></div>
+<p>An event whose code belongs to no registered family, or to a family that is not ingested, is refused by name before anything is read or recorded (<code>organizers.require_route</code>). Ingest, promote's plan and the daily close all start with that check.</p>
+</section>
+
+<section id="organizers">
+<p class="kicker">Registry · organizers</p>
+<h2>The organizers</h2>
+<div class="tablewrap"><table id="organizers">
+<thead><tr><th>Code</th><th>Name</th><th>Route</th><th>FIE-like admission</th></tr></thead>
+<tbody>
+<tr data-organizer="SPWS" data-route="domestic" data-fie-like="no"><td><code>SPWS</code></td><td>Stowarzyszenie Polskich Weteranów Szermierki</td><td><code>domestic</code></td><td>no</td></tr>
+<tr data-organizer="PZSz" data-route="roster" data-fie-like="no"><td><code>PZSz</code></td><td>Polski Związek Szermierczy</td><td><code>roster</code></td><td>no</td></tr>
+<tr data-organizer="EVF" data-route="international" data-fie-like="no"><td><code>EVF</code></td><td>European Veterans Fencing</td><td><code>international</code></td><td>no</td></tr>
+<tr data-organizer="FIE" data-route="international" data-fie-like="yes"><td><code>FIE</code></td><td>Fédération Internationale d'Escrime</td><td><code>international</code></td><td>yes</td></tr>
+</tbody></table></div>
+<p>The code is <code>tbl_organizer.txt_code</code>; ROUTE.ORG.02 checks that PROD holds exactly these four. FIE-like admission is <a href="../../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>'s FIE amendment: a row needs no PPW or MPW start, and a confirmed alias counts.</p>
+</section>
+
+<section id="families">
+<p class="kicker">Registry · code families</p>
+<h2>The code families</h2>
+<p>A family is the first segment of an event code, before the season, matched whole: <code>PEW2efs</code> of <code>PEW2efs-2026-2027</code>.</p>
+<div class="tablewrap"><table id="families">
+<thead><tr><th>Family</th><th>Pattern</th><th>Example</th><th>Type</th><th>Organizer</th><th>Route</th></tr></thead>
+<tbody>
+<tr data-family="PPW" data-type="PPW" data-organizer="SPWS" data-route="domestic"><td>PPW</td><td><code>PPW[0-9]+</code></td><td><code>PPW1-2026-2027</code></td><td>PPW</td><td>SPWS</td><td><code>domestic</code></td></tr>
+<tr data-family="MPW" data-type="MPW" data-organizer="SPWS" data-route="domestic"><td>MPW</td><td><code>MPW</code></td><td><code>MPW-2026-2027</code></td><td>MPW</td><td>SPWS</td><td><code>domestic</code></td></tr>
+<tr data-family="PPS" data-type="PPS" data-organizer="PZSz" data-route="roster"><td>PPS</td><td><code>PPS[0-9]+[WM]?[efsEFS]*</code></td><td><code>PPS2Wefs-2026-2027</code></td><td>PPS</td><td>PZSz</td><td><code>roster</code></td></tr>
+<tr data-family="MPS" data-type="MPS" data-organizer="PZSz" data-route="roster"><td>MPS</td><td><code>MPS[WM]?[efsEFS]*</code></td><td><code>MPSMe-2026-2027</code></td><td>MPS</td><td>PZSz</td><td><code>roster</code></td></tr>
+<tr data-family="PEW" data-type="PEW" data-organizer="EVF" data-route="international"><td>PEW</td><td><code>PEW[0-9]+[efsEFS]*</code></td><td><code>PEW2efs-2026-2027</code></td><td>PEW</td><td>EVF</td><td><code>international</code></td></tr>
+<tr data-family="MEW" data-type="MEW" data-organizer="EVF" data-route="international"><td>MEW</td><td><code>MEW</code></td><td><code>MEW-2026-2027</code></td><td>MEW</td><td>EVF</td><td><code>international</code></td></tr>
+<tr data-family="IMEW" data-type="MEW" data-organizer="EVF" data-route="international"><td>IMEW</td><td><code>IMEW</code></td><td><code>IMEW-2026-2027</code></td><td>MEW</td><td>EVF</td><td><code>international</code></td></tr>
+<tr data-family="DMEW" data-type="MPW" data-organizer="EVF" data-route="none"><td>DMEW</td><td><code>DMEW</code></td><td><code>DMEW-2025-2026</code></td><td>MPW</td><td>EVF</td><td>none: the team championship is not ingested</td></tr>
+<tr data-family="MSW" data-type="MSW" data-organizer="FIE" data-route="international"><td>MSW</td><td><code>MSW</code></td><td><code>MSW-2026-2027</code></td><td>MSW</td><td>FIE</td><td><code>international</code></td></tr>
+<tr data-family="IMSW" data-type="MSW" data-organizer="FIE" data-route="international"><td>IMSW</td><td><code>IMSW</code></td><td><code>IMSW-2025-2026</code></td><td>MSW</td><td>FIE</td><td><code>international</code></td></tr>
+<tr data-family="PSW" data-type="PSW" data-organizer="FIE" data-route="international"><td>PSW</td><td><code>PSW</code></td><td><code>PSW-2026-2027</code></td><td>PSW</td><td>FIE</td><td><code>international</code> (reserved, <a href="../../adr/008-psw-msw-international-pool.html">ADR-008</a>)</td></tr>
+<tr data-family="GP" data-type="PPW" data-organizer="SPWS" data-route="none"><td>GP</td><td><code>GP[0-9]+</code></td><td><code>GP1-2023-2024</code></td><td>PPW</td><td>SPWS</td><td>none: the 2023/24 Grand Prix, a closed season</td></tr>
+</tbody></table></div>
+<p>One stored code belongs to no family: <code>VFC-2023-2024</code>, an event row with no bracket whose type nothing stored records. The registry names nothing for it rather than guess, so any code that asks gets <code>UNKNOWN</code>. The daily close selects its events with one regular expression built from the ingested families (<code>organizers.route_code_regex</code>).</p>
+</section>
+
+<section id="engines">
+<p class="kicker">Registry · results engines</p>
+<h2>The results engines</h2>
+<p>A domestic or PZSz event is read from its FTL schedule only. An international event is read from every result link it holds (<code>url_event</code> to <code>url_event_5</code>), or from EVF's own results when it holds none. Each link is read by the engine that published it.</p>
+<div class="tablewrap"><table id="engines">
+<thead><tr><th>Engine</th><th>Recognised by</th><th>Says when a bracket is final</th><th>A bracket that is not final yet</th></tr></thead>
+<tbody>
+<tr data-engine="ftl" data-signal="yes"><td>FencingTimeLive</td><td>a tournament schedule link (<code>/tournaments/eventSchedule/</code>)</td><td>yes: its schedule row says Finished</td><td>skipped as “not final (its schedule row does not say Finished)”</td></tr>
+<tr data-engine="engarde" data-signal="yes"><td>Engarde</td><td>a competition link (<code>/tournament/</code>)</td><td>yes: the competition's state is completed</td><td>skipped as “not final (Engarde shows it …)”, with the state Engarde shows</td></tr>
+<tr data-engine="fourfence" data-signal="no"><td>4fence</td><td>a 4fence event link</td><td>no</td><td>the 60-minute rule</td></tr>
+<tr data-engine="ophardt" data-signal="no"><td>Ophardt</td><td>an Ophardt tournament link</td><td>no</td><td>the 60-minute rule</td></tr>
+<tr data-engine="dartagnan" data-signal="no"><td>d'Artagnan</td><td>a d'Artagnan index link</td><td>no</td><td>the 60-minute rule</td></tr>
+<tr data-engine="evf" data-signal="no"><td>EVF results</td><td><code>evf:&lt;EVF event id&gt;</code>, for an event with no result link</td><td>no</td><td>the 60-minute rule</td></tr>
+<tr data-engine="page" data-signal="no"><td>a single results page</td><td>any other link</td><td>no</td><td>the 60-minute rule</td></tr>
+</tbody></table></div>
+<p><code>engine_of</code> recognises a link in the order of the table and dispatches it exactly as the reader does (ENGINE.01).</p>
+</section>
+
+<section id="finality">
+<p class="kicker">One question per bracket</p>
+<h2>When a bracket is final</h2>
+<p>A run takes only the brackets that are final. A skipped bracket's reason starts with “not final”. Any such skip keeps the event <code>IN_PROGRESS</code>: the daily close leaves it open, and the next ingest reads the bracket again. A multi-day event is therefore ingested several times while it runs, each run adding the brackets that have finished since.</p>
+<p>An engine that says when a bracket is final decides for itself. For an engine that says nothing, the reader that asks decides:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Who reads</th><th>Rule</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>The live ingest on CERT</td><td>A bracket is final once its exact content (its SHA-256) was first seen 60 minutes ago or more, or once the event has ended: today in Warsaw is past its end date. A bracket still waiting is skipped as “not final (no finished signal; its content is not yet 60 minutes old)”.</td><td>A results page changes while a bracket is fenced; content unchanged for an hour has stopped changing. After the end date nothing is still being fenced.</td></tr>
+<tr><td>Promote's plan on PROD</td><td>Exactly the brackets the CERT run took, with exactly the content it took.</td><td>PROD receives what CERT verified, never a newer page.</td></tr>
+<tr><td>The daily close</td><td>Every published bracket.</td><td>It runs only after the end date.</td></tr>
+</tbody></table></div>
+<p>Each sighting is a row of <code>tbl_listing_sighting</code>: the event code, the bracket's key, its content hash, when it was first seen and when it was last seen. A new content hash is a new row, so a bracket that changes starts its hour again. The table has row-level security on and no grant to <code>anon</code> or <code>authenticated</code>. Only <code>service_role</code> writes it, through <code>fn_listing_sighting_record</code>, which keeps the first sighting and returns its time. Nothing deletes a sighting. Only the live ingest writes it, so its rows are CERT's (and LOCAL's), and the PROD seed export never carries it (FINAL.08).</p>
+<p>Ingest, promote's plan and the daily close read an event's sources in the same order and classify them source by source, so its schedule hashes the same in all three (FINAL.06, FINAL.07).</p>
+</section>
+
+<section id="adding-an-organizer">
+<p class="kicker">Checklist</p>
+<h2>Adding an organizer</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Step</th><th>Needed</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td>A <code>tbl_organizer</code> row</td><td>yes</td><td>A migration, as for PZSz (<code>20260903000001</code>).</td></tr>
+<tr><td>Its code family and tournament type, with the type's scoring configuration</td><td>yes, with its own ADR</td><td>A new type is an enum value and a scoring configuration row, as PPS and MPS were (<a href="../../adr/087-pzsz-senior-calendar-source.html">ADR-087</a>, <a href="../../adr/100-pzsz-senior-result-ingestion.html">ADR-100</a>). Reusing an existing international type is a decision, not a default.</td></tr>
+<tr><td>One <code>Organizer</code> and its <code>Family</code> entries</td><td>yes</td><td><code>python/pipeline/organizers.py</code>: route class, families, FIE-like flag. Add its pins to ROUTE.ORG.01 and its rows to the two tables above.</td></tr>
+<tr><td>Its calendar scraper</td><td>yes, with its own plan</td><td>Writes events through the <a href="../../adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a> contract, allocates codes in its family, and never sets the results link (<a href="../../adr/117-results-links-admin-only.html">ADR-117</a>).</td></tr>
+<tr><td>A results reader</td><td>only for an engine not in the table above</td><td>See the next section. A federation publishing on FencingTimeLive needs none.</td></tr>
+<tr><td>The ingest drivers, promote, the daily close, the run record</td><td>no change</td><td>They read the registries.</td></tr>
+</tbody></table></div>
+<p>The calendar card's organizer colour is the one surface that still reads the code prefix: <code>panelType</code> in <code>frontend/src/lib/calendarMonths.ts</code> (<a href="../../adr/087-pzsz-senior-calendar-source.html">ADR-087</a> §8), which shows any code it does not know in the PPW style. It is a UI decision of its own, taken with the new organizer's calendar plan.</p>
+</section>
+
+<section id="adding-an-engine">
+<p class="kicker">Checklist</p>
+<h2>Adding a results engine</h2>
+<ol>
+<li>Its reader, dispatched by <code>Fetcher.fetch_event_url_with_skips</code>, with a fixture.</li>
+<li>Its <code>Engine</code> entry in <code>ENGINES</code> and its branch in <code>engine_of</code>.</li>
+<li>Its answer to the finality question. An engine that says when a bracket is final marks an unfinished bracket skipped with <code>finished</code> false and its state; the route records it as “not final (&lt;engine&gt; shows it &lt;state&gt;)”. An engine that says nothing gets <code>signal</code> false, and the 60-minute rule applies with no further code.</li>
+<li>Its row in the engine table above (ENGINE.03) and its pin in ENGINE.01.</li>
+</ol>
+</section>
+
+<section id="look-alikes">
+<p class="kicker">Do not confuse these</p>
+<h2>Sets that look like the registry and are not</h2>
+<ul>
+<li><b>The minimum-participant routing.</b> PEW, MEW and MSW gate on the EVF minimum; PPW, MPW and PSW on the domestic one; PPS and MPS on 1 (<a href="../../adr/066-min-participants-ingestion-gate.html">ADR-066</a>). The database holds it per type, and pgTAP SS26.TYPE.02 pins it. <code>check_min_participants</code> in <code>python/scrapers/base.py</code> agrees with it (ROUTE.ORG.10). PSW is international on the route and domestic here, which is why the two sets are kept apart.</li>
+<li><b>The types EVF's results API scores.</b> PEW, MEW and MSW: <code>python/tools/evf_event_completeness.py</code> pairs EVF's events with ours by them (<a href="../../adr/028-evf-calendar-results-import.html">ADR-028</a>).</li>
+<li><b>Spreadsheet sheet names.</b> The historical seed tools map a sheet (GP1, PP1, EVF1, PS, VFC) to a type and a code prefix. The organizer of the resulting code still comes from the registry, so a sheet the registry does not know reads <code>UNKNOWN</code> and its event is not written.</li>
+</ul>
+<p>ROUTE.ORG.06 scans every module under <code>python/</code> for a prefix match or a hand-written organizer, and names the first two sets above as the only other facts.</p>
+</section>
+
+<section id="tests">
+<p class="kicker">Evidence</p>
+<h2>Tests</h2>
+<ul>
+<li><code>python/tests/test_organizer_registry.py</code>: ROUTE.ORG.01–13, the registry, its agreement with the PROD seed, the refusal by name, a fifth organizer with no change outside the registry, and these tables.</li>
+<li><code>python/tests/test_results_finality.py</code>: FINAL.01–08, the finality rules, the schedule hash and the seed's exclusion of the sightings; ENGINE.01–03, the engine contract and the engine table.</li>
+<li><code>supabase/tests/119_listing_sighting.sql</code>: the sighting table's grants, its first-sighting rule and its hash check.</li>
+</ul>
+</section>
+
+<section id="decisions">
+<p class="kicker">Rationale</p>
+<h2>Related decisions</h2>
+<ul>
+<li><a href="../../adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a>: final brackets only, the organizer registry and the engine contract.</li>
+<li><a href="../../adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>: ingest and promote carry every organizer's event.</li>
+<li><a href="../../adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7: FTL's Finished flag and the schedule hash.</li>
+<li><a href="../../adr/105-international-results-keep-source-bracket.html">ADR-105</a> and <a href="../../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>: the international route's brackets and admission.</li>
+<li><a href="../../adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> and <a href="../../adr/112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: the roster route.</li>
+<li><a href="../../adr/008-psw-msw-international-pool.html">ADR-008</a>: MSW and PSW are the FIE's.</li>
+<li><a href="../../adr/046-pew-weapon-suffix.html">ADR-046</a>: the PEW family and its weapon-rename exception.</li>
+</ul>
+</section>
+
+<section id="change-triggers">
+<p class="kicker">Maintenance</p>
+<h2>Change triggers</h2>
+<p>Review this page when an organizer, a code family, a tournament type or a results engine is added or changed, when a finality rule or the 60-minute settle time changes, and when any code starts reading an event-code prefix. ROUTE.ORG.13 and ENGINE.03 fail until the tables match the code again.</p>
+</section>
+
+</main></div>
+</div></body>
+</html>

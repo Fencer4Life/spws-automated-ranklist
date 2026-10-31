@@ -33,12 +33,14 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from python.pipeline import organizers
 from python.tools.scrape_evf_individual import TIER_ORDER
 
 # Domestic field-depth bands, widest first.
 _SPWS_BANDS = ((16, "SPWS-16+"), (8, "SPWS-8+"), (4, "SPWS-4+"))
 
-DOMESTIC_TYPES = ("PPW", "MPW")
+# The domestic route's types, from the organizer registry (ADR-119 §2).
+DOMESTIC_TYPES = tuple(sorted(organizers.domestic_types()))
 
 
 def classify_spws_tier(participants: int | None) -> str:

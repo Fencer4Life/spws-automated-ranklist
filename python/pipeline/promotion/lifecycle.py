@@ -21,9 +21,24 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 WARSAW = ZoneInfo("Europe/Warsaw")
+# Every reason a bracket is skipped as not yet final starts "not final", whatever
+# the engine (ADR-119 §1), and keeps the event IN_PROGRESS. FTL's text is the
+# one recorded runs hash their schedules with, so it never changes.
+NOT_FINAL_PREFIX = "not final"
 NOT_FINAL = "not final (its schedule row does not say Finished)"
+SEEN_ONCE = "not final (no finished signal; its content is not yet 60 minutes old)"
 IN_PROGRESS = "IN_PROGRESS"
 COMPLETED = "COMPLETED"
+
+
+def is_not_final(reason: object) -> bool:
+    """True for a skip that waits for the bracket to finish, from any engine."""
+    return str(reason or "").startswith(NOT_FINAL_PREFIX)
+
+
+def not_final_at(engine: str, state: object) -> str:
+    """The skip reason for a bracket the engine itself shows unfinished."""
+    return f"{NOT_FINAL_PREFIX} ({engine} shows it {state})"
 
 
 def warsaw_today(now: dt.datetime | None = None) -> dt.date:
@@ -62,7 +77,7 @@ def event_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date
     rounds = listings.get("rounds") or []
     reasons: list[str] = []
 
-    not_final = [s["name"] for s in schedule.get("skipped") or [] if s.get("reason") == NOT_FINAL]
+    not_final = [s["name"] for s in schedule.get("skipped") or [] if is_not_final(s.get("reason"))]
     if not_final:
         reasons.append(f"not final yet: {', '.join(not_final)}")
 

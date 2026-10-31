@@ -35,6 +35,10 @@ from pathlib import Path
 import openpyxl
 import psycopg2
 
+# The repository root, so the organizer registry imports when this runs as a script.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from python.pipeline import organizers  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -422,11 +426,14 @@ def extract_events_from_workbook(xlsx_path: Path) -> list[dict]:
         if data["result_count"] == 0 and data["participant_count"] == 0:
             continue
 
-        organizer = "EVF" if ttype in ("PEW", "MEW", "MSW", "PSW") else "SPWS"
+        # The registry's organizer (ADR-119 §2); it used to give MSW and PSW to
+        # EVF. A family it does not know (VFC, PS) reads UNKNOWN and is skipped
+        # with a warning below rather than filed under a guess.
+        organizer = organizers.organizer_of(code_prefix)
         location = data["location"]
         display_name = (
             f"{human_name} — {location}"
-            if location and ttype in ("PEW", "MEW", "MSW", "PSW")
+            if location and ttype in organizers.international_types()
             else human_name
         )
 

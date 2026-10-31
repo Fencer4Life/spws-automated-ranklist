@@ -321,3 +321,7 @@ Tests: `65_prod_mirror_planning_status.sql` (both directions of the boundary), `
 - **The 2026-06-28 note.** It judged a full re-alignment of legacy ids "not needed for correctness". That stays true for event ids, which are still matched by code. Fencer ids are re-aligned, because they are what a replay compares.
 
 The 2026-08-28 boundary stands: the calendar mirror never writes the results half of the status, and only promote and the daily close do.
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §1) — final per engine
+
+The 2026-10-03 amendment's "every scheduled individual listing is final (its schedule row says Finished)" now reads: every listing is final by its results engine's answer. FTL's schedule row still decides for FTL; Engarde's competition state decides for Engarde; for an engine that says nothing, the rule of ADR-119 §1 decides. A listing that is not final keeps the event IN_PROGRESS, as before.

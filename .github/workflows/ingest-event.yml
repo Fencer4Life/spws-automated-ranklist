@@ -1,4 +1,6 @@
 name: Ingest event (NEW pipeline, from URL)
+# ADR-119 §5 (gap G6): the Actions list names each run's event.
+run-name: Ingest · ${{ inputs.event_code }}
 
 # N13.6 — NEW rule-driven pipeline from-URL re-ingest for one event. Runs the
 # keep-rule (pools-only drop + one-source-per-category + duplicate flag), applying

@@ -21,6 +21,9 @@ from datetime import date
 
 from python.pipeline.db_connector import derive_tourn_type_from_event_code
 
+# The tournament types EVF's results API scores (ADR-028). Not the organizer
+# registry's international set: PSW is the FIE's, and a federation added to
+# the route later is not on EVF's calendar (ROUTE.ORG.06 lists it as another fact).
 EVF_SCORED_TYPES = {"PEW", "MEW", "MSW"}
 TOLERANCE_DAYS = 2
 

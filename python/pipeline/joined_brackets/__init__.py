@@ -35,6 +35,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from python.pipeline import organizers as _organizers
 from python.pipeline.core.contract import ListingRefused
 
 PER_CATEGORY_RENUMBER = "PER_CATEGORY_RENUMBER"
@@ -46,7 +47,9 @@ MODULE_BY_ENGINE: dict[str, str] = {
     "SPWS_EVF_JOINED_V1_2026_2027": JOINED_BRACKET_CATEGORY_PLACE,
 }
 
-INTERNATIONAL_TYPES = frozenset({"PEW", "MEW", "MSW", "PSW"})
+# The international route's tournament types, from the organizer registry
+# (ADR-119 §2): PEW, MEW, MSW, PSW.
+INTERNATIONAL_TYPES = _organizers.international_types()
 
 
 class UnknownScoringEngine(ValueError):

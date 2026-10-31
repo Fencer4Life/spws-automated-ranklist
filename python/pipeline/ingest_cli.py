@@ -664,6 +664,11 @@ def ingest_event_from_url(
     promote (ADR-108 §4): opened before the first write, closed FINISHED with
     every listing's hash and outcome, or FAILED with the error.
     """
+    # ADR-119 §2: an event the route does not carry is refused by name, before
+    # anything is read or recorded.
+    from python.pipeline.organizers import require_route
+
+    require_route(event_code)
     if db is None:
         db = create_db_connector()
 
@@ -743,20 +748,24 @@ def _ingest_event_rounds(
     post_run=True,
     pzsz_start_lists=None,
     sources=None,
+    finality=None,
 ) -> list:
     """`ingest_event_from_url` from its first write on. `run` is the open run
     record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
     every listing. Plan mode passes `post_run=False`: the staging report, the
     joining check and Telegram run after promote's apply commits (ADR-108 §6).
 
-    Ingest (CERT) and promote's plan (PROD) both come through here, so a PZSz
-    event takes its own path on both: the same ingestion (ADR-111 §6). Plan
-    mode passes the CERT run's stored start lists (ADR-112 §4). An EVF or FIE
-    event does too (ADR-113); plan mode passes the result slots and URLs the
-    CERT run read (`sources`)."""
-    from python.pipeline.stages import _is_international_intake, _organizer_for_event
+    Ingest (CERT) and promote's plan (PROD) both come through here, and the
+    organizer registry's route class picks the driver (ADR-119 §2): domestic
+    (SPWS), roster (PZSz: plan mode passes the CERT run's stored start lists,
+    ADR-112 §4), or international (EVF, FIE and any federation registered as
+    such: plan mode passes the result slots and URLs the CERT run read,
+    `sources`, and what it took from engines without a finished signal,
+    `finality`; ADR-113, ADR-119 §1)."""
+    from python.pipeline import organizers
 
-    if _is_international_intake(event):
+    route = organizers.require_route(event_code)
+    if route == organizers.INTERNATIONAL:
         return _ingest_international_event_rounds(
             event,
             event_code,
@@ -770,6 +779,7 @@ def _ingest_event_rounds(
             run=run,
             post_run=post_run,
             sources=sources,
+            finality=finality,
         )
     # The 25 Oct 2026 results-link RCA (issue #3): a calendar page in the
     # results link finished a run green with nothing read. Refused here,
@@ -780,7 +790,7 @@ def _ingest_event_rounds(
             "(https://www.fencingtimelive.com/tournaments/eventSchedule/<id>); "
             "nothing was read, saved or written."
         )
-    if _organizer_for_event(event) == "PZSz":
+    if route == organizers.ROSTER:
         return _ingest_pzsz_event_rounds(
             event,
             event_code,
@@ -971,27 +981,32 @@ def _ingest_international_event_rounds(
     run,
     post_run=True,
     sources=None,
+    finality=None,
 ) -> list:
-    """An EVF or FIE event (PEW, MEW, MSW, PSW, the IMEW and IMSW codes),
-    ADR-113: every bracket of every result URL the event holds, or of EVF's
-    results when it holds none (`international_sources`), each through
-    `Flow.INGEST_INTERNATIONAL`. Every bracket is read and checked before
-    anything is written; one bracket is one tournament with the source N and
-    each fencer's source place (ADR-105), and the rows are decided by
-    identity (ADR-106). Promote's plan passes the slots and URLs the CERT run
-    read (`sources`), so PROD reads exactly them; the run records them."""
+    """An event on the international route (EVF, FIE and any federation
+    registered as international; ADR-113, ADR-119 §2): every final bracket of
+    every result URL the event holds, or of EVF's results when it holds none
+    (`international_sources`), each through `Flow.INGEST_INTERNATIONAL`.
+    Every bracket is read and checked before anything is written; one bracket
+    is one tournament with the source N and each fencer's source place
+    (ADR-105), and the rows are decided by identity (ADR-106). Promote's plan
+    passes the slots and URLs the CERT run read (`sources`) and what that run
+    took from engines without a finished signal (`finality`), so PROD reads
+    exactly them; the live ingest decides with the sightings it stores."""
     from dataclasses import replace as _replace
     from datetime import date as _date
 
-    from python.pipeline import international_sources
-    from python.pipeline.db_connector import derive_tourn_type_from_event_code
+    from python.pipeline import international_sources, organizers
     from python.pipeline.engine.flows import Flow
-    from python.pipeline.international_admission import is_fie_type
     from python.pipeline.overrides import load_for_event
 
     if sources is None:
         sources = international_sources.event_sources(event, url_event_override)
-    recs, kept, skipped = international_sources.read_brackets(event, [s["url"] for s in sources])
+    if finality is None:
+        finality = international_sources.sightings_for(db, event)
+    recs, kept, skipped = international_sources.read_brackets(
+        event, [s["url"] for s in sources], finality=finality
+    )
     # A finished FTL bracket whose name is not understood is recorded as not
     # read, as the domestic driver does, so the event stays IN_PROGRESS.
     unparseable = [s for s in skipped if s.get("reason") == international_sources.UNPARSEABLE]
@@ -1016,8 +1031,7 @@ def _ingest_international_event_rounds(
         nr, nt = _wipe_event_live(db, event["id_event"])
         print(f"replace: deleted {nr} results + {nt} tournaments\n")
 
-    ttype = derive_tourn_type_from_event_code(event_code)
-    organizer = "FIE" if is_fie_type(ttype) else "EVF"
+    organizer = organizers.organizer_of(event_code)
     overrides = load_for_event(event_code)
     dt = str(event.get("dt_start") or "")[:10]
     event_date = _date.fromisoformat(dt) if dt else None

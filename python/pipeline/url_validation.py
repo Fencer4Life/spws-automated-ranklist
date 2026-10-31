@@ -243,8 +243,11 @@ def _normalize_city(c: str | None) -> str | None:
 
 
 def _is_pew(event_row: dict) -> bool:
-    code = event_row.get("txt_code", "") or ""
-    return code.startswith("PEW")
+    """True for an event of the PEW family (organizer registry, ADR-119 §2)."""
+    from python.pipeline import organizers
+
+    family = organizers.family_of(event_row.get("txt_code"))
+    return family is not None and family.name == "PEW"
 
 
 def _coerce_date(v):

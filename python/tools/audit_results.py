@@ -25,6 +25,7 @@ import sys
 import time
 
 import httpx
+from python.pipeline import organizers
 from python.scrapers.base import detect_platform
 from python.scrapers.engarde import parse_engarde_html
 from python.scrapers.fourfence import parse_fourfence_html
@@ -276,7 +277,7 @@ def audit_tournament(ref: str | None, tournament: dict, pol_only: bool = False) 
     db_results = fetch_db_results(ref, code)
 
     # Filter to POL fencers only if requested (domestic tournaments always all)
-    if pol_only and tournament["enum_type"] in ("PEW", "MEW", "MSW", "PSW"):
+    if pol_only and tournament["enum_type"] in organizers.international_types():
         scraped = [r for r in scraped if r.get("country", "") == "POL"]
 
     issues = []

@@ -264,8 +264,11 @@ class TestOtherSources:
             ],
             [{"name": "Equipes", "url": "https://e/t", "reason": "team event"}],
         )
+        # ENGARDE is one results page, an engine without a finished signal: the
+        # event is over here (SETTLED), so every published bracket is taken
+        # (ADR-119 §1; the waiting rule is FINAL.04).
         recs, kept, skipped = src.read_brackets(
-            {"txt_code": "PEW3-2026-2027"}, [ENGARDE], fetcher=fetcher
+            {"txt_code": "PEW3-2026-2027"}, [ENGARDE], fetcher=fetcher, finality=src.SETTLED
         )
         fetcher.fetch_event_url_with_skips.assert_called_once_with(ENGARDE)
         assert [(r["uuid"], r["cats"], r["count"]) for r in recs] == [
@@ -285,7 +288,9 @@ class TestOtherSources:
             [],
         )
         with pytest.raises(ValueError, match="two sources"):
-            src.read_brackets({"txt_code": "PEW3-2026-2027"}, [ENGARDE], fetcher=fetcher)
+            src.read_brackets(
+                {"txt_code": "PEW3-2026-2027"}, [ENGARDE], fetcher=fetcher, finality=src.SETTLED
+            )
 
     def test_without_a_url_the_evf_results_are_read(self):
         """ROUTE.SRC.07 (Q3 A) EVF's own results, when the event has no result
@@ -324,7 +329,9 @@ class TestOtherSources:
         # and promote and the daily close read the same thing.
         assert src.event_sources(event) == [{"slot": "evf", "url": "evf:85"}]
         scrape = MagicMock(return_value=rows)
-        recs, kept, skipped = src.read_brackets(event, ["evf:85"], evf_scrape=scrape)
+        recs, kept, skipped = src.read_brackets(
+            event, ["evf:85"], evf_scrape=scrape, finality=src.SETTLED
+        )
         scrape.assert_called_once_with(85)
         assert [(r["weapon"], r["gender"], r["cats"], r["count"]) for r in recs] == [
             ("FOIL", "M", ["V2"], 2),
@@ -356,8 +363,10 @@ class TestOtherSources:
 
     def test_the_schedule_reread_hashes_as_the_run_recorded_it(self):
         """ROUTE.SRC.10 the daily close re-reads an international run's sources:
-        FTL's schedule as listed, with its Finished flags, and every other
-        source's brackets as final."""
+        FTL's schedule with its Finished flags, and every other source's
+        brackets as final. Since ADR-119 §1 each source is classified as the
+        ingest classifies it, source by source, so a listing not yet final is
+        already among the skips (FINAL.07)."""
         from python.pipeline import international_sources as src
         from python.pipeline.promotion import lifecycle
         from python.pipeline.promotion.run_record import schedule_sha256
@@ -376,8 +385,9 @@ class TestOtherSources:
             kept, skipped = src.read_schedule([SCHEDULE, ENGARDE], fetcher=fetcher)
         final, not_final = lifecycle.split_final(kept)
         assert [k["uuid"] for k in final] == ["A1", "A2", "https://e/1"]
-        assert [k["uuid"] for k in not_final] == ["A3"]
-        assert schedule_sha256(final, [*skipped, *not_final]) == schedule_sha256(
+        assert not_final == []
+        assert [s["uuid"] for s in skipped if lifecycle.is_not_final(s.get("reason"))] == ["A3"]
+        assert schedule_sha256(final, skipped) == schedule_sha256(
             [*listed[:2], {"uuid": "https://e/1", "name": "FOIL M V2"}],
             [*TestFtlSchedule.SKIPPED, {**listed[2], "reason": lifecycle.NOT_FINAL}],
         )
@@ -714,12 +724,13 @@ class TestDailyClose:
     )
     def test_every_organizers_event_is_a_candidate(self, code):
         """ROUTE.CLOSE.01 (ADR-113) the daily close takes the events of every
-        organizer, not only PPW and MPW."""
+        organizer, not only PPW and MPW; since ADR-119 §2 from the organizer
+        registry (ROUTE.ORG.05)."""
         import re
 
         from python.pipeline.promotion import close
 
-        assert re.match(close.ROUTE_CODES, code)
+        assert re.match(close.route_code_regex(), code)
 
     def test_an_international_run_is_checked_against_its_own_sources(self):
         """ROUTE.CLOSE.02 the close re-reads the result slots the CERT run read

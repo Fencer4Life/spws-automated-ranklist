@@ -150,14 +150,14 @@ class ListingLog:
         self.sources = [{"slot": s["slot"], "url": s["url"]} for s in sources]
 
     def add_schedule(self, kept: Sequence[Mapping], skipped: Sequence[Mapping]) -> None:
-        from python.pipeline.promotion.lifecycle import NOT_FINAL, last_day
+        from python.pipeline.promotion.lifecycle import is_not_final, last_day
 
         self.schedule = {
             "sha256": schedule_sha256(kept, skipped),
             "kept": len(kept),
             "skipped": [{"name": s.get("name"), "reason": s.get("reason")} for s in skipped],
             # ADR-108 §7: the latest day an individual listing is scheduled on.
-            "last_day": last_day([*kept, *(s for s in skipped if s.get("reason") == NOT_FINAL)]),
+            "last_day": last_day([*kept, *(s for s in skipped if is_not_final(s.get("reason")))]),
         }
 
     def add_unparseable(self, name: str, uuid: str) -> None:

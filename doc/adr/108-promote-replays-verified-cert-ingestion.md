@@ -342,3 +342,7 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 - **EVF:** moves onto this route in the plan after ADR-111. Today its results reach each environment through runs of their own.
 
 *Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* EVF is on the route, and FIE with it. The EVF sync writes no result; it tells the operator to send `ingest` and then `promote`.
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §1) — final is the engine's answer
+
+§7's "a listing is final only when its schedule row says Finished" still holds for FTL. Every results engine now answers whether a bracket is final. Engarde answers with its competition's state. For an engine that says nothing (4fence, Ophardt, d'Artagnan, EVF's results API, a single results page), the live CERT ingest takes a bracket once its content has been unchanged for 60 minutes or the end date has passed; promote's plan takes exactly the content the CERT run took; the daily close takes what is published. Every not-final skip starts "not final" and keeps the event IN_PROGRESS, and FTL's text is unchanged because recorded runs hash it. Tests: FINAL.01–08, ENGINE.01–03.
