@@ -236,8 +236,8 @@
     "schema_fingerprint": "6ba6d76fc88119fcc7dbaed3b0f52651"
   },
   "prod": {
-    "last_updated": "2026-10-31T14:52:36Z",
-    "last_sha": "be5c81368d7d096538b70cd28c7b5de65b10f5b7",
+    "last_updated": "2026-10-31T18:53:33Z",
+    "last_sha": "87ec5348fac39220f10a781e204f8e66dc1f21e9",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -466,8 +466,9 @@
       "20261025000003_mirror_replaces_calendar_page_letter.sql",
       "20261025000004_first_name_initial_capitals.sql",
       "20261031000001_cert_event_details_reach_prod.sql",
-      "20261031000002_prod_details_time_counts_people_only.sql"
+      "20261031000002_prod_details_time_counts_people_only.sql",
+      "20261031000003_listing_sighting.sql"
     ],
-    "schema_fingerprint": "be8eb0e78e60fdc54008171319aabf24"
+    "schema_fingerprint": "6ba6d76fc88119fcc7dbaed3b0f52651"
   }
 }
