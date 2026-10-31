@@ -107,7 +107,7 @@ if [ -f "$RTM" ]; then
   # 158 since 2026-10-18: +FR-159 (equal totals share a place; ADR-115).
   # 159 since 2026-10-25: +FR-160 (results links are set by a person; calendar
   #   automation writes only the organizer's letter; ADR-117).
-  EXPECTED=159
+  EXPECTED=160
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

@@ -134,7 +134,7 @@ gates, all four hard fails:
 |------|-------|-----------|---------------------------------|
 | 1 | `pyproject.toml` version == `frontend/package.json` version | YES | Bump both together when releasing. |
 | 2 | ADR file count in `doc/adr/` == ADR rows matching `\| [ADR-0` in spec Appendix C | YES | **Every new `doc/adr/NNN-*.md` file MUST have a matching row in spec Appendix C. Every superseded ADR keeps its row.** |
-| 3 | Sum of `SELECT plan(N)` across `supabase/tests/*.sql` == `pgTAP total: N assertions` line in spec Appendix D | YES | **Every new pgTAP `plan(N)` MUST be added into the documented total. Update the `pgTAP total: N assertions` line in spec Appendix D and the per-suite Count column in the table below it.** |
+| 3 | Sum of `SELECT plan(N)` across `supabase/tests/*.sql` == `pgTAP total: N assertions` line in spec Appendix D | YES | **Every new pgTAP `plan(N)` MUST be added into the documented total. Update the `pgTAP total: N assertions` line in spec Appendix D, re-measure the suite table below it (counts and files, with the date), and add the change's per-change note to [the test baseline history](../archive/legacy-2026-07/test-baseline-history.md), newest first. The specification keeps no per-change history: it is capped at 1620 lines (`scripts/check-spec-sync.sh`, Gate D).** |
 | 4 | A change under `supabase/migrations/` comes with a change to the specification, `doc/adr/`, `doc/governance/` or `doc/handbook/`, over the range the push or pull request brings (CI passes `COHERENCE_BASE`; preflight uses the branch's fork point from `origin/main`) | YES | Land the documentation in the same push as the migration. |
 
 **Workflow before pushing**:

@@ -1,0 +1,192 @@
+<meta charset="utf-8">
+<title>Event fields CERT to PROD</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Calendar · CERT→PROD mirror · Field list for your review</p>
+  <h1>Which event fields CERT carries to PROD</h1>
+  <p class="dek">Your words (31 Oct): when an event field changes on CERT, PROD gets it on the next run. <b>Our own registration links are excluded.</b> List the event-level fields and <b>keep only the most meaningful</b>. Below are all 45 columns of an event, in three groups. Pick the ones in group 1. The rule, tests and release get planned around your pick.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: rows 1–9 as picked</span>
+    <span class="pill">plan: <code>cert-event-details-reach-prod-every-scraper-2026-10-31.html</code></span>
+    <span class="pill">excluded by you: our registration</span>
+    <span class="pill">replaces the letter-only plan</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · In scope: pick from these</p>
+    <h2>Sixteen columns of event data</h2>
+    <p>"Today" says what the mirror does now. "Differs now" covers the 20 future events (read-only, 31 Oct).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Field (Admin)</th><th>Today CERT→PROD</th><th>Differs now</th><th>My pick</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Name</b><br><code>txt_name</code></td><td>follows CERT</td><td>—</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>2</td><td><b>Dates</b><br><code>dt_start</code>, <code>dt_end</code></td><td>follows CERT</td><td>—</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>3</td><td><b>City</b><br><code>txt_location</code></td><td>follows CERT; a blank on CERT never clears PROD</td><td>—</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>4</td><td><b>Country</b><br><code>txt_country</code></td><td>follows CERT; a blank on CERT never clears PROD</td><td>PEW8efs, PEW13es, PEW17efs: blank on CERT, set on PROD</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>5</td><td><b>Weapons</b><br><code>arr_weapons</code></td><td>follows CERT</td><td>—</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>6</td><td><b>Venue address</b><br><code>txt_venue_address</code></td><td>PZSz: follows CERT. Others: fills an empty PROD only</td><td>PEW5efs Łomianki: CERT from the EVF page (5 Sep), PROD typed with the postcode (2 Sep)</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>7</td><td><b>Invitation letter</b> (URL komunikatu)<br><code>url_invitation</code></td><td>fills an empty PROD only; an event page gives way to a letter</td><td>Madrid (V1 vs August), Skopje (V3 vs V2)</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>8</td><td><b>Organizer's registration link</b><br><code>url_registration</code>, when it is <i>not</i> our <code>register.html</code></td><td>fills an empty PROD only</td><td>—</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>9</td><td><b>Entry fee</b> and <b>currency</b><br><code>num_entry_fee</code>, <code>txt_entry_fee_currency</code></td><td>fills an empty PROD only</td><td>PEW5efs: 50 vs 50.0 (the same amount)</td><td><span class="chip never">include</span></td></tr>
+        <tr><td>10</td><td><b>Registration deadline</b><br><code>dt_registration_deadline</code></td><td>fills an empty PROD only</td><td>PEW5efs: blank on CERT, 7 Dec on PROD</td><td><span class="chip plain">leave out</span> it closes our own form and is set by hand; the EVF scraper does not harvest it (<code>HARVEST_DEADLINE = False</code>)</td></tr>
+        <tr><td>11</td><td><b>Fee for 2 / 3 weapons</b><br><code>num_entry_fee_2w</code>, <code>num_entry_fee_3w</code></td><td>fills an empty PROD only</td><td>PEW5efs: blank on CERT</td><td><span class="chip plain">leave out</span> pricing of our own registration</td></tr>
+        <tr><td>12</td><td><b>Payee</b> and <b>account (IBAN)</b><br><code>txt_payee</code>, <code>txt_iban</code></td><td>fills an empty PROD only</td><td>PEW5efs: blank on CERT</td><td><span class="chip plain">leave out</span> the payment step of our own registration</td></tr>
+      </tbody>
+    </table></div>
+    <p>My pick is rows 1–9 (11 columns). Rows 1–5 already follow CERT today, so rows 6–9 are what actually changes: address, letter, organizer's registration link, fee and currency.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Excluded by you</p>
+    <h2>Our own registration</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Field</th><th>Why it is ours</th></tr></thead>
+      <tbody>
+        <tr><td><code>url_registration</code> when it points at our <code>register.html</code></td><td>Admin computes it when the SPWS registration box is ticked (ADR-079 §7)</td></tr>
+        <tr><td><code>url_entry_list</code></td><td>always our <code>register.html?…&amp;view=list</code></td></tr>
+        <tr><td><code>bool_use_spws_registration</code></td><td>the registration switch: on for PEW5efs on PROD (set by hand 2 Sep), off on CERT</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Not event data to copy (listed so nothing is hidden)</p>
+    <h2>Twenty-seven columns stay as they are</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Group</th><th>Columns</th><th>Today</th></tr></thead>
+      <tbody>
+        <tr><td>Keys that match the two rows</td><td><code>txt_code</code>, <code>id_organizer</code>, <code>id_prior_event</code>, <code>id_evf_event</code>, <code>id_evf_calendar_event</code>, <code>txt_evf_slug</code>, <code>id_pzsz_event</code></td><td>already follow CERT</td></tr>
+        <tr><td>Results links (URL wyników)</td><td><code>url_event</code> … <code>url_event_5</code></td><td>Admin only (ADR-117)</td></tr>
+        <tr><td>Status</td><td><code>enum_status</code></td><td>planning steps only; results status is PROD's</td></tr>
+        <tr><td>Results ingest record</td><td><code>txt_source_status</code>, <code>enum_parser_kind</code>, <code>txt_source_url_used</code>, <code>txt_parity_notes</code>, <code>json_ingest_sources</code>, <code>json_source_overrides</code>, <code>dt_last_scraped</code></td><td>written by each environment's ingest</td></tr>
+        <tr><td>Set once</td><td><code>dt_start_first_published</code></td><td>drives the moved-date pill</td></tr>
+        <tr><td>Row bookkeeping</td><td><code>id_event</code>, <code>id_season</code>, <code>ts_created</code>, <code>ts_updated</code></td><td>per environment</td></tr>
+        <tr><td>Retired</td><td><code>txt_organizer_email</code>, <code>ts_ftl_sent</code></td><td>written by no code</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">16 + 2 + 27 = 45 columns of tbl_event (LOCAL schema, 31 Oct 2026). "Differs now" comes from read-only SQL on CERT and PROD through scripts/cloud-sql.sh; IBAN and payee were compared as hashes, never printed.</p>
+
+</div>

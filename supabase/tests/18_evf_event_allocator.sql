@@ -262,6 +262,9 @@ END $cleanup$;
 -- After import: row should be PLANNED, name + dates filled, ZERO child
 -- tournaments (ADR-096: calendar discovery never creates a bracket; a bracket
 -- is created only by results ingestion, via fn_find_or_create_tournament).
+-- Since ADR-118 the ingest gives the reused slot its identity and status, and
+-- the sync then writes the details through fn_calendar_apply_fields; the test
+-- takes both steps, as evf_sync does.
 DO $t37$
 DECLARE
   v_season INT;
@@ -278,6 +281,12 @@ BEGIN
     'is_team',  FALSE
   ));
   PERFORM fn_ingest_evf_calendar(v_payload, v_season);
+  PERFORM fn_calendar_apply_fields('EVF', jsonb_build_array(jsonb_build_object(
+    'id_event', (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW7-EVFP2-CURR'),
+    'fields', jsonb_build_object(
+      'txt_name', 'EVF Circuit – Salzburg (AUT)',
+      'dt_start', '2032-04-15', 'dt_end', '2032-04-16',
+      'txt_location', 'Salzburg', 'txt_country', 'Austria'))));
 END $t37$;
 
 SELECT row_eq(

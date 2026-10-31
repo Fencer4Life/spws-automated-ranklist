@@ -183,10 +183,13 @@ BEGIN
 END;
 $t1210$;
 
+-- Since ADR-118 the letter is one of the event's details, written through
+-- fn_calendar_apply_fields under the calendar contract; the refresh keeps only
+-- the deadline and the weapons.
 SELECT is(
   (SELECT url_invitation FROM tbl_event WHERE txt_code = 'PEW-REFRESH-2030-2031'),
-  'https://scraped.example.com/invitation.pdf',
-  '12.10: fn_refresh_evf_event_urls fills NULL url_invitation with scraped value'
+  NULL,
+  '12.10: fn_refresh_evf_event_urls leaves url_invitation to fn_calendar_apply_fields (ADR-118)'
 );
 
 SELECT is(

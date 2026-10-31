@@ -30,6 +30,7 @@ from functools import partial
 import httpx
 
 from python.pipeline import md_writer
+from python.pipeline.calendar_details import DETAIL_FIELDS
 from python.pipeline.md_writer import Target
 from python.pipeline.reconcile_report import compute_changes, render_report
 
@@ -78,6 +79,22 @@ def _get_active_season(query_fn) -> dict | None:
     return rows[0] if rows else None
 
 
+def _details_set_sql() -> str:
+    """When CERT last wrote an event's details (ADR-118): its latest audited
+    change to any of them, else the row's creation. A plain subquery, not a
+    function, so a scheduled run works before the migration reaches CERT;
+    fn_mirror_events_to_prod reckons PROD's time the same way."""
+    fields = ", ".join(f"'{f}'" for f in DETAIL_FIELDS)
+    return (
+        "COALESCE((SELECT max(a.ts_created) FROM tbl_audit_log a "
+        "WHERE a.txt_table_name = 'tbl_event' AND a.id_row = e.id_event "
+        "AND a.txt_action = 'UPDATE' AND EXISTS (SELECT 1 FROM unnest("
+        f"ARRAY[{fields}]) AS f(name) WHERE (a.jsonb_old_values -> f.name) "
+        "IS DISTINCT FROM (a.jsonb_new_values -> f.name))), "
+        "e.ts_created)::TEXT AS ts_details_set"
+    )
+
+
 def _read_cert_promotable_events(query_fn, id_season: int) -> list[dict]:
     """Fetch ALL events in the active season from CERT — no code-prefix filter.
 
@@ -101,7 +118,8 @@ def _read_cert_promotable_events(query_fn, id_season: int) -> list[dict]:
         "   FROM UNNEST(e.arr_weapons) w) AS weapons, "
         "e.id_evf_event, e.id_evf_calendar_event, e.txt_evf_slug, e.id_pzsz_event, "
         "o.txt_code AS organizer_code, "
-        "(SELECT pe.txt_code FROM tbl_event pe WHERE pe.id_event = e.id_prior_event) AS prior_code "
+        "(SELECT pe.txt_code FROM tbl_event pe WHERE pe.id_event = e.id_prior_event) AS prior_code, "
+        f"{_details_set_sql()} "
         "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
         f"WHERE e.id_season = {id_season} "
         "ORDER BY e.dt_start"
@@ -202,6 +220,9 @@ def _build_update_payload(
         # CREATED->CANCELLED and PLANNED->CANCELLED and nothing else, so a
         # results-bearing PROD row can never be regressed from CERT.
         "enum_status": evt.get("enum_status") or "",
+        # When CERT last wrote the details (ADR-118). PROD takes all of them
+        # when this is later than its own; empty keeps the earlier rules.
+        "ts_details_set": evt.get("ts_details_set") or "",
     }
 
 

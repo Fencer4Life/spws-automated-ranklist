@@ -157,3 +157,11 @@ None. D1–D8 are decided in the plan; D9 and D10 were dropped there.
 ## Amendment (2026-10-25) — §7's window runs to the morning of the event's last day (K2 A)
 
 §7 says a start list is "taken down when the event starts". It is not: pzszerm.pl served the PPS1e lists on the event's last day (25 October 2026). The capture window now runs from D−4 to noon (Warsaw) on the event's last day, decided by the moment a run was due, and the red alarm moves to the window's last attempt, the run due before noon on that day (cron `11 9 * * *`). The details are in [ADR-112](112-pzsz-start-lists-are-stored-inputs.md)'s amendment of 2026-10-25.
+
+## Amendment (2026-10-31, [ADR-118](118-event-details-cert-to-prod-scraper-contract.md)) — rule 8 is removed; the address follows CERT's write time for every organizer
+
+**§2.** `url_invitation` and `num_entry_fee` are no longer fill-blank-only (rule 8, `_FILL_BLANK` in `pzsz_sync.py`). They follow rules 2–6 like the other decided fields: a value the run wrote follows the source when it changes, a value a person set stays (rule 3), and a value with no provenance counts as a person's. An event page in the letter counts as empty. Pass 0 decides the letter first, so the passes read the letter that will be held. `decide()` loses its `fill_blank_only` parameter.
+
+**§6 is superseded.** The PZSz-only overwrite of `txt_venue_address` on PROD gives way to the rule for every organizer: PROD takes CERT's nine event details, the address among them, when CERT wrote them later than PROD did. A payload from before ADR-118 keeps §6.
+
+**Tests.** pytest `TestRule8Removed` in `test_pzsz_write_rules.py`, the two rewritten cases in `test_pzsz_sync.py`, and CALSYNC.45–49 (`test_calendar_scraper_contract.py`).

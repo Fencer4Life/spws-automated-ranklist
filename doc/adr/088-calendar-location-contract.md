@@ -190,3 +190,7 @@ including the five previously blank. The PZSz dry run is a no-op: 0 creates,
    admin-entered rows only. **Recommendation:** keep it until the historical
    seasons are known clean, then reconsider — it costs nothing where it never
    fires.
+
+## Amendment (2026-10-31, [ADR-118](118-event-details-cert-to-prod-scraper-contract.md)) — the city reaches the row through the scraper contract
+
+§7's mechanism changed: `fn_sync_evf_event_fields` no longer writes `txt_location`. A corrected scrape still replaces a city the EVF sync wrote earlier, now through `fn_calendar_apply_fields` (contract line 2). A city a person set on CERT is kept, and EVF's different value is reported once. The resolution rules of §1–§6 are unchanged.

@@ -263,3 +263,7 @@ See [`20261006000002_evf_singleton_championships.sql`](../../supabase/migrations
 ## Amendment (2026-10-25, ADR-117) — reuse writes no results link
 
 [ADR-117](117-results-links-admin-only.md): on a `CURRENT_SLOT_REUSE` path the detail-page enrichment no longer includes `url_event`. The other enrichment fields keep the "admin wins for non-empty fields" rule of the Consequences.
+
+## Amendment (2026-10-31, [ADR-118](118-event-details-cert-to-prod-scraper-contract.md)) — reuse writes the identity and status only
+
+A `CURRENT_SLOT_REUSE` UPDATE in `fn_ingest_evf_calendar` now writes `id_evf_event`, `txt_evf_slug`, `enum_status = 'PLANNED'` and `ts_updated`, and only when one of them changes. The name, dates, city, country and the detail-page enrichment reach the row through `fn_calendar_apply_fields`. The reuse wrote `txt_location = NULLIF(v_location,'')` and the same for the country, and so blanked a city and country a person had set (PEW8, PEW13, PEW17 on CERT, 10 August 2026; ADR-118 F1). The Consequences line on reuse ("admin wins for non-empty fields") now holds through the contract: a person's value is kept and EVF's is reported.

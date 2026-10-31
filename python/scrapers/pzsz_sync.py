@@ -30,6 +30,7 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
+from python.pipeline.calendar_details import is_calendar_page
 from python.pipeline.promotion.lifecycle import warsaw_today
 from python.scrapers._supabase import _get_active_season as _shared_get_active_season
 from python.scrapers._supabase import _management_query, _telegram
@@ -67,7 +68,8 @@ ReadLetter = Callable[[bytes, LetterContext], LetterResult]
 
 # The fields the run decides, in order. City is written from the listing/home
 # (the letter only validates it, §9 D2); the letter owns address and leads on
-# dates; link and fee are read only while empty (rule 8).
+# dates. Link and fee follow the same rules as every field: ADR-118 removed
+# rule 8, under which they were read only while empty.
 _DECIDED_FIELDS = (
     "url_invitation",
     "txt_location",
@@ -76,7 +78,6 @@ _DECIDED_FIELDS = (
     "txt_venue_address",
     "num_entry_fee",
 )
-_FILL_BLANK = {"url_invitation", "num_entry_fee"}
 # What a created event's INSERT sets, so its provenance is seeded this run.
 _CREATE_SEEDED = ("dt_start", "dt_end", "txt_location")
 
@@ -273,13 +274,21 @@ def _process_event(  # noqa: PLR0912, PLR0913, PLR0915 — R4's pass pipeline, k
     city = str(current.get("txt_location") or "")
     anchor = str(current.get("dt_start") or (listing_row or {}).get("dt_start") or "")
 
-    # pass 0: the letter link is read only while empty; the held link is what the
-    # passes read. Look in the listing row when none is held.
-    letter_url = str(current.get("url_invitation") or "") or (
-        str((listing_row or {}).get("letter_url") or "")
-        if _blank(current.get("url_invitation"))
-        else ""
+    # pass 0: the link is decided first, by the same rules as every field
+    # (ADR-118), so the passes read the letter the event holds after this run.
+    # An event page is never read as a letter.
+    listing_letter = str((listing_row or {}).get("letter_url") or "")
+    link_candidates = [Candidate("listing", listing_letter)] if listing_letter else []
+    link = decide(
+        "url_invitation",
+        current=None if _blank(current.get("url_invitation")) else str(current["url_invitation"]),
+        state=state.get("url_invitation"),
+        candidates=link_candidates,
+        reports=reports.get("url_invitation", {}),
     )
+    letter_url = link.change.value if link.change else str(current.get("url_invitation") or "")
+    if is_calendar_page(letter_url):
+        letter_url = ""
 
     letter: LetterResult | None = None
     letter_sha: str | None = None
@@ -301,8 +310,7 @@ def _process_event(  # noqa: PLR0912, PLR0913, PLR0915 — R4's pass pipeline, k
                 digest.warn.append(f"{code}: the letter could not be read ({exc})")
 
     candidates: dict[str, list[Candidate]] = {f: [] for f in _DECIDED_FIELDS}
-    if _blank(current.get("url_invitation")) and letter_url:
-        candidates["url_invitation"].append(Candidate("listing", letter_url))
+    candidates["url_invitation"] = link_candidates
     if listing_row and not _blank(listing_row.get("location")):
         candidates["txt_location"].append(Candidate("listing", str(listing_row["location"])))
     if home_row and home_row.city:
@@ -368,7 +376,6 @@ def _process_event(  # noqa: PLR0912, PLR0913, PLR0915 — R4's pass pipeline, k
             state=state.get(fld),
             candidates=candidates[fld],
             reports=reports.get(fld, {}),
-            fill_blank_only=fld in _FILL_BLANK,
         )
         out_reports += [{"field": fld, "source": s, "value": v} for s, v in decision.reports]
         for warning in decision.warnings:

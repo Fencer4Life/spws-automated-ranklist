@@ -68,17 +68,30 @@ class TestRule2EmptyField:
         assert d.change is not None and d.change.value == "2026-10-24"  # the letter wins
 
 
-class TestRule8FillBlankOnly:
-    def test_a_filled_link_is_left_alone(self):
+class TestRule8Removed:
+    """ADR-118 removed rule 8: the link and fee follow rules 2-6 like every field."""
+
+    def test_a_link_the_run_wrote_follows_the_listing(self):
+        held = "https://pzszerm.pl/test/fileDownload.php?fileId=held"
         d = decide(
             "url_invitation",
-            current="https://pzszerm.pl/test/fileDownload.php?fileId=held",
+            current=held,
+            state=FieldState(value=held, source="listing"),
+            candidates=[_c("listing", "https://pzszerm.pl/test/fileDownload.php?fileId=new")],
+            reports={},
+        )
+        assert d.change is not None
+        assert d.change.value.endswith("fileId=new")  # rule 4
+
+    def test_an_event_page_in_the_letter_counts_as_empty(self):
+        d = decide(
+            "url_invitation",
+            current="https://pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4581",
             state=None,
             candidates=[_c("listing", "https://pzszerm.pl/test/fileDownload.php?fileId=new")],
             reports={},
-            fill_blank_only=True,
         )
-        assert d.change is None  # read only while empty (rule 8)
+        assert d.change is not None  # C1, ADR-117 D7 A: rule 2
 
 
 class TestRule3HandEdit:

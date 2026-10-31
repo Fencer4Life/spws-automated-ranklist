@@ -18,19 +18,27 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
--- NOTE on the "planned 25 tests but ran 5" line this file emits.
--- It is a pgTAP/savepoint artifact, not a broken or skipped test. This file
--- exercises the wizard through 15 ROLLBACK TO SAVEPOINT cycles, and pgTAP keeps
--- its test counter in a table -- so each rollback discards the increments made
--- inside that savepoint, while the "ok N" lines it already printed remain on
--- stdout. All 25 assertions genuinely run and report: a failure still emits
--- "not ok" and still fails the suite. Only the final tally is understated.
--- plan(25) is kept deliberately: it declares the real intent, and the mismatch
--- stays a warning. Switching to no_plan() makes it a hard parse error
--- ("planned 5 but ran 25") and fails the whole run -- verified 2026-08-28.
--- A genuine fix means asserting outside the savepoints, i.e. restructuring the
--- file; out of scope here.
+-- Every assertion runs OUTSIDE the savepoints. This file exercises the wizard
+-- through 15 ROLLBACK TO SAVEPOINT cycles, and pgTAP keeps its test counter in
+-- a table, so an assertion made inside a savepoint is uncounted by the
+-- rollback ("planned 25 tests but ran 5", fixed 31 Oct 2026, F4 of
+-- doc/plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html).
+-- Inside a savepoint the value under test is captured into a psql variable
+-- (\gset survives the rollback); the assertion follows the rollback. An
+-- expected error is captured the same way by pg_temp.error_of.
 SELECT plan(25);
+
+-- The SQLSTATE and message an SQL text raises, or NULL when it runs cleanly.
+-- Created outside every savepoint so the rollbacks keep it.
+CREATE FUNCTION pg_temp.error_of(p_sql TEXT) RETURNS TEXT
+LANGUAGE plpgsql AS $error_of$
+BEGIN
+  EXECUTE p_sql;
+  RETURN NULL;
+EXCEPTION WHEN OTHERS THEN
+  RETURN SQLSTATE || ': ' || SQLERRM;
+END;
+$error_of$;
 
 -- What an FTL import leaves behind in a live season: a 2026/27 tournament, a
 -- result, and an identity-match candidate pointing at the result. Every
@@ -176,13 +184,10 @@ CREATE TEMP TABLE _init_result_imew AS
 -- rewritten as ph3.1 v2 in a follow-up.
 
 -- ph3.2 — every skeleton event has enum_status='CREATED'
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
-       AND enum_status != 'CREATED'),
-  0,
-  'ph3.2: every skeleton event has enum_status=CREATED'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_2 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
+   AND enum_status != 'CREATED' \gset
 
 -- ph3.3 v2 — REVERSED by migration 20260906000001 (amends ADR-077 §3).
 -- Was: "PEW1 skeleton inherits txt_location from prior PEW1efs". The inherited
@@ -192,66 +197,57 @@ SELECT is(
 -- adopt rung never fired and every scrape minted a duplicate. EVF events are no
 -- longer predicted at all; evf_sync discovers them. Positive coverage for what
 -- IS still provisioned lives in 74_no_evf_season_skeletons.sql.
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
-       AND txt_code ~ '^PEW\d+[efs]*-'),
-  0,
-  'ph3.3 v2: no PEW skeleton is provisioned (EVF events arrive by scrape)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_3 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
+   AND txt_code ~ '^PEW\d+[efs]*-' \gset
 
 -- ph3.4 — PPW skeletons have NULL location (rotating venues each season)
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
-       AND txt_code LIKE 'PPW%'
-       AND txt_location IS NOT NULL),
-  0,
-  'ph3.4: PPW skeletons have NULL location (rotating venues)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_4 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
+   AND txt_code LIKE 'PPW%'
+   AND txt_location IS NOT NULL \gset
 
 -- ph3.5 — every skeleton has id_prior_event set (prior exists for typical season)
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
-       AND id_prior_event IS NULL),
-  0,
-  'ph3.5: every skeleton has id_prior_event set (typical season)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_5 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
+   AND id_prior_event IS NULL \gset
 
 -- ph3.6 v2 — skeleton events are CHILDLESS. Tournaments are ingested per event
 -- after the season is created; the empty events serve a calendar purpose only
 -- (user requirement 2026-06-27). fn_init_season creates no child tournaments,
 -- and no function in the schema creates skeleton brackets (ADM27.SKEL.04).
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_tournament t
-     JOIN tbl_event e ON e.id_event = t.id_event
-    WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')),
-  0,
-  'ph3.6 v2: fn_init_season creates childless skeleton events (zero tournaments)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_6 FROM tbl_tournament t
+  JOIN tbl_event e ON e.id_event = t.id_event
+ WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027') \gset
 
 -- ph3.7 v2 — REVERSED by migration 20260906000001 (amends ADR-077 §3).
 -- IMEW is EVF's, and evf_sync discovers it like the rest of the circuit.
 -- enum_european_event_type still records which championship the season expects;
 -- it no longer pre-creates the row.
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
-       AND txt_code LIKE 'IMEW%'),
-  0,
-  'ph3.7 v2: no IMEW skeleton, even when enum_european_event_type=IMEW'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_7 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
+   AND txt_code LIKE 'IMEW%' \gset
 
 -- ph3.11 — idempotent: second call raises (skeletons already exist)
-SELECT throws_ok(
-  $$SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'))$$,
-  NULL,
-  NULL,
-  'ph3.11: second call to fn_init_season raises (skeletons already exist)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COALESCE(pg_temp.error_of(
+  $$SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'))$$
+), '') AS ph3_11 \gset
 
 ROLLBACK TO SAVEPOINT s_imew;
+
+SELECT is(:'ph3_2'::INT, 0, 'ph3.2: every skeleton event has enum_status=CREATED');
+SELECT is(:'ph3_3'::INT, 0, 'ph3.3 v2: no PEW skeleton is provisioned (EVF events arrive by scrape)');
+SELECT is(:'ph3_4'::INT, 0, 'ph3.4: PPW skeletons have NULL location (rotating venues)');
+SELECT is(:'ph3_5'::INT, 0, 'ph3.5: every skeleton has id_prior_event set (typical season)');
+SELECT is(:'ph3_6'::INT, 0, 'ph3.6 v2: fn_init_season creates childless skeleton events (zero tournaments)');
+SELECT is(:'ph3_7'::INT, 0, 'ph3.7 v2: no IMEW skeleton, even when enum_european_event_type=IMEW');
+SELECT ok(:'ph3_11' <> '', 'ph3.11: second call to fn_init_season raises (skeletons already exist)');
 
 -- =========================================================================
 -- ph3.8: fn_init_season — DMEW European year
@@ -266,15 +262,14 @@ SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2
 
 -- ph3.8 v2 — REVERSED by migration 20260906000001, same reason as ph3.7:
 -- DMEW is EVF's team championship and arrives by scrape.
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2027-2028')
-       AND txt_code LIKE 'DMEW%'),
-  0,
-  'ph3.8 v2: no DMEW skeleton, even when enum_european_event_type=DMEW'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_8 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2027-2028')
+   AND txt_code LIKE 'DMEW%' \gset
 
 ROLLBACK TO SAVEPOINT s_dmew;
+
+SELECT is(:'ph3_8'::INT, 0, 'ph3.8 v2: no DMEW skeleton, even when enum_european_event_type=DMEW');
 
 -- =========================================================================
 -- ph3.9: fn_init_season — no European singleton when type is NULL
@@ -288,15 +283,14 @@ INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2028-2029'));
 
 -- ph3.9 — no IMEW or DMEW skeleton when European type NULL
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2028-2029')
-       AND (txt_code LIKE 'IMEW%' OR txt_code LIKE 'DMEW%')),
-  0,
-  'ph3.9: no European singleton when enum_european_event_type IS NULL'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_9 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2028-2029')
+   AND (txt_code LIKE 'IMEW%' OR txt_code LIKE 'DMEW%') \gset
 
 ROLLBACK TO SAVEPOINT s_null;
+
+SELECT is(:'ph3_9'::INT, 0, 'ph3.9: no European singleton when enum_european_event_type IS NULL');
 
 -- =========================================================================
 -- ph3.10: fn_init_season — first-ever season (no prior)
@@ -313,15 +307,14 @@ INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-1900-1901'));
 
 -- ph3.10 — first-ever: skeletons have id_prior_event=NULL and no city info
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_event
-     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-1900-1901')
-       AND (id_prior_event IS NOT NULL OR txt_location IS NOT NULL)),
-  0,
-  'ph3.10: first-ever season skeletons have NULL prior + NULL location'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_10 FROM tbl_event
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-1900-1901')
+   AND (id_prior_event IS NOT NULL OR txt_location IS NOT NULL) \gset
 
 ROLLBACK TO SAVEPOINT s_first;
+
+SELECT is(:'ph3_10'::INT, 0, 'ph3.10: first-ever season skeletons have NULL prior + NULL location');
 
 -- =========================================================================
 -- ph3.12: Day-1 parity — new (CREATED) season ranklist == prior final ranklist
@@ -374,17 +367,21 @@ SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2
 -- not asserted because the rolling engine includes the carry-chain (prior +
 -- prior-of-prior within the 366-day cap), while the prior's final excludes
 -- its own incoming chain.
-SELECT cmp_ok(
-  (SELECT COUNT(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2',
-       (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'),
-       TRUE) WHERE total_score > 0),
-  '>=',
-  (SELECT COUNT(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2', 3, FALSE)
-     WHERE total_score > 0) - 5,
-  'ph3.12: Day-1 rolling kadra of new CREATED season carries over from prior (>= prior count - 5)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT (SELECT COUNT(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2',
+          (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'),
+          TRUE) WHERE total_score > 0) AS ph3_12_new,
+       (SELECT COUNT(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2', 3, FALSE)
+          WHERE total_score > 0) AS ph3_12_prior \gset
 
 ROLLBACK TO SAVEPOINT s_parity;
+
+SELECT cmp_ok(
+  :'ph3_12_new'::INT,
+  '>=',
+  :'ph3_12_prior'::INT - 5,
+  'ph3.12: Day-1 rolling kadra of new CREATED season carries over from prior (>= prior count - 5)'
+);
 
 -- =========================================================================
 -- ph3.13-14, ph3.22b: fn_create_season_with_skeletons (atomic wizard RPC)
@@ -402,28 +399,32 @@ SAVEPOINT s_create;
 -- atomic RPC creates the season row + scoring config + at least one skeleton
 -- without asserting the exact count.
 SAVEPOINT s_create_b;
-SELECT cmp_ok(
-  (SELECT skeletons_created FROM fn_create_season_with_skeletons(
-    'SPWS-2027-2028',
-    '2027-09-01'::DATE,
-    '2028-07-31'::DATE,
-    366,
-    'DMEW',
-    'EVENT_FK_MATCHING'::enum_event_carryover_engine,
-    '{}'::JSONB,
-    FALSE
-  )),
-  '>',
-  0,
-  'ph3.13b: fn_create_season_with_skeletons happy path creates >0 skeletons'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT skeletons_created AS ph3_13b FROM fn_create_season_with_skeletons(
+  'SPWS-2027-2028',
+  '2027-09-01'::DATE,
+  '2028-07-31'::DATE,
+  366,
+  'DMEW',
+  'EVENT_FK_MATCHING'::enum_event_carryover_engine,
+  '{}'::JSONB,
+  FALSE
+) \gset
 ROLLBACK TO SAVEPOINT s_create_b;
 
 ROLLBACK TO SAVEPOINT s_create;
 
+SELECT cmp_ok(
+  :'ph3_13b'::INT,
+  '>',
+  0,
+  'ph3.13b: fn_create_season_with_skeletons happy path creates >0 skeletons'
+);
+
 -- ph3.14 — rolls back on duplicate code (no partial state)
 SAVEPOINT s_dup;
-SELECT throws_ok(
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COALESCE(pg_temp.error_of(
   $$SELECT fn_create_season_with_skeletons(
       'SPWS-2025-2026',
       '2099-09-01'::DATE,
@@ -433,12 +434,11 @@ SELECT throws_ok(
       'EVENT_FK_MATCHING'::enum_event_carryover_engine,
       '{}'::JSONB,
       FALSE
-    )$$,
-  NULL,
-  NULL,
-  'ph3.14: fn_create_season_with_skeletons rolls back on duplicate code'
-);
+    )$$
+), '') AS ph3_14 \gset
 ROLLBACK TO SAVEPOINT s_dup;
+
+SELECT ok(:'ph3_14' <> '', 'ph3.14: fn_create_season_with_skeletons rolls back on duplicate code');
 
 -- ph3.22b — honors p_carryover_engine param (writes CODE when CODE passed)
 SAVEPOINT s_engine;
@@ -452,12 +452,15 @@ SELECT fn_create_season_with_skeletons(
   '{}'::JSONB,
   FALSE
 );
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT (SELECT enum_carryover_engine::TEXT FROM tbl_season WHERE txt_code = 'SPWS-2099-2100') AS ph3_22b \gset
+ROLLBACK TO SAVEPOINT s_engine;
+
 SELECT is(
-  (SELECT enum_carryover_engine::TEXT FROM tbl_season WHERE txt_code = 'SPWS-2099-2100'),
-  'EVENT_CODE_MATCHING',
+  :'ph3_22b'::TEXT,
+  'EVENT_CODE_MATCHING'::TEXT,
   'ph3.22b: fn_create_season_with_skeletons honors p_carryover_engine (CODE)'
 );
-ROLLBACK TO SAVEPOINT s_engine;
 
 -- =========================================================================
 -- ph3.15-17: fn_update_event v2 (cascade rename + id_prior_event picker)
@@ -539,16 +542,15 @@ SELECT fn_update_event(
   NULL                             -- p_id_prior_event unchanged
 );
 
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_tournament t
-     JOIN tbl_event e ON e.id_event = t.id_event
-    WHERE e.txt_code = 'PEW1B-2026-2027'
-      AND t.txt_code LIKE 'PEW1B-V2-%-2026-2027'),
-  6,
-  'ph3.15: fn_update_event v2 cascades txt_code rename to all 6 V2 children'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_15 FROM tbl_tournament t
+  JOIN tbl_event e ON e.id_event = t.id_event
+ WHERE e.txt_code = 'PEW1B-2026-2027'
+   AND t.txt_code LIKE 'PEW1B-V2-%-2026-2027' \gset
 
 ROLLBACK TO SAVEPOINT s_update;
+
+SELECT is(:'ph3_15'::INT, 6, 'ph3.15: fn_update_event v2 cascades txt_code rename to all 6 V2 children');
 
 -- ph3.16 — sets id_prior_event when picker value supplied
 SAVEPOINT s_prior;
@@ -567,12 +569,16 @@ SELECT fn_update_event(
   (SELECT txt_code FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'),
   (SELECT id_event FROM tbl_event WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AND txt_code ~ '^PEW1[efs]*-' ORDER BY id_event LIMIT 1)  -- p_id_prior_event
 );
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT (SELECT id_prior_event FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026') AS ph3_16_got,
+       (SELECT id_event FROM tbl_event WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AND txt_code ~ '^PEW1[efs]*-' ORDER BY id_event LIMIT 1) AS ph3_16_want \gset
+ROLLBACK TO SAVEPOINT s_prior;
+
 SELECT is(
-  (SELECT id_prior_event FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'),
-  (SELECT id_event FROM tbl_event WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AND txt_code ~ '^PEW1[efs]*-' ORDER BY id_event LIMIT 1),
+  NULLIF(:'ph3_16_got', '')::INT,
+  NULLIF(:'ph3_16_want', '')::INT,
   'ph3.16: fn_update_event v2 sets id_prior_event when picker value supplied'
 );
-ROLLBACK TO SAVEPOINT s_prior;
 
 -- ph3.17 — leaves child tournament codes alone when only name/dates change
 SAVEPOINT s_namechg;
@@ -597,13 +603,24 @@ SELECT fn_update_event(
   NULL                             -- p_id_prior_event unchanged
 );
 
-SELECT bag_eq(
-  $$SELECT txt_code FROM _child_codes_before$$,
-  $$SELECT txt_code FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026')$$,
-  'ph3.17: fn_update_event v2 leaves child codes unchanged when only name/dates change'
-);
+-- The two bags are equal when neither has a code the other lacks (EXCEPT ALL
+-- both ways), which is what bag_eq compared.
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT NOT EXISTS (
+  (SELECT txt_code FROM _child_codes_before
+   EXCEPT ALL
+   SELECT txt_code FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'))
+  UNION ALL
+  (SELECT txt_code FROM tbl_tournament WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026')
+   EXCEPT ALL
+   SELECT txt_code FROM _child_codes_before)
+) AS ph3_17 \gset
+-- pgt-ignore-end typecheck
 
 ROLLBACK TO SAVEPOINT s_namechg;
+
+SELECT ok(:'ph3_17'::BOOLEAN, 'ph3.17: fn_update_event v2 leaves child codes unchanged when only name/dates change');
 
 -- =========================================================================
 -- ph3.18-19: fn_revert_season_init
@@ -619,13 +636,12 @@ SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2
 -- ph3.18 — happy path: deletes all skeletons + scoring + season
 SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2030-2031'));
 
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_season WHERE txt_code = 'SPWS-2030-2031'),
-  0,
-  'ph3.18: fn_revert_season_init deletes season + skeletons + scoring (happy path)'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_18 FROM tbl_season WHERE txt_code = 'SPWS-2030-2031' \gset
 
 ROLLBACK TO SAVEPOINT s_revert;
+
+SELECT is(:'ph3_18'::INT, 0, 'ph3.18: fn_revert_season_init deletes season + skeletons + scoring (happy path)');
 
 -- ph3.19 — ADR-077 §6: a CHILDLESS season is revertible even after its skeletons
 -- advance past CREATED (e.g. an admin dates one to PLANNED). The widened guard is
@@ -645,13 +661,12 @@ UPDATE tbl_event
 
 SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2031-2032'));
 
-SELECT is(
-  (SELECT COUNT(*)::INT FROM tbl_season WHERE txt_code = 'SPWS-2031-2032'),
-  0,
-  'ph3.19: fn_revert_season_init reverts a childless season even when a skeleton advanced to PLANNED'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COUNT(*)::INT AS ph3_19 FROM tbl_season WHERE txt_code = 'SPWS-2031-2032' \gset
 
 ROLLBACK TO SAVEPOINT s_revert_planned;
+
+SELECT is(:'ph3_19'::INT, 0, 'ph3.19: fn_revert_season_init reverts a childless season even when a skeleton advanced to PLANNED');
 
 -- ph3.19b — refuses once any event has a tbl_tournament child (results may exist).
 SAVEPOINT s_refuse_children;
@@ -669,14 +684,14 @@ SELECT id_event, 'PPW1-V0-M-EPEE-2032-2033', 'PPW', 'EPEE', 'M', 'V0'
    AND txt_code LIKE 'PPW1-%'
  LIMIT 1;
 
-SELECT throws_ok(
-  $$SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2032-2033'))$$,
-  NULL,
-  NULL,
-  'ph3.19b: fn_revert_season_init refuses when an event has a tournament child'
-);
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
+SELECT COALESCE(pg_temp.error_of(
+  $$SELECT fn_revert_season_init((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2032-2033'))$$
+), '') AS ph3_19b \gset
 
 ROLLBACK TO SAVEPOINT s_refuse_children;
+
+SELECT ok(:'ph3_19b' <> '', 'ph3.19b: fn_revert_season_init refuses when an event has a tournament child');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -8,17 +8,20 @@ record, any warnings for the digest, and whether the field is held for the
 operator to settle.
 
 Source ranks are letter > listing > home: a reschedule or a renamed round in
-the letter outranks the listing, which outranks the home page. The eight rules
-are stated in the module tests; rule 7 (a started event) is handled upstream —
-the run simply never calls :func:`decide` for a past event — and rule 8
-(link/fee read only while empty) is the ``fill_blank_only`` flag here. Pure: no
-I/O.
+the letter outranks the listing, which outranks the home page. The rules are
+stated in the module tests; rule 7 (a started event) is handled upstream — the
+run simply never calls :func:`decide` for a past event. Rule 8 (link and fee
+read only while empty) was removed by ADR-118: the link and fee follow the same
+rules as every field, the calendar contract every scraper keeps, and an event
+page in the letter counts as empty (ADR-117 D7 A). Pure: no I/O.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+
+from python.pipeline.calendar_details import is_calendar_page
 
 RANK: dict[str, int] = {"letter": 3, "listing": 2, "home": 1}
 
@@ -73,26 +76,22 @@ def decide(
     state: FieldState | None,
     candidates: Sequence[Candidate],
     reports: Mapping[str, str],
-    fill_blank_only: bool = False,
 ) -> Decision:
     """Decide one field's write for this run. ``current`` is tbl_event's value,
     ``state`` what the run last wrote, ``candidates`` this run's findings (each
     a non-empty value from a source), ``reports`` each source's last recorded
-    value. ``fill_blank_only`` marks the link and fee, written only while the
-    field is empty (rule 8)."""
+    value."""
     recorded = [(c.source, c.value) for c in candidates]
     if not candidates:
         return Decision(None, recorded, [], False)  # rule 1
 
     winner = max(candidates, key=lambda c: RANK[c.source])
 
-    if _empty(current):  # rule 2
+    # rule 2; an event page is not a letter, so it counts as empty (D7 A)
+    if _empty(current) or (field == "url_invitation" and is_calendar_page(current)):
         return Decision(
             Change(winner.value, current, winner.source, winner.evidence), recorded, [], False
         )
-
-    if fill_blank_only:  # rule 8: a filled link/fee is never reread or rewritten
-        return Decision(None, recorded, [], False)
 
     last_written = state.value if state else None
     last_source = state.source if state else None

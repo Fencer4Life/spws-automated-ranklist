@@ -144,7 +144,7 @@
         <tr><td><b>M3</b></td><td>Who sets URL wyników on CERT?</td><td><b>A</b> You, in the Admin UI (ADR-117: a person sets it).<br><b>B</b> I pass it as the <code>url_event</code> input when dispatching <code>ingest-event.yml</code>, which saves it as an operator entry.</td><td><span class="chip never">A</span> Your rule: the results link stays empty until the Admin UI fills it.</td></tr>
         <tr><td><b>M4</b></td><td>Issue #4: PROD's PPS1e ingest sources still say women's épée was "dropped, not final".</td><td><b>A</b> Fix it today, after Madrid's first promote, with its own short plan.<br><b>B</b> Leave it.</td><td><span class="chip never">A</span> I left it on 26 Oct; it is mine to fix, after Madrid.</td></tr>
         <tr><td><b>M5</b></td><td>Issue #5: the 4 unpushed plan-page commits of the 25 Oct RCA, on <code>claude/pzsz-url-event-rca</code>.</td><td><b>A</b> Merge them into this branch and ship them in the same push (docs only).<br><b>B</b> Keep them on the old branch.</td><td><span class="chip never">A</span> Brings revision 5 of that page back to main and to the docs index.</td></tr>
-        <tr><td><b>M6</b></td><td>Observation #7: PROD shows Madrid's August invitation letter, while CERT has the October V1 letter.</td><td><b>A</b> Leave it. The reconciler keeps PROD's admin-owned link by policy and logs the difference daily; you can change it in PROD's Admin UI.<br><b>B</b> I copy CERT's link to PROD.</td><td><span class="chip never">A</span> It follows the current policy. Your call whether the newer letter should show.</td></tr>
+        <tr><td><b>M6</b></td><td>Observation #7: PROD shows Madrid's August invitation letter, while CERT has the October V1 letter.</td><td><b>A</b> Leave it. The reconciler keeps PROD's admin-owned link by policy and logs the difference daily; you can change it in PROD's Admin UI.<br><b>B</b> I copy CERT's link to PROD.</td><td><span class="chip warn">Neither</span> 31 Oct: you rejected my "A". PROD should take CERT's newer details, for every scraper, which makes it a calendar enhancement: <code>cert-event-details-reach-prod-every-scraper-2026-10-31.html</code>.</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -198,7 +198,7 @@
     </div>
     <div class="note">
       <p class="lede"><span class="tick">#7</span> Observation: the invitation letters differ (M6)</p>
-      <p>CERT: <code>…/2026/10/Madrid_invitation-letter2026-V1.pdf</code>. PROD: <code>…/2026/08/Madrid_invitation-letter2026.pdf</code>. The reconciler leaves it by policy and lists it under "Divergences NOT synced".</p>
+      <p>CERT: <code>…/2026/10/Madrid_invitation-letter2026-V1.pdf</code>. PROD: <code>…/2026/08/Madrid_invitation-letter2026.pdf</code>. The reconciler leaves it by policy and lists it under "Divergences NOT synced". You want PROD to follow CERT's newer letter instead (31 Oct). The plan is <code>cert-event-details-reach-prod-every-scraper-2026-10-31.html</code>, and Skopje (V3 on CERT, V2 on PROD) is covered too.</p>
     </div>
   </section>
 
