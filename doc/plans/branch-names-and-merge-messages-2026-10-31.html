@@ -121,11 +121,12 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">Integration · preflight · Plan — signed off 31 Oct</p>
+  <p class="eyebrow">Integration · preflight · Plan — released 31 Oct</p>
   <h1>Every branch, merge and release says what it fixes</h1>
   <p class="dek">Your request (31 Oct): from the branch name alone you should understand the fix; the merge GitHub shows should explain it in a few sentences; and releases are named the same way, checked by preflight. Today the merge message is git's default, so GitHub titles the CI run <b>"Merge branch 'claude/pew-madrid-engarde' into integration/main"</b> and the Release run just <b>"Release"</b>. This plan makes the explanation part of preflight and carries it onto main's merge commit and both runs. <b>No code is written until you sign it off.</b></p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>Signed 31 Oct: B1 A, B2 A, B3 A ("I sign it")</span>
+    <span class="pill">Released 31 Oct: main <code>05caf9f0</code></span>
     <span class="pill"><code>scripts/preflight.sh</code> · <code>scripts/integrate-agent-branch.sh</code></span>
     <span class="pill">Claude and Codex branches alike</span>
   </div>
@@ -227,5 +228,46 @@ Release  Release · Title's weapon wins over the declared one in every engine th
     </div>
   </section>
 
-  <p class="foot">plan · branch-names-and-merge-messages · 31 Oct 2026 · signed 31 Oct 2026</p>
+  <section>
+    <p class="kicker">08 · Released · 31 Oct</p>
+    <h2>Two pushes, both titled by what they change</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Push</th><th>Merge on main</th><th>Run titles GitHub lists</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>This plan</td><td><code>05caf9f0</code>, from <code>claude/branch-merge-release-names-explain-the-fix</code></td><td>CI 41202826116: "Every branch, merge and release run says what it changes"<br>Release 41202967258: "Release · Every branch, merge and release run says what it changes"</td><td>CI green (4 jobs); Release green: CERT, Pages, PROD after your approval</td></tr>
+        <tr><td>ADR-118 F9 record</td><td><code>0665896f</code>, from <code>claude/adr118-f9-release-record</code></td><td>CI 41203540489: "ADR-118 F9 recorded as released and verified on PROD"<br>Release 41203701211: "Release · ADR-118 F9 recorded as released and verified on PROD"</td><td>CI green; Release green, the docs-only gate skipped build and every deploy</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>The first push could not use the new script</b>, because it was not on main yet: main's old script merged with git's default message, and that local, unpushed merge was amended with <code>scripts/branch_description.py message</code> (the tree checked equal to the branch tip) before the push. No published commit was rewritten.</li>
+      <li><b>The second push is the first end to end</b>: the record branch was rebased onto main, described (its old 79-character subject was over the limit, so the title was rewritten), passed preflight's naming gate, and <code>scripts/integrate-agent-branch.sh</code> wrote the merge message by itself and printed <code>git push origin integration/main:main</code>.</li>
+      <li>The rebase met one conflict, in the generated <code>doc/requirements-traceability-matrix.html</code>, because both branches changed the RTM; its Markdown source merged cleanly, and the page was regenerated with <code>scripts/render_docs.py</code>, not edited by hand.</li>
+      <li>Before that push, <code>scripts/release-gate.sh</code> was run locally over the same range (PROD's last commit <code>05caf9f0</code> to the record's head) and printed <code>deploy=false</code>; the Release's gate logged the same decision.</li>
+      <li>Today's merge <code>5c9fae61</code> and older runs keep "Release" as their title (§06).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">09 · The release skills · 31 Oct</p>
+    <h2>CI and Release naming in the skill that runs preflight, for Claude and Codex</h2>
+    <p>Your request: add the CI and Release naming to the preflight skill. Preflight is run by the <b>release</b> skill, which exists twice: <code>.claude/skills/release/SKILL.md</code> (Claude) and <code>.agents/skills/release/SKILL.md</code> (Codex).</p>
+    <ul>
+      <li><b>Done:</b> a section "Name the change before preflight": the branch name, the description, the three titles <code>branch_description.py check</code> prints, where GitHub takes each title from (the merge's first line; <code>release.yml</code>'s <code>run-name</code>), and how to preview whether the Release deploys. The push step now checks each run's title against what preflight printed, and the hand-off links each run with its title.</li>
+      <li><b>Done:</b> Codex's copy is now identical to Claude's.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Found on the way, both fixed in the same change</p>
+      <p><b>G1.</b> Codex's release skill had none of the naming rule: in the naming change I updated only Claude's copy, although B3 A binds Codex too. It also still hand-picked gates and never named <code>scripts/preflight.sh</code>, against AGENTS.md (“use preflight before any commit or push … never a hand-copied subset”), so Codex would have met the naming gate only at integration.</p>
+      <p><b>G2.</b> The skill's “What preflight covers” list missed five of preflight's 19 gates: the LOCAL stack matching CI's, the postgrestools hard gate, the anon allowlist, the scoring pages matching <code>scoring.ts</code>, and the naming gate. It now lists all 19, and the per-file postgrestools line says which SQL the hard gate does not cover (seeds and other SQL).</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decide</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>N1</b></td><td>Stop the two release skills drifting again?</td><td><b>A</b> Test NAMING.06: both release skills are identical and each tells the agent to run <code>scripts/preflight.sh</code> and <code>scripts/branch_description.py check</code> and to check the "Release · " title (seen failing first against the old Codex copy).<br><b>B</b> No test; rely on review.</td><td><span class="chip never">A</span> GHWF.06 checks only the catalog link, which is how both drifts went unnoticed.</td></tr>
+        <tr><td><b>N2</b></td><td>This push touches only <code>.claude/</code>, <code>.agents/</code> and <code>doc/</code>, but the Release's docs-only list (ADR-094) does not include <code>.claude/</code> or <code>.agents/</code>, so it builds and deploys and asks you to approve PROD for no code change.</td><td><b>A</b> Its own change: add <code>.claude/</code> and <code>.agents/</code> to the docs-only list in <code>scripts/release-gate.sh</code>, test first, with an ADR-094 amendment.<br><b>B</b> Leave it: the gate fails open by design, and an agent-tooling change costs one routine release.</td><td><span class="chip never">A</span> Agent skills and settings never reach CERT or PROD; a release for them is noise in the list you asked to make readable.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">plan · branch-names-and-merge-messages · 31 Oct 2026 · signed 31 Oct 2026 · released 31 Oct 2026</p>
 </div>
