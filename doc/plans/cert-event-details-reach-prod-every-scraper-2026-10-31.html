@@ -131,7 +131,7 @@
     <span class="pill">found along the way: F1–F10</span>
     <span class="pill"><span class="dot"></span>Released 31 Oct: main 179b9846</span>
     <span class="pill"><span class="dot"></span>Signed 31 Oct: R A (done)</span>
-    <span class="pill"><span class="dot"></span>Signed 31 Oct: F9 (built on LOCAL)</span>
+    <span class="pill"><span class="dot"></span>F9 released 31 Oct: main 5c37a5ca, verified on PROD</span>
     <span class="pill"><span class="dot"></span>Signed 31 Oct: F10 A</span>
     <span class="pill"><span class="dot"></span>Open: F8</span>
     <span class="pill"><span class="dot"></span>Signed 31 Oct: F6 C</span>
@@ -398,6 +398,19 @@ UNION ALL SELECT 'event', txt_code FROM u8 UNION ALL SELECT 'state', id_event ||
         <tr><td><b>F10</b></td><td>How F9 lands without the gate losing anything</td><td><b>A</b> Keep the name <code>fn_event_details_set_at</code> and give it the corrected meaning (a person's changes on that environment only, NULL when none), with a comment saying so; no new name. The released body resolves to the corrected function, and the gate keeps checking every file it checks today.<br><b>B</b> Keep the new name and move the cut-off to 20261031000001. The gate stops checking the seven applied migrations of 24–31 Oct, so a later schema change that breaks a function still defined only there (<code>fn_calendar_apply_fields</code>, <code>fn_copy_event_result_links</code>, <code>fn_first_name_initial_capitals</code>) would no longer be caught.<br><b>C</b> Keep the new name and leave the old function in place with its old meaning, called by nothing.</td><td><b>Decided: A</b> (in chat, 31 Oct). Built: migration <code>20261031000002</code> redefines <code>fn_event_details_set_at</code> with a comment stating the meaning; the interim <code>…_by_person_at</code> and the drop are gone; test 114 is unchanged from main; CALSYNC.01–19 pass. My recommendation was A: it changes the content, not the gate, and leaves no dead code. It costs the rename you signed in F9: the name says less than <code>…_by_person_at</code>, so the comment, the handbook and ADR-118 state the meaning. B loosens the gate; C keeps a function that answers the wrong question.</td></tr>
       </tbody>
     </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">14 · F9 released and verified · 31 Oct, 12:24–12:40 UTC</p>
+    <h2>Madrid's October letter is on PROD</h2>
+    <ul>
+      <li>Commit <code>fda8da72</code>, merge <code>5c37a5ca</code> on main. CI 41200774396 green; Release 41200936775 green through PROD (12:28 UTC, your approval).</li>
+      <li>CERT and PROD (read-only): <code>fn_event_details_set_at</code> counts a person's changes only, the mirror reads "none" as CERT newer, no interim function.</li>
+      <li><code>evf-sync.yml</code> run 41201297879 (calendar mode): on CERT written 0, held 0 (PEW13's "Athens" was reported once in the first run); the mirror updated 3 events on PROD.</li>
+      <li>PROD's <code>vw_calendar</code>: Madrid (PEW2efs) the October letter, <code>2026/10/Madrid_invitation-letter2026-V1.pdf</code>; Skopje (IMEW) V3; PEW5efs the address "Ul. Stanisława Staszica 2, Łomianki, Poland" (to keep the postcode, type it on CERT and the next run carries it); PEW13es Ateny, Grecja; PEW17efs Toronto, Kanada; PEW8efs Finlandia.</li>
+      <li>PROD's audit since 12:30 UTC: 3 event writes, exactly those three events (F2 holds).</li>
+      <li>Still open: F8 (seven events show no flag), its own plan next.</li>
+    </ul>
   </section>
 
   <section>
