@@ -84,8 +84,13 @@ hazard. "All three suites green" used to live on the line above this section
 and is precisely the habit that produced that list.
 
 `scripts/preflight.sh` runs every CI job's checks plus the AGENTS.md gates CI
-does not run (`check-spec-sync.sh`, `svelte-check`) plus the `git diff --check`
-that `integrate-agent-branch.sh` enforces. It runs all of them to completion
+does not run (`check-spec-sync.sh`, `svelte-check`) plus the two checks
+`integrate-agent-branch.sh` enforces: `git diff --check`, and the branch's name
+and description (`scripts/branch_description.py check`). Name the branch after
+what it changes and write its description (`git branch --edit-description`: a
+title of up to 72 characters, then a few sentences on what was wrong and what
+it does now) before running preflight; the check prints the merge, CI and
+Release titles the push will carry. It runs all of them to completion
 even after one fails, then prints a pass/fail line per gate, so a plan learns
 everything wrong with it in a single pass instead of serially from CI.
 

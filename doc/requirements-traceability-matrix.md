@@ -193,6 +193,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | NFR-13 | Shadow DOM isolation (host CSS does not leak) | §5, §6 | 8.55–8.61 | Covered (M8) |
 | NFR-14 | Security posture machine-verified against the **live** environment on every release, blocking the release on regression and alerting via Telegram | ADR-083 §6 | pgTAP 52.1–52.12; `scripts/check-security-posture.sh` run in `release.yml` deploy-cert/deploy-prod | Covered |
 | NFR-15 | Static checks are hard gates with zero findings: postgrestools (type check, plpgsql_check, lint) over every migration after the configured baseline and every pgTAP file, proven live by canaries; svelte-check with `--fail-on-warnings`; Ruff, Ruff format and BasedPyright over `python/ scripts/ tools/`; Python deprecation warnings from project code fail pytest; coherence gate 4 (a migration change comes with a documentation change) fails the run over the range a push or pull request brings | User directive 2026-10-24; [plan](plans/ftl-seed-email-removal-2026-10-24.html) §13; [workflow page plan](plans/github-actions-workflows-page-2026-10-24.html) W2 #8 | `python/tests/test_static_check_gates.py` GATE.01–GATE.06; `python/tests/test_coherence_migration_gate.py` COH.01–COH.05; `scripts/check-postgrestools.sh` in `scripts/preflight.sh` and `ci.yml` test-db; svelte-check in preflight and `ci.yml` test-frontend | Covered |
+| NFR-16 | Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); `scripts/branch_description.py check` fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on `main` is the description with a `Branch:` line, and the CI and Release runs carry its title | User directive 2026-10-31; [plan](plans/branch-names-and-merge-messages-2026-10-31.html) B1–B3 A | NAMING.01–05 | Covered (built 2026-10-31, LOCAL) |
 
 ## Coverage Summary
 
@@ -667,6 +668,18 @@ Acceptance IDs for [ADR-118](adr/118-event-details-cert-to-prod-scraper-contract
 | CALSYNC.42–44 | The EVF run writes its details through `fn_calendar_apply_fields`; the refresh and the identity sync no longer carry them; a held value is reported on Telegram. | pytest | `python/tests/test_calendar_scraper_contract.py` | **Released** (2026-10-31, main 179b9846, CERT + PROD) |
 | CALSYNC.45–49 | PZSz without rule 8: a link the run wrote follows the listing's new link and the passes read the new letter; a link a person set stays and the passes read it; an event page in the letter counts as empty (C1); a fee the run wrote follows the letter; a fee with no provenance is a person's and stays. | pytest | `python/tests/test_calendar_scraper_contract.py` | **Released** (2026-10-31, main 179b9846, CERT + PROD) |
 | CALSYNC.50 | `promote.py --mode calendar` reads when CERT last wrote each event's details and sends it as `ts_details_set`. | pytest | `python/tests/test_calendar_scraper_contract.py` | **Released** (2026-10-31, main 179b9846, CERT + PROD) |
+
+## Branch, merge and release names (NAMING.*)
+
+Acceptance IDs for NFR-16 and [doc/plans/branch-names-and-merge-messages-2026-10-31.html](plans/branch-names-and-merge-messages-2026-10-31.html) (signed 31 Oct 2026, B1–B3 A). The integration tests run in throwaway repositories.
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| NAMING.01 | A described branch integrates; the merge commit's title is the description's title, its body the explanation, and its trailers `Branch: <name>` beside the description's own (`Co-Authored-By:`). | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Built, LOCAL** (2026-10-31) |
+| NAMING.02 | The integrate script refuses a branch with no description, a title over 72 characters or starting "Merge", or an explanation of fewer than two sentences, and merges nothing. | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Built, LOCAL** (2026-10-31) |
+| NAMING.03 | It refuses a session-named, date-named or two-word branch, however well described. | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Built, LOCAL** (2026-10-31) |
+| NAMING.04 | `scripts/branch_description.py check` fails an undescribed branch and, for a described one, prints the merge, CI and Release titles; `scripts/preflight.sh` runs that same check. | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Built, LOCAL** (2026-10-31) |
+| NAMING.05 | `release.yml` titles its run "Release · " and the triggering CI run's title, or "Release · manual dispatch by <who>". | pytest | `python/tests/test_agent_worktree_operating_structure.py` | **Built, LOCAL** (2026-10-31) |
 
 ## Cross-references
 

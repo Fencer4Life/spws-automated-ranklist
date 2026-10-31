@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a7104deb8a97d3ec40aad2b0290f054a38dca0612544ebad0af27b5ff5f641b7">
+<meta name="doc-source-sha256" content="412e1007be9bbebd1d65266ab6477adb56faa6b658a5895c0ad3aabffb650218">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>676 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>689 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1105,6 +1105,13 @@
 <td>User directive 2026-10-24; <a href="plans/ftl-seed-email-removal-2026-10-24.html">plan</a> §13; <a href="plans/github-actions-workflows-page-2026-10-24.html">workflow page plan</a> W2 #8</td>
 <td><code>python/tests/test_static_check_gates.py</code> GATE.01–GATE.06; <code>python/tests/test_coherence_migration_gate.py</code> COH.01–COH.05; <code>scripts/check-postgrestools.sh</code> in <code>scripts/preflight.sh</code> and <code>ci.yml</code> test-db; svelte-check in preflight and <code>ci.yml</code> test-frontend</td>
 <td>Covered</td>
+</tr>
+<tr>
+<td>NFR-16</td>
+<td>Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); <code>scripts/branch_description.py check</code> fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on <code>main</code> is the description with a <code>Branch:</code> line, and the CI and Release runs carry its title</td>
+<td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A</td>
+<td>NAMING.01–05</td>
+<td>Covered (built 2026-10-31, LOCAL)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3688,6 +3695,57 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</h2>
+<p>Acceptance IDs for NFR-16 and <a href="plans/branch-names-and-merge-messages-2026-10-31.html">doc/plans/branch-names-and-merge-messages-2026-10-31.html</a> (signed 31 Oct 2026, B1–B3 A). The integration tests run in throwaway repositories.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NAMING.01</td>
+<td>A described branch integrates; the merge commit's title is the description's title, its body the explanation, and its trailers <code>Branch: &lt;name&gt;</code> beside the description's own (<code>Co-Authored-By:</code>).</td>
+<td>pytest</td>
+<td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
+<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+</tr>
+<tr>
+<td>NAMING.02</td>
+<td>The integrate script refuses a branch with no description, a title over 72 characters or starting &quot;Merge&quot;, or an explanation of fewer than two sentences, and merges nothing.</td>
+<td>pytest</td>
+<td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
+<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+</tr>
+<tr>
+<td>NAMING.03</td>
+<td>It refuses a session-named, date-named or two-word branch, however well described.</td>
+<td>pytest</td>
+<td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
+<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+</tr>
+<tr>
+<td>NAMING.04</td>
+<td><code>scripts/branch_description.py check</code> fails an undescribed branch and, for a described one, prints the merge, CI and Release titles; <code>scripts/preflight.sh</code> runs that same check.</td>
+<td>pytest</td>
+<td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
+<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+</tr>
+<tr>
+<td>NAMING.05</td>
+<td><code>release.yml</code> titles its run &quot;Release · &quot; and the triggering CI run's title, or &quot;Release · manual dispatch by <who>&quot;.</td>
+<td>pytest</td>
+<td><code>python/tests/test_agent_worktree_operating_structure.py</code></td>
+<td><strong>Built, LOCAL</strong> (2026-10-31)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -3698,5 +3756,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a7104deb8a97d3ec40aad2b0290f054a38dca0612544ebad0af27b5ff5f641b7</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>412e1007be9bbebd1d65266ab6477adb56faa6b658a5895c0ad3aabffb650218</code></footer>
 </div></body></html>

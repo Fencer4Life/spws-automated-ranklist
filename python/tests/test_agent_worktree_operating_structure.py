@@ -1,4 +1,12 @@
-"""Acceptance tests for the Codex/Claude Git worktree operating structure."""
+"""Acceptance tests for the Codex/Claude Git worktree operating structure.
+
+NAMING.01–05 (plan doc/plans/branch-names-and-merge-messages-2026-10-31.html,
+signed 31 Oct 2026, B1–B3 A): a worker branch is named after what it changes
+and described in git's branch description; scripts/branch_description.py
+checks both, preflight and the integrate script run that one check, the merge
+on main carries the description and a Branch: line, and release.yml names
+its run after the merge title.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +15,19 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+import yaml
+
 ROOT = Path(__file__).resolve().parents[2]
+
+GOOD_DESCRIPTION = (
+    "Sample file lands where the task wants it\n"
+    "\n"
+    "The task needs a file in the root of the checkout. This change adds it, so the\n"
+    "next step can read it.\n"
+    "\n"
+    "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
+)
 
 
 def _run(
@@ -55,6 +75,7 @@ def _repository(tmp_path: Path) -> tuple[Path, Path]:
         "scripts/install-agent-worktree-guards.sh",
         "scripts/start-agent-worktree.sh",
         "scripts/integrate-agent-branch.sh",
+        "scripts/branch_description.py",
     ):
         source = ROOT / relative
         target = integration / relative
@@ -190,23 +211,35 @@ def test_dedicated_integration_branch_can_push_only_its_current_head(tmp_path: P
     assert "current integration branch" in stale_main.stderr
 
 
-def test_integrate_merges_one_clean_worker_branch_without_pushing(tmp_path: Path):
-    integration, remote = _repository(tmp_path)
-    _run("bash", "scripts/install-agent-worktree-guards.sh", "--integration", cwd=integration)
+def _worker(tmp_path: Path, integration: Path, agent: str, task: str) -> Path:
+    """A worker worktree on <agent>/<task> with one commit, not yet described."""
     worktree_root = tmp_path / "worktrees"
     _run(
         "bash",
         "scripts/start-agent-worktree.sh",
-        "codex",
-        "sample-task",
+        agent,
+        task,
         "--worktree-root",
         str(worktree_root),
         cwd=integration,
     )
-    worker = worktree_root / "SPWSranklist-codex-sample-task"
+    worker = worktree_root / f"SPWSranklist-{agent}-{task}"
     (worker / "task.txt").write_text("isolated\n")
     _git(worker, "add", "task.txt")
     _git(worker, "commit", "-m", "task")
+    return worker
+
+
+def _describe(repository: Path, branch: str, description: str) -> None:
+    # What `git branch --edit-description` stores; the config is shared by worktrees.
+    _git(repository, "config", f"branch.{branch}.description", description)
+
+
+def test_integrate_merges_one_clean_worker_branch_without_pushing(tmp_path: Path):
+    integration, remote = _repository(tmp_path)
+    _run("bash", "scripts/install-agent-worktree-guards.sh", "--integration", cwd=integration)
+    _worker(tmp_path, integration, "codex", "add-sample-file")
+    _describe(integration, "codex/add-sample-file", GOOD_DESCRIPTION)
     remote_before = _run(
         "git", "--git-dir", str(remote), "rev-parse", "refs/heads/main", cwd=tmp_path
     ).stdout.strip()
@@ -214,7 +247,7 @@ def test_integrate_merges_one_clean_worker_branch_without_pushing(tmp_path: Path
     result = _run(
         "bash",
         "scripts/integrate-agent-branch.sh",
-        "codex/sample-task",
+        "codex/add-sample-file",
         cwd=integration,
     )
 
@@ -242,3 +275,116 @@ def test_integrate_refuses_dirty_integration_checkout(tmp_path: Path):
 
     assert result.returncode != 0
     assert "integration checkout is not clean" in result.stderr.lower()
+
+
+def test_NAMING_01_the_merge_carries_the_branch_description_and_branch_line(tmp_path: Path):
+    integration, _ = _repository(tmp_path)
+    _run("bash", "scripts/install-agent-worktree-guards.sh", "--integration", cwd=integration)
+    _worker(tmp_path, integration, "claude", "add-sample-file")
+    _describe(integration, "claude/add-sample-file", GOOD_DESCRIPTION)
+
+    _run("bash", "scripts/integrate-agent-branch.sh", "claude/add-sample-file", cwd=integration)
+
+    assert _git(integration, "show", "-s", "--format=%s", "HEAD") == (
+        "Sample file lands where the task wants it"
+    )
+    body = _git(integration, "show", "-s", "--format=%b", "HEAD")
+    assert "The task needs a file in the root of the checkout." in body
+    trailers = _run(
+        "git", "interpret-trailers", "--parse", cwd=integration, input_text=body + "\n"
+    ).stdout
+    assert "Branch: claude/add-sample-file" in trailers
+    assert "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" in trailers
+
+
+@pytest.mark.parametrize(
+    ("description", "reason"),
+    [
+        (None, "no branch description"),
+        ("T" * 73 + "\n\nIt does one thing. It does it well.\n", "longer than 72"),
+        ("Merge branch 'x'\n\nIt does one thing. It does it well.\n", "starts with"),
+        ("Adds a sample file\n\nIt adds a file.\n", "two sentences"),
+    ],
+)
+def test_NAMING_02_integrate_refuses_a_missing_or_weak_description(
+    tmp_path: Path, description: str | None, reason: str
+):
+    integration, _ = _repository(tmp_path)
+    _run("bash", "scripts/install-agent-worktree-guards.sh", "--integration", cwd=integration)
+    _worker(tmp_path, integration, "codex", "add-sample-file")
+    if description is not None:
+        _describe(integration, "codex/add-sample-file", description)
+    head_before = _git(integration, "rev-parse", "HEAD")
+
+    result = _run(
+        "bash",
+        "scripts/integrate-agent-branch.sh",
+        "codex/add-sample-file",
+        cwd=integration,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert reason in result.stderr
+    assert _git(integration, "rev-parse", "HEAD") == head_before
+
+
+@pytest.mark.parametrize(
+    ("task", "reason"),
+    [
+        ("session-20261031-1059-3818cd", "session"),
+        ("fix-2026-10-31-letter", "date"),
+        ("fix-letter", "three words"),
+    ],
+)
+def test_NAMING_03_integrate_refuses_a_session_date_or_two_word_branch_name(
+    tmp_path: Path, task: str, reason: str
+):
+    integration, _ = _repository(tmp_path)
+    _run("bash", "scripts/install-agent-worktree-guards.sh", "--integration", cwd=integration)
+    _worker(tmp_path, integration, "claude", task)
+    _describe(integration, f"claude/{task}", GOOD_DESCRIPTION)
+    head_before = _git(integration, "rev-parse", "HEAD")
+
+    result = _run(
+        "bash",
+        "scripts/integrate-agent-branch.sh",
+        f"claude/{task}",
+        cwd=integration,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert reason in result.stderr
+    assert _git(integration, "rev-parse", "HEAD") == head_before
+
+
+def test_NAMING_04_the_preflight_check_prints_the_names_the_push_will_carry(tmp_path: Path):
+    integration, _ = _repository(tmp_path)
+    _run("bash", "scripts/install-agent-worktree-guards.sh", "--integration", cwd=integration)
+    worker = _worker(tmp_path, integration, "claude", "add-sample-file")
+    check = ("python3", "scripts/branch_description.py", "check")
+
+    undescribed = _run(*check, cwd=worker, check=False)
+    _describe(integration, "claude/add-sample-file", GOOD_DESCRIPTION)
+    described = _run(*check, cwd=worker, check=False)
+
+    assert undescribed.returncode != 0
+    assert "no branch description" in undescribed.stderr
+    assert described.returncode == 0, described.stderr
+    title = "Sample file lands where the task wants it"
+    assert f"Merge title:  {title}" in described.stdout
+    assert f"CI run:       {title}" in described.stdout
+    assert f"Release run:  Release · {title}" in described.stdout
+    # Preflight runs this same check on the current branch.
+    preflight = (ROOT / "scripts" / "preflight.sh").read_text(encoding="utf-8")
+    assert "scripts/branch_description.py check" in preflight
+
+
+def test_NAMING_05_the_release_run_is_named_after_the_merge_title():
+    spec = yaml.safe_load((ROOT / ".github" / "workflows" / "release.yml").read_text("utf-8"))
+    run_name = spec.get("run-name", "")
+
+    assert "github.event.workflow_run.display_title" in run_name
+    assert "Release · " in run_name
+    assert "manual dispatch by" in run_name and "github.actor" in run_name
