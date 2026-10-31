@@ -105,6 +105,8 @@ def test_parsed_tournament_fields():
         "tournament_name",
         "city",
         "country",
+        # WPN.TITLE (2026-10-31): the title's weapon overrode the declared one.
+        "weapon_note",
         # Orchestrator-injected:
         "season_end_year",
         "organizer_hint",

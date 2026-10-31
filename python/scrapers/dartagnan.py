@@ -26,15 +26,6 @@ from bs4 import BeautifulSoup
 
 DARTAGNAN_HOSTS = ("dartagnan.live", "www.dartagnan.live")
 
-WEAPON_LABELS = {
-    "degen": "EPEE",
-    "epee": "EPEE",
-    "florett": "FOIL",
-    "foil": "FOIL",
-    "säbel": "SABRE",
-    "sabel": "SABRE",
-    "sabre": "SABRE",
-}
 GENDER_LABELS = {
     "herren": "M",
     "men": "M",
@@ -59,12 +50,14 @@ def _extract_single_category(text: str) -> str | None:
     return None
 
 
-def _extract_weapon(text: str) -> str | None:
-    lower = text.lower()
-    for label, value in WEAPON_LABELS.items():
-        if re.search(rf"\b{re.escape(label)}\b", lower):
-            return value
-    return None
+def _weapon(declared_line: str, title: str) -> tuple[str | None, str | None]:
+    """A competition's weapon and the override note (WPN.TITLE): the title's
+    weapon ("Men Epee V1") when it names exactly one, otherwise the weapon the
+    line under it declares ("männlich, Degen")."""
+    from python.pipeline.weapon_words import find_weapons, weapon_from_title
+
+    declared = find_weapons(declared_line)
+    return weapon_from_title(next(iter(declared)) if len(declared) == 1 else None, title)
 
 
 def _extract_gender(text: str) -> str | None:
@@ -82,6 +75,8 @@ def list_dartagnan_competitions(html: str, base_url: str) -> tuple[list[dict], l
             "title": "Men Epee V1", "rankings_url": "https://.../6687-rankings.html"}, ...]
     Skipped (DART.EVT.01): [{"weapon", "name", "url", "reason"}] for a combined
     round ("V1/V2 Runde") or a competition without a weapon or gender.
+    A competition whose title names another weapon than the line under it
+    declares takes the title's and carries a ``weapon_note`` (WPN.TITLE).
     """
     soup = BeautifulSoup(html, "html.parser")
     competitions: list[dict] = []
@@ -106,9 +101,13 @@ def list_dartagnan_competitions(html: str, base_url: str) -> tuple[list[dict], l
         seen_ids.add(comp_id)
         rankings_url = urljoin(base_url, f"{comp_id}-rankings.html")
 
-        # Combine title + descriptive text below h3 for weapon/gender lookup.
+        # Combine title + descriptive text below h3 for the gender lookup. The
+        # weapon is stated twice, typed in the title and declared on the line
+        # under it, and the title wins (WPN.TITLE).
         descriptor = box.get_text(" ", strip=True)
-        weapon = _extract_weapon(descriptor) or _extract_weapon(title)
+        weapon, weapon_note = _weapon(
+            " ".join(s for s in box.stripped_strings if s != title), title
+        )
         gender = _extract_gender(descriptor) or _extract_gender(title)
 
         # Category must be a single V0-V4; combined "V1/V2 Runde" → skip.
@@ -126,16 +125,17 @@ def list_dartagnan_competitions(html: str, base_url: str) -> tuple[list[dict], l
             skipped.append({"weapon": weapon, "name": title, "url": rankings_url, "reason": reason})
             continue
 
-        competitions.append(
-            {
-                "id": comp_id,
-                "weapon": weapon,
-                "gender": gender,
-                "category": category,
-                "title": title,
-                "rankings_url": rankings_url,
-            }
-        )
+        competition = {
+            "id": comp_id,
+            "weapon": weapon,
+            "gender": gender,
+            "category": category,
+            "title": title,
+            "rankings_url": rankings_url,
+        }
+        if weapon_note:
+            competition["weapon_note"] = weapon_note
+        competitions.append(competition)
 
     return competitions, skipped
 

@@ -1,0 +1,243 @@
+<meta charset="utf-8">
+<title>Declared weapon vs title — check plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · every engine that applies · Check plan — awaiting sign-off</p>
+  <h1>When the declared weapon and the title disagree, the title wins</h1>
+  <p class="dek">Your rule (31 Oct): check every engine where a source states a bracket's weapon twice, once <b>picked from a list</b> and once <b>typed into the title</b>. On a mismatch, <b>the title's weapon overrides the declared one during ingestion</b>. Three engines state both. At Madrid this files EPEE MALE 2 as men's épée V2. <b>No code is written until you sign it off.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 31 Oct: W1 A (weapon only)</span>
+    <span class="pill">applies to Engarde, FencingTime XML, d'Artagnan</span>
+    <span class="pill">no hold · no override file · no lifecycle change</span>
+    <span class="pill">findings: <code>ingestion-source-errors-findings-2026-10-31.html</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>One question about your wording</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>W1</b></td><td>You wrote "the title wins and overrides the <b>gender</b> field". Which fields does the title override?</td><td><b>A</b> The weapon field: the declared weapon (Engarde <code>arme</code>, XML <code>Arme</code>, d'Artagnan's declared line). That is what this plan does.<br><b>B</b> Weapon and gender. Gender already follows the title in Engarde (ENG.EVT.03) and XML (<code>AltName</code> over <code>Sexe</code>); B adds d'Artagnan's gender and reports every gender mismatch, as for weapon.<br><b>C</b> Weapon, gender and category.</td><td><span class="chip never">Decided A</span> 31 Oct: weapon only.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Which engines apply (checked 31 Oct)</p>
+    <h2>Three engines state the weapon twice</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Engine</th><th>Declared (picked from a list)</th><th>Title (typed)</th><th>Applies</th></tr></thead>
+      <tbody>
+        <tr><td><b>Engarde</b></td><td><code>arme="e|f|s"</code> per competition</td><td><code>&lt;titre&gt;</code>, e.g. "EPEE MALE 2"</td><td><span class="chip never">yes</span> Madrid 2026</td></tr>
+        <tr><td><b>FencingTime XML</b></td><td><code>Arme="E|F|S"</code></td><td><code>AltName</code>, e.g. "SZPADA MĘŻCZYZN …"</td><td><span class="chip never">yes</span></td></tr>
+        <tr><td><b>d'Artagnan</b></td><td>The line under each title: "männlich, <b>Degen</b>"</td><td><code>&lt;h3&gt;</code>, e.g. "Men <b>Epee</b> V1"</td><td><span class="chip never">yes</span></td></tr>
+        <tr><td><b>FTL</b> (SPWS, PZSz, international)</td><td>None: schedule row, results page, JSON and CSV carry no weapon field</td><td>The bracket name</td><td><span class="chip plain">no</span> nothing declared</td></tr>
+        <tr><td><b>EVF results API</b></td><td><code>weaponId</code> and each row's <code>weapon_abbr</code></td><td>None</td><td><span class="chip plain">no</span> no title; unchanged (the row's code wins, as today)</td></tr>
+        <tr><td><b>4fence</b></td><td>The URL's <code>a=</code> code</td><td>The heading "Spada Maschile Cat.1 40+" appears generated from the same setting</td><td><span class="chip warn">no, unless</span> a live page shows the organiser types it; checked during the build, and if so it is added here first</td></tr>
+        <tr><td><b>Ophardt</b></td><td>The list label "Foil Women's O40" (and the German "Florett Herren V50") appear generated from one setting</td><td>None found</td><td><span class="chip warn">no, unless</span> same as 4fence</td></tr>
+        <tr><td><b>File import, cert_ref</b></td><td>None</td><td>None</td><td><span class="chip plain">no</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The rule</p>
+    <h2>Exactly what happens</h2>
+    <ol class="steps">
+      <li><b>One reader of weapon words for all three engines.</b> Move <code>source_identity._WEAPON_WORDS</code> (accent folding, whole words) into one shared place and use it everywhere: épée = epee, szpada, Degen, spada, espada, varja; foil = foil, fleuret, floret, Florett, fioretto, florete; sabre = sabre, saber, szabla, sabel, Säbel, sciabola, sable. Add the missing Polish forms (szpadzie, szpadą, florecie, floretem, szabli, szablą) and Hungarian (párbajtőr, tőr, kard).</li>
+      <li><b>The title names exactly one weapon</b> → that is the bracket's weapon. If the declared weapon differs, it is overridden.</li>
+      <li><b>The title names no weapon, or two</b> → the title cannot decide; the declared weapon is used, as today.</li>
+      <li><b>Every override is reported</b> in the staging report and the Telegram summary: "EPEE MALE 2: weapon from the title (épée); Engarde declared sabre". It is also recorded in the run record, so promote's plan on PROD reads the same pages and makes the same choice.</li>
+      <li>The override happens in the reader, before the event-level checks. At Madrid, EPEE MALE 2 becomes EPEE M V2, so "two sources for SABRE/M/V2" never arises and TABLE SABRE MALE 2 is written as sabre.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">04 · What it does on real sources</p>
+    <h2>Run read-only on 8 Engarde tournaments: one mismatch</h2>
+    <pre class="trace">aeve_esgrima/aeve_esgrima (Madrid 2026): <b>1</b>  epeemale2 'EPEE MALE 2'  declared SABRE  → title wins: EPEE
+evf_madrid_2025 · evf_madrid_2024 · crit26 · crit25 · sthlm/vet2026 ·
+faches2026 · hunfencing/2025_09_20_pbt (Budapest 2025):  0 each, nothing changes</pre>
+    <p>FencingTime XML and d'Artagnan sources have not been scanned yet. Before release, the same comparison runs read-only over every stored XML and d'Artagnan source, to show what the rule would change (findings page, E2).</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Where it goes</p>
+    <h2>Files</h2>
+    <div class="op">
+      <span class="op-tag c">NEW</span><span class="set">python/pipeline/weapon_words.py</span>
+      <ul><li>The shared weapon-word reader (step 1). <code>source_identity</code> imports it from here, so there is one table.</li></ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">UPDATE</span><span class="set">readers</span>
+      <ul>
+        <li><code>python/scrapers/engarde.py</code> (<code>parse_competition_list</code>): weapon from the title when it names one, else <code>arme</code>; the mismatch noted. <code>competition_list_facts</code> uses the same weapon.</li>
+        <li><code>python/scrapers/fencingtime_xml.py</code>: weapon from <code>AltName</code> when it names one, else <code>Arme</code>; the mismatch noted.</li>
+        <li><code>python/scrapers/dartagnan.py</code> (<code>list_dartagnan_competitions</code>): read the <code>&lt;h3&gt;</code> and the declared line separately (today one search over both); weapon from the <code>&lt;h3&gt;</code> when it names one, else the declared line; the mismatch noted.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">UPDATE</span><span class="set">report</span>
+      <ul><li><code>python/pipeline/ir.py</code>: <code>ParsedTournament</code> carries the override note; the staging report, Telegram summary and run record show it.</li></ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Tests first, each seen failing</p>
+    <h2>What the tests pin</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Case</th><th>Expected</th></tr></thead>
+      <tbody>
+        <tr><td>The word reader: each language, folded accents, Polish forms, Hungarian, a title with two weapons, a title with none</td><td>One weapon, two, or none, read correctly</td></tr>
+        <tr><td>Madrid 2026 competition list (fixture: competition titles only, no names), every competition marked completed</td><td>EPEE MALE 2 is EPEE M V2 with the override noted; TABLE SABRE MALE 2 is SABRE M V2; no refusal</td></tr>
+        <tr><td>Engarde lists already in fixtures (crit26, Budapest, Madrid 2024 and 2025, Stockholm 2025)</td><td>Every bracket keeps its weapon; no override noted</td></tr>
+        <tr><td>FencingTime XML: <code>Arme="S"</code> with <code>AltName="SZPADA …"</code>; <code>AltName</code> without a weapon word; the existing fixtures</td><td>EPEE with the override noted; <code>Arme</code> used; unchanged</td></tr>
+        <tr><td>d'Artagnan: "männlich, Säbel" under "Men Epee V1"; the existing index</td><td>EPEE with the override noted; unchanged</td></tr>
+        <tr><td>International route on the Madrid fixture</td><td>The override is in the run record and the staging report; promote's plan makes the same choice</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Documentation, in the same change</p>
+    <h2>Records</h2>
+    <ul>
+      <li>An amendment to ADR-105 (the Engarde and d'Artagnan reader rules) and to ADR-050 (FencingTime XML): where a source both declares and titles a weapon, the title wins, and the override is reported. Rendered with <code>render_adrs.py</code>; spec Appendix C entries updated.</li>
+      <li>RTM rows for the cases in §06; the handbook <code>ingestion</code> page; <code>refresh-graph.sh</code> and the docs index before the commit; <code>scripts/preflight.sh</code> exit 0.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Not in this plan</p>
+    <h2>Proven errors this plan does not change</h2>
+    <ul>
+      <li>Findings errors 4 and 5 (Stage 7 cannot compare weapon, gender or category, and writes even when it objects), 6 (international admission ignores gender and weapon), 7 (a running Engarde final does not keep the event open), 8 (the "1-2-3-4" skip reason) and 9 (PROD's PPS1e ingest sources).</li>
+      <li>An FTL bracket typed with the wrong weapon: FTL declares nothing, so this check cannot see it.</li>
+      <li>Madrid: E1 on the findings page still applies. No ingest until this is released.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · weapon-declared-vs-title-check · rev 2 · 31 Oct 2026 · nothing written until signed off</p>
+</div>

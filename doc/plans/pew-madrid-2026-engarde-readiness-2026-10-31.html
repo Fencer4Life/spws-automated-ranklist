@@ -1,0 +1,273 @@
+<meta charset="utf-8">
+<title>PEW Madrid 2026 — Engarde ingestion readiness</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">EVF · Engarde · CERT ingest → PROD promote · Readiness plan</p>
+  <h1>PEW Madrid 2026: will the Engarde ingestion work today?</h1>
+  <p class="dek">The Engarde plugin still reads Engarde correctly. <b>But one Madrid competition is mislabelled at the source, and it breaks the event</b>: men's épée V2 is marked as sabre. Without a fix, those results are stored as sabre, or the whole event is refused. This page covers what was checked, what is wrong, and what I propose to change before the first CERT ingest. <b>No code has been written.</b></p>
+  <div class="meta">
+    <span class="pill danger"><span class="dot"></span>On hold — errors are established first: ingestion-source-errors-findings-2026-10-31.html</span>
+    <span class="pill"><code>PEW2efs-2026-2027</code> · 31 Oct – 1 Nov</span>
+    <span class="pill danger"><span class="dot"></span>1 blocker for today</span>
+    <span class="pill">branch <code>claude/pew-madrid-engarde</code> = main <code>4f92e717</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Six decisions, each with my recommendation</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>M1</b></td><td>Fix the Engarde reader before the first CERT ingest? (issues #1, #2, #3, #6, §03)</td><td><b>A</b> all four in one Python-only release today, tests first, preflight exit 0, then push.<br><b>B</b> only #1 today; #2, #3 and #6 next week.<br><b>C</b> no fix. Not viable: men's épée V2 is stored as sabre, or the whole event is refused.</td><td><span class="chip never">A</span> All four are small and in the same two files. #3 must land before the daily close can look at Madrid on 2 Nov.</td></tr>
+        <tr><td><b>M2</b></td><td>Rehearse on LOCAL before CERT?</td><td><b>A</b> Once the first finals are completed, run the real ingest on LOCAL, with the Engarde URL passed as <code>--url-event</code>. That writes LOCAL's link only; LOCAL is a fresh PROD copy and disposable.<br><b>B</b> No rehearsal; go straight to CERT.</td><td><span class="chip never">A</span> It is the only end-to-end check with Madrid's own pages, before anything reaches CERT.</td></tr>
+        <tr><td><b>M3</b></td><td>Who sets URL wyników on CERT?</td><td><b>A</b> You, in the Admin UI (ADR-117: a person sets it).<br><b>B</b> I pass it as the <code>url_event</code> input when dispatching <code>ingest-event.yml</code>, which saves it as an operator entry.</td><td><span class="chip never">A</span> Your rule: the results link stays empty until the Admin UI fills it.</td></tr>
+        <tr><td><b>M4</b></td><td>Issue #4: PROD's PPS1e ingest sources still say women's épée was "dropped, not final".</td><td><b>A</b> Fix it today, after Madrid's first promote, with its own short plan.<br><b>B</b> Leave it.</td><td><span class="chip never">A</span> I left it on 26 Oct; it is mine to fix, after Madrid.</td></tr>
+        <tr><td><b>M5</b></td><td>Issue #5: the 4 unpushed plan-page commits of the 25 Oct RCA, on <code>claude/pzsz-url-event-rca</code>.</td><td><b>A</b> Merge them into this branch and ship them in the same push (docs only).<br><b>B</b> Keep them on the old branch.</td><td><span class="chip never">A</span> Brings revision 5 of that page back to main and to the docs index.</td></tr>
+        <tr><td><b>M6</b></td><td>Observation #7: PROD shows Madrid's August invitation letter, while CERT has the October V1 letter.</td><td><b>A</b> Leave it. The reconciler keeps PROD's admin-owned link by policy and logs the difference daily; you can change it in PROD's Admin UI.<br><b>B</b> I copy CERT's link to PROD.</td><td><span class="chip never">A</span> It follows the current policy. Your call whether the newer letter should show.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What was checked (read-only), 31 Oct 09:00–09:40 CET</p>
+    <h2>The plugin reads Engarde correctly; the environments are ready</h2>
+    <ul>
+      <li><b>Worktree:</b> new branch <code>claude/pew-madrid-engarde</code> at GitHub main <code>4f92e717</code>, 0 ahead and 0 behind. Code graph rebuilt (<code>--full-code</code>, 16,421 → 16,488 nodes, then "already current"); docs index re-indexed (5,260 documents).</li>
+      <li><b>LOCAL is fresh from PROD</b> (<code>mirror-prod-local.sh</code>): roster equal to PROD's id for id, 373 fencers, 2 same-name pairs (as on PROD), 133 registrations, 15 PZSz start lists. The committed seed pointer is unchanged; today's export <code>supabase/seed_prod_2026-10-31.sql</code> is untracked and will not be committed.</li>
+      <li><b>Madrid in the calendar:</b> <code>PEW2efs-2026-2027</code>, 31 Oct – 1 Nov, PLANNED, results link empty, on all three tiers: CERT event 124, PROD event 122, LOCAL event 80. No tournaments yet.</li>
+      <li><b>The tournament:</b> <code>https://engarde-service.com/tournament/aeve_esgrima/aeve_esgrima</code>, 26 competitions, all dated 31 Oct. At 09:28 none was completed, so a run now would read 0 brackets and skip 26, writing nothing.</li>
+      <li><b>The reader still works on live Engarde pages.</b> I ran the pipeline's own reader (<code>Fetcher.fetch_event_url_with_skips</code>, no database) on Madrid 2025 and the Criterium 2026. Every bracket CERT stored has the same N today as at ingest: 9 of 9 and 7 of 7.</li>
+      <li><b>Madrid's layout:</b> combined pool competitions ("EPEE FEMALE 3-4", "FOIL MALE 1-2-3-4" and so on) feed one "TABLE …" competition per category. Men's épée V1 and V2 run as standalone competitions. The reader skips the combined pools ("spans categories") and keeps the 19 single-category finals.</li>
+      <li><b>Nothing blocks the link:</b> the Admin UI accepts any URL as URL wyników. An EVF event takes the international route (ADR-113), which reads Engarde before the FTL-only guard of ADR-117 applies, and the URL-identity check runs only in <code>set_event_source_urls</code>, not in the ingest.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Issues found, numbered</p>
+    <h2>One blocker, two latent faults, three housekeeping items</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">#1</span> Blocker: "EPEE MALE 2" is marked sabre in Engarde</p>
+      <p>Engarde numbers the competitions in order: <code>5912E1</code> EPEE MALE 1, <code>5912E3</code> EPEE MALE 2, <code>5912E4</code> EPEE MALE 3-4. EPEE MALE 2 starts at 09:00 with the other épée pools, but the organiser set it to <code>arme="s"</code> (sabre). <code>parse_competition_list</code> takes the weapon from <code>arme</code>, so:</p>
+      <ul>
+        <li>while TABLE SABRE MALE 2 is still running, men's épée V2 results are stored as <b>SABRE M V2</b>;</li>
+        <li>once TABLE SABRE MALE 2 is completed (it starts at 17:00), the ingest refuses <b>the whole event</b> ("two sources for one bracket SABRE/M/V2") and writes nothing.</li>
+      </ul>
+      <p>It is new: none of the 7 earlier Engarde tournaments we ingested has a title that disagrees with <code>arme</code>.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">#2</span> A title with three or four categories is read as two</p>
+      <p>"FOIL MALE 1-2-3-4" reads as V1, V2 and "SABRE FEMALE 1-2-3" as V1, V2. Both are skipped either way, but the staging report gives the wrong categories as the reason.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">#3</span> A running Engarde final does not keep the event open</p>
+      <p>The lifecycle (ADR-108 §7) counts only FTL's "not final" skip. A running Engarde final is skipped as "not completed (…)", which the rule ignores. If the organiser never marks one TABLE as completed, an ingest after 1 Nov, or the daily close, could set Madrid to COMPLETED with that bracket never read. Not an issue today; it matters from 2 Nov.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">#4</span> PROD's PPS1e ingest sources are stale (mine, 26 Oct)</p>
+      <p>CERT's <code>json_ingest_sources</code> says both listings were committed. PROD's still says women's épée was "dropped, not final". The close completed PROD without refreshing it, and the reconciler reports the difference every day.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">#5</span> Revision 5 of the RCA plan page is missing from main and from the docs index</p>
+      <p>Its 4 commits exist only on <code>claude/pzsz-url-event-rca</code>. When this worktree moved to main, the index dropped the newer chunks.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">#6</span> The <code>ingest-event.yml</code> input description is wrong for EVF events</p>
+      <p>It says any <code>url_event</code> other than an FTL schedule "is refused (ADR-117)". That is true only for SPWS and PZSz events; an EVF event accepts an Engarde, 4fence or Ophardt link.</p>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">#7</span> Observation: the invitation letters differ (M6)</p>
+      <p>CERT: <code>…/2026/10/Madrid_invitation-letter2026-V1.pdf</code>. PROD: <code>…/2026/08/Madrid_invitation-letter2026.pdf</code>. The reconciler leaves it by policy and lists it under "Divergences NOT synced".</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · The fix (M1 A) — Python only, no migration</p>
+    <h2>What would change</h2>
+    <div class="op">
+      <span class="op-tag u">UPDATE</span><span class="set">python/scrapers/engarde.py</span>
+      <ul>
+        <li><b>#1</b> The weapon comes from the title when the title names exactly one weapon (épée / foil / sabre words in EN, FR, ES, IT, PL, DE, HU, accents folded). Otherwise it comes from <code>arme</code>. This is the rule gender already follows, because <code>sexe</code> is wrong at some organisers. <code>competition_list_facts</code> uses the same weapon.</li>
+        <li><b>#2</b> <code>parse_engarde_category</code> reads a whole chain ("1-2-3-4" → V1–V4) where it read only the first pair.</li>
+        <li><b>#3</b> The reasons that never change come first: team event, pool round, no category, spans categories. Only a single-category final that is not completed is skipped as <code>not final (Engarde lists it as &lt;state&gt;)</code>.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">UPDATE</span><span class="set">python/pipeline/promotion/lifecycle.py · run_record.py</span>
+      <ul>
+        <li><b>#3</b> A skip whose reason starts with "not final" is a listing that is not final yet. <code>event_status</code> and the run record's last day use that test. FTL's <code>NOT_FINAL</code> text is unchanged, so no recorded run's schedule hash changes. No IN_PROGRESS event reads Engarde today: every Engarde event on CERT is COMPLETED.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">UPDATE</span><span class="set">.github/workflows/ingest-event.yml</span>
+      <ul><li><b>#6</b> The input description says what each route accepts.</li></ul>
+    </div>
+
+    <h3>Tests first: each one is seen failing before the code changes</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Id</th><th>What it pins</th><th>File</th></tr></thead>
+      <tbody>
+        <tr><td>ENG.EVT.07</td><td>The title's weapon wins over <code>arme</code>; a title without a weapon keeps <code>arme</code>; Madrid's EPEE MALE 2 is EPEE M V2; the URL-identity facts use the same weapon.</td><td><code>test_engarde_event_reader.py</code></td></tr>
+        <tr><td>ENG.EVT.08</td><td>"1-2-3-4" spans V1–V4 and "1-2-3" spans V1–V3, named so in the skip reason.</td><td><code>test_engarde_event_reader.py</code></td></tr>
+        <tr><td>ENG.EVT.09</td><td>A running single-category final is skipped as "not final"; a pool round, team event or combined competition keeps its own reason whatever its state. ENG.EVT.02's "open" case changes to match.</td><td><code>test_engarde_event_reader.py</code></td></tr>
+        <tr><td>ENG.EVT.10</td><td>Madrid 2026's competition list through the Fetcher. As of 09:28: 0 read, 26 skipped. With every competition completed: 19 finals, no two sources for one bracket, and the 7 combined pools skipped.</td><td><code>test_engarde_event_reader.py</code> + fixture <code>competitions_madrid2026.xml</code> (competition titles only, no names)</td></tr>
+        <tr><td>ROUTE.LIFE.02</td><td>A running Engarde final keeps an international event IN_PROGRESS through the driver.</td><td><code>test_route_international.py</code></td></tr>
+        <tr><td>PROMO.LIFE.18</td><td>The rule counts any "not final" skip; FTL's text is unchanged.</td><td><code>test_promotion_lifecycle.py</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Documentation, in the same change</h3>
+    <ul>
+      <li>ADR-105 amendment (Engarde: weapon from the title, category chains, a running final is not final), ADR-108 §7 amendment (not final from any source that reports it), rendered with <code>render_adrs.py</code>; spec Appendix C entries for both.</li>
+      <li>RTM rows ENG.EVT.07–10, ROUTE.LIFE.02, PROMO.LIFE.18; handbook pages <code>ingestion</code> and <code>event-status-lifecycle</code>; workflow catalog for the input description.</li>
+      <li><code>scripts/refresh-graph.sh</code> and <code>tools/docs-search/ingest.py</code> before the commit.</li>
+    </ul>
+
+    <h3>Gate and release</h3>
+    <ol class="steps">
+      <li><code>scripts/preflight.sh</code> exits 0. No SQL changes, so postgrestools has nothing to check.</li>
+      <li>Commit as Fencer4Life → <code>integrate-agent-branch.sh</code> → push <code>integration/main:main</code>.</li>
+      <li>Watch CI and Release in the foreground to green. <code>ingest-event.yml</code> checks out main, so the next CERT ingest uses the fix. There is no migration, so no PROD database deploy is expected; I will confirm what Release does.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Today, after the release</p>
+    <h2>The operator sequence for Madrid</h2>
+    <ol class="steps">
+      <li><b>You (M3 A):</b> on CERT, Admin UI → <code>PEW2efs-2026-2027</code> → URL wyników = <code>https://engarde-service.com/tournament/aeve_esgrima/aeve_esgrima</code>.</li>
+      <li><b>Me (M2 A):</b> once the first finals are completed (épée tables start 11:00 and 12:25), run the ingest on LOCAL in the foreground. I report each bracket read, the rows admitted for our fencers, and what was skipped and why.</li>
+      <li><b>Me, on your go:</b> dispatch <code>ingest-event.yml</code> with <code>PEW2efs-2026-2027</code> · <code>2027</code> · <code>cert</code>, watch it, and check the staging report.</li>
+      <li><b>On your go:</b> <code>promote PEW2efs-2026-2027</code> to PROD, then verify it the way the site reads it.</li>
+      <li>Steps 3–4 again in the evening, when the foil and sabre tables (17:00) are completed, and on 1 Nov if day two adds competitions.</li>
+      <li>From 2 Nov, the daily close completes Madrid once every final has been read.</li>
+    </ol>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Timing</p>
+      <p>Men's épée V2 started at 09:00, so its final can be complete around midday. The fix has to be on main before the first CERT ingest (step 3). LOCAL (step 2) can start as soon as it is committed on the branch.</p>
+    </div>
+  </section>
+
+  <p class="foot">plan · pew-madrid-2026-engarde-readiness · 31 Oct 2026 · nothing written until signed off</p>
+</div>

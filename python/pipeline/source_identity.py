@@ -41,11 +41,13 @@ Tests: python/tests/test_source_identity.py (REPAIR.URL.01, REPAIR.URL.02, REPAI
 from __future__ import annotations
 
 import re
-import unicodedata
 from dataclasses import dataclass
 from datetime import date, timedelta
 
 from bs4 import BeautifulSoup
+
+from python.pipeline.weapon_words import find_weapons
+from python.pipeline.weapon_words import fold as _fold
 
 
 @dataclass(frozen=True)
@@ -91,23 +93,7 @@ _DAY_MONTH_YEAR = re.compile(rf"\b(\d{{1,2}})\.?\s+({_MONTH_RE})\.?\s+(\d{{4}})\
 _MONTH_DAY_YEAR = re.compile(rf"\b({_MONTH_RE})\.?\s+(\d{{1,2}}),?\s+(\d{{4}})\b")
 _DAY_MONTH_NO_YEAR = re.compile(r"(?<![\d.])(\d{1,2})\.(\d{1,2})\.(?!\d)")
 
-_WEAPON_WORDS = {
-    "EPEE": "epee epees szpada szpady degen spada espada varja",
-    "FOIL": "foil foils fleuret floret florett fioretto florete",
-    "SABRE": "sabre sabres saber szabla szable sabel sciabola sable",
-}
-_WEAPON_OF: dict[str, str] = {w: k for k, words in _WEAPON_WORDS.items() for w in words.split()}
-_WEAPON_RE = re.compile(r"\b(" + "|".join(sorted(_WEAPON_OF, key=len, reverse=True)) + r")\b")
-
 _CODE_LETTERS = {"e": "EPEE", "f": "FOIL", "s": "SABRE"}
-
-
-def _fold(s: str) -> str:
-    """Lower case, diacritics removed (ł → l as well)."""
-    s = s.replace("ł", "l").replace("Ł", "L")
-    return "".join(
-        c for c in unicodedata.normalize("NFKD", s) if unicodedata.category(c) != "Mn"
-    ).lower()
 
 
 def _safe_date(y: int, m: int, d: int) -> date | None:
@@ -145,11 +131,6 @@ def find_dates(text: str, url_year: int | None = None) -> set[date]:
             if (v := _safe_date(url_year, int(m), int(d))) is not None:
                 found.add(v)
     return found
-
-
-def find_weapons(text: str) -> set[str]:
-    """The weapons named in the text, in any of the platforms' languages."""
-    return {_WEAPON_OF[w] for w in _WEAPON_RE.findall(_fold(text))}
 
 
 # ---------------------------------------------------------------------------

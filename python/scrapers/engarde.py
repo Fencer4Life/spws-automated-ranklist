@@ -124,6 +124,17 @@ def engarde_tournament(url: str) -> tuple[str, str] | None:
     return (m.group(1), m.group(2)) if m else None
 
 
+def _weapon(comp: ET.Element) -> tuple[str | None, str | None]:
+    """A competition's weapon and the override note (WPN.TITLE): the title's
+    weapon when the title names exactly one, otherwise Engarde's ``arme``. At
+    PEW Madrid 2026 "EPEE MALE 2" carries ``arme="s"``."""
+    from python.pipeline.weapon_words import weapon_from_title
+
+    return weapon_from_title(
+        ENGARDE_WEAPON_MAP.get(comp.get("arme", "")), (comp.findtext("titre") or "").strip()
+    )
+
+
 def competition_list_facts(xml_text: str) -> tuple[set[date], set[str], set[str]]:
     """The dates, weapons and places (city, country code) of every competition
     in an Engarde competition list, whatever its state or kind: what the
@@ -138,7 +149,7 @@ def competition_list_facts(xml_text: str) -> tuple[set[date], set[str], set[str]
                 dates.add(date(int(parts[0]), int(parts[1]), int(parts[2])))
             except ValueError:
                 pass
-        if weapon := ENGARDE_WEAPON_MAP.get(comp.get("arme", "")):
+        if weapon := _weapon(comp)[0]:
             weapons.add(weapon)
         places.update(p for p in (comp.get("ville"), comp.get("pays")) if p)
     return dates, weapons, places
@@ -149,17 +160,18 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
     category finals and the competitions that are not brackets.
 
     A final is individual, completed, not a pool round, and names exactly one
-    category; its weapon comes from Engarde's ``arme``, its gender and
-    category from the published title (the ``sexe`` attribute is wrong at
-    some organisers). Everything else is returned with the reason it was
-    skipped, so the staging summary lists it for review.
+    category; its gender and category come from the published title (the
+    ``sexe`` attribute is wrong at some organisers), and so does its weapon
+    when the title names one: the title wins over Engarde's ``arme`` and the
+    final carries a ``weapon_note`` (WPN.TITLE). Everything else is returned
+    with the reason it was skipped, so the staging summary lists it for review.
     """
     kept: list[dict] = []
     skipped: list[dict] = []
     for comp in ET.fromstring(xml_text).findall("comp"):
         slug = comp.get("compe", "")
         title = (comp.findtext("titre") or "").strip()
-        weapon = ENGARDE_WEAPON_MAP.get(comp.get("arme", ""))
+        weapon, weapon_note = _weapon(comp)
         url = f"{ENGARDE_COMPETITION_BASE}/{org}/{event}/{slug}"
         state = comp.get("etat", "")
         categories = sorted(set(parse_engarde_category(slug, title)))
@@ -184,17 +196,18 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
             )
             continue
         y, m, d = (int(x) for x in comp.get("date", "").split())
-        kept.append(
-            {
-                "slug": slug,
-                "weapon": weapon,
-                "gender": gender,
-                "category": categories[0],
-                "title": title,
-                "date": date(y, m, d),
-                "url": url,
-            }
-        )
+        final = {
+            "slug": slug,
+            "weapon": weapon,
+            "gender": gender,
+            "category": categories[0],
+            "title": title,
+            "date": date(y, m, d),
+            "url": url,
+        }
+        if weapon_note:
+            final["weapon_note"] = weapon_note
+        kept.append(final)
     return kept, skipped
 
 

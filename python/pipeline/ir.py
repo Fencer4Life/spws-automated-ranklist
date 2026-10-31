@@ -108,6 +108,10 @@ class ParsedTournament:
     city: str | None = None
     country: str | None = None
 
+    # WPN.TITLE: set when the bracket's title named another weapon than the one
+    # its source declared, and the title's weapon was taken (the title wins).
+    weapon_note: str | None = None
+
     season_end_year: int | None = None
     organizer_hint: str | None = None
     source_artifact_path: str | None = None

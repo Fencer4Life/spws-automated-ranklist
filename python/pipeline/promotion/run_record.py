@@ -188,6 +188,8 @@ class ListingLog:
         }
         if rec.get("start_list_sha256"):
             entry["start_list_sha256"] = rec["start_list_sha256"]
+        if weapon_note := getattr(rec["_base"], "weapon_note", None):
+            entry["weapon_note"] = weapon_note  # WPN.TITLE: the title's weapon won
         if ctx is not None:
             entry["outcome"] = _outcome(ctx)
             entry["identity"] = _identity(ctx)
