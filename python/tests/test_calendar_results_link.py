@@ -120,12 +120,16 @@ class TestEvfCalendar:
 
     def test_refresh_payload_has_no_results_slot(self, monkeypatch):
         """CALURL.02: the fn_refresh_evf_event_urls payload carries no results
-        slot; the letter still goes to url_invitation."""
+        slot; the letter goes to url_invitation through the shared calendar
+        write (ADR-118), never to a results slot."""
         calls = _evf_sync_calls(monkeypatch)
         refresh = next(s for s in calls if "fn_refresh_evf_event_urls" in s.lower())
         (evt,) = _json_arg(refresh)
         assert not set(RESULT_SLOTS) & set(evt), f"results slot in payload: {evt}"
-        assert evt["url_invitation"].endswith("samorin.pdf")
+        write = next(s for s in calls if "fn_calendar_apply_fields" in s.lower())
+        (detail,) = _json_arg(write)
+        assert not set(RESULT_SLOTS) & set(detail["fields"]), detail
+        assert detail["fields"]["url_invitation"].endswith("samorin.pdf")
 
 
 class _DummyClient:

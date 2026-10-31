@@ -19,6 +19,7 @@ import sys
 import traceback
 import uuid
 
+from python.scrapers import calendar_write
 from python.scrapers._supabase import _get_active_season as _shared_get_active_season
 from python.scrapers._supabase import (
     _management_query,
@@ -602,21 +603,13 @@ def _sync_calendar_snapshot(
         in_scope_existing = [e for e in existing if is_in_scope(e)]
         matched_pairs = match_scraped_to_existing(cal_events, in_scope_existing)
 
-        # Identity sync (ADR-039 rev 3): diff-and-sync source-owned identity/
-        # schedule fields (name/dates/location/country/evf_id/evf_slug) for
-        # every matched pair — unlike the fill-blank-only refresh below, this
-        # actively propagates EVF-side changes (a reschedule, a venue
-        # becoming known) onto the existing row. Runs BEFORE the URL refresh,
-        # not instead of it — fn_sync_evf_event_fields and
-        # fn_refresh_evf_event_urls own disjoint field sets.
+        # Identity sync (ADR-039 rev 3): the EVF identity (evf_id, calendar
+        # id, slug) and a cancellation, for every matched pair. The event's
+        # details — name, dates, city, country, address, letter, registration
+        # link, fee — go through the calendar contract below (ADR-118).
         identity_payload: list[dict] = [
             {
                 "id_event": existing_row["id_event"],
-                "name": scraped.get("name", ""),
-                "dt_start": scraped.get("dt_start", ""),
-                "dt_end": scraped.get("dt_end") or scraped.get("dt_start", ""),
-                "location": scraped.get("location", ""),
-                "country": scraped.get("country", ""),
                 "evf_id": scraped.get("evf_id") or "",
                 "evf_calendar_id": scraped.get("evf_calendar_id"),
                 "evf_slug": scraped.get("evf_slug", ""),
@@ -640,24 +633,20 @@ def _sync_calendar_snapshot(
                 _telegram(
                     bot_token,
                     chat_id,
-                    f"<b>EVF identity sync</b>\n{changed} event(s) updated (name/date/venue).",
+                    f"<b>EVF identity sync</b>\n{changed} event(s) updated (identity/cancellation).",
                 )
 
-        refresh_payload: list[dict] = []
-        for scraped, existing_row in matched_pairs:
-            refresh_payload.append(
-                {
-                    "id_event": existing_row["id_event"],
-                    # As the create path: no results link, ever; Admin sets it.
-                    "url_invitation": scraped.get("url_invitation") or "",
-                    "url_registration": scraped.get("url_registration") or "",
-                    "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",
-                    "address": scraped.get("address", ""),
-                    "fee": "" if scraped.get("fee") is None else str(scraped["fee"]),
-                    "fee_currency": scraped.get("fee_currency", ""),
-                    "weapons": scraped.get("weapons", []),
-                }
-            )
+        # The refresh keeps the fields outside the details: the registration
+        # deadline (fill-blank) and the weapons (fill-blank; the code plan
+        # writes them with the code, ADR-089). No results link, ever.
+        refresh_payload: list[dict] = [
+            {
+                "id_event": existing_row["id_event"],
+                "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",
+                "weapons": scraped.get("weapons", []),
+            }
+            for scraped, existing_row in matched_pairs
+        ]
 
         if refresh_payload:
             refresh_json = json.dumps(refresh_payload).replace("'", "''")
@@ -674,6 +663,26 @@ def _sync_calendar_snapshot(
                 bot_token,
                 chat_id,
                 f"<b>EVF URL refresh</b>\nTouched: {touched}, refreshed: {refreshed}",
+            )
+
+        # The event's details, under the calendar contract every scraper keeps
+        # (ADR-118): fill an empty field, follow EVF's changes to a value EVF
+        # wrote, keep a value a person set and report EVF's different one once.
+        details = calendar_write.apply_fields(
+            lambda sql: _management_query(ref, token, sql),
+            "EVF",
+            [
+                {"id_event": existing_row["id_event"], "fields": calendar_write.evf_fields(scraped)}
+                for scraped, existing_row in matched_pairs
+            ],
+        )
+        print(f"  Details: written={len(details['written'])} held={len(details['held'])}")
+        if details["held"]:
+            _telegram(
+                bot_token,
+                chat_id,
+                "<b>EVF details kept for a person</b>\n"
+                + "\n".join(calendar_write.held_lines(details)),
             )
     else:
         print(f"\n  [DRY RUN] {len(new)} new, {len(already)} already in CERT")

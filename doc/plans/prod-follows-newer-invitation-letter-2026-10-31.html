@@ -1,0 +1,267 @@
+<meta charset="utf-8">
+<title>Newer invitation letter to PROD</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Calendar · CERT→PROD mirror · Enhancement plan — awaiting sign-off</p>
+  <h1>PROD takes CERT's newer invitation letter for every future event</h1>
+  <p class="dek">Your rule (31 Oct): <b>when CERT holds a newer invitation letter (URL komunikatu) than PROD for a future event, PROD is updated.</b> Today the mirror fills PROD's letter only while PROD's is empty, with one exception: an event page on PROD gives way to CERT's letter (D7 A, 25 Oct). <b>My M6 recommendation, "leave it", was wrong.</b> On 25 Oct this exact option was D7 B, and I recommended against it. <b>No code is written until you sign this off.</b></p>
+  <div class="meta">
+    <span class="pill danger"><span class="dot"></span>Superseded 31 Oct by <code>cert-event-details-reach-prod-every-scraper-2026-10-31.html</code></span>
+    <span class="pill">changes today: Madrid → V1, Skopje → V3</span>
+    <span class="pill">field: <code>url_invitation</code> only</span>
+    <span class="pill">replaces readiness sheet M6</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Four questions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>N1</b></td><td>How is "newer" known?</td><td><b>A</b> By <b>when each environment last set its letter</b>, from records both already keep: the last change of <code>url_invitation</code> in the audit log, or the row's creation time when the letter came with the insert. CERT is newer when its time is later. Writing the same letter again moves no time.<br><b>B</b> By the version in the link: the upload folder <code>/YYYY/MM/</code>, then a <code>-V&lt;n&gt;</code> suffix. This decides Madrid (10 &gt; 08) and Skopje (V3 &gt; V2) but nothing else: a link that isn't a WordPress upload can't be ordered. It is a guess, not a record.<br><b>C</b> No comparison: for a future event, CERT's letter always wins when it differs. A letter set by hand in PROD's Admin would be undone at the next calendar run, which happens daily.</td><td><span class="chip never">Recommend A</span> It is the literal "CERT is newer than PROD" and needs no new column: the audit log already holds the times on both sides (§03).</td></tr>
+        <tr><td><b>N2</b></td><td>A letter set <b>by a person</b> in PROD's Admin</td><td><b>A</b> Newer wins, whoever set it. A person's PROD letter stands until CERT's letter changes <i>after</i> it. Then CERT's replaces it, and the reconcile log shows the change, old → new.<br><b>B</b> A person's PROD letter is never replaced. The difference is only reported, as today.</td><td><span class="chip never">Recommend A</span> It is your rule as written. It happens rarely: one letter change by a person on PROD ever, on 17 Aug.</td></tr>
+        <tr><td><b>N3</b></td><td>Which events</td><td><b>A</b> Future events only: those whose PROD end date is today or later. Finished events keep today's rule.<br><b>B</b> Every event in the active season.</td><td><span class="chip never">Recommend A</span> You said "any future event", and nobody reads a finished event's letter.</td></tr>
+        <tr><td><b>N4</b></td><td>Found along the way: a stale record. ADR-028 says the URL refresh "is the only auto-write path that touches existing events, and it never overwrites a populated column." On CERT, the daily EVF sync does overwrite an EVF event's letter with the one the EVF page links today, until the event ends (§02). That is why CERT holds the newer letter.</td><td><b>A</b> Keep the behaviour and correct the record: an ADR-028 amendment, plus the handbook's tier table.<br><b>B</b> Make CERT keep a letter a person set (provenance, as ADR-116 does for PZSz). CERT would then stop following new EVF letters for any event a person touched, which works against this enhancement.</td><td><span class="chip never">Recommend A</span> Evidence: three CERT letters were set by a person and later replaced by the sync. All three were EVF event pages that the sync replaced with the organizer's PDF (Budapest, Łomianki, Munich). None was a loss.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What the mirror does today (read 31 Oct)</p>
+    <h2>Your guess is right: PROD is filled only while it is empty</h2>
+    <p>The mirror's UPDATE sets <code>url_invitation</code> in one <code>CASE</code> (migration <code>20261025000003</code>, lines 199–204):</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>PROD holds</th><th>CERT holds</th><th>Result today</th></tr></thead>
+      <tbody>
+        <tr><td>nothing</td><td>a letter</td><td><span class="chip fill">CERT's</span> fill-blank</td></tr>
+        <tr><td>an event page (<code>pzszerm.pl/…/zawody/</code>, <code>veteransfencing.eu/event/</code>)</td><td>a letter</td><td><span class="chip fill">CERT's</span> D7 A, 25 Oct</td></tr>
+        <tr><td><b>a letter</b></td><td><b>a different, newer letter</b></td><td><span class="chip over">PROD's stays</span> the gap you found</td></tr>
+        <tr><td>anything</td><td>nothing</td><td><span class="chip plain">PROD's stays</span></td></tr>
+      </tbody>
+    </table></div>
+    <h3>Why CERT moves and PROD does not</h3>
+    <ul>
+      <li><b>CERT, EVF events.</b> Every day the EVF sync runs every not-yet-final EVF event through the code plan (<code>evf_sync.py:555</code>). That plan hands those rows to <code>fn_ingest_evf_calendar</code>. Its UPDATE for an existing slot writes <code>url_invitation = COALESCE(NULLIF(scraped, ''), url_invitation)</code> (migration <code>20261025000001</code>, line 499). So the letter the EVF page links today replaces CERT's.</li>
+      <li><b>CERT, PZSz events.</b> The PZSz run fills the letter only while CERT's is blank (<code>pzsz_sync.py:79</code>). A PZSz letter on CERT therefore changes only when a person changes it on CERT, and the new rule carries that change to PROD as well.</li>
+      <li><b>PROD.</b> Only two things write it: the mirror, under the rule in the table above, and a person in PROD's Admin.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Today's data (read-only, CERT and PROD, 31 Oct)</p>
+    <h2>Twenty future events; two letters differ, and CERT is newer in both</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>CERT</th><th>PROD</th><th>Under N1 A</th></tr></thead>
+      <tbody>
+        <tr><td><b>Madrid</b><br><code>PEW2efs-2026-2027</code><br>from 31 Oct 2026</td><td><code>…/2026/10/Madrid_invitation-letter2026-V1.pdf</code><br>set 2 Oct 12:09 by the EVF sync</td><td><code>…/2026/08/Madrid_invitation-letter2026.pdf</code><br>set 4 Aug 08:44 by the mirror</td><td><span class="chip fill">PROD gets V1</span></td></tr>
+        <tr><td><b>Skopje</b><br><code>IMEW-2026-2027</code><br>from 5 May 2027</td><td><code>…/2026/09/SCHEDULES-SKOPJE-2027-V3.pdf</code><br>set 22 Sep 11:13 by the EVF sync</td><td><code>…/2026/09/SCHEDULES-SKOPJE-2027-V2.pdf</code><br>came with the row, created 15 Sep 11:25</td><td><span class="chip fill">PROD gets V3</span></td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li>CERT and PROD have the same 20 future event codes. 18 hold the same letter.</li>
+      <li>Every other future-event difference in the latest reconcile log has a PROD value where CERT is blank: PEW5's two fee tiers, payee, account, deadline and registration links, plus three countries. This plan does not touch any of them. A blank on CERT never clears PROD, and the letter is the only field in scope.</li>
+      <li>Letter changes made by a person: 1 on PROD and 16 on CERT. The latest on both was 17 Aug.</li>
+      <li>The audit trigger, <code>trg_audit_event</code>, fires <code>AFTER UPDATE OR DELETE</code>, so an insert has no audit row. That is why Skopje's PROD letter has no change on record. The row's creation time stands in for it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · The rule</p>
+    <h2>Exactly what the mirror does with the letter</h2>
+    <ol class="steps">
+      <li><b>CERT sends no letter</b>: PROD's stays. A blank never clears PROD.</li>
+      <li><b>PROD has none</b>: it takes CERT's, as today.</li>
+      <li><b>PROD holds an event page and CERT a letter</b>: it takes CERT's, as today (D7 A).</li>
+      <li><b>New.</b> PROD's event has not ended (end date today or later), CERT's letter differs, and <b>CERT set its letter later than PROD set its own</b>: it takes CERT's.</li>
+      <li>Otherwise PROD's stays, and the difference stays listed under "Divergences NOT synced".</li>
+    </ol>
+    <p><b>"Set its letter"</b> means, on each environment, the time of the last audited change to <code>url_invitation</code>. When there is none, it is the row's <code>ts_created</code>, because the letter came with the insert. Only a <i>changed</i> value counts, so writing the same letter again moves no time. Both projects stamp their server clock in UTC.</p>
+    <p>After step 4, PROD's own write is audited later than CERT's change. The next run therefore finds equal letters and does nothing. If a person then sets a different letter on PROD, it is newer, and it stands until CERT's letter changes again (N2 A).</p>
+    <p><b>Reported:</b> the reconcile log already has a table of every PROD field the run changed, old → new (<code>reconcile_report.py:138</code>). A replaced letter shows up there with no new report code.</p>
+    <div class="note accent">
+      <p class="lede">Why CERT's time is read in the query, not by a new SQL function</p>
+      <p>The calendar promotion runs on a schedule from main, so it can run between the push and the migration reaching CERT. A call to a function that doesn't exist on CERT yet would fail that run. A plain subquery works on either schema. PROD's old function ignores the new payload key, and PROD's new function skips step 4 when an older payload doesn't send the key. The release is safe in any order.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Where it goes</p>
+    <h2>Files</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/migrations/20261031000001_mirror_follows_newer_letter.sql</code></td><td><code>fn_mirror_events_to_prod</code> as defined in <code>20261025000003</code>, with only the <code>url_invitation</code> assignment extended (step 4). PROD's letter-set time is computed from PROD's own audit log in the same transaction. Grants unchanged: <code>service_role</code> only.</td></tr>
+        <tr><td><code>python/pipeline/promote.py</code></td><td><code>_read_cert_promotable_events</code> also selects CERT's letter-set time as <code>ts_invitation_set</code>, and <code>_build_update_payload</code> passes it on.</td></tr>
+        <tr><td>Unchanged</td><td><code>reconcile_report.py</code> (already shows the change), <code>evf_sync.py</code>, <code>pzsz_sync.py</code>, and the mirror's CREATE branch (a new PROD event still takes CERT's letter).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Tests first, each seen failing</p>
+    <h2>What the tests pin</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>File</th><th>Pins</th></tr></thead>
+      <tbody>
+        <tr><td><b>CALURL.24</b></td><td><code>supabase/tests/117_mirror_follows_newer_letter.sql</code> (pgTAP)</td><td>(a) Madrid's shape: a future event where both sides hold a letter and CERT set its letter later, so PROD takes CERT's. (b) Skopje's shape: PROD's letter came with the insert and has no audit row, and CERT changed later, so PROD takes CERT's. (c) A person set PROD's letter after CERT's change: PROD's stays. (d) CERT sends no letter: PROD's stays. (e) The event ended yesterday and CERT is newer: PROD's stays. (f) The payload has no <code>ts_invitation_set</code>: PROD's stays. (g) Both hold the same letter: no audit row changes the letter. (h) Fill-blank and D7 A still hold, with CALURL.23 unchanged and green.</td></tr>
+        <tr><td><b>CALURL.25</b></td><td><code>python/tests/test_promote.py</code></td><td>The CERT read selects the letter-set time. The update payload carries it, and an empty value when CERT has no letter.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Documentation, in the same change</p>
+    <h2>Records</h2>
+    <ul>
+      <li><b>ADR-117</b>: a dated amendment (31 Oct): the mirror follows a newer letter for a future event (N1–N3). It replaces the sentence "An older EVF PDF on PROD (Madrid, Skopje) … stays (D7 B was not chosen)".</li>
+      <li><b>ADR-081</b>: a pointer in its ADR-117 amendment. The §3 fill-blank tier now has two exceptions for the letter.</li>
+      <li><b>ADR-028</b>: an amendment (N4 A). On CERT, an EVF letter follows the EVF page until the event ends, so the "only auto-write path / never overwrites" sentence no longer holds for <code>url_invitation</code>.</li>
+      <li><b>Handbook</b>: the tier table in <code>reference/event-status-lifecycle.html</code> changes "One exception" to the two exceptions. The invariant line in <code>subsystems/events-and-registration.html</code> is updated to match.</li>
+      <li><b>Governance and indexes</b>: RTM rows for CALURL.24 and CALURL.25, and Specification Appendix C entries for ADR-117, ADR-081 and ADR-028. The generated twins are regenerated, then <code>check_docs.py</code>, the RAG reindex and the graph refresh run.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Release, then the two letters</p>
+    <h2>How it reaches PROD</h2>
+    <ol class="steps">
+      <li>Branch <code>claude/prod-follows-newer-invitation-letter</code>. The merge message says what changes and why in a few sentences, and the Release run carries that title (your 31 Oct naming rule, applied by hand until the naming plan lands).</li>
+      <li><code>scripts/preflight.sh</code> exits 0, then integration, then a push to main. CI and the Release are watched in the foreground. The PROD migration deploy is yours to approve.</li>
+      <li>The next scheduled calendar promotion, after each EVF or PZSz sync, moves Madrid to V1 and Skopje to V3. On your go I can run <code>promote-calendar.yml</code> by hand instead.</li>
+      <li>Verification goes through what the calendar reads, PROD's <code>vw_calendar</code>, and the reconcile log's applied table.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Not in this plan</p>
+    <h2>Left as they are</h2>
+    <ul>
+      <li>The registration link, deadline, fees and address keep their current rules, because you named the letter only. Today no future event has a newer, non-blank CERT value in any of those fields (§03).</li>
+      <li>The naming plan's B1–B3 still awaits your sign-off.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Research 31 Oct 2026, in the conversation: spws-docs and graphify first. SQL read-only on CERT and PROD through <code>scripts/cloud-sql.sh</code> (<code>tbl_event</code>, <code>tbl_audit_log</code>). Code read: migration <code>20261025000003</code> lines 199–204, <code>20261025000001</code> line 499, <code>evf_sync.py:555</code>, <code>pzsz_sync.py:79</code>, <code>promote.py:80</code>, <code>reconcile_report.py:138</code>. Latest reconcile log: <code>SPWS-2026-2027.20261030-131647Z.md</code>.</p>
+
+</div>

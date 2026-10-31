@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="090-prod-surface-as-wordpress-menu-item.md">
-<meta name="adr-source-sha256" content="63c60f8b0e1f028a2f9cd939cbc08e1613ee7540426ea49addb5df3bbb9c7c0f">
+<meta name="adr-source-sha256" content="ed258d1d9cc66a6feb5d19ebe0623bc2180b9f84212a4eb6d26f8121b118a276">
 <title>ADR-090 · Publishing a PROD surface as a full-screen WordPress menu item</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -332,7 +332,7 @@ still belongs behind Supabase Auth on GitHub Pages, exactly as §3 requires.</p>
 <p>See ADR-080's 2026-09-12 amendment (h) for the first use.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-the-wordpress-pages-carry-the-site-s-navigation-and-prod-admin-moves-to-ranking-admin-1">Amendment (2026-10-03) — the WordPress pages carry the site's navigation, and PROD admin moves to <code>/ranking/?admin=1</code></h2>
-<p><strong>Status:</strong> Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implemented on LOCAL 2026-10-04 (plan steps 1–10); the release and the WordPress pages follow (steps 11–13).
+<p><strong>Status:</strong> Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implemented on LOCAL 2026-10-04 (plan steps 1–10). Released to CERT and PROD on 2026-10-04 (step 11, Release run 37180095894); the WordPress pages and the menu item went live the same day (step 12). Step 13, the operator page <code>prod-wordpress-deployment.html</code>, is still to be written.
 <strong>Development plan:</strong> <a href="../plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html"><code>doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html</code></a> — steps §04, tests §05 (WP.BAR.*, WP.NAV.*, WP.ADM.*, WP.DOC.*, WP.CALC.01, WP.PAGE.*, WP.COMP.01), definition of done §08, and Part II, the PROD manual.
 <strong>Relates to:</strong> <a href="109-environments-split-by-host.html">ADR-109</a> (the environments split by host, decided the same day)</p>
 <h3 id="context-2">Context</h3>
@@ -468,5 +468,5 @@ still belongs behind Supabase Auth on GitHub Pages, exactly as §3 requires.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="089-event-weapons-and-card-header.html">← ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="091-no-season-skeletons-for-scraped-events.html">→ ADR-091: A season is bootstrapped only with skeletons nobody discovers for us</a></nav>
-<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>63c60f8b0e1f028a2f9cd939cbc08e1613ee7540426ea49addb5df3bbb9c7c0f</code></footer>
+<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>ed258d1d9cc66a6feb5d19ebe0623bc2180b9f84212a4eb6d26f8121b118a276</code></footer>
 </div></body></html>

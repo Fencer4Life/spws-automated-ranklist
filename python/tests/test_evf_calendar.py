@@ -2329,9 +2329,10 @@ class TestEvfPhase2Allocator:
 
     def test_already_imported_calls_fn_sync_evf_event_fields_before_refresh(self, monkeypatch):
         """evf.55: the "already imported" branch calls fn_sync_evf_event_fields
-        (identity-sync: name/dates/location/country/evf_id/evf_slug) for a
-        matched pair, dispatched before the existing fn_refresh_evf_event_urls
-        fill-blank-only call.
+        (identity-sync: evf_id/calendar id/evf_slug and a cancellation) for a
+        matched pair, dispatched before fn_refresh_evf_event_urls. Since
+        ADR-118 the name, dates, city and country are not in this payload: they
+        go through the calendar contract (fn_calendar_apply_fields).
 
         The Samorin row is an upcoming event, so the clock is pinned before
         it: from 12 Oct 2026 the 30-day stale gate (``is_in_scope``,
@@ -2430,17 +2431,13 @@ class TestEvfPhase2Allocator:
         evt = payload[0]
         for key in (
             "id_event",
-            "name",
-            "dt_start",
-            "dt_end",
-            "location",
-            "country",
             "evf_id",
             "evf_calendar_id",
             "evf_slug",
             "is_cancelled",
         ):
             assert key in evt, f"identity-sync payload missing `{key}`: {evt}"
+        assert not {"name", "dt_start", "dt_end", "location", "country"} & set(evt)
         assert evt["id_event"] == 111
 
 

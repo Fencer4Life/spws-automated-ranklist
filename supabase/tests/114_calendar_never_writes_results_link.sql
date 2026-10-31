@@ -89,12 +89,14 @@ SELECT is(
     WHERE p.pronamespace = 'public'::regnamespace
       AND p.proname IN ('fn_ingest_evf_calendar', 'fn_ingest_evf_calendar_identity_v1',
                         'fn_refresh_evf_event_urls', 'fn_mirror_events_to_prod',
-                        'fn_sync_evf_event_fields', 'fn_pzsz_apply_event')
+                        'fn_sync_evf_event_fields', 'fn_pzsz_apply_event',
+                        'fn_calendar_apply_fields', 'fn_event_details_set_at')
       AND pg_get_functiondef(p.oid) ~* 'url_event'),
   NULL,
   'CALURL.10 no calendar function names a results slot (url_event … url_event_5)');
 
--- CALURL.11 — the EVF refresh carries the letter, not a results link
+-- CALURL.11 — the EVF refresh writes no results link, and since ADR-118 no
+-- letter either: the letter goes through fn_calendar_apply_fields.
 DO $refresh$
 BEGIN
   PERFORM fn_refresh_evf_event_urls(jsonb_build_array(jsonb_build_object(
@@ -108,9 +110,8 @@ $refresh$;
 SELECT results_eq(
   $$SELECT ARRAY[url_event, url_event_2, url_event_3, url_event_4, url_event_5], url_invitation
       FROM tbl_event WHERE txt_code = 'PEW1e-9600-9601'$$,
-  $$VALUES (ARRAY[NULL, NULL, NULL, NULL, NULL]::TEXT[],
-            'https://www.veteransfencing.eu/wp-content/uploads/calurl-01.pdf'::TEXT)$$,
-  'CALURL.11 fn_refresh_evf_event_urls leaves the results slots empty and fills the letter');
+  $$VALUES (ARRAY[NULL, NULL, NULL, NULL, NULL]::TEXT[], NULL::TEXT)$$,
+  'CALURL.11 fn_refresh_evf_event_urls leaves the results slots empty and the letter to fn_calendar_apply_fields (ADR-118)');
 
 -- CALURL.12 / .13 — the CERT→PROD mirror carries the letter, not a results link
 DO $mirror$

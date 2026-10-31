@@ -1,0 +1,335 @@
+<meta charset="utf-8">
+<title>CERT event details to PROD</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Calendar · every scraper · CERT→PROD · Plan — signed off 31 Oct</p>
+  <h1>A change on CERT reaches PROD, for every calendar scraper</h1>
+  <p class="dek">Your rule (31 Oct): <b>when any of an event's details is written on CERT, the next run gives PROD all of CERT's details.</b> It covers the nine fields you picked, and our own registration links are excluded. It applies to <b>EVF, PZSz and every future scraper</b>, USA Fencing next. There are two halves. The mirror is already one function for every organizer. The scrapers are different: <b>a scraper that only fills blanks never puts a newer value on CERT, so there is nothing to promote.</b> Every scraper therefore follows one contract on CERT. No code is written until you sign this off.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>signed 31 Oct: fields rows 1–9</span>
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: S1 A, S2 A, S3 A</span>
+    <span class="pill">EVF · PZSz · USA Fencing next</span>
+    <span class="pill">found along the way: F1–F7</span>
+    <span class="pill"><span class="dot"></span>Signed 31 Oct: F6 C</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · Decided 31 Oct · found while recording the decision</p>
+    <h2>One question: the specification's line cap</h2>
+    <p>The specification has a hard cap of 1620 lines (<code>scripts/check-spec-sync.sh</code>, Gate D, set when the RTM moved out in Phase 0.5). Main is at exactly 1620. Every ADR adds one row to the registry in Appendix C, and Gate G2 requires that row, so ADR-118 makes the file 1621 and preflight fails. Every later ADR would fail the same way.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>F6</b></td><td>How Gate D lets the ADR registry grow</td><td><b>A</b> Gate D counts the lines outside the registry rows, capped at today's count, 1506. The registry grows one row per ADR, as G2 requires; the rest of the file can grow by no line at all.<br><b>B</b> Raise the cap to 1700. Simple, but the prose can grow 80 lines unnoticed.<br><b>C</b> Move Appendix D's history (the per-change test notes, about 50 lines) to an archive page and keep the pgTAP total line in the specification.</td><td><b>Decided: C</b> (in chat, 31 Oct). My recommendation was A, and it was wrong: A changes what the gate measures so the file passes, instead of fixing the file. C removes the cause. The per-change history is on <a href="../archive/legacy-2026-07/test-baseline-history.html">the test baseline history page</a>, moved line for line (37 lines and the pgTAP chain, checked); the specification is 1574 lines.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Three questions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>S1</b></td><td>CERT's field is <b>blank</b> and PROD's is set</td><td><b>A</b> PROD keeps its value. A blank never clears anything, which is today's rule for name, dates, city and country.<br><b>B</b> PROD becomes blank too.</td><td><span class="chip never">Recommend A</span> An EVF defect (F1) blanked the city and country of PEW8, PEW13 and PEW17 on CERT. Under B, PROD would have lost them too.</td></tr>
+        <tr><td><b>S2</b></td><td>A person set a value on CERT, and the scraper's source <b>later changes</b> that field</td><td><b>A</b> The person's value stays. The scraper reports the source's new value once, on Telegram, and you decide. This is PZSz's rule 3 (signed 21 Oct), made the rule for every scraper.<br><b>B</b> The source's new value replaces it. EVF does this today for the name, dates, letter and address. PZSz would lose rule 3, the fix for "listing dates revert hand edits" (21 Oct finding #8).</td><td><span class="chip never">Recommend A</span> It overturns no signed rule, and it is rare: since August, EVF replaced 3 letters a person had set on CERT. All 3 were event pages that EVF replaced with the organizer's PDF. Under A, each would have reached you as a report instead.</td></tr>
+        <tr><td><b>S3</b></td><td>Where a scraper records <b>the value it last wrote</b>, which S2 A needs</td><td><b>A</b> One shared state table and one shared write function, used by EVF and every new scraper. PZSz keeps its own provenance tables, which already meet the contract once rule 8 goes, and passes the same conformance tests.<br><b>B</b> PZSz moves onto the shared table too: one mechanism, but its provenance, released 22 Oct, gets rewritten.</td><td><span class="chip never">Recommend A</span> USA Fencing gets one call to make, and PZSz's released machinery changes only by losing rule 8.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The rule, half 1: the mirror</p>
+    <h2>Every organizer, every event in the active season</h2>
+    <ol class="steps">
+      <li><b>When CERT's details were last written</b>: the latest change on CERT to any of the nine fields, by a scraper or a person, read from the audit log. If there is none, the row's creation time. PROD's time is worked out the same way.</li>
+      <li><b>CERT's time is later</b>: PROD takes every one of the nine fields CERT holds. Under S1 A, a blank on CERT leaves PROD's value alone.</li>
+      <li><b>PROD's time is later</b> (a person edited PROD after CERT's last write): PROD keeps every value it holds until CERT is written again. Only a field that is empty on PROD takes CERT's value, as it does today. The differences stay listed under "Divergences NOT synced".</li>
+      <li><b>Registration link</b>: copied only when neither side holds our own <code>register.html?event=…</code> link (ADR-079 §7). PROD's own link is never replaced.</li>
+      <li><b>Values are compared as their type</b>, so a fee of 50 equals 50.0. An event with nothing to change is not written at all (F2).</li>
+    </ol>
+    <p>The nine fields: name, start and end dates, city, country, weapons, venue address, invitation letter, the organizer's registration link, and the entry fee with its currency. Keys, results links, status, the ingest record and our own registration stay exactly as they are today (field list, groups 2 and 3).</p>
+    <div class="note accent">
+      <p class="lede">Safe in any release order</p>
+      <p>CERT's time is read with a plain subquery in <code>promote.py</code>, not a new SQL function, because the scheduled mirror can run before the migration reaches CERT. PROD's new function falls back to today's rules when an older payload has no time in it, and PROD's old function ignores the new key.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The rule, half 2: the contract every scraper follows on CERT</p>
+    <h2>Five lines, for EVF, PZSz and whatever comes next</h2>
+    <ol class="steps">
+      <li><b>The field is empty</b>: the source's value is written.</li>
+      <li><b>The source reports a value different from what the scraper last wrote</b>: it replaces the scraper's own value (the source changed).</li>
+      <li><b>A person's value</b> (S2 A): kept. The source's disagreeing value is reported once.</li>
+      <li><b>The source sends a blank</b>: nothing is cleared.</li>
+      <li><b>Our own registration link</b>: never written by a scraper.</li>
+    </ol>
+    <p>A conformance test suite enforces the contract. Every scraper's writer is run through the same cases, and a new scraper (USA Fencing) has to pass them before it ships.</p>
+  </section>
+
+  <div class="note accent">
+    <p class="lede">Two clarifications found during the build (31 Oct). Each keeps a rule you already signed.</p>
+    <p><b>C1. An event page in the letter counts as empty, for every scraper</b> (ADR-117 D7 A). On CERT, 8 future EVF events still hold the EVF event page that a person moved into URL komunikatu on 9 Aug: Guildford, Faches, Lausanne, Napoli, Stockholm, Athens, Salzburg, Liège and Dublin. Read as "a person's value", line 3 would hold those pages forever. Read as empty, EVF's real PDF replaces them, as it did for Budapest, Munich and Łomianki.</p>
+    <p><b>C2. EVF's weapons stay written together with its event code.</b> The code's letters (PEW5<b>efs</b>) and <code>arr_weapons</code> "state the same fact" (ADR-089), so the code plan keeps writing both. No future EVF event has weapons a person set. The mirror still carries weapons to PROD, as you signed (row 5).</p>
+  </div>
+
+  <section>
+    <p class="kicker">04 · What changes per scraper (read 31 Oct)</p>
+    <h2>EVF changes most; PZSz loses one rule</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Scraper</th><th>Today, on CERT</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td><b>EVF</b></td><td>
+          <ul>
+            <li>The code plan overwrites the name, dates, weapons, letter and address.</li>
+            <li>It <b>clears</b> the city and country when EVF has none (F1).</li>
+            <li>The refresh only fills a blank registration link, fee, currency, address, letter or weapons, so EVF's newer link or fee never lands.</li>
+          </ul></td><td>All nine fields go through the shared write function and follow the contract.</td></tr>
+        <tr><td><b>PZSz</b></td><td>
+          <ul>
+            <li>Rules 2–6 already decide the city, dates and address with compare-and-set.</li>
+            <li>Rule 8 writes the letter and fee <b>only while they are empty</b> (<code>pzsz_sync.py:79</code>).</li>
+            <li>It does not read the name, country, weapons, registration link or currency.</li>
+          </ul></td><td>Rule 8 is removed, so the letter and fee follow rules 2–6. Nothing else changes.</td></tr>
+        <tr><td><b>USA Fencing</b> (next)</td><td>—</td><td>Built on the shared write function, and passes the conformance suite before release.</td></tr>
+        <tr><td><b>A person on CERT</b></td><td>An Admin save is a CERT write.</td><td>It reaches PROD on the next run.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Today's data: what the first run does</p>
+    <h2>Three fields change on PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Field</th><th>PROD now → after</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Madrid <code>PEW2efs</code></td><td>letter</td><td>August letter → <b>V1</b> (October)</td><td>CERT written 2 Oct; PROD 4 Aug</td></tr>
+        <tr><td>Skopje <code>IMEW</code></td><td>letter</td><td>V2 → <b>V3</b></td><td>CERT 22 Sep; PROD at creation, 15 Sep</td></tr>
+        <tr><td>Łomianki <code>PEW5efs</code></td><td>address</td><td>"Ul. Stanisława Staszica 2, 05-092 Łomianki" → "Ul. Stanisława Staszica 2, Łomianki, Poland"</td><td><span class="chip warn">note</span> On 5 Sep CERT took EVF's address, after a person typed PROD's version with the postcode on 2 Sep. To keep the postcode, type it on CERT after the release: it reaches PROD, and under S2 A the EVF sync leaves it.</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>Unchanged.</b> The country for PEW8, PEW13 and PEW17 is blank on CERT, so PROD keeps it (S1 A). PEW5's fee of 50 vs 50.0 is the same amount. PEW5's registration, fee tiers, payee and account are out of scope.</li>
+      <li><b>Not knowable before the first sync under the contract:</b> whether EVF's or PZSz's sources hold a newer registration link, fee or letter than CERT does today. The sync reports every replacement, and the mirror carries it on.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Found along the way, fixed in this change</p>
+    <h2>Six issues</h2>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F1</span> EVF clears a city and country a person set on CERT</p>
+      <p>Two EVF writers disagree. The identity sync keeps a value when EVF sends none: <code>COALESCE(NULLIF(…), txt_location)</code>. The calendar ingest, which runs before it, writes <code>txt_location = NULLIF(v_location,'')</code> and the same for country (<code>fn_ingest_evf_calendar</code>, its existing-slot UPDATE in migration <code>20261025000001</code>). On 10 Aug at 07:47 it blanked the values a person had set on 9 Aug: Finlandia (PEW8), Ateny/Grecja (PEW13), Toronto/Kanada (PEW17). <b>Fix:</b> contract line 4. <b>Restore:</b> once the release is live, I write those three back on CERT from the audit's 9 Aug values, on your go.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F2</span> The mirror rewrites every event on every run</p>
+      <p>The UPDATE sets <code>ts_updated = NOW()</code> on every row, whether or not anything changed. Since 29 Jun, PROD's audit has gathered 10,570 event rows; Skopje alone has 133 since 15 Sep, with no change. <b>Fix:</b> an event is written only when a value changes.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F3</span> ADR-028 states something the code no longer does</p>
+      <p>It says the refresh "is the only auto-write path that touches existing events, and it never overwrites a populated column". The code plan has overwritten populated columns since ADR-086. <b>Fix:</b> an amendment that records the contract.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F4</span> A test file counts 5 of its 25 checks</p>
+      <p><code>supabase/tests/19_phase3_wizard.sql</code> plans 25 checks, but pg_prove reported "planned 25 tests but ran 5". Twenty checks sat inside savepoints, and each <code>ROLLBACK TO SAVEPOINT</code> also rolled back pgTAP's own counter, so their results were never counted. <b>Fix:</b> each block now stores the value under test in a psql variable inside the savepoint and checks it after the rollback, the pattern <code>103_promote_apply.sql</code> already uses. All 25 run and pass.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F5</span> Four records still say "release pending" for work that is live</p>
+      <p>ADR-109 and ADR-090's amendment (released 4 Oct, Release run 37180095894), ADR-113 (released 17 Oct, run 39038074124) and ADR-117's D2/D7 amendment (released 25 Oct, main <code>09179f2c</code>, run 40204836946) said "release pending" in their status lines and in Appendix C. Nineteen RTM rows of that 25 Oct release (CALURL.20–23, NAMECASE.01–04, SEED.09, LOCALSL.01–04, six PZSZ.SL rows) said "Built, LOCAL", beside rows marked "Released". <b>Fixed:</b> each now names its release run, checked on GitHub. The RTM's other rows record where their tests landed ("Landed (date, LOCAL)") and keep the release in the FR row; that convention is unchanged.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F6</span> The specification is at its line cap, so no ADR can be registered</p>
+      <p>Main's specification is 1620 lines, the cap. ADR-118's registry row made it 1621, and Gate D failed. <b>Fixed (C):</b> Appendix D's per-change history moved to an archive page; the specification keeps the gated pgTAP total, the suite table and a link. <code>doc/claude/planning.md</code> now sends each change's note to that page.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">F7</span> Appendix D's suite table still showed May's counts</p>
+      <p>It read pgTAP 566 in 43 files, pytest 754, vitest 371, Playwright 7, while the gated total line said 1519. Nothing checks the table, and <code>planning.md</code> asked every change to update it. <b>Fixed:</b> measured on 31 Oct in this worktree: pgTAP 1555 in 119 files, pytest 2304 in 156 files (2290 pass, 14 skip; 2 deselected by configuration), vitest 1256 in 73 files, Playwright 62 in 4 files. The table now says it is a dated measurement and that only the pgTAP total is checked by CI. The May table is kept on the archive page.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Where it goes</p>
+    <h2>Files</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/migrations/20261031000001_cert_event_details_reach_prod.sql</code></td><td><code>fn_mirror_events_to_prod</code> (half 1, F2). A shared state table <code>tbl_calendar_field_state</code> and write function <code>fn_calendar_apply_fields</code> (half 2, compare-and-set, <code>service_role</code> only). EVF's CERT writers (<code>fn_ingest_evf_calendar</code>, <code>fn_ingest_evf_calendar_identity_v1</code>, <code>fn_sync_evf_event_fields</code>, <code>fn_refresh_evf_event_urls</code>) stop writing the nine fields themselves. The first run seeds the state from the audit: a value last changed by a person counts as the person's, anything else as the scraper's.</td></tr>
+        <tr><td><code>python/scrapers/calendar_write.py</code> (new)</td><td>The one call a scraper makes to write the nine fields. EVF uses it now, USA Fencing later.</td></tr>
+        <tr><td><code>python/scrapers/evf_sync.py</code></td><td>Sends the nine fields through <code>calendar_write</code>, and reports a held value once.</td></tr>
+        <tr><td><code>python/scrapers/pzsz_sync.py</code></td><td>Rule 8 is removed (<code>_FILL_BLANK</code>).</td></tr>
+        <tr><td><code>python/pipeline/promote.py</code></td><td>The CERT read selects when the details were last written, and the update payload carries it.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Tests first, each seen failing</p>
+    <h2>What the tests pin</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>File</th><th>Pins</th></tr></thead>
+      <tbody>
+        <tr><td><b>CALSYNC.01–16</b></td><td>pgTAP <code>117_mirror_cert_event_details.sql</code></td><td>Madrid's and Skopje's shapes. PEW5's shape: the address copies, while our registration link, account and switch stay. PROD newer stays, and only its empty fields fill. A blank on CERT keeps PROD's value. Our link is protected both ways. 50 equals 50.0. An unchanged event writes no audit row. An old payload gets today's rules. Keys, results links, status and the ingest record are untouched.</td></tr>
+        <tr><td><b>CALSYNC.20–39</b></td><td>pgTAP <code>118_calendar_field_contract.sql</code></td><td>The shared write function: an empty field fills; a source change replaces the scraper's value; a person's value is held and reported once; a blank never clears; our link is refused; a value a person changes between read and write wins; the first run seeds the state from the audit; a field outside the nine is refused. CALSYNC.39 runs <code>fn_ingest_evf_calendar</code> and checks it no longer clears a city or country (F1).</td></tr>
+        <tr><td><b>CALSYNC.40–50</b></td><td>pytest <code>test_calendar_scraper_contract.py</code></td><td>Our link and event pages recognised; EVF's details mapped to the columns and sent through the shared write; the EVF refresh and identity sync no longer carrying them; a held value reported on Telegram; PZSz without rule 8 (link and fee follow the source when the run wrote them, a person's value stays); and the promote read and payload (CALSYNC.50).</td></tr>
+        <tr><td><b>ph3.2–ph3.22b</b></td><td>pgTAP <code>19_phase3_wizard.sql</code></td><td>F4: all 25 checks counted.</td></tr>
+        <tr><td>rewritten</td><td>pgTAP <code>68.3</code>; the EVF refresh assertions in <code>12_evf_import.sql</code> (12.10–12.13) and <code>15_event_multi_url.sql</code> (15.6); pytest <code>PZSZ.RUN.08</code> and <code>PZSZ.RUN.09</code></td><td>They pin today's fill-blank and rule-8 behaviour. Each rewrite is named in the ADR amendment that changes the rule.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Documentation, in the same change</p>
+    <h2>Records</h2>
+    <ul>
+      <li><b>ADR-118</b> (new): the calendar contract, from source to CERT to PROD, for every scraper. It amends ADR-081 §3 (the fill-blank tier), ADR-116 (rule 8 removed), ADR-117 (the D7 sentence on Madrid and Skopje) and ADR-028 (F3), and relates to ADR-079 §7 (our links).</li>
+      <li><b>Handbook</b>: the tier table in <code>reference/event-status-lifecycle.html</code> and the invariants in <code>subsystems/events-and-registration.html</code>. A new section, "Writing a calendar scraper", is where the USA Fencing work starts.</li>
+      <li>RTM rows for CALSYNC, Specification Appendix C, regenerated twins, <code>check_docs.py</code>, the RAG reindex and the graph refresh.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Release, then the data</p>
+    <h2>How it reaches PROD</h2>
+    <ol class="steps">
+      <li>Branch <code>claude/cert-event-details-reach-prod-every-scraper</code>. The merge message and the Release run say what changes and why (your 31 Oct naming rule, done by hand for now).</li>
+      <li><code>scripts/preflight.sh</code> exits 0, then integration, then a push to main. CI and the Release are watched in the foreground. The PROD deploy is yours to approve.</li>
+      <li>The next EVF or PZSz sync applies the contract on CERT, and its mirror run carries the result to PROD. On your go, I run <code>promote-calendar.yml</code> by hand instead.</li>
+      <li>Verification goes through PROD's <code>vw_calendar</code> (what the calendar reads) and the reconcile log. F1's three rows are restored on CERT on your go.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">11 · Not in this plan</p>
+    <h2>Left as they are</h2>
+    <ul>
+      <li>The deadline, the 2- and 3-weapon fees, the payee and account, and our own registration, as you picked.</li>
+      <li>The USA Fencing scraper itself. It gets built on this contract.</li>
+      <li>This plan replaces <code>prod-follows-newer-invitation-letter-2026-10-31.html</code>. The naming plan's B1–B3 is still open.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Research 31 Oct 2026, in the conversation: spws-docs and graphify first. SQL read-only on CERT and PROD through <code>scripts/cloud-sql.sh</code> (<code>tbl_event</code>, <code>tbl_audit_log</code>; IBAN and payee compared as hashes). Code read: <code>fn_mirror_events_to_prod</code> (migration <code>20261025000003</code>), <code>fn_refresh_evf_event_urls</code> and <code>fn_ingest_evf_calendar</code> (<code>20261025000001</code>), <code>fn_ingest_evf_calendar_identity_v1</code> and <code>fn_sync_evf_event_fields</code> (LOCAL definitions), <code>evf_sync.py:555</code>, <code>pzsz_sync.py:70–79</code>, <code>promote.py:80</code>, <code>reconcile_report.py:138</code>, <code>EventManager.svelte:671–684</code>.</p>
+
+</div>

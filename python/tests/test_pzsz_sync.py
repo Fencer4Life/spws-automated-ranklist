@@ -222,8 +222,9 @@ class TestProcessEvent:
         assert addr and addr[0]["value"] == "Hala AZS, ul. Testowa 1"
         assert addr[0]["source"] == "letter" and addr[0]["parser_version"]
 
-    def test_a_held_fee_is_not_rewritten(self):
-        """PZSZ.RUN.09 (rule 8): pass 3 is skipped once the fee is filled."""
+    def test_a_hand_fee_is_not_rewritten(self):
+        """PZSZ.RUN.09 (rule 3; ADR-118 removed rule 8): a fee the run has no
+        provenance for is a person's, and the letter's fee does not replace it."""
         event = _event(
             num_entry_fee="100",
             txt_entry_fee_currency="PLN",
@@ -260,9 +261,10 @@ class TestProcessEvent:
         assert any(c["check"] == "letter" and c["state"] == "no_text" for c in checks)
         assert any("Admin" in w for w in digest.warn)
 
-    def test_pass_0_uses_the_held_link_and_does_not_read_the_listing(self):
-        """PZSZ.RUN.08 (rule 8): with a link held, pass 0 writes nothing new and
-        reads the held letter, not the listing's."""
+    def test_pass_0_keeps_a_hand_link_and_reads_it(self):
+        """PZSZ.RUN.08 (rule 3; ADR-118 removed rule 8): a link the run has no
+        provenance for is a person's: pass 0 writes nothing new and the passes
+        read the held letter, not the listing's."""
         event = _event(url_invitation="https://pzszerm.pl/test/fileDownload.php?fileId=held")
         listing_row = {"letter_url": "https://pzszerm.pl/test/fileDownload.php?fileId=other"}
         letter = _letter()

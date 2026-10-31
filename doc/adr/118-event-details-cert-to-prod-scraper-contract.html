@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="118-event-details-cert-to-prod-scraper-contract.md">
+<meta name="adr-source-sha256" content="c8d47ac125155c7ac6e8bf23bafb1eea017058395ecc35d6f75a34500f951835">
+<title>ADR-118 · Event Details Written on CERT Reach PROD, and Every Calendar Scraper Writes Them Under One Contract</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 118</p><h1>Event Details Written on CERT Reach PROD, and Every Calendar Scraper Writes Them Under One Contract</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off by the user in chat on 2026-10-31: the field scope as &quot;Rows 1–9 as picked&quot;, from <code>doc/plans/event-fields-cert-to-prod-scope-2026-10-31.html</code>, and the plan <code>doc/plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html</code> as &quot;Yes, all A&quot;, S1–S3). Implemented test-first on LOCAL on 2026-10-31; release pending.</dd></div><div><dt>Date</dt><dd class="">2026-10-31</dd></div><div><dt>Source</dt><dd class=""><code>118-event-details-cert-to-prod-scraper-contract.md</code></dd></div><div><dt>Length</dt><dd class="">87 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off by the user in chat on 2026-10-31: the field scope as &quot;Rows 1–9 as picked&quot;, from <code>doc/plans/event-fields-cert-to-prod-scope-2026-10-31.html</code>, and the plan <code>doc/plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html</code> as &quot;Yes, all A&quot;, S1–S3). Implemented test-first on LOCAL on 2026-10-31; release pending.
+<strong>Date:</strong> 2026-10-31
+<strong>Supersedes:</strong> <a href="116-pzsz-calendar-browser-read-and-letter-passes.html">ADR-116</a> §2's fill-blank-only rule for the PZSz letter and fee (rule 8) and §6 (the PZSz-only address overwrite; every organizer's address now follows §1 below); <a href="117-results-links-admin-only.html">ADR-117</a>'s amendment sentence &quot;An older EVF PDF on PROD (Madrid, Skopje) is not a calendar page and stays&quot;
+<strong>Amends:</strong> <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (§3: the nine details leave the overwrite and fill-blank tiers and follow CERT's write time), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the 2026-08-29 three-tier table: the nine details become a fourth tier), <a href="028-evf-calendar-results-import.html">ADR-028</a> (Refresh Semantics and the 2026-08-09 carve-out: the EVF sync no longer overwrites the details itself, and a person's value on CERT holds; F3), <a href="043-evf-event-allocator.html">ADR-043</a> (a <code>CURRENT_SLOT_REUSE</code> write carries the identity and status only), <a href="088-calendar-location-contract.html">ADR-088</a> (§7: a corrected EVF city reaches a row through the contract, not through <code>fn_sync_evf_event_fields</code>)
+<strong>Relates to:</strong> <a href="079-event-self-registration-identity.html">ADR-079</a> (§7 and the 2026-08-17 amendment: our own <code>register.html?event=</code> link, never copied or replaced), <a href="089-event-weapons-and-card-header.html">ADR-089</a> (EVF's weapons stay written with its code), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (the PZSz identity the mirror carries, unchanged), <a href="117-results-links-admin-only.html">ADR-117</a> (results links stay outside every calendar write; D7 A, an event page gives way to a letter, holds for every scraper), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (promote, unchanged), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the PROD seed export lists its tables; the new state table, like PZSz's provenance, is not among them)
+<strong>Source:</strong> <code>doc/plans/cert-event-details-reach-prod-every-scraper-2026-10-31.html</code>, <code>doc/plans/event-fields-cert-to-prod-scope-2026-10-31.html</code>, <code>supabase/migrations/20261031000001_cert_event_details_reach_prod.sql</code>, <code>python/scrapers/calendar_write.py</code>, <code>python/pipeline/calendar_details.py</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-mirror-cert-s-newer-details-reach-prod">1 · The mirror: CERT&#x27;s newer details reach PROD</a></li><li class="depth-3"><a href="#2-the-contract-every-calendar-scraper-follows-on-cert">2 · The contract every calendar scraper follows on CERT</a></li><li class="depth-3"><a href="#3-one-shared-state-table-and-write-function-s3-a">3 · One shared state table and write function (S3 A)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The CERT→PROD mirror (<code>fn_mirror_events_to_prod</code>) sorted an event's fields into tiers (<a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a>, 2026-08-29). Scraped facts (name, dates, city, country, weapons) overwrote PROD. Admin enrichment (the letter, the registration link, the fee, the address) filled PROD only while it was empty. A newer value on CERT for an enrichment field therefore never reached PROD once PROD held anything.</p>
+<p>Measured on 31 October 2026 (read-only, both environments): 20 future events on each side; two letters differ, and CERT's is newer in both. Madrid (PEW2efs) has the October letter on CERT, written 2 October, and the August one on PROD. Skopje (IMEW) has V3 on CERT, written 22 September, and V2 on PROD since its creation on 15 September.</p>
+<p>The user's rule, 31 October 2026: <em>&quot;any time we have an update on CERT we promote the whole event level data to PROD … any time you have a write on any event level field on CERT you promote all details about CERT to prod on the next run&quot;</em>, excluding our own registration links, for nine fields (rows 1–9 of the field list), and <em>&quot;this logic applies to all calendar scrapers … PZSz, and any future scraper too&quot;</em>, with USA Fencing planned next.</p>
+<p>The scrapers disagreed on CERT. EVF's code plan overwrote the name, dates, weapons, letter and address on every run. Its refresh filled the registration link, fee, currency, address and letter only while empty, so EVF's newer link or fee never landed. PZSz decided the city, dates and address with compare-and-set (ADR-116 §5) and wrote the letter and fee only while empty (rule 8, <code>pzsz_sync.py</code> <code>_FILL_BLANK</code>).</p>
+<p>Three issues were found along the way, and a fourth during the build:</p>
+<ul>
+<li><strong>F1.</strong> <code>fn_ingest_evf_calendar</code>'s existing-slot UPDATE (migration <code>20261025000001</code>) wrote <code>txt_location = NULLIF(v_location,'')</code> and the same for the country. On 10 August at 07:47 it blanked the city and country a person had set on 9 August for PEW8, PEW13 and PEW17 on CERT. The identity sync, which runs after it, keeps a value when EVF sends none.</li>
+<li><strong>F2.</strong> The mirror's UPDATE set <code>ts_updated = NOW()</code> on every event on every run. PROD's audit holds 10,570 event rows since 29 June; Skopje alone has 133 since 15 September, with no change.</li>
+<li><strong>F3.</strong> ADR-028 says the refresh &quot;is the only auto-write path that touches existing events, and it never overwrites a populated column&quot;. The code plan has overwritten populated columns since ADR-086.</li>
+<li><strong>F4.</strong> <code>supabase/tests/19_phase3_wizard.sql</code> planned 25 checks and pg_prove counted 5: twenty sat inside savepoints, and each <code>ROLLBACK TO SAVEPOINT</code> also rolled back pgTAP's counter.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-the-mirror-cert-s-newer-details-reach-prod">1 · The mirror: CERT's newer details reach PROD</h3>
+<p>The <strong>nine details</strong> are the name, the start and end dates, the city, the country, the weapons, the venue address, the invitation letter (<code>url_invitation</code>), the organizer's registration link (<code>url_registration</code>), and the entry fee with its currency.</p>
+<p>&quot;Details last written&quot; is the latest audited UPDATE that changed any of the nine; with none, the row's creation time (the audit records no INSERT). <code>promote.py --mode calendar</code> reads CERT's time with an inline subquery (<code>_details_set_sql</code>, <code>python/pipeline/promote.py:82</code>) and sends it as <code>ts_details_set</code>. PROD's time is <code>fn_event_details_set_at(id_event)</code>.</p>
+<p>For an event on both sides, the UPDATE branch:</p>
+<ul>
+<li><strong>CERT wrote later:</strong> PROD takes every one of the nine that CERT holds.</li>
+<li><strong>PROD wrote later</strong> (a person edited PROD after CERT's last write): PROD keeps every value it holds. A field empty on PROD still takes CERT's value.</li>
+<li><strong>A blank on CERT never clears PROD</strong> (S1 A).</li>
+<li><strong>Our own registration link</strong> (<code>/register\.html\?event=</code>) is never copied, and a PROD value that is ours is never replaced.</li>
+<li><strong>An event page on PROD gives way to a letter</strong> in either case (<a href="117-results-links-admin-only.html">ADR-117</a> D7 A).</li>
+<li>Values compare as their type: a fee of 50 equals 50.0, and weapons compare as a set.</li>
+<li><strong>An event with nothing to change is not written</strong> (F2).</li>
+</ul>
+<p>Every other field keeps its tier: the deadline, the 2- and 3-weapon fee tiers, the entry list, the organizer e-mail and the payment account fill a blank; the registration switch is not synced; keys, results links, status and the ingest record are unchanged.</p>
+<p>A payload without <code>ts_details_set</code> (a run of the previous <code>promote.py</code>) gets the earlier rules, so the migration and the Python can land in either order.</p>
+<h3 id="2-the-contract-every-calendar-scraper-follows-on-cert">2 · The contract every calendar scraper follows on CERT</h3>
+<p>Every calendar scraper writes the nine details through one rule:</p>
+<ol>
+<li>An empty field takes the source's value. An event page in the letter counts as empty (C1, ADR-117 D7 A).</li>
+<li>A source that changed replaces the scraper's own earlier value.</li>
+<li>A value a person set is kept, and the source's different value is reported once on Telegram (S2 A; ADR-116's rule 3, now every scraper's).</li>
+<li>A blank from the source clears nothing.</li>
+<li>Our own registration link is never written by a scraper.</li>
+</ol>
+<h3 id="3-one-shared-state-table-and-write-function-s3-a">3 · One shared state table and write function (S3 A)</h3>
+<p><code>tbl_calendar_field_state</code> holds, per event and detail, the value the scraper last wrote (NULL when the current value is a person's) and the source value last reported as held. With no state yet, the audit decides: a value a person last set (<code>txt_admin_user</code> not NULL) is the person's; any other is the scraper's.</p>
+<p><code>fn_calendar_apply_fields(p_scraper, p_events)</code> applies the contract and returns <code>{written, held}</code>. It locks the row (<code>FOR UPDATE</code>), so each write is a compare-and-set against a concurrent Admin save, and it refuses a field outside the nine. Both are <code>service_role</code> only. <code>python/scrapers/calendar_write.py</code> is the scraper side: <code>apply_fields</code>, <code>held_lines</code> for the Telegram report, and <code>evf_fields</code>, EVF's mapping. <code>python/pipeline/calendar_details.py</code> holds the field list and the link tests, so <code>promote.py</code> can import them without the scrapers' parsers (WFDEPS.01).</p>
+<ul>
+<li><strong>EVF</strong> writes all its details through the function. Its calendar ingest, identity sync and refresh stop writing them; the refresh keeps filling a blank deadline and weapons, and the slot-reuse UPDATE writes the identity and status only (F1). <strong>C2:</strong> EVF's weapons stay written with its event code by the code plan, because the code's letters and <code>arr_weapons</code> state the same fact (<a href="089-event-weapons-and-card-header.html">ADR-089</a>).</li>
+<li><strong>PZSz</strong> keeps its own provenance tables (ADR-116 §5), which meet the contract once rule 8 goes. The letter and fee follow rules 2–6; Pass 0 decides the letter first, so the passes read the letter that will be held.</li>
+<li><strong>A new scraper</strong> (USA Fencing next) calls <code>fn_calendar_apply_fields</code> and passes the contract tests before it ships.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>The letter only (the first plan of 31 October).</strong> Rejected by the user: <em>&quot;this improvement should apply for all EVENT level fields&quot;</em>; fees, addresses and registration links change too.</li>
+<li><strong>A blank on CERT clears PROD (S1 B).</strong> Rejected: F1 blanked three cities and countries on CERT, and PROD would have lost them too.</li>
+<li><strong>The source replaces a person's value (S2 B).</strong> Rejected: PZSz would lose rule 3, the fix for listing dates reverting hand edits (21 October). Since August, EVF replaced three letters a person had set on CERT; under the contract each would have reached the user as a report.</li>
+<li><strong>PZSz moves onto the shared table (S3 B).</strong> Rejected: one mechanism, but its provenance, released 22 October, would be rewritten. PZSz passes the same tests with its own.</li>
+<li><strong>CERT's time read by a new CERT function.</strong> Rejected: the scheduled mirror can run before the migration reaches CERT. The inline subquery works on either schema.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>The first run on PROD</strong> after the release changes three fields: Madrid's letter becomes the October one, Skopje's becomes V3, and PEW5efs's address becomes CERT's EVF version (the postcode PROD holds can be typed on CERT, and the EVF sync then keeps it). The country for PEW8, PEW13 and PEW17 is blank on CERT, so PROD keeps it.</li>
+<li><strong>A person's Admin save on CERT is a CERT write</strong>: it reaches PROD on the next run, as a scraper's write does. A later CERT write takes all nine to PROD, including over a PROD edit made in between.</li>
+<li><strong>A held value</strong> is reported once per source value (&quot;EVF details kept for a person&quot;); PZSz keeps its own digest.</li>
+<li><strong>The audit on PROD</strong> gains rows only for events that change (F2).</li>
+<li><strong>F1 data:</strong> the three CERT rows (PEW8, PEW13, PEW17) are restored from the audit's 9 August values after the release, on the user's go.</li>
+<li><strong>New:</strong> migration <code>20261031000001_cert_event_details_reach_prod.sql</code>; <code>python/scrapers/calendar_write.py</code>; <code>python/pipeline/calendar_details.py</code>; pgTAP <code>117_mirror_cert_event_details.sql</code> (CALSYNC.01–16) and <code>118_calendar_field_contract.sql</code> (CALSYNC.20–39); pytest <code>test_calendar_scraper_contract.py</code> (CALSYNC.40–50).</li>
+<li><strong>Changed:</strong> <code>evf_sync.py</code>, <code>pzsz_sync.py</code>, <code>pzsz_write_rules.py</code> (rule 8 removed), <code>promote.py</code>. Earlier assertions now pin the new rules: pgTAP CALURL.10–11, 12.10, evf.37, 50.1–50.2; pytest evf.55, CALURL.02 and the PZSz rule-8 cases (now <code>TestRule8Removed</code>).</li>
+<li><strong>F4:</strong> <code>19_phase3_wizard.sql</code> stores each value under test in a psql variable inside its savepoint and checks it after the rollback (the pattern of <code>103_promote_apply.sql</code>); all 25 checks count.</li>
+<li><strong>Left as they are:</strong> the deadline, the fee tiers and the payment account (outside the nine, by the user's choice); results links (ADR-117); the registration switch (ADR-086, 2026-08-29).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="117-results-links-admin-only.html">← ADR-117: Results Links Are Set in Admin Only; Calendar Automation Writes Only the Organizer&#x27;s Letter</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>118-event-details-cert-to-prod-scraper-contract.md</code> · source SHA-256 <code>c8d47ac125155c7ac6e8bf23bafb1eea017058395ecc35d6f75a34500f951835</code></footer>
+</div></body></html>

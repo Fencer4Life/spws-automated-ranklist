@@ -360,7 +360,7 @@ See ADR-080's 2026-09-12 amendment (h) for the first use.
 
 ## Amendment (2026-10-03) — the WordPress pages carry the site's navigation, and PROD admin moves to `/ranking/?admin=1`
 
-**Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implemented on LOCAL 2026-10-04 (plan steps 1–10); the release and the WordPress pages follow (steps 11–13).
+**Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implemented on LOCAL 2026-10-04 (plan steps 1–10). Released to CERT and PROD on 2026-10-04 (step 11, Release run 37180095894); the WordPress pages and the menu item went live the same day (step 12). Step 13, the operator page `prod-wordpress-deployment.html`, is still to be written.
 **Development plan:** [`doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html`](../plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html) — steps §04, tests §05 (WP.BAR.\*, WP.NAV.\*, WP.ADM.\*, WP.DOC.\*, WP.CALC.01, WP.PAGE.\*, WP.COMP.01), definition of done §08, and Part II, the PROD manual.
 **Relates to:** [ADR-109](109-environments-split-by-host.md) (the environments split by host, decided the same day)
 

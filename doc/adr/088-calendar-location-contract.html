@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="088-calendar-location-contract.md">
-<meta name="adr-source-sha256" content="419333d13598c33b386ead02f9275abe2e2bf6d2b16139f93a558244baf4b6fa">
+<meta name="adr-source-sha256" content="2a375c472f76e276a1969be94910f418ec31ae3bc0bc38bc08f509c1aa6b520c">
 <title>ADR-088 · One location contract for every calendar scraper — city, venue and address</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 088</p><h1>One location contract for every calendar scraper — city, venue and address</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>088-calendar-location-contract.md</code></dd></div><div><dt>Length</dt><dd class="">192 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>088-calendar-location-contract.md</code></dd></div><div><dt>Length</dt><dd class="">196 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.
 <strong>Date:</strong> 2026-09-04
 <strong>Amends:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> (closes the recorded <code>txt_location</code> defect at the ingest, where that ADR left it), <a href="039-stale-event-gate.html">ADR-039</a> §dedup (the location rung now compares cities to cities), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> §7 (PZSz gains venue-title extraction from the komunikat)
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#what-the-sources-actually-publish">What the sources actually publish</a></li><li class="depth-3"><a href="#the-event-name-is-evf-s-best-evidence-and-often-its-only-evidence">The event name is EVF&#x27;s best evidence, and often its only evidence</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-city-is-resolved-once-at-scrape-time">1 · The city is resolved once, at scrape time</a></li><li class="depth-3"><a href="#2-a-shared-contract-source-specific-rungs">2 · A shared contract, source-specific rungs</a></li><li class="depth-3"><a href="#3-only-en-and-em-dashes-separate-a-name">3 · Only en and em dashes separate a name</a></li><li class="depth-3"><a href="#4-the-final-address-part-is-dropped-only-when-it-is-the-country">4 · The final address part is dropped only when it IS the country</a></li><li class="depth-3"><a href="#5-the-venue-title-s-fate">5 · The venue title&#x27;s fate</a></li><li class="depth-3"><a href="#6-never-guess">6 · Never guess</a></li><li class="depth-3"><a href="#7-no-migration">7 · No migration</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#what-the-sources-actually-publish">What the sources actually publish</a></li><li class="depth-3"><a href="#the-event-name-is-evf-s-best-evidence-and-often-its-only-evidence">The event name is EVF&#x27;s best evidence, and often its only evidence</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-city-is-resolved-once-at-scrape-time">1 · The city is resolved once, at scrape time</a></li><li class="depth-3"><a href="#2-a-shared-contract-source-specific-rungs">2 · A shared contract, source-specific rungs</a></li><li class="depth-3"><a href="#3-only-en-and-em-dashes-separate-a-name">3 · Only en and em dashes separate a name</a></li><li class="depth-3"><a href="#4-the-final-address-part-is-dropped-only-when-it-is-the-country">4 · The final address part is dropped only when it IS the country</a></li><li class="depth-3"><a href="#5-the-venue-title-s-fate">5 · The venue title&#x27;s fate</a></li><li class="depth-3"><a href="#6-never-guess">6 · Never guess</a></li><li class="depth-3"><a href="#7-no-migration">7 · No migration</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-10-31-adr-118-118-event-details-cert-to-prod-scraper-contract-md-the-city-reaches-the-row-through-the-scraper-contract">Amendment (2026-10-31, [ADR-118](118-event-details-cert-to-prod-scraper-contract.md)) — the city reaches the row through the scraper contract</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>tbl_event.txt_location</code> is specified to hold a <strong>city</strong>. The EVF scraper has been
 writing the source's <strong>venue title</strong> into it — <code>Palavesuvio</code>, <code>Salle Jean Zay</code>,
@@ -231,8 +231,11 @@ admin-entered rows only. <strong>Recommendation:</strong> keep it until the hist
 seasons are known clean, then reconsider — it costs nothing where it never
 fires.</li>
 </ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-31-adr-118-118-event-details-cert-to-prod-scraper-contract-md-the-city-reaches-the-row-through-the-scraper-contract">Amendment (2026-10-31, <a href="118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>) — the city reaches the row through the scraper contract</h2>
+<p>§7's mechanism changed: <code>fn_sync_evf_event_fields</code> no longer writes <code>txt_location</code>. A corrected scrape still replaces a city the EVF sync wrote earlier, now through <code>fn_calendar_apply_fields</code> (contract line 2). A city a person set on CERT is kept, and EVF's different value is reported once. The resolution rules of §1–§6 are unchanged.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="087-pzsz-senior-calendar-source.html">← ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="089-event-weapons-and-card-header.html">→ ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a></nav>
-<footer class="foot">Generated from <code>088-calendar-location-contract.md</code> · source SHA-256 <code>419333d13598c33b386ead02f9275abe2e2bf6d2b16139f93a558244baf4b6fa</code></footer>
+<footer class="foot">Generated from <code>088-calendar-location-contract.md</code> · source SHA-256 <code>2a375c472f76e276a1969be94910f418ec31ae3bc0bc38bc08f509c1aa6b520c</code></footer>
 </div></body></html>

@@ -28,8 +28,9 @@ $setup$;
 
 
 -- =========================================================================
--- 50.1 — fn_sync_evf_event_fields overwrites dt_start/dt_end when the
---        payload's dates differ (reschedule propagation).
+-- 50.1 — an EVF reschedule reaches the row. Since ADR-118 the dates are one of
+--        the event's details: fn_sync_evf_event_fields no longer writes them,
+--        and the sync sends them through fn_calendar_apply_fields.
 -- =========================================================================
 DO $t501$
 DECLARE
@@ -48,6 +49,9 @@ BEGIN
     'id_event', v_id, 'dt_start', '2034-11-15', 'dt_end', '2034-11-16'
   ));
   PERFORM fn_sync_evf_event_fields(v_payload);
+  PERFORM fn_calendar_apply_fields('EVF', jsonb_build_array(jsonb_build_object(
+    'id_event', v_id,
+    'fields', jsonb_build_object('dt_start', '2034-11-15', 'dt_end', '2034-11-16'))));
 END;
 $t501$;
 
@@ -55,12 +59,13 @@ SELECT results_eq(
   $$SELECT dt_start::TEXT, dt_end::TEXT FROM tbl_event
      WHERE txt_code = 'EVFSLUG-EV-50-1'$$,
   $$VALUES ('2034-11-15'::TEXT, '2034-11-16'::TEXT)$$,
-  '50.1: fn_sync_evf_event_fields overwrites dt_start/dt_end on reschedule'
+  '50.1: an EVF reschedule reaches the row through fn_calendar_apply_fields (ADR-118)'
 );
 
 
 -- =========================================================================
--- 50.2 — fills txt_location/txt_country from NULL when venue becomes known.
+-- 50.2 — a venue EVF makes known fills txt_location/txt_country from NULL;
+--        since ADR-118 through fn_calendar_apply_fields, not the identity sync.
 -- =========================================================================
 DO $t502$
 DECLARE
@@ -79,6 +84,9 @@ BEGIN
     'id_event', v_id, 'location', 'Samorin', 'country', 'Slovakia'
   ));
   PERFORM fn_sync_evf_event_fields(v_payload);
+  PERFORM fn_calendar_apply_fields('EVF', jsonb_build_array(jsonb_build_object(
+    'id_event', v_id,
+    'fields', jsonb_build_object('txt_location', 'Samorin', 'txt_country', 'Slovakia'))));
 END;
 $t502$;
 
@@ -86,7 +94,7 @@ SELECT results_eq(
   $$SELECT txt_location, txt_country FROM tbl_event
      WHERE txt_code = 'EVFSLUG-EV-50-2'$$,
   $$VALUES ('Samorin'::TEXT, 'Slovakia'::TEXT)$$,
-  '50.2: fn_sync_evf_event_fields fills txt_location/txt_country from NULL'
+  '50.2: a venue EVF makes known fills the row through fn_calendar_apply_fields (ADR-118)'
 );
 
 

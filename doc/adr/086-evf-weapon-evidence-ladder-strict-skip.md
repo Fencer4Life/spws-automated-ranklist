@@ -260,3 +260,7 @@ year, so no year roll applies.
 
 **Consequences.** The next run gives Skopje épée, foil and sabre and the thirteen 2027 entries their
 real end dates. Pinned by `python/tests/test_evf_calendar.py` evf.76–evf.78.
+
+## Amendment (2026-10-31, [ADR-118](118-event-details-cert-to-prod-scraper-contract.md)) — the nine event details form a fourth tier
+
+The 2026-08-29 table's first two tiers lose the nine event details: `txt_name`, `dt_start`, `dt_end`, `txt_location`, `txt_country`, `arr_weapons` (from "Scraped from EVF") and `txt_venue_address`, `url_invitation`, `url_registration`, `num_entry_fee`, `txt_entry_fee_currency` (from "Admin enrichment"). They follow the side that wrote them last: CERT's newer details overwrite PROD, PROD's newer ones stay, and a blank never clears. Our own registration link is never copied or replaced. The rest of the table stands: `txt_code`, the source identities and `id_prior_event` overwrite; the deadline, fee tiers, entry list, organizer e-mail and payment account fill a blank; the registration switch, `ts_ftl_sent`, the provenance block and the results half of `enum_status` are not synced.
