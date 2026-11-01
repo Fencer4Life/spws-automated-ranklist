@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="011-artifact-release-pipeline.md">
-<meta name="adr-source-sha256" content="188aa01c79a8ae97e3ec5545c0efc39e524d066a24b85800536acfaa1c7e836e">
+<meta name="adr-source-sha256" content="9c7ce7ce93058102b5ce465fd124dc6ad999909940e52861411b682526302899">
 <title>ADR-011 · Three-Tier Artifact Release Pipeline with Schema Fingerprinting</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 011</p><h1>Three-Tier Artifact Release Pipeline with Schema Fingerprinting</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-22 (M7) <strong>Amended by:</strong> <a href="094-release-docs-only-skip.html">ADR-094</a> (2026-09-13) — <code>release.yml</code>'s trigger below is no longer &quot;CI success&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit <code>build</code> fingerprinted, and <code>scripts/commit-tracking.sh</code> records each deploy on main.</dd></div><div><dt>Source</dt><dd class=""><code>011-artifact-release-pipeline.md</code></dd></div><div><dt>Length</dt><dd class="">66 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-22 (M7) <strong>Amended by:</strong> <a href="094-release-docs-only-skip.html">ADR-094</a> (2026-09-13) — <code>release.yml</code>'s trigger below is no longer &quot;CI success&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit <code>build</code> fingerprinted, and <code>scripts/commit-tracking.sh</code> records each deploy on main. Amended 2026-11-01 (below): each Release run's Summary page lists what it carries and what each environment deployed.</dd></div><div><dt>Source</dt><dd class=""><code>011-artifact-release-pipeline.md</code></dd></div><div><dt>Length</dt><dd class="">104 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2025-03-22 (M7)
-<strong>Amended by:</strong> <a href="094-release-docs-only-skip.html">ADR-094</a> (2026-09-13) — <code>release.yml</code>'s trigger below is no longer &quot;CI success&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit <code>build</code> fingerprinted, and <code>scripts/commit-tracking.sh</code> records each deploy on main.</p>
+<strong>Amended by:</strong> <a href="094-release-docs-only-skip.html">ADR-094</a> (2026-09-13) — <code>release.yml</code>'s trigger below is no longer &quot;CI success&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit <code>build</code> fingerprinted, and <code>scripts/commit-tracking.sh</code> records each deploy on main. Amended 2026-11-01 (below): each Release run's Summary page lists what it carries and what each environment deployed.</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-10-25-every-deploy-job-applies-the-commit-build-fingerprinted">Amendment (2026-10-25) — every deploy job applies the commit build fingerprinted</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-10-25-every-deploy-job-applies-the-commit-build-fingerprinted">Amendment (2026-10-25) — every deploy job applies the commit build fingerprinted</a></li><li class="depth-2"><a href="#amendment-2026-11-01-each-release-run-s-summary-page-says-what-it-carries-and-deployed">Amendment (2026-11-01) — each Release run&#x27;s Summary page says what it carries and deployed</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>SQL migrations were being applied manually via curl to the Supabase Management API. Frontend deploys were decoupled from database deploys. PROD had no migration tracking, and there was no proof that PROD schema matched CERT or LOCAL. The team needed a build-once-deploy-twice promotion pipeline with auditable tracking.</p>
 </section>
@@ -77,8 +77,44 @@ carries the release manifest of the deployed tree.</p>
 RELTRACK.02–05 (the script against a temporary origin whose main moved: the record
 lands on top, the CERT manifest counts the deployed tree, a rejected push is
 written again once, and the last failed attempt ends red).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-01-each-release-run-s-summary-page-says-what-it-carries-and-deployed">Amendment (2026-11-01) — each Release run's Summary page says what it carries and deployed</h2>
+<p>Since 31 October 2026 each Release run is titled by the merge it releases (RTM
+NFR-16), but GitHub shows only a merge commit's first line: a Release run's page
+held its job boxes and nothing else, and a documentation-only run's reason sat in
+the gate's log.</p>
+<p><strong>Decision</strong> (signed 1 Nov 2026, R1, R3 and R4 A in
+<code>doc/plans/release-notes-on-every-release-run-2026-11-01.html</code>): every Release run
+whose gate ran writes its notes onto its own Summary page, GitHub's job summary.</p>
+<ul>
+<li>A <code>notes</code> job (<code>needs: [gate, build]</code>, it runs whenever the gate ran, with
+<code>contents: read</code> only) runs <code>scripts/release_notes.py</code> over the gate's range
+(ADR-094 amendment 2026-11-01) up to the commit <code>build</code> fingerprinted. It lists
+every first-parent commit since PROD last deployed: each merge with its title,
+explanation and <code>Branch:</code> line, a commit pushed straight to main with its subject
+and body, and the workflows' own <code>[skip ci]</code> commits counted by kind, with a
+compare link. Text is escaped so that GitHub makes no tag, mention or issue link
+of it; past 900 KB the list gives titles only, since GitHub takes at most 1 MiB
+per step. No deploy job needs it, so its failure never stops a deploy: it turns
+its own job red and sends a Telegram line.</li>
+<li><code>deploy-pages</code>, <code>deploy-cert</code> and <code>deploy-prod</code> each write their own section:
+the Pages URL; for CERT and PROD (<code>scripts/release-section.sh</code>, the step just
+before the Telegram alert, which stays last) the deployed commit, the migrations
+applied or none, the fingerprint check, the Edge Function, the posture check
+(ADR-083) and the record on main, or the first step that failed.</li>
+<li>After a red CI every job stays skipped, as before: a notes job there would turn
+a grey run green.</li>
+<li>No GitHub Release object or tag is created (R1 B, rejected): it would cover only
+finished PROD deploys and add a public, notified object per deploy.</li>
+</ul>
+<p>This does not revisit Alternative 2. The Summary page lives as long as the run's
+logs, 90 days, the most a public repository allows, so it is a view and not the
+audit trail. The record that lasts stays <code>deployed_migrations.json</code>,
+<code>release-manifest.json</code> and the merges in git, from which
+<code>python3 scripts/release_notes.py --base &lt;sha&gt; --head &lt;sha&gt;</code> prints the same notes
+for any past range. Tests: <code>python/tests/test_release_notes.py</code> RELNOTES.01–11.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="010-age-category-by-birth-year.html">← ADR-010: Age Category by Birth Year (Cross-Category Carryover)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="012-sql-pre-deploy-snapshots.html">→ ADR-012: SQL-Level Pre-Deploy Snapshots for PROD</a></nav>
-<footer class="foot">Generated from <code>011-artifact-release-pipeline.md</code> · source SHA-256 <code>188aa01c79a8ae97e3ec5545c0efc39e524d066a24b85800536acfaa1c7e836e</code></footer>
+<footer class="foot">Generated from <code>011-artifact-release-pipeline.md</code> · source SHA-256 <code>9c7ce7ce93058102b5ce465fd124dc6ad999909940e52861411b682526302899</code></footer>
 </div></body></html>

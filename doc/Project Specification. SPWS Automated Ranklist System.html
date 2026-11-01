@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="3b93b77b183b0fb2bdcad477f2a1f9f5e37f9dbe060351c5b320b25aa15483a0">
+<meta name="doc-source-sha256" content="b5530794e9226a548b31cce8bf2b5a156f9410bd062490c790f7ba0ce5e4c653">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2539,7 +2539,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/011-artifact-release-pipeline.html">ADR-011</a></td>
-<td>Three-Tier Artifact Release Pipeline with Schema Fingerprinting. <strong>Amended 2026-09-13:</strong> <code>release.yml</code>'s trigger is no longer &quot;CI success&quot; alone — a <code>gate</code> job resolves the diff range (since the commit PROD last deployed, ADR-094 amendment 2026-10-24) and <code>build</code> runs only when it found a deployable path change, per ADR-094. <strong>Amended 2026-10-25:</strong> <code>deploy-cert</code> and <code>deploy-prod</code> check out the commit <code>build</code> fingerprinted (<code>outputs.sha</code>) instead of the triggering commit and a re-pulled main, which had twice applied an unfingerprinted migration on PROD (28 Aug, 5 Sep 2026); <code>scripts/commit-tracking.sh</code> records each deploy on top of main.</td>
+<td>Three-Tier Artifact Release Pipeline with Schema Fingerprinting. <strong>Amended 2026-09-13:</strong> <code>release.yml</code>'s trigger is no longer &quot;CI success&quot; alone — a <code>gate</code> job resolves the diff range (since the commit PROD last deployed, ADR-094 amendment 2026-10-24) and <code>build</code> runs only when it found a deployable path change, per ADR-094. <strong>Amended 2026-10-25:</strong> <code>deploy-cert</code> and <code>deploy-prod</code> check out the commit <code>build</code> fingerprinted (<code>outputs.sha</code>) instead of the triggering commit and a re-pulled main, which had twice applied an unfingerprinted migration on PROD (28 Aug, 5 Sep 2026); <code>scripts/commit-tracking.sh</code> records each deploy on top of main. <strong>Amended 2026-11-01:</strong> each Release run's Summary page says what it carries and deployed: a read-only <code>notes</code> job no deploy waits for lists every commit since PROD last deployed with each merge's title, explanation and <code>Branch:</code> line (<code>scripts/release_notes.py</code>), and Pages, CERT and PROD each write what they deployed or where they stopped (<code>scripts/release-section.sh</code>); no GitHub Release or tag; a 90-day view beside the lasting tracking files, which does not revisit rejected alternative 2 (RTM RELNOTES.01–11; plan <code>release-notes-on-every-release-run-2026-11-01.html</code> R1–R4 A).</td>
 <td>§2.2, ADR-094</td>
 </tr>
 <tr>
@@ -3121,5 +3121,5 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>3b93b77b183b0fb2bdcad477f2a1f9f5e37f9dbe060351c5b320b25aa15483a0</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>b5530794e9226a548b31cce8bf2b5a156f9410bd062490c790f7ba0ce5e4c653</code></footer>
 </div></body></html>

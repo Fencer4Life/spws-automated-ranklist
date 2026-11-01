@@ -250,6 +250,31 @@ first) and `test_root_files_named_like_agent_tooling_still_deploy`. The change
 that landed this rule touched `scripts/release-gate.sh` and tests, so it deployed
 as it should.
 
+## Amendment (2026-11-01) — the gate hands on its range and writes its verdict on the run's page
+
+The gate's verdict was a line in its log, and the notes each Release run now
+carries ([ADR-011](011-artifact-release-pipeline.md) amendment 2026-11-01) need
+the range the gate measured, read in one place.
+
+**Decision** (signed 1 Nov 2026, R2 A and F1 A in
+`doc/plans/release-notes-on-every-release-run-2026-11-01.html`):
+`scripts/release-gate.sh` also outputs `base` and `head`, the range it measured.
+For a manual start, whose run carries no CI commit, `head` is main as the gate
+checked it out, and `base` is still `.prod.last_sha`. When `GITHUB_STEP_SUMMARY`
+is set, it appends its verdict, a sentence saying why, and the changed paths (all
+of them on a skip, the deployable ones on a deploy) to the run's Summary page;
+unset, as on a laptop, it writes nothing there.
+
+**No decision changes.** Every case in §3 and in the amendments above decides as
+before, and every existing test in `python/tests/test_release_docs_only_gate.py`
+stays as it was. One case was found while planning (F1): with the base now PROD's
+last commit, base = head means PROD already runs that commit, which happens when a
+merge lands between one Release's gate and its build and that build deploys it.
+The gate still fails open there and deploys it again. It was not seen in the 200
+Release runs since 8 Aug 2026, and the run's page now says what happened. Tests:
+RELNOTES.12–13 in the same file. Each test sends the summary to a file of its own,
+because pytest runs inside GitHub Actions in CI, where the variable is set.
+
 ## Open items
 
 - Whether the same gate should also suppress `evf-sync.yml`/`pzsz-sync.yml`'s
