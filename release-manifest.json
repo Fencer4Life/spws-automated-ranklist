@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
-  "sha": "ff6de452fe45a3f748af3ad27ae6b3680e708ad7",
-  "created": "2026-11-01T11:09:32Z",
+  "sha": "d5947612b248e61c53edb119b6cde24b51a8d71b",
+  "created": "2026-11-01T14:26:40Z",
   "schema_fingerprint": "17bf0b3531fcfb60ddaa56a88944d187",
   "migrations": {
     "total": 232,
@@ -13,7 +13,7 @@
       "assertions": 1619
     },
     "pytest": {
-      "files": 164
+      "files": 165
     },
     "vitest": {
       "files": 73
@@ -21,8 +21,8 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-01T11:09:34Z",
-      "sha": "ff6de452fe45a3f748af3ad27ae6b3680e708ad7",
+      "at": "2026-11-01T14:26:41Z",
+      "sha": "d5947612b248e61c53edb119b6cde24b51a8d71b",
       "schema_fingerprint": "17bf0b3531fcfb60ddaa56a88944d187"
     },
     "prod": {
