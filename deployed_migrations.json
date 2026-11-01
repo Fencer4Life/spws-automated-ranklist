@@ -239,8 +239,8 @@
     "schema_fingerprint": "17bf0b3531fcfb60ddaa56a88944d187"
   },
   "prod": {
-    "last_updated": "2026-11-01T07:08:26Z",
-    "last_sha": "644cbc9e865daffd2f202f1ddf042ffda6a7b88a",
+    "last_updated": "2026-11-01T09:00:26Z",
+    "last_sha": "bfdc158b9cd469f00e73cff8054c5aa86ecc8a19",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -472,8 +472,9 @@
       "20261031000002_prod_details_time_counts_people_only.sql",
       "20261031000003_listing_sighting.sql",
       "20261031000004_cert_apply_and_promote_ledger.sql",
-      "20261031000005_ingest_run_writers.sql"
+      "20261031000005_ingest_run_writers.sql",
+      "20261101000001_results_sync_event.sql"
     ],
-    "schema_fingerprint": "27072e5e02eb6746b6253015d5a8ef38"
+    "schema_fingerprint": "17bf0b3531fcfb60ddaa56a88944d187"
   }
 }
