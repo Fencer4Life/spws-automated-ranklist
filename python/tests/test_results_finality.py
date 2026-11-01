@@ -179,6 +179,149 @@ def test_FINAL_03_the_daily_close_keeps_an_event_with_a_running_engarde_final_op
 
 
 # --------------------------------------------------------------------------
+# STUCK.01-05 — a competition stuck at the source never holds an event (G44 A)
+# --------------------------------------------------------------------------
+#
+# The five read on 1 Nov 2026, every one still in that state at the source:
+# Madrid 2024 "EPEE MALE 3 -4" and "FOIL FEMALE ALL cat" (poules), Budapest
+# 2025 "Women's Sabre V4 (70)", Stockholm 2026 "Mens Foil Cat 4" and Madrid
+# 2026 "TABLE FOIL MALE 4" (empty).
+
+STUCK = (
+    '<comps><comp org="o" evt="e" compe="em-3-4" sexe="m" arme="e" estindividuelle="1" '
+    'etat="poules" date="2024 10 26"><titre>EPEE MALE 3 -4</titre></comp>'
+    '<comp org="o" evt="e" compe="ff_all" sexe="f" arme="f" estindividuelle="1" '
+    'etat="poules" date="2024 10 26"><titre>FOIL FEMALE ALL cat</titre></comp>'
+    '<comp org="o" evt="e" compe="ws70" sexe="f" arme="s" estindividuelle="1" '
+    'etat="empty" date="2025 09 20"><titre>Women\'s Sabre V4 (70)</titre></comp>'
+    '<comp org="o" evt="e" compe="mf4" sexe="m" arme="f" estindividuelle="1" '
+    'etat="empty" date="2026 03 14"><titre>Mens Foil Cat 4</titre></comp>'
+    '<comp org="o" evt="e" compe="tfm4" sexe="m" arme="f" estindividuelle="1" '
+    'etat="empty" date="2026 11 01"><titre>TABLE FOIL MALE 4</titre></comp>'
+    '<comp org="o" evt="e" compe="tem2" sexe="m" arme="e" estindividuelle="1" '
+    'etat="tableau" date="2026 11 01"><titre>TABLE EPEE MALE 2</titre></comp>'
+    "</comps>"
+)
+
+
+def _stuck():
+    from python.scrapers.engarde import parse_competition_list
+
+    kept, skipped = parse_competition_list(STUCK, org="o", event="e")
+    assert kept == []
+    return {s["slug"]: s for s in skipped}
+
+
+def test_STUCK_01_a_competition_we_would_never_take_is_never_not_final():
+    """G44 A (1): the kind and category checks come before the state check,
+    so a joined competition, or one without a category, at poules is skipped
+    as what it is, not as a bracket still running."""
+    by_slug = _stuck()
+    assert by_slug["em-3-4"]["reason"] == "spans categories V3, V4"
+    assert by_slug["ff_all"]["reason"] == "no category in the title"
+    for slug in ("em-3-4", "ff_all"):
+        assert "finished" not in by_slug[slug], slug
+
+
+def test_STUCK_02_an_empty_competition_is_one_nobody_fenced():
+    """G44 A (2): Engarde's empty is not a listing and never not final; a
+    competition still running keeps its state (FINAL.02)."""
+    from python.pipeline.promotion import lifecycle
+
+    by_slug = _stuck()
+    for slug in ("ws70", "mf4", "tfm4"):
+        assert by_slug[slug]["reason"] == "nobody fenced (Engarde shows it empty)", slug
+        assert "finished" not in by_slug[slug], slug
+        assert not lifecycle.is_not_final(by_slug[slug]["reason"])
+    assert (by_slug["tem2"]["finished"], by_slug["tem2"]["state"]) == (False, "tableau")
+
+
+def _verdict(today):
+    from python.pipeline import international_sources as src
+    from python.pipeline.promotion import lifecycle
+    from python.pipeline.promotion.run_record import ListingLog
+
+    _recs, kept, skipped = src.read_brackets(
+        {"txt_code": "PEW2efs-2026-2027"},
+        [ENGARDE_TOURNAMENT],
+        fetcher=_fetcher([_parsed()], [RUNNING]),
+        finality=src.SETTLED,
+    )
+    log = ListingLog()
+    log.add_schedule(kept, skipped)
+    log.rounds.append({"name": "EPEE M V1", "uuid": "https://e/1", "status": "committed"})
+    return lifecycle.event_status(log.listings(), dt_end=END, today=today)
+
+
+def test_STUCK_03_a_bracket_still_running_holds_the_event_through_the_day_after_its_end():
+    """G44 A (3): through the day after the end date (the sync's last day) a
+    running bracket keeps the event IN_PROGRESS (FINAL.01); from the next day
+    the event completes without it, and the verdict names it."""
+    from python.pipeline.promotion import lifecycle
+
+    assert _verdict(END + dt.timedelta(days=1)).status == lifecycle.IN_PROGRESS
+    later = _verdict(END + dt.timedelta(days=2))
+    assert later.status == lifecycle.COMPLETED
+    assert later.left_out == ["EPEE MALE 2"]
+    assert not any("EPEE MALE 2" in r for r in later.reasons)
+
+
+def test_STUCK_04_the_daily_close_completes_it_and_names_what_it_left_out():
+    from python.pipeline import international_sources as src
+    from python.pipeline.promotion import close
+    from python.pipeline.promotion.run_record import ListingLog
+
+    sources = [{"slot": "url_event", "url": ENGARDE_TOURNAMENT}]
+    fetcher = _fetcher([_parsed()], [RUNNING])
+    _recs, kept, skipped = src.read_brackets(
+        {"txt_code": "PEW2efs-2026-2027"},
+        [ENGARDE_TOURNAMENT],
+        fetcher=fetcher,
+        finality=src.SETTLED,
+    )
+    log = ListingLog()
+    log.add_sources(sources)
+    log.add_schedule(kept, skipped)
+    log.rounds.append({"name": "EPEE M V1", "uuid": "https://e/1", "status": "committed"})
+    run = {"url_event": "", "listings": log.listings(), "result_fingerprint": "f" * 64}
+
+    env = MagicMock()
+    env.name = "cert"
+    env.event.return_value = {"status": "IN_PROGRESS", "dt_end": END.isoformat()}
+    env.result_fingerprint.return_value = "f" * 64
+    env.latest_finished_run.return_value = run
+    env.events_to_close.return_value = ["PEW2efs-2026-2027"]
+    notifier = MagicMock()
+    (outcome,) = close.close_events(
+        env,
+        env,
+        read_schedule=MagicMock(side_effect=AssertionError("the FTL-only reader")),
+        notifier=notifier,
+        today=END + dt.timedelta(days=2),
+        read_sources=lambda urls: src.read_schedule(urls, fetcher=fetcher),
+    )
+    assert outcome.closed
+    (message,) = notifier.success.call_args.args
+    assert "COMPLETED" in message and "EPEE MALE 2" in message
+    assert "manual ingest" in message
+
+
+def test_STUCK_05_the_cycle_line_names_the_listings_not_final():
+    """G44 A (3): the cycle's line names what is not final, so the day after
+    the end date says which bracket the close will leave out."""
+    from python.pipeline.promotion import results_sync as rs
+
+    run = {
+        "listings": {
+            "schedule": {"skipped": [{"name": "TABLE FOIL MALE 4", "reason": "not final (x)"}]},
+            "rounds": [],
+        }
+    }
+    assert rs._not_final_part(run) == "1 listing not final: TABLE FOIL MALE 4"
+    assert rs._not_final_part({"listings": {}}) is None
+
+
+# --------------------------------------------------------------------------
 # FINAL.04 — the sightings rule for engines without a signal
 # --------------------------------------------------------------------------
 

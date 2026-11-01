@@ -30,6 +30,7 @@ import argparse
 import os
 import re
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -514,6 +515,8 @@ def _fire_staging_report(
     ]
     if weapon_notes:
         ctx.data["_weapon_notes"] = weapon_notes
+    if exceptions := source_exception_notes([parsed for parsed, _ in pairs]):
+        ctx.data["_source_exceptions"] = exceptions
     if schedule_skips:
         ctx.data["_schedule_skips"] = schedule_skips
     if source_decisions:
@@ -1135,6 +1138,8 @@ def _read_international(
     for r in recs:
         if note := getattr(r["_base"], "weapon_note", None):
             print(f"  weapon {r['name']!r}: {note}")
+        for line in exception_lines(r["name"], r["_base"]):
+            print(line)
 
     organizer = organizers.organizer_of(event_code)
     overrides = load_for_event(event_code)
@@ -1413,6 +1418,47 @@ def _refusal_head(e: BaseException) -> str:
     """A refusal as the public log shows it: its kind and its listing (D12)."""
     kind, listing = getattr(e, "kind", None), getattr(e, "listing", None)
     return type(e).__name__ + (f" [{kind}]" if kind else "") + (f" {listing}" if listing else "")
+
+
+def source_exception_notes(parsed_list: Iterable[Any]) -> list[dict]:
+    """NAME.CELLS (G41 A): every bracket's source exceptions, for the staging
+    report, which lists each by name."""
+    return [
+        {
+            "name": parsed.tournament_name or parsed.source_url or "?",
+            "exceptions": list(parsed.source_exceptions),
+        }
+        for parsed in parsed_list
+        if parsed is not None and getattr(parsed, "source_exceptions", None)
+    ]
+
+
+def exception_lines(name: str, parsed: Any) -> list[str]:
+    """A bracket's source exceptions as the public log shows them: counted,
+    never named (D12)."""
+    n = len(getattr(parsed, "source_exceptions", None) or [])
+    if not n:
+        return []
+    return [
+        f"  names {name!r}: {n} row(s) repeat the name in both name cells at the source, "
+        "read as exceptions (listed in the staging report)"
+    ]
+
+
+def _frames_only(e: BaseException) -> str:
+    """An error as a public log shows it (G38 A): its type and the frames it
+    was raised through (file, line, function), never its message. The message
+    is on the run row, where the run opened, and in Telegram."""
+    import traceback
+
+    frames = "\n".join(
+        f'  File "{f.filename}", line {f.lineno}, in {f.name}'
+        for f in traceback.extract_tb(e.__traceback__)
+    )
+    return (
+        f"Traceback (frames only; the message is on the CERT run's row and in Telegram):\n"
+        f"{frames}\n{type(e).__name__}"
+    )
 
 
 def _github_output(**values: str) -> None:
@@ -1698,6 +1744,11 @@ def main() -> None:
             # on the run row and in Telegram, the log gets its kind and listing.
             if args.record_run and _is_recorded_refusal(e):
                 print(f"{_refusal_head(e)}: the reason is on the CERT run's row", file=sys.stderr)
+                sys.exit(1)
+            # G38 A: any other error of a recorded run logs where it was
+            # raised, never its message, which can name a fencer.
+            if args.record_run:
+                print(_frames_only(e), file=sys.stderr)
                 sys.exit(1)
             raise
         return

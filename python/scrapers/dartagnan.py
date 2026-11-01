@@ -286,10 +286,12 @@ def parse_rankings(
         SourceKind,
         make_synthetic_id,
     )
+    from python.scrapers.name_cells import NameCellCheck
 
     soup = BeautifulSoup(html, "html.parser")
     table = soup.find("table", class_="lists")
     parsed_results: list[ParsedResult] = []
+    names = NameCellCheck()
 
     if table is not None:
         row_index = 0
@@ -313,6 +315,7 @@ def parse_rankings(
 
             country = _country_from_flag(cells[5]) or None
 
+            names.row(surname, firstname, printed=fencer_name, place=place)
             row_index += 1
             parsed_results.append(
                 ParsedResult(
@@ -333,4 +336,5 @@ def parse_rankings(
         results=parsed_results,
         raw_pool_size=len(parsed_results),
         source_url=source_url,
+        source_exceptions=names.checked(len(parsed_results), source_url),
     )

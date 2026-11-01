@@ -35,6 +35,7 @@ from python.pipeline.types import (
     PipelineContext,
     StageMatchResult,
 )
+from python.scrapers.name_cells import readings_for
 
 # Combined-pool detector: looks for ≥2 V-cat tokens in a single raw_age_marker
 _VCAT_TOKEN = re.compile(r"v[0-4]", re.IGNORECASE)
@@ -108,6 +109,7 @@ def _admit_international_rows(
             roster=fencer_db,
             spws_starters=starters,
             tournament_type=ttype,
+            readings=readings_for(ctx.parsed, r),
         )
         if a.decision == REJECTED:
             ctx.rejected.append(
@@ -311,8 +313,42 @@ def _namesake_brief(f: dict) -> dict:
     }
 
 
+def lookup_exact_with_readings(
+    scraped_name: str,
+    readings: tuple[str, ...],
+    nationality: str | None,
+    fencer_db: list[dict],
+    vcat: str | None,
+    season_end: int | None,
+) -> ExactLookup:
+    """The exact lookup of a row, read past repeated name cells (G41 A).
+
+    The printed name is looked up as always. When it names nobody and the
+    source repeated the name in both name cells, each reading is looked up by
+    the same rule: exactly one fencer named by them is the row; namesakes the
+    birth year cannot tell apart keep it undecided; anything else waits for a
+    person ("source_exception"), so no fencer is ever created from a name the
+    source printed twice."""
+    lookup = _lookup_exact_fencer(scraped_name, nationality, fencer_db, vcat, season_end)
+    if lookup.id_fencer is not None or lookup.undecided or not readings:
+        return lookup
+    found = [_lookup_exact_fencer(r, nationality, fencer_db, vcat, season_end) for r in readings]
+    ids = {f.id_fencer for f in found if f.id_fencer is not None}
+    undecided = [f for f in found if f.undecided]
+    if len(ids) == 1 and not undecided:
+        return ExactLookup(id_fencer=ids.pop())
+    if undecided and not ids:
+        return undecided[0]
+    return ExactLookup(reason="source_exception")
+
+
 def undecided_note(lookup: ExactLookup, vcat: str | None, season_end: int | None) -> str:
     """One line for the report and the refusal: why this row waits."""
+    if lookup.reason == "source_exception":
+        return (
+            "the source repeats the name in both name cells, and no reading of it names "
+            "exactly one fencer: a person decides (G41 A)"
+        )
     years = ", ".join(str(f.get("int_birth_year") or "no birth year") for f in lookup.namesakes)
     if lookup.reason == "category_gap":
         (only,) = lookup.namesakes

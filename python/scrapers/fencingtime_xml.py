@@ -299,13 +299,17 @@ def parse(
     parsed_date = _parse_date_dmy(root.attrib.get("Date"))
     category_hint = _extract_category_hint(alt_name)
 
+    from python.scrapers.name_cells import NameCellCheck
+
     parsed_results: list[ParsedResult] = []
+    names = NameCellCheck()
     if tireurs is not None:
         for i, tireur in enumerate(tireurs.findall("Tireur"), start=1):
             nom = tireur.attrib.get("Nom", "")
             prenom = tireur.attrib.get("Prenom", "")
             name = f"{nom} {prenom}".strip() if prenom else nom
             place = int(tireur.attrib.get("Classement", "0"))
+            names.row(nom, prenom, printed=name, place=place)
             country = tireur.attrib.get("Nation") or None
             xml_id = tireur.attrib.get("ID", "").strip()
             dob_str = _parse_dob(tireur.attrib.get("DateNaissance"))
@@ -355,4 +359,5 @@ def parse(
         source_url=source_url,
         weapon_note=weapon_note,
         is_pool_only_qualifier=is_pool_only,
+        source_exceptions=names.checked(len(parsed_results), alt_name or source_url),
     )

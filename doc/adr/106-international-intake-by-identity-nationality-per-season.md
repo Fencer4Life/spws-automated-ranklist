@@ -125,3 +125,30 @@ At an FIE event each national federation enters its own fencers, at most 4 per i
 ## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §2) — the FIE types come from the organizer registry
 
 `FIE_TYPES` in `international_admission.py` is the set of tournament types of the organizers `python/pipeline/organizers.py` marks `fie_like`: MSW and PSW, unchanged. A federation added later is admitted under the FIE amendment by setting its flag in the registry. Tests: ROUTE.ORG.06.
+
+## Amendment (2026-11-01, plan G41 A) — a name the source repeats in both name cells is read as an exception
+
+Signed by the user in chat on 2026-11-01 ("All as recommended", G37–G46 of `doc/plans/partial-ingest-promote-results-sync-2026-10-31.html`).
+
+### Context
+
+Engarde, d'Artagnan, 4fence and FencingTime XML print a fencer's name in two cells, a surname cell and a first-name cell, which each parser joins. At PEW Madrid 2026 the organiser keyed one Polish fencer's whole name, given name first, into both cells (in the shape "ANNA KOWALSKA" / "Anna Kowalska"). Joined, the printed name began with a given name, so §1's rule named nobody and the row was PENDING; the first live results-sync cycle stopped on it (ADR-119, amendment of 2026-11-01). Every row of the ten Engarde events of the last 30 months was read on 2026-11-01: 2,735 of 2,740 keep the norm (one cell holds the surname, the other the given names, and neither repeats the other). Five break it, all keyed by one organiser, in two shapes: the whole name in both cells, or in the first-name cell ("KOWALSKA" / "Anna Kowalska"). A particle that a compound surname and a second given name share ("DE …" / "… De …") is the norm.
+
+### Decision
+
+- **The norm, checked before the cells are joined.** The four parsers check every row (`python/scrapers/name_cells.py`): a row where every word of one cell is in the other is a *source exception*. It keeps its printed name, so a listing's hash is unchanged, and its bracket records it (`ParsedTournament.source_exceptions`) with the readings the whole name allows: its words split once into a surname and the first given name, the surname before or after.
+- **The same rule reads it.** Every roster fencer that the printed name or one of its readings names is a fit (`admit(readings=…)`). Exactly one fit with an SPWS start, or entered by POL at an FIE event, stores the row; anything else leaves it as before: PENDING when printed POL, rejected otherwise. A domestic exact lookup reads the readings the same way (`lookup_exact_with_readings`), and one that names nobody waits for a person (`source_exception`), so no fencer is ever created from a name the source printed twice.
+- **Every exception is shown.** Each is listed by bracket, place, printed name and readings under "Source exceptions" in the staging report and kept on the run record's listing. The public log counts them per bracket and names no one (ADR-119 D12).
+- **An exception stays an exception.** A bracket where more than one row breaks the norm, and more than one row in ten, has changed its layout: it is refused as not understood (`SourceNotUnderstood`), never read by guesswork. Its message names the bracket and the counts, so a pause may show it. One exception alone never trips it: Madrid 2026's TABLE EPEE MALE 4 holds one in seven rows.
+
+### Alternatives considered
+
+1. **An override entry by hand for each such row** (G40 A). Rejected: it puts the next one on a person's desk during the event, and the data shows the shape is an organiser's slip with one reading that the identity rule can decide.
+2. **The norm as "the cells share no word".** Rejected on the data: a particle shared by a compound surname and a second given name is a normal row, and that test would have called it an exception.
+3. **A per-row field for the readings.** Rejected: a listing's hash covers every field of every row, so a new field would make every CERT run recorded before the change unpromotable.
+
+### Consequences
+
+- New: `python/scrapers/name_cells.py`; `python/tests/test_name_cells.py` (NAME.CELLS.01–07); `python/tests/fixtures/engarde/name_cells_ten_events.json` (each final's places, printed federations and name cells of the ten events; no birth year).
+- Changed: `ir.py` (`ParsedTournament.source_exceptions`); `scrapers/engarde.py`, `dartagnan.py`, `fourfence.py`, `fencingtime_xml.py`; `international_admission.admit`; `stages.py` (`_admit_international_rows`, `lookup_exact_with_readings`, the `source_exception` note); `plugins/resolve_fencers.py`; `plugins/staging_formatter.py`; `promotion/run_record.py`; `ingest_cli.py` (`source_exception_notes`, `exception_lines`); `promotion/results_sync.public_error`. Updated: ir.3 (`test_ir.py`).
+- Proof on the source, read-only against LOCAL on 2026-11-01: Madrid 2026 plans through, its women's épée V2 place 11 to the one fencer of that surname and first name with an SPWS start; the event's two foreign exception rows are not stored; the nine earlier Engarde events plan exactly as before.

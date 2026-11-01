@@ -17,6 +17,7 @@ The LOCAL acceptance against FTL is `python -m python.pipeline.promotion.plan_ch
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -576,7 +577,8 @@ class TestGateFindings:
     def test_main_reports_an_unreported_failure_once_and_tells_the_workflow(
         self, monkeypatch, tmp_path
     ):
-        """CERTAPPLY.12 (B7)"""
+        """CERTAPPLY.12 (B7). A recorded run exits 1 and logs the error's type
+        and frames, never its message (G38 A, LOG.PRIV.05)."""
         out = tmp_path / "out"
         monkeypatch.setenv("GITHUB_OUTPUT", str(out))
         argv = ["ingest_cli", "--flow", "ingest_domestic", "--event-code", CODE]
@@ -589,9 +591,10 @@ class TestGateFindings:
                 "python.pipeline.ingest_cli.ingest_event_from_url",
                 side_effect=ValueError("lists no events"),
             ),
-            pytest.raises(ValueError),
+            pytest.raises(SystemExit) as stopped,
         ):
             ingest_cli.main()
+        assert stopped.value.code == 1
         notifier.notify_pipeline_failure.assert_called_once()
         assert "reported=true" in out.read_text()
 
@@ -612,11 +615,36 @@ NAMED_REFUSAL = (
 )
 
 
+def _international_pending() -> None:
+    """The commit of an international bracket holding a PENDING row, as the
+    real Commit plugin refuses it (G37 A)."""
+    from python.pipeline.types import StageMatchResult
+    from python.tests.test_international_field import _db, _ingest_ctx, _parsed
+    from python.tests.test_international_field import _run as commit
+
+    held = StageMatchResult(
+        scraped_name="PRZYKŁADOWA Anna PRZYKŁADOWA Anna",
+        place=11,
+        id_fencer=None,
+        confidence=0.0,
+        method="PENDING",
+        notes="no identity match",
+    )
+    commit(_ingest_ctx({"V2": [held]}, _parsed(20)), _db())
+
+
 class TestSyncMode:
     """SYNC.CYCLE.06, SYNC.PAUSE.04, LOG.PRIV.01 and the ingest step's outputs,
     through `ingest_cli.main()` as the workflow runs it."""
 
-    def _main(self, monkeypatch, tmp_path, *flags, refuse=False, db=None):
+    def _main(
+        self,
+        monkeypatch,
+        tmp_path,
+        *flags,
+        refuse: bool | Callable[[], None] = False,
+        db=None,
+    ):
         db = db or _cert()
         notifier = MagicMock()
         outputs = tmp_path / "github_output"
@@ -644,6 +672,8 @@ class TestSyncMode:
             if refuse and parsed.weapon == "SABRE":
                 from python.pipeline.core.contract import ListingRefused
 
+                if callable(refuse):
+                    refuse()
                 raise ListingRefused("identity", NAMED_REFUSAL)
             return real(parsed, *a, **k)
 
@@ -689,6 +719,49 @@ class TestSyncMode:
         (call,) = notifier.notify_pipeline_failure.call_args_list
         assert NAMED_REFUSAL in call.args[0]
         assert NAMED_REFUSAL in _run(db)["error"]
+
+    def test_LOG_PRIV_04_an_international_pending_row_logs_its_kind_and_listing(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        """G37 A: the commit's own refusal of an international PENDING row,
+        through the recorded run, as the workflow runs it: the log has its kind
+        and listing and no traceback; the run row and Telegram name the row."""
+        code, notifier, values, db = self._main(
+            monkeypatch, tmp_path, refuse=_international_pending
+        )
+        log = capsys.readouterr()
+        text = log.out + log.err
+        assert code == 1
+        assert "ListingRefused [identity] Szabla Mężczyzn kat. 2" in text
+        for leak in ("PRZYKŁADOWA", "Traceback"):
+            assert leak not in text, leak
+        assert "PRZYKŁADOWA Anna" in notifier.notify_pipeline_failure.call_args.args[0]
+        assert "PRZYKŁADOWA Anna" in _run(db)["error"]
+        refusal = _run(db)["listings"]["refusal"]
+        assert (refusal["kind"], refusal["listing"]) == ("identity", "Szabla Mężczyzn kat. 2")
+        assert values["error"] == "ListingRefused"
+
+    def test_LOG_PRIV_05_any_other_error_logs_its_type_and_frames(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        """G38 A: an error that is not a recorded refusal leaves the log with
+        its type and where it was raised (file, line, function), never its
+        message, which can name a fencer; the run row and Telegram keep it."""
+
+        def broken():
+            raise RuntimeError("PRZYKŁADOWA Anna, born 1972, broke the read")
+
+        code, notifier, values, db = self._main(monkeypatch, tmp_path, refuse=broken)
+        log = capsys.readouterr()
+        text = log.out + log.err
+        assert code == 1
+        assert "RuntimeError" in text
+        assert 'test_cert_apply.py", line' in text and "in broken" in text
+        for leak in ("PRZYKŁADOWA", "1972", "broke the read"):
+            assert leak not in text, leak
+        assert "PRZYKŁADOWA Anna" in notifier.notify_pipeline_failure.call_args.args[0]
+        assert "PRZYKŁADOWA Anna" in _run(db)["error"]
+        assert values["error"] == "RuntimeError"
 
     def test_SYNC_CYCLE_06_quiet_sends_nothing_to_telegram(self, monkeypatch, tmp_path):
         """R3.2 A: in sync mode the outcome job speaks; the ingest step is quiet."""

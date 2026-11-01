@@ -120,7 +120,11 @@ def check(
     # Engarde competition still running, which the reader already skipped.
     waiting = [s for s in skipped if lifecycle.is_not_final(s.get("reason"))]
     if waiting:
-        reasons.append(f"not final yet: {', '.join(s['name'] for s in waiting)}")
+        names = ", ".join(s["name"] for s in waiting)
+        if lifecycle.holds_open(end, today):
+            reasons.append(f"not final yet: {names}")
+        else:
+            reasons.append(LeftOut(names))
     late = lifecycle.last_day([*kept, *waiting])
     if late and late > end.isoformat():
         reasons.append(
@@ -141,6 +145,18 @@ def check(
     if prod.result_fingerprint(code) != fingerprint:
         reasons.append(_promote_reason(run.get("promote")))
     return reasons
+
+
+class LeftOut(str):
+    """Listings still not final at the source after the day after the end date
+    (G44 A (3)): they no longer hold the event, which closes without them,
+    and the close's message names them."""
+
+    def line(self) -> str:
+        return (
+            f"completed without {self}: still not final at the source after the day after "
+            "the end date; a manual ingest takes their results if they appear"
+        )
 
 
 class Quoted(str):
@@ -184,10 +200,12 @@ def close_events(
     failures: list[str] = []
     for code in codes:
         try:
-            reasons = check(code, cert, prod, read_schedule, today, read_sources)
+            found = check(code, cert, prod, read_schedule, today, read_sources)
         except Exception as e:  # one event's failure does not stop the others
             failures.append(f"{code}: {type(e).__name__}: {e}")
             continue
+        left_out = [r for r in found if isinstance(r, LeftOut)]
+        reasons = [r for r in found if not isinstance(r, LeftOut)]
         if reasons:
             outcomes.append(Outcome(code, False, reasons))
             head = f"Daily close: {code} stays IN_PROGRESS.\n"
@@ -211,6 +229,7 @@ def close_events(
             continue
         outcomes.append(outcome)
         message = f"Daily close: {code} is COMPLETED ({', '.join(outcome.written) or 'already'})."
+        message += "".join(f"\n• {r.line()}" for r in left_out)
         print(message if write else f"(dry run) {message}")
         if notifier is not None and write:
             notifier.success(message)

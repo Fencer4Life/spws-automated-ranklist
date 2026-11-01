@@ -486,7 +486,7 @@ class TestCycleLine:
         )
         assert rs.cycle_line(cycle) == (
             f"✅ {PPW} · cycle 14:13 · CERT run 15 · promoted to PROD (41 writes)\n"
-            "   new: Men's Epee V2 (18), Men's Epee V3 (11) · 5 listings not final"
+            "   new: Men's Epee V2 (18), Men's Epee V3 (11) · 5 listings not final: A, A, A, A, A"
             f" · report: staging-reports/{PPW}/full.md"
         )
         assert (rs.verdict(cycle), rs.pause_for(cycle)) == ("promoted", None)
@@ -631,7 +631,7 @@ class TestCycleLine:
         )
         assert rs.cycle_line(cycle) == (
             f"⏳ {PPW} · cycle 14:13 · CERT run 15 · nothing final yet, nothing written"
-            " · 3 listings not final"
+            " · 3 listings not final: A, A, A"
         )
         assert (rs.verdict(cycle), rs.pause_for(cycle)) == ("nothing_final", None)
 

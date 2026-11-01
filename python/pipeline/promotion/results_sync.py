@@ -295,9 +295,18 @@ def _plural(n: int, word: str) -> str:
     return f"{n} {word}{'' if n == 1 else 's'}"
 
 
-def _not_final(run: Mapping[str, Any]) -> int:
+def _not_final(run: Mapping[str, Any]) -> list[str]:
     skipped = ((run.get("listings") or {}).get("schedule") or {}).get("skipped") or []
-    return sum(lifecycle.is_not_final(s.get("reason")) for s in skipped)
+    return [str(s.get("name")) for s in skipped if lifecycle.is_not_final(s.get("reason"))]
+
+
+def _not_final_part(run: Mapping[str, Any]) -> str | None:
+    """The listings not final, by name, as the cycle's line gives them (G44 A
+    (3)): on the day after the end date they are what the close leaves out."""
+    names = _not_final(run)
+    if not names:
+        return None
+    return f"{_plural(len(names), 'listing')} not final: {', '.join(names)}"
 
 
 def _error_type(error: str | None) -> str:
@@ -389,7 +398,7 @@ def _said(c: Cycle) -> _Said:
         return _Said(
             NOTHING_FINAL,
             f"⏳ {run_head} · nothing final yet, nothing written · "
-            f"{_plural(_not_final(run), 'listing')} not final",
+            f"{_not_final_part(run) or '0 listings not final'}",
         )
     # A promote-only cycle replays the run whatever its stored gate said;
     # promote's own gate decides, and its refusal is on the ledger (S3).
@@ -451,8 +460,8 @@ def _said(c: Cycle) -> _Said:
     parts = []
     if cmp.new:
         parts.append("new: " + ", ".join(f"{name} ({n})" for name, n in cmp.new))
-    if waiting := _not_final(run):
-        parts.append(f"{_plural(waiting, 'listing')} not final")
+    if waiting := _not_final_part(run):
+        parts.append(waiting)
     parts.append(f"report: staging-reports/{c.code}/full.md")
     return _Said(PROMOTED, f"✅ {run_head} · {done}\n   " + " · ".join(parts))
 
@@ -514,10 +523,13 @@ def public_error(e: BaseException) -> str:
     messages pass with their text; any other error passes as its type."""
     from python.pipeline.promotion.cert_apply import GateUnavailable
     from python.scrapers.ftl_auth import FtlAuthError
+    from python.scrapers.name_cells import SourceNotUnderstood
     from python.scrapers.pzsz_start_list_store import StoredStartListError
 
     kind = type(e).__name__
-    if not isinstance(e, (FtlAuthError, GateUnavailable, StoredStartListError)):
+    if not isinstance(
+        e, (FtlAuthError, GateUnavailable, SourceNotUnderstood, StoredStartListError)
+    ):
         return kind
     text = " ".join(str(e).split())
     return f"{kind}: {text}" if text else kind

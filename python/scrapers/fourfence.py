@@ -196,11 +196,14 @@ def parse_html(
         SourceKind,
         make_synthetic_id,
     )
+    from python.scrapers.name_cells import NameCellCheck
 
     placed, n = resolve_classification(html, tab4_html)
     parsed_results: list[ParsedResult] = []
+    names = NameCellCheck()
     for row_index, r in enumerate(placed, start=1):
         fencer_name = f"{r['surname']} {r['name'].title()}".strip()
+        names.row(r["surname"], r["name"], printed=fencer_name, place=r["place"])
         parsed_results.append(
             ParsedResult(
                 source_row_id=make_synthetic_id(
@@ -220,4 +223,5 @@ def parse_html(
         results=parsed_results,
         raw_pool_size=n,
         source_url=source_url,
+        source_exceptions=names.checked(len(parsed_results), source_url),
     )

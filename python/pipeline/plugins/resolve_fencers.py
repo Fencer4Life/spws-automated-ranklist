@@ -16,7 +16,7 @@ Two phases (one plugin, all name→fencer logic in one place):
             midpoint. Asymmetric safety — create-over-uncertain-link; duplicates
             are swept by DEDUP_SWEEP (ADR-071, M5).
 
-Reuses the existing helpers verbatim (`_lookup_exact_fencer`, `_row_authoritative_vcat`,
+Reuses the existing helpers verbatim (`lookup_exact_with_readings`, `_row_authoritative_vcat`,
 `vcat_for_age`, `find_best_match`, `estimate_birth_year`, `db.insert_fencer`,
 `db.update_fencer_birth_year`) — no new domain logic, only a new orchestration.
 effects: master_data — emits the change that drives self-healing recompute (ADR-072).
@@ -42,14 +42,15 @@ from python.pipeline.stages import (
     _declared_for,
     _is_domestic,
     _is_international_intake,
-    _lookup_exact_fencer,
     _row_authoritative_vcat,
     declared_birth_years,
+    lookup_exact_with_readings,
     reconcile_fencer_birth_year,
     record_undecided,
     undecided_match,
 )
 from python.pipeline.types import StageMatchResult
+from python.scrapers.name_cells import readings_for
 
 
 class ResolveFencers(BasePlugin):
@@ -124,8 +125,13 @@ class ResolveFencers(BasePlugin):
             # Namesakes are told apart by birth year; a two-category gap is a
             # data error (NAMESAKE.01–09). An undecided row never reaches the
             # fuzzy phase, which would create a fencer for it.
-            lookup = _lookup_exact_fencer(
-                r.fencer_name, getattr(r, "fencer_country", None), fencer_db, vcat, season_end
+            lookup = lookup_exact_with_readings(
+                r.fencer_name,
+                readings_for(pctx.parsed, r),
+                getattr(r, "fencer_country", None),
+                fencer_db,
+                vcat,
+                season_end,
             )
             if lookup.id_fencer is not None:
                 exact_at[idx] = lookup.id_fencer
