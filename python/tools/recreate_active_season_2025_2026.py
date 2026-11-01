@@ -26,6 +26,7 @@ from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
 from python.pipeline.review_cli import Fetcher, ReviewSession, _annotate_parsed
 from python.pipeline.types import HaltReason
+from python.supabase_token import supabase_access_token
 from python.tools.phase5_runner import (
     _check_pool_round_count,
     _coerce_date,
@@ -393,7 +394,7 @@ SELECT COUNT(*) FROM del;
             )
             return 0
         ref = m.group(1)
-        token = os.environ.get("SUPABASE_ACCESS_TOKEN")
+        token = supabase_access_token()
         if not token:
             print("  ⚠ dedupe skipped: SUPABASE_ACCESS_TOKEN not set", flush=True)
             return 0

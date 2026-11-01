@@ -27,6 +27,7 @@ import sys
 from collections import defaultdict
 
 import httpx
+from python.supabase_token import supabase_access_token
 
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
@@ -168,7 +169,7 @@ def main() -> int:
         rows = fetch_violations_postgrest(url, headers)
     else:
         ref = CERT_REF if args.remote == "cert" else PROD_REF
-        token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+        token = supabase_access_token()
         if not token:
             tf = os.path.expanduser("~/.supabase_token")
             if os.path.exists(tf):

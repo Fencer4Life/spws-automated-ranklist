@@ -55,6 +55,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
+from python.supabase_token import supabase_access_token
 from python.tools._backends import CERT_REF, PROD_REF
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -770,7 +771,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     )
     args = ap.parse_args(list(argv) if argv is not None else None)
 
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required to read CERT", file=sys.stderr)
         return 1

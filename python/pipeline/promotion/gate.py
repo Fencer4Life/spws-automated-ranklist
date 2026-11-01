@@ -28,6 +28,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Protocol
 
 from python.pipeline.name_classify import classify_alias_pair
+from python.supabase_token import supabase_access_token
 
 # The input-fingerprint parts compared value by value, in reporting order. The
 # lock has its own rule (G1 A).
@@ -610,7 +611,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required to read PROD", file=sys.stderr)
         return 1

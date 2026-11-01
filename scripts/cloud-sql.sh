@@ -18,8 +18,9 @@
 #   scripts/cloud-sql.sh prod < some-query.sql
 #
 # Environment:
-#   SUPABASE_ACCESS_TOKEN  Management API personal access token. Read from the
-#                          environment, falling back to .env (never echoed).
+#   SUPABASE_ACCESS_TOKEN  Management API personal access token. Read from .env,
+#                          falling back to the environment (supabase-token.sh;
+#                          never echoed).
 #   SUPABASE_CERT_REF /    Project refs. Read from the environment, falling back
 #   SUPABASE_PROD_REF      to .env.
 #
@@ -60,16 +61,10 @@ env_lookup() {
 # convention and deliberate. A stale SUPABASE_ACCESS_TOKEN exported from a
 # shell profile silently shadowed the good value in .env and produced a flat
 # HTTP 401 — indistinguishable from an expired token, and it cost a long
-# debugging detour on 2026-08-17. .env is the file a human edits when they
-# rotate the token, so .env is the value that should take effect.
-# Set CLOUD_SQL_TOKEN_FROM_ENV=1 to invert this for CI, which injects the
-# secret as a real environment variable and ships no .env at all.
-if [ "${CLOUD_SQL_TOKEN_FROM_ENV:-}" = "1" ]; then
-  TOKEN="${SUPABASE_ACCESS_TOKEN:-$(env_lookup SUPABASE_ACCESS_TOKEN)}"
-else
-  TOKEN="$(env_lookup SUPABASE_ACCESS_TOKEN)"
-  TOKEN="${TOKEN:-${SUPABASE_ACCESS_TOKEN:-}}"
-fi
+# debugging detour on 2026-08-17. Every reader now keeps this rule through
+# supabase-token.sh (CLOUD_SQL_TOKEN_FROM_ENV=1 still inverts it).
+source "$REPO_ROOT/scripts/supabase-token.sh"
+TOKEN="$(supabase_access_token "$ENV_FILE")"
 if [ -z "$TOKEN" ]; then
   echo "ERROR: SUPABASE_ACCESS_TOKEN not found in .env or environment" >&2
   exit 1

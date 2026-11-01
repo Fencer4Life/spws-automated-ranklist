@@ -6,7 +6,7 @@
 #   CLOUD:  ./scripts/schema-fingerprint.sh cloud <SUPABASE_REF>
 #
 # Requires: the LOCAL Docker Supabase stack running (local), or curl, jq and
-# SUPABASE_ACCESS_TOKEN (cloud)
+# SUPABASE_ACCESS_TOKEN in .env or the environment (cloud; supabase-token.sh)
 #
 # Output: prints the schema fingerprint (md5 hex string) to stdout.
 # Exit 0 on success, 1 on error.
@@ -68,6 +68,9 @@ elif [ "$MODE" = "cloud" ]; then
     echo "ERROR: SUPABASE_REF required for cloud mode" >&2
     exit 1
   fi
+  # Sourced here, not above: local mode runs on a PATH of stubs (test_schema_fingerprint).
+  source "$(dirname "${BASH_SOURCE[0]}")/supabase-token.sh"
+  export_supabase_access_token
   if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
     echo "ERROR: SUPABASE_ACCESS_TOKEN env var required" >&2
     exit 1

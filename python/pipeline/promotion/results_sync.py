@@ -34,6 +34,7 @@ from typing import Any
 
 from python.pipeline.organizers import INTERNATIONAL, route_of
 from python.pipeline.promotion import lifecycle
+from python.supabase_token import supabase_access_token
 
 CLOSED = ("COMPLETED", "CANCELLED")
 NO_LINK = "no results link on CERT or PROD; set it in Admin, then sync again"
@@ -860,7 +861,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     )
     args = ap.parse_args(list(argv) if argv is not None else None)
 
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required", file=sys.stderr)
         return 1

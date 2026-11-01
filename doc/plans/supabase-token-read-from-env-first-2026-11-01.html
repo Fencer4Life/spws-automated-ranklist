@@ -1,0 +1,292 @@
+<meta charset="utf-8">
+<title>Supabase token, .env first — plan</title>
+<style>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Credentials · every reader · every session · Plan — awaiting sign-off</p>
+  <h1>One Supabase token reader, .env first, known to every session</h1>
+  <p class="dek">Your messages (1 Nov): <b>"the .env supabase token works. use it"</b>, then <b>"write a helper function they all share and make it reach .env"</b>, then <b>"ensure this SUPABASE_ACCESS_TOKEN reader is known to any future new session you start"</b> and <b>"create a new session setup skill or think of something smarter"</b>. Today 20 Python files and 6 shell scripts take the token from the process environment only, so a stale value there beats the good one in <code>.env</code> and the Management API answers 401. This plan puts every reader behind one helper per language, and makes the rule part of every session's starting context.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting sign-off: T1, T2</span>
+    <span class="pill"><span class="dot"></span>Started on your instruction: Python helper + tests written (§06)</span>
+    <span class="pill">new <code>python/supabase_token.py</code> · new <code>scripts/supabase-token.sh</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Two decisions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>T1</b></td><td>How does every future session, including each one I start, know the reader?</td><td><b>A</b> Three layers, each covering a different gap:<br>1. Guard tests ENVTOKEN.05–06. Pytest, and so preflight and CI, fails on any Python module that reads the token from <code>os.environ</code>, and on any shell script that names it without sourcing the helper.<br>2. A fixed line, <code>TOKEN_RULE</code>, in the SessionStart hook's context, beside the research rule (<code>scripts/session_start.py:70</code>). Every session in this repository starts with it, from its first turn, whoever started the session.<br>3. The memory entry, rewritten. Today it advises <code>set -a; . ./.env</code> and a check of the export.<br><b>B</b> A new "session setup" skill that describes the reader.<br><b>C</b> A and the skill.</td><td><span class="chip never">A</span> A skill loads only when its description happens to match what a session is doing. The hook line is in every session's context without anyone choosing it. The guard test stops the code even when a session ignores both.</td></tr>
+        <tr><td><b>T2</b></td><td>Should the hook also say when this session's environment holds a different token from <code>.env</code>? It would compare fingerprints and show no value.</td><td><b>A</b> No. Once every reader takes <code>.env</code> first, the environment's value reaches no code in this repository, so the line could only prompt the same report again.<br><b>B</b> Yes, as one more line.</td><td><span class="chip never">A</span> The stale value stops mattering, so nothing about it needs saying.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Already decided by you</b>, 1 Nov: the shell scripts share a helper too ("they all share").</p>
+    <p><b>Kept unchanged:</b></p>
+    <ul>
+      <li><code>~/.supabase_token</code> stays the last fallback in the four readers that have one: <code>export-prod.sh</code>, <code>mirror-prod.sh</code>, <code>audit_vcat_violations.py</code> and <code>replay_vcat_violations.py</code>. It comes after the helper.</li>
+      <li><code>CLOUD_SQL_TOKEN_FROM_ENV=1</code> keeps its meaning from <code>cloud-sql.sh</code> (the environment wins), now for every reader.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What is there today</p>
+    <h2>22 reads in 20 Python files and 8 shell scripts, three different rules</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Reader</th><th>Reads</th><th>Rule today</th></tr></thead>
+      <tbody>
+        <tr><td><code>python/pipeline/</code>: export_seed, promote, promote_season</td><td>3</td><td>environment only; promote and promote_season crash with a <code>KeyError</code> when it is missing</td></tr>
+        <tr><td><code>python/pipeline/promotion/</code>: cert_apply ×2, close, gate, refresh, replay, results_sync</td><td>7</td><td>environment only</td></tr>
+        <tr><td><code>python/scrapers/</code>: evf_sync, pzsz_start_list_store ×2, pzsz_sync</td><td>4</td><td>environment only</td></tr>
+        <tr><td><code>python/tools/</code>: _backends, audit_results, audit_vcat_violations, mirror_start_lists, recreate_active_season_2025_2026, refix_combined_pools, replay_vcat_violations</td><td>7</td><td>environment only (two then try <code>~/.supabase_token</code>). <code>audit_results</code> reads it once, when the module is imported.</td></tr>
+        <tr><td><code>python/tests/test_prod_mirror.py</code> (its skip condition)</td><td>1</td><td>environment only</td></tr>
+        <tr><td><code>apply-migrations.sh</code>, <code>check-security-posture.sh</code>, <code>schema-fingerprint.sh</code>, <code>seed-remote.sh</code></td><td>4</td><td>environment only</td></tr>
+        <tr><td><code>export-prod.sh</code>, <code>mirror-prod.sh</code></td><td>2</td><td>environment, then <code>~/.supabase_token</code></td></tr>
+        <tr><td><code>cloud-sql.sh</code></td><td>1</td><td><b><code>.env</code> first</b>, then the environment (since 17 Aug 2026)</td></tr>
+        <tr><td><code>mirror-prod-local.sh</code></td><td>1</td><td><code>.env</code> only</td></tr>
+      </tbody>
+    </table></div>
+    <p>On 1 Nov preflight's pytest gate failed. <code>test_prod_mirror.py</code> raised 7 errors, "Management API error: 401 Invalid access token", because it sent the environment's value. <code>.env</code>'s value works (you confirmed it). The two values differ; neither is shown here.</p>
+    <p><b>CI is not affected.</b> Every workflow injects the secret as an environment variable (24 places), and a CI checkout has no <code>.env</code>, so the helpers return the environment's value there, as today. <code>scripts/gas_telegram_bot.js</code> reads Apps Script properties and is not a reader of this kind.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The rule</p>
+    <h2>One rule, written once per language, tested as one</h2>
+    <ol class="steps">
+      <li>The first <code>SUPABASE_ACCESS_TOKEN=</code> line of the checkout's <code>.env</code>, without quotes or carriage returns. This is <code>cloud-sql.sh</code>'s reading, unchanged.</li>
+      <li>Otherwise, the process environment's value.</li>
+      <li><code>CLOUD_SQL_TOKEN_FROM_ENV=1</code> swaps 1 and 2.</li>
+      <li><code>SUPABASE_TOKEN_ENV_FILE</code> names another file to read instead of <code>.env</code>. This is the tests' isolation (§05).</li>
+    </ol>
+    <ul>
+      <li><code>python/supabase_token.py</code> offers <code>supabase_access_token()</code>, standard library only.</li>
+      <li><code>scripts/supabase-token.sh</code> is sourced, never run. It offers <code>supabase_access_token</code> (prints the value) and <code>export_supabase_access_token</code> (sets and exports it, for a script whose child processes read it, such as the supabase CLI). It uses bash builtins only, because <code>test_schema_fingerprint</code> runs its script with a PATH that holds nothing but stubs.</li>
+    </ul>
+    <p>One table of 11 cases runs through both helpers (ENVTOKEN.01–02). Neither helper prints the value.</p>
+    <p><b>Each reader's change:</b></p>
+    <ul>
+      <li><b>Python:</b> <code>os.environ…</code> becomes <code>supabase_access_token()</code>. <code>audit_results</code> reads it when it queries, not at import. promote and promote_season print "SUPABASE_ACCESS_TOKEN is required" and exit 1, as <code>gate.py</code> and <code>close.py</code> already do.</li>
+      <li><b>Shell:</b> each script sources the helper. The environment-only checks keep their wording.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Every session knows it (T1 A)</p>
+    <h2>A line in every session's starting context, and a test that enforces it</h2>
+    <p>The SessionStart hook already adds the research rule to every session's context, on the normal path and on its failure path. <code>TOKEN_RULE</code> joins it on both paths:</p>
+    <pre class="trace">Supabase token: read SUPABASE_ACCESS_TOKEN only through python/supabase_token.py
+(Python) or scripts/supabase-token.sh (shell); both take .env before the environment.
+Never os.environ for it (ENVTOKEN.05-06 fail preflight). A tool that reads the
+variable itself (the supabase CLI): source scripts/supabase-token.sh &amp;&amp;
+export_supabase_access_token first, in the same command. A 401 means that token was
+rejected; never report the environment's copy.</pre>
+    <p>Test ENVTOKEN.09 (<code>test_session_start.py</code>) fails if the hook's context, on either path, does not name both helpers. Sessions I start are sessions in this repository, so they get the same line. Their briefs name the helpers as well.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Tests</p>
+    <h2>New <code>python/tests/test_supabase_token.py</code>, and two changed files</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>What it proves</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>ENVTOKEN.01</td><td>The Python helper answers all 11 cases: <code>.env</code> wins; no key, an empty value or no file falls back; quotes and CRLF dropped; first line wins and look-alikes are ignored; the CI switch inverts.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.02</td><td>The shell helper answers the same 11 cases, and its export reaches a child process.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.03</td><td>With no argument, each helper reads the <code>.env</code> one folder above its own file (run from a copied checkout with a fake token).</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.04</td><td><code>SUPABASE_TOKEN_ENV_FILE</code> replaces <code>.env</code> for both; an explicit argument still comes first.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.05</td><td>Only <code>python/supabase_token.py</code> reads the token from the environment, across <code>python/</code>, <code>scripts/</code> and <code>tools/</code>.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.06</td><td>Every shell script under <code>scripts/</code> that names the token in its code sources the helper.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.07</td><td>No test is handed the real token. Both helpers, and every process a test starts, read a missing file (<code>conftest.py</code>). Only <code>test_prod_mirror.py</code>, marked <code>real_dotenv</code>, reads the checkout's <code>.env</code>.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.08</td><td><code>audit_results.query_db</code>, which the LOCAL = PROD check uses, sends <code>.env</code>'s token, not the environment's.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>ENVTOKEN.09</td><td>The SessionStart hook's context names both helpers, on its normal and its failure path.</td><td><span class="chip fill">green</span></td></tr>
+        <tr><td>MIRROR.TOKEN.01</td><td>Tightened: the 401 failure says the token is read from <code>.env</code>, else the environment ("replace it there"), and still shows no value.</td><td><span class="chip fill">green</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Red seen in order: the whole file failed to import before <code>python/supabase_token.py</code> existed; with both helpers written, ENVTOKEN.05 (20 Python files), 06 (8 scripts) and 08 (the mirror check sent the environment's token) failed on the unconverted readers; ENVTOKEN.09 failed until the hook named the helpers. Two tests were then tightened so a failure says which token was sent without showing it (07, 08), and ENVTOKEN.06 counts a script that uses the token through the helper's functions as a reader too.</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Where it stands</p>
+    <h2>Started on your instruction, stopped where you stopped it</h2>
+    <div class="note good"><p class="lede">Signed "All as recommended" (T1 A, T2 A) and built, uncommitted until preflight passes</p>
+      <ul>
+        <li>Both helpers; the 21 remaining Python reads and the 8 shell scripts; <code>TOKEN_RULE</code> in the hook on both paths.</li>
+        <li>Records: the ADR-036 amendment and its Appendix C row, RTM NFR-18, four handbook pages (the three in §07 and the session-start section of <code>claude-codex-collaboration.html</code>, whose Seed row also lacked the root <code>.env</code> link), the <code>cloud-db-ops</code> skill and <code>doc/claude/session-start.md</code>.</li>
+        <li>Found while building: ENVTOKEN.08's first red printed the environment's (rejected) token into the session's own tool output. The test now compares without showing a value.</li>
+      </ul>
+    </div>
+    <div class="note warn"><p class="lede">I1 · found while integrating: the integration checkout has no .env</p>
+      <p>Every worker worktree gets the primary's root <code>.env</code> as a link (the SessionStart hook's <code>SHARED_LINKS</code>), but <code>/Users/aleks/coding/SPWSranklist-integration</code> has none. With this change its readers fall back to the environment there, so a preflight run in it before a push meets the stale token again (<code>test_prod_mirror</code> fails with 401). The three integrations of 1 Nov ran preflight there with <code>.env</code>'s token exported through <code>scripts/supabase-token.sh</code>, which is why they passed.</p>
+      <p><b>Recommendation A:</b> the hook gives the registered integration checkout the same root <code>.env</code> link it gives a worker, test first (a new SS test), as its own small change. <b>B:</b> link it once by hand; nothing stops it from going missing again.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Records</p>
+    <h2>Documentation in the same change</h2>
+    <ul>
+      <li><b>ADR-036</b>: an amendment dated 2026-11-01. Every token reader takes <code>.env</code> first, through the two helpers. This replaces G21's "the stale value is the user's to remove". Its HTML twin is re-rendered, and its Appendix C row updated.</li>
+      <li><b>RTM</b>: NFR-18, one rule for the Management API token, ENVTOKEN.01–09 (Landed LOCAL).</li>
+      <li><b>Handbook</b>:
+        <ul>
+          <li><code>operations/environments-and-release.html</code>: the <code>.env</code> row names the token and the helpers.</li>
+          <li><code>reference/security-posture.html</code>: the script reads <code>.env</code> itself, so the <code>export …</code> line goes.</li>
+          <li><code>reference/codebase-map.html</code>: both helpers.</li>
+        </ul>
+      </li>
+      <li><b>Agent procedures</b>:
+        <ul>
+          <li>The <code>cloud-db-ops</code> skill's "phantom 401" section. Its <code>env -u</code> workaround and its "apply-migrations.sh and schema-fingerprint.sh read the environment only" become the rule.</li>
+          <li><code>doc/claude/session-start.md</code>: the token line.</li>
+        </ul>
+      </li>
+      <li><b>Memory</b>: <code>project_supabase_access_token_location</code> is rewritten around the helpers, plus a line in <code>MEMORY.md</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Build order, after sign-off</p>
+    <h2>Test first, then each reader, then the session line</h2>
+    <ol class="steps">
+      <li><code>scripts/supabase-token.sh</code>. ENVTOKEN.01–04 and 07 go green; 05, 06 and 08 stay red on the readers.</li>
+      <li>The 22 Python reads, then the 8 shell scripts. 05, 06 and 08 go green.</li>
+      <li>ENVTOKEN.09 red, then <code>TOKEN_RULE</code> in <code>session_start.py</code>, then green.</li>
+      <li>Records (§07) and memory.</li>
+      <li><code>scripts/preflight.sh</code>, all gates. <code>test_prod_mirror</code> runs with <code>.env</code>'s token in this very session, whose environment still holds the stale one.</li>
+      <li>Graph refresh and RAG ingest, then one commit on its own described branch, <code>claude/supabase-token-from-env-first</code>, stacked on the CI summaries commit. It integrates third, after the Release notes and the CI summaries, each with its own Release run.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Not in this plan</p>
+    <h2>Two things that are yours, not the code's</h2>
+    <ul>
+      <li><b>Where the stale value comes from.</b> It is not in your shell profiles, <code>~/.claude/settings.json</code>'s environment or launchd. The old memory says it once came from the shell that started Claude. After this change no code here reads it, so it needs no hunt.</li>
+      <li><b>Two entries in <code>~/.claude/settings.json</code></b> hold a token value inside a permission rule: <code>permissions.allow[228]</code> (a <code>seed-remote.sh</code> call) and <code>[256]</code> (an <code>export</code>). The value is not shown here. They are your settings, so I leave them alone. Removing the two rules takes the credential out of that file.</li>
+    </ul>
+  </section>
+
+  <p class="foot">doc/plans/supabase-token-read-from-env-first-2026-11-01.html · 1 Nov 2026 · branch to be <code>claude/supabase-token-from-env-first</code></p>
+</div>

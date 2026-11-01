@@ -3,7 +3,7 @@
 # ADR-083 — verify the deny-by-default security posture of a REMOTE environment.
 # =============================================================================
 # Usage:  scripts/check-security-posture.sh <project-ref> [label]
-# Needs:  SUPABASE_ACCESS_TOKEN in the environment.
+# Needs:  SUPABASE_ACCESS_TOKEN in .env or the environment (supabase-token.sh).
 #
 # Why this exists as well as pgTAP 52.1-52.12.
 #
@@ -28,6 +28,10 @@ set -euo pipefail
 
 REF="${1:?usage: check-security-posture.sh <project-ref> [label]}"
 LABEL="${2:-$REF}"
+
+# The token by the one rule: .env first, then the environment (supabase-token.sh).
+source "$(dirname "${BASH_SOURCE[0]}")/supabase-token.sh"
+export_supabase_access_token
 
 if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
   echo "FAIL: SUPABASE_ACCESS_TOKEN is not set" >&2

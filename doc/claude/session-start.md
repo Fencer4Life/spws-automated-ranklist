@@ -38,3 +38,16 @@ echo '{"source":"resume","cwd":"'"$PWD"'"}' | python3 scripts/session_start.py
 - Code goes through `graphify query/explain` (symbol names) and the LSP.
 - grep and `git show` only confirm a literal you have already located.
 - Every delegated agent's prompt carries the same rule.
+
+## Supabase token rule (the block's last line)
+
+- Read `SUPABASE_ACCESS_TOKEN` only through `python/supabase_token.py` (Python) or
+  `scripts/supabase-token.sh` (shell). Both take the checkout's `.env` before the
+  environment; never `os.environ` for it. Preflight fails otherwise (ENVTOKEN.05–06).
+- A tool that reads the variable itself, such as the supabase CLI:
+  `source scripts/supabase-token.sh && export_supabase_access_token` first, in the
+  same command.
+- A 401 means the token the helper returned was rejected. Never report the
+  environment's copy as the problem, and never print a value. The decision is the
+  [ADR-036](../adr/036-prod-export-local-mirror.md) amendment of 2026-11-01.
+- Every brief for a session or agent you start names the two helpers.

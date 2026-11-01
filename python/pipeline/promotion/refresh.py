@@ -52,6 +52,7 @@ import httpx
 import yaml
 
 from python.pipeline.promotion import identity as idn
+from python.supabase_token import supabase_access_token
 from python.tools._backends import CERT_REF, PROD_REF
 
 TARGETS = ("local", "cert")
@@ -882,7 +883,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required to read PROD", file=sys.stderr)
         return 1

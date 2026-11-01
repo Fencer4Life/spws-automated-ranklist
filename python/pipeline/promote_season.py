@@ -18,9 +18,11 @@ import argparse
 import json
 import os
 import re
+import sys
 from functools import partial
 
 from python.pipeline.promote import _management_query
+from python.supabase_token import supabase_access_token
 
 # Season codes are admin-controlled but flow through a workflow_dispatch input;
 # validate the shape before it reaches any SQL string (defense in depth).
@@ -222,7 +224,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    access_token = os.environ["SUPABASE_ACCESS_TOKEN"]
+    access_token = supabase_access_token()
+    if not access_token:
+        print("SUPABASE_ACCESS_TOKEN is required", file=sys.stderr)
+        sys.exit(1)
     cert_ref = os.environ["SUPABASE_CERT_REF"]
     prod_ref = os.environ["SUPABASE_PROD_REF"]
 

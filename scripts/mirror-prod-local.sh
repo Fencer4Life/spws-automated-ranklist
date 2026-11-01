@@ -51,14 +51,15 @@ restore_symlink() {
 # the one way this script could turn a local experiment into a CI change.
 trap restore_symlink EXIT
 
-# Credentials live in .env and are never echoed. .env is read in preference to
-# the shell environment on purpose: a stale exported SUPABASE_ACCESS_TOKEN
-# shadows the good value and produces a bare 401 that reads exactly like an
-# expired credential (see the cloud-db-ops skill's "phantom 401").
+# Credentials live in .env and are never echoed. The token is read by the one
+# rule, .env before the shell environment, on purpose: a stale exported
+# SUPABASE_ACCESS_TOKEN shadows the good value and produces a bare 401 that
+# reads exactly like an expired credential (scripts/supabase-token.sh).
+source scripts/supabase-token.sh
+export_supabase_access_token
 read_env() { grep -E "^$1=" .env | cut -d= -f2- | tr -d '"'\''' ; }
 
 echo "=== 1/6 Exporting PROD (read-only) ==="
-SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 PROD_REF="$(read_env SUPABASE_PROD_REF)" \
 .venv/bin/python -c "
 import os, sys
@@ -74,7 +75,6 @@ echo "=== 3/6 Resetting LOCAL ==="
 ./scripts/reset-dev.sh > /dev/null
 
 echo "=== 4/6 Checking LOCAL's roster against PROD's, id for id ==="
-SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 .venv/bin/python -m python.pipeline.promotion.refresh --target local --mode verify
 
 echo "=== 5/6 Loading registrations ==="
@@ -90,7 +90,6 @@ echo "=== 5/6 Loading registrations ==="
 # each event's registrations part of the input fingerprint then equals PROD's.
 # A copy of its own here once left out the club and FTL name, and promote's
 # LOCAL rehearsal stopped at input.registrations (3 Oct 2026).
-SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 .venv/bin/python -m python.pipeline.promotion.refresh --target local --mode registrations
 
 echo "=== 6/6 Loading CERT's PZSz start lists ==="
@@ -99,7 +98,6 @@ echo "=== 6/6 Loading CERT's PZSz start lists ==="
 # order, and replayed through LOCAL's fn_pzsz_start_list_store, so the newest
 # version of each list is CERT's newest; the step fails otherwise (D4 A). A
 # copy by hand out of order once fed an ingest an older list (25 Oct 2026).
-SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 .venv/bin/python -m python.tools.mirror_start_lists
 
 echo ""

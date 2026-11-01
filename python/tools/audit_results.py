@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 
@@ -30,6 +29,7 @@ from python.scrapers.base import detect_platform
 from python.scrapers.engarde import parse_engarde_html
 from python.scrapers.fourfence import parse_fourfence_html
 from python.scrapers.ftl import parse_ftl_json
+from python.supabase_token import supabase_access_token
 
 # ---------------------------------------------------------------------------
 # Environment configs
@@ -49,7 +49,6 @@ ENVS = {
     },
 }
 
-SUPABASE_ACCESS_TOKEN = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
 MGMT_API = "https://api.supabase.com/v1/projects"
 
 FTL_DATA_PREFIX = "https://www.fencingtimelive.com/events/results/data/"
@@ -96,7 +95,7 @@ def query_db(ref: str | None, sql: str) -> list[list]:
         resp = httpx.post(
             f"{MGMT_API}/{ref}/database/query",
             headers={
-                "Authorization": f"Bearer {SUPABASE_ACCESS_TOKEN}",
+                "Authorization": f"Bearer {supabase_access_token()}",
                 "Content-Type": "application/json",
             },
             json={"query": sql},

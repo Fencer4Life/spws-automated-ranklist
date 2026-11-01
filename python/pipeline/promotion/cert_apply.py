@@ -35,12 +35,12 @@ are module functions, so the tests replace them (python/tests/cert_apply_fakes.p
 from __future__ import annotations
 
 import json
-import os
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any
 
 from python.pipeline.promotion.replay import MAX_DRAIN_ROUNDS, TIME_LIMIT, ApplyError
+from python.supabase_token import supabase_access_token
 
 NOTHING_FINAL = "nothing_final"
 
@@ -117,7 +117,7 @@ def drain(db: Any) -> list[int]:
 def require_gate(environment: str) -> None:
     """The gate reads PROD after the apply; without the access token the run
     does not start, so it never writes and then stops short of the gate."""
-    if not os.environ.get("SUPABASE_ACCESS_TOKEN"):
+    if not supabase_access_token():
         raise GateUnavailable(
             "SUPABASE_ACCESS_TOKEN is required: the gate reads PROD after the apply "
             f"({environment} run). Nothing was read or written."
@@ -138,7 +138,7 @@ def gate_for(event_code: str, environment: str) -> Any:
     )
     from python.pipeline.promotion.run_record import git_commit
 
-    token = os.environ["SUPABASE_ACCESS_TOKEN"]
+    token = supabase_access_token()
     prod = ManagementTransport(PROD_REF, token, read_only=True)
     target = (
         LocalTransport()

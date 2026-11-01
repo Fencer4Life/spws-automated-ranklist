@@ -32,6 +32,7 @@ from typing import Any, Protocol
 
 from python.pipeline.promotion import lifecycle
 from python.pipeline.promotion.run_record import schedule_sha256
+from python.supabase_token import supabase_access_token
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]+$")
 Schedule = tuple[list[dict], list[dict]]
@@ -324,7 +325,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     ap.add_argument("--today", default=None, help="the date in Warsaw (default: today)")
     args = ap.parse_args(list(argv) if argv is not None else None)
 
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required", file=sys.stderr)
         return 1

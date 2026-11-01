@@ -13,7 +13,6 @@ READS CERT, WRITES ONLY LOCAL. Usage: python -m python.tools.mirror_start_lists
 
 from __future__ import annotations
 
-import os
 import sys
 from typing import Any
 
@@ -24,6 +23,7 @@ from python.pipeline.promotion.refresh import (
     Transport,
     _literal,
 )
+from python.supabase_token import supabase_access_token
 from python.tools._backends import CERT_REF
 
 ROWS_SQL = (
@@ -80,7 +80,7 @@ def copy_start_lists(cert: Transport, local: Transport) -> dict[str, int]:
 
 
 def main() -> int:
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required to read CERT", file=sys.stderr)
         return 1

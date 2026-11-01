@@ -28,6 +28,7 @@ import os
 import sys
 
 import httpx
+from python.supabase_token import supabase_access_token
 
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
@@ -245,7 +246,7 @@ def main() -> int:
         args.dry_run = False
 
     if args.remote != "local":
-        token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+        token = supabase_access_token()
         if not token:
             tf = os.path.expanduser("~/.supabase_token")
             if os.path.exists(tf):

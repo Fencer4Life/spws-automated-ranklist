@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from dataclasses import dataclass
 
@@ -36,6 +35,7 @@ from python.scrapers.evf_results import (
     CATEGORY_MAP,
     EvfApiClient,
 )
+from python.supabase_token import supabase_access_token
 
 CERT_REF = "sdomfjncmfydlkygzpgw"
 PROD_REF = "ywgymtgcyturldazcpmw"
@@ -122,7 +122,7 @@ class ManagementBackend(Backend):
 
     def __init__(self, project_ref: str):
         self.project_ref = project_ref
-        self.token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+        self.token = supabase_access_token()
         if not self.token:
             raise RuntimeError("SUPABASE_ACCESS_TOKEN not set")
         self.endpoint = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
