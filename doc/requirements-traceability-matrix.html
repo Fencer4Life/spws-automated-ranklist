@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="aa7dd6bf2d987ea2f8141d085c709ad653c36245ccae369e6feb78f93be14700">
+<meta name="doc-source-sha256" content="0d14ce3bf493e65b901cbc166575e615162783334a53d6db4048974c8c34e2a6">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -92,7 +92,7 @@
 <td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created. At an FIE event (MSW, PSW, the IMSW code) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a user-confirmed, unrevoked alias counts as identity (ADR-106 amendment of 2026-10-17, D9 A).</td>
 <td>§8.5, ADR-106</td>
 <td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–12, INTL.POL.01–06, NAME.CELLS.01–07, OVR.DRIFT.01–07, EXCLUDED.01–04, SRC.CONS.01–10, SRC.REGR.01–09, RUNNAME.04</td>
-<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 built in push 2b, SRC.CONS.07 waits for G58)</td>
+<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 built in push 2b)</td>
 </tr>
 <tr>
 <td>FR-10</td>
@@ -4651,7 +4651,7 @@
 <tbody>
 <tr>
 <td>SRC.CONS.01</td>
-<td>The placed rows of a whole bracket run 1..N with ties; a gap or a wrong tie is reported; unplaced and excluded rows are aside; EVF's API rows (Poles only) are never checked.</td>
+<td>The placed rows of a whole bracket run 1..N with ties; a gap or a wrong tie is reported; unplaced and excluded rows are aside; EVF's API brackets are whole and checked too.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_consistency.py</code></td>
 <td>Covered (2026-11-01, built in push 2b; not yet released)</td>
@@ -4693,10 +4693,10 @@
 </tr>
 <tr>
 <td>SRC.CONS.07</td>
-<td>EVF's results API: a row's <code>weapon_abbr</code> against its competition's weapon.</td>
+<td>EVF's results API (G58 A): each row keeps its competition's declared weapon; a known <code>weapon_abbr</code> naming another weapon wins and is counted, an unknown one keeps the competition's weapon and its guessed gender is reported.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_consistency.py</code></td>
-<td>Waits for G58</td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
 </tr>
 <tr>
 <td>SRC.CONS.08</td>
@@ -4774,5 +4774,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>aa7dd6bf2d987ea2f8141d085c709ad653c36245ccae369e6feb78f93be14700</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>0d14ce3bf493e65b901cbc166575e615162783334a53d6db4048974c8c34e2a6</code></footer>
 </div></body></html>

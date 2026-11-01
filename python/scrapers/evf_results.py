@@ -322,7 +322,7 @@ def scrape_event_results(
             comp_id = comp["id"]
             weapon_id = comp.get("weaponId")
             category_id = comp.get("categoryId")
-            weapon = WEAPON_MAP.get(weapon_id, "?") if weapon_id is not None else "?"
+            declared = WEAPON_MAP.get(weapon_id, "?") if weapon_id is not None else "?"
             category = CATEGORY_MAP.get(category_id, "?") if category_id is not None else "?"
 
             results = client.get_results(comp_id)
@@ -332,11 +332,14 @@ def scrape_event_results(
                 if country_filter and country != country_filter:
                     continue
 
-                # Detect gender from weapon_abbr (ME=Men's Epee, WF=Women's Foil)
+                # Detect gender from weapon_abbr (ME=Men's Epee, WF=Women's Foil).
+                # Each row starts from its competition's weapon (G58 A): an
+                # unknown abbreviation once kept the previous row's.
                 weapon_abbr = r.get("weapon_abbr", "")
                 if weapon_abbr in WEAPON_ABBR_MAP:
                     weapon, gender = WEAPON_ABBR_MAP[weapon_abbr]
                 else:
+                    weapon = declared
                     gender = "M" if weapon_abbr.startswith("M") else "F"
 
                 surname = r.get("fencer_surname", "")
@@ -354,6 +357,10 @@ def scrape_event_results(
                         "dob": r.get("fencer_dob", ""),
                         "evf_points": float(r.get("total_points", 0)),
                         "competition_id": comp_id,
+                        # SRC.CONS.07: what the competition declared and the
+                        # row's own abbreviation, compared by the bracket.
+                        "declared_weapon": declared,
+                        "weapon_abbr": weapon_abbr,
                     }
                 )
 

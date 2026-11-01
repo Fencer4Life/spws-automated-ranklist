@@ -21,6 +21,7 @@ from collections.abc import Iterable
 from dataclasses import replace
 from typing import Any
 
+WEAPON = "weapon"
 GENDER = "gender"
 CATEGORY = "category"
 PLACES = "places"
@@ -87,14 +88,12 @@ def nationality(results: Iterable[Any]) -> dict | None:
 
 def of(parsed: Any, *, international: bool = True) -> list[dict]:
     """Every disagreement of a bracket: what its reader found, then the checks
-    on its rows. EVF's results API returns the Poles of a bracket only, so its
-    rows are not checked; a missing country matters only where the
+    on its rows, every engine's bracket being whole (EVF's API returns a
+    competition's full results); a missing country matters only where the
     international admission decides who is ours (2b.3)."""
     if parsed is None:
         return []
     found = list(getattr(parsed, "source_disagreements", None) or [])
-    if str(getattr(parsed, "source_kind", "")) == "EVF_API":
-        return found
     results = list(getattr(parsed, "results", None) or [])
     checks = [places(results), nationality(results) if international else None]
     return found + [d for d in checks if d is not None]

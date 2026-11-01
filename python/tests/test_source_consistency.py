@@ -86,10 +86,11 @@ def test_SRC_CONS_01_unplaced_and_excluded_rows_are_aside():
     assert sc.places(rows) is None
 
 
-def test_SRC_CONS_01_evf_api_rows_are_never_checked():
-    """EVF's API returns the Poles of a bracket only (2b.3)."""
-    assert sc.of(_bracket([3, 7], kind=SourceKind.EVF_API)) == []
-    assert sc.of(_bracket([3, 7])) == [sc.places(_rows([3, 7]))]
+def test_SRC_CONS_01_an_evf_bracket_is_whole_and_checked():
+    """EVF's API returns a competition's full results (`EvfApiClient.get_results`),
+    so its places are checked as any engine's (2b.3 corrected, 1 Nov)."""
+    assert sc.of(_bracket([3, 7], kind=SourceKind.EVF_API)) == [sc.places(_rows([3, 7]))]
+    assert sc.of(_bracket([1, 2], kind=SourceKind.EVF_API)) == []
 
 
 # --------------------------------------------------------------------------
@@ -278,6 +279,108 @@ def test_SRC_CONS_06_xml_fixtures_agree(name):
 
     parsed = parse((FIXTURES / "fencingtime_xml" / name).read_bytes())
     assert [d for d in parsed.source_disagreements if d["kind"] == sc.GENDER] == []
+
+
+# --------------------------------------------------------------------------
+# SRC.CONS.07 — EVF's results API (G58 A)
+# --------------------------------------------------------------------------
+
+
+class _EvfClient:
+    def __init__(self, competitions, results):
+        self.competitions, self.results = competitions, results
+
+    def get_competitions(self, _event_id):
+        return self.competitions
+
+    def get_results(self, comp_id):
+        return self.results[comp_id]
+
+
+def _evf_row(abbr, place):
+    return {
+        "weapon_abbr": abbr,
+        "place": place,
+        "country_abbr": "POL",
+        "fencer_surname": "NOWAK",
+        "fencer_firstname": "Jan",
+        "fencer_dob": "",
+        "total_points": 0,
+    }
+
+
+def test_SRC_CONS_07_an_unknown_abbreviation_keeps_its_competition_s_weapon():
+    """G58 A: a row whose weapon_abbr is unknown took the previous row's weapon,
+    not its competition's; each row now keeps what its competition declared."""
+    from python.scrapers.evf_results import scrape_event_results
+
+    client = _EvfClient(
+        [{"id": 1, "weaponId": 1, "categoryId": 2}], {1: [_evf_row("ME", 1), _evf_row("??", 2)]}
+    )
+    rows = scrape_event_results(85, client=client)  # type: ignore[arg-type]
+    assert [(r["weapon"], r["gender"]) for r in rows] == [("EPEE", "M"), ("FOIL", "F")]
+    assert [r["declared_weapon"] for r in rows] == ["FOIL", "FOIL"]
+    assert [r["weapon_abbr"] for r in rows] == ["ME", "??"]
+
+
+def test_SRC_CONS_07_known_abbreviations_are_unchanged():
+    from python.scrapers.evf_results import scrape_event_results
+
+    client = _EvfClient(
+        [{"id": 1, "weaponId": 2, "categoryId": 1}, {"id": 2, "weaponId": 3, "categoryId": 4}],
+        {1: [_evf_row("WE", 1), _evf_row("ME", 1)], 2: [_evf_row("MS", 1)]},
+    )
+    rows = scrape_event_results(85, client=client)  # type: ignore[arg-type]
+    assert [(r["weapon"], r["gender"], r["category"]) for r in rows] == [
+        ("EPEE", "F", "V1"),
+        ("EPEE", "M", "V1"),
+        ("SABRE", "M", "V4"),
+    ]
+
+
+def test_SRC_CONS_07_the_bracket_reports_its_rows_against_their_competition():
+    from python.pipeline import international_sources as src
+
+    def row(weapon, gender, declared, abbr, place):
+        return {
+            "weapon": weapon,
+            "gender": gender,
+            "category": "V2",
+            "fencer_name": "NOWAK Jan",
+            "place": place,
+            "country": "POL",
+            "declared_weapon": declared,
+            "weapon_abbr": abbr,
+        }
+
+    rows = [
+        row("EPEE", "M", "FOIL", "ME", 1),
+        row("EPEE", "M", "EPEE", "ME", 2),
+        row("FOIL", "F", "FOIL", "??", 1),
+    ]
+    recs, _kept, _skipped = src.read_brackets(
+        {"txt_code": "IMEW-2023-2024", "id_evf_event": 77},
+        ["evf:77"],
+        evf_scrape=lambda _id: rows,
+        finality=src.SETTLED,
+    )
+    found = {r["name"]: r["_base"].source_disagreements for r in recs}
+    assert found == {
+        "EVF EPEE M V2": [
+            {
+                "kind": sc.WEAPON,
+                "detail": "1 row(s) whose weapon_abbr says EPEE; "
+                "their competition declared FOIL; the abbreviation wins",
+            }
+        ],
+        "EVF FOIL F V2": [
+            {
+                "kind": sc.GENDER,
+                "detail": "1 row(s) with an unknown weapon_abbr ('??'): "
+                "the competition's weapon is kept and the gender guessed F",
+            }
+        ],
+    }
 
 
 # --------------------------------------------------------------------------
