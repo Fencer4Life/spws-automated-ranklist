@@ -8,9 +8,9 @@ Branch: line, each commit pushed straight to main, and the workflows' own [skip 
 commits counted by kind. The range comes from the gate (scripts/release-gate.sh
 outputs base and head), so the two never measure differently.
 
-Every text is written as HTML that GitHub reads as plain text: <, > and & escaped, an
-@ and a # before a digit followed by a word joiner, so nothing becomes a tag, a
-mention or an issue link. GitHub takes at most 1 MiB per step; past BUDGET the list
+Every text is written as HTML that GitHub reads as plain text, through
+scripts/github_text.py (shared with scripts/ci_summary.py), so nothing becomes a tag,
+a mention or an issue link. GitHub takes at most 1 MiB per step; past BUDGET the list
 gives titles only, then a count.
 
 Run locally for any past range (the run's own page lasts as long as its logs):
@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 import datetime
-import html
 import json
 import os
 import re
@@ -32,13 +31,13 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from github_text import text
+
 BUDGET = 900_000
 BOT = "github-actions[bot]"
 TRAILER = re.compile(r"^[A-Za-z][A-Za-z0-9-]*: \S")
 LEGACY_MERGE = re.compile(r"^Merge branch '([^']+)'")
 LIST_ITEM = re.compile(r"^\s*(?:[-*]|\d+[.)])\s")
-LINKS = re.compile(r"@|#(?=\d)")
-WORD_JOINER = "&#8288;"
 
 
 @dataclass
@@ -78,12 +77,6 @@ def _git(*args: str) -> str:
 def _is_ancestor(base: str, head: str) -> bool:
     command = ["git", "merge-base", "--is-ancestor", base, head]
     return subprocess.run(command, capture_output=True, check=False).returncode == 0
-
-
-def text(raw: str) -> str:
-    """Plain text for GitHub: escaped, and no mention or issue link."""
-    escaped = html.escape(raw, quote=False)
-    return LINKS.sub(lambda m: ("&#64;" if m.group() == "@" else "&#35;") + WORD_JOINER, escaped)
 
 
 def _paragraphs(body: str) -> list[str]:

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="86bedfd0bb6eb77314bfeb1103e3390faf31cd54f6b488aa2e7a6dfa28998f32">
+<meta name="doc-source-sha256" content="edeb683477598ae2a2b83f7044f3fad5d905763c44be93ca328ccaefc9c2dd8d">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>802 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>818 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1127,6 +1127,13 @@
 <td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A; <a href="plans/release-notes-on-every-release-run-2026-11-01.html">plan</a> R1–R4 A</td>
 <td>NAMING.01–07, RELNOTES.01–13</td>
 <td>Covered (released 2026-10-31: NAMING.01–05 main 05caf9f0, NAMING.06–07 main be5c8136); RELNOTES.01–13 Landed (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>NFR-17</td>
+<td>A CI run's Summary page shows each job's results and names what failed: every check the job ran as a pass or fail line, the test counts and time, and each failing test with its first error line, so a failure is found without opening a log; a pgTAP file that ran fewer assertions than it planned fails CI and preflight, although pg_prove calls it ok; the CI token stays read-only</td>
+<td>User directive 2026-11-01; <a href="plans/ci-test-summaries-2026-11-01.html">plan</a> C1–C4 A, F1 A</td>
+<td>CISUM.01–08</td>
+<td>CISUM.01–07 Landed (2026-11-01, LOCAL); CISUM.08 Landed (2026-11-01, LOCAL)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3882,6 +3889,78 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="ci-test-summaries-cisum">CI test summaries (CISUM.*)</h2>
+<p>Acceptance IDs for NFR-17 and <a href="plans/ci-test-summaries-2026-11-01.html">doc/plans/ci-test-summaries-2026-11-01.html</a> (signed 1 Nov 2026, C1–C4 A). The script tests read fixtures in the tools' real formats; the workflow tests read <code>ci.yml</code> and <code>frontend/vite.config.ts</code>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CISUM.01</td>
+<td>A JUnit file with passes, skips, a failure and an error gives the counts, the time, and each failing test's id with its first message line.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.02</td>
+<td>pg_prove output gives files, assertions and the result; a failing file is listed with its failed test numbers and descriptions, and an all-pass run shows no table.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.03</td>
+<td>Step outcomes become pass or fail lines in order; a step skipped after a failure says it did not run; a test file that is missing says the tests did not run.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.04</td>
+<td>A test id or message holding <code>&lt;</code>, <code>&amp;</code>, <code>@</code> or <code>#12</code> comes out as plain text, through the helper the Release notes share.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.05</td>
+<td>3,000 failing tests stay under GitHub's 1 MiB per step: ids only past the budget, then a count.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.06</td>
+<td>Each <code>ci.yml</code> job writes its section in an <code>if: always()</code> step that takes its values through <code>env:</code> only; pytest runs with <code>--junitxml</code>; a step that keeps its output with <code>tee</code> runs under <code>shell: bash</code>; the workflow keeps <code>contents: read</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.07</td>
+<td>On GitHub Actions, Vitest's reporters are the default one plus <code>github-actions</code> with its job summary on.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>CISUM.08</td>
+<td><code>scripts/check_pgtap_plans.py</code> fails when pg_prove's output shows a file that ran fewer assertions than it planned, naming each one, or when pg_prove did not finish, and passes otherwise; the pgTAP job runs it right after the tests and before its summary, and preflight runs it on the output of its <code>supabase test db</code> gate (plan F1 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_ci_summary.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.<em>, ENGINE.</em>, ROUTE.ORG.<em>, RUNNAME.</em>)</h2>
 <p>Acceptance IDs for <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> release 1 and <a href="plans/partial-ingest-promote-results-sync-2026-10-31.html">doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</a> (signed 31 Oct 2026, D1–D14 A). FR-162. FINAL.05 is the pgTAP file of the sightings store.</p>
 <div class="tablewrap"><table>
@@ -4376,5 +4455,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>86bedfd0bb6eb77314bfeb1103e3390faf31cd54f6b488aa2e7a6dfa28998f32</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>edeb683477598ae2a2b83f7044f3fad5d905763c44be93ca328ccaefc9c2dd8d</code></footer>
 </div></body></html>

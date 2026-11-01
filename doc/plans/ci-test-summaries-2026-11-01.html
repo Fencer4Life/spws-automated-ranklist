@@ -1,0 +1,307 @@
+<meta charset="utf-8">
+<title>CI test summaries — plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+
+  /* A CI run's Summary page, as this plan would write it */
+  .runtitle{font-family:var(--mono);font-size:15px;color:var(--muted);margin:26px 0 6px;font-weight:700}
+  .gh{border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);margin:12px 0;overflow:hidden}
+  .gh .bar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);background:var(--surface-2);padding:9px 16px;border-bottom:1px solid var(--line)}
+  .gh .in{padding:14px 18px 4px;font-size:17px;line-height:1.55}
+  .gh .in h4{font-size:19px;font-weight:800;margin:2px 0 8px}
+  .gh .in p{max-width:none;margin:0 0 12px}
+  .gh .in .sub{color:var(--faint);font-family:var(--mono);font-size:14px}
+  .gh .in table{min-width:0;font-size:16px;margin:0 0 12px}
+  .gh .in td,.gh .in th{padding:7px 12px}
+  .pass{color:var(--good);font-weight:800}
+  .fail{color:var(--danger);font-weight:800}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">CI workflow · GitHub UI · Plan — signed 1 Nov</p>
+  <h1>Every CI run shows its test results</h1>
+  <p class="dek">Your message (1 Nov): <b>"I wanted a GH CI test summaries"</b>, with GitHub's page on job summaries. That page names this as the use: summaries of test results, so nobody has to open a log to find a failure. Today a CI run's page shows four job boxes and their times. To learn which pgTAP assertion failed on 18 Oct, someone had to open the log and search it. This plan makes each CI job write its results onto the run's Summary page. <b>Signed 1 Nov 2026.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed 1 Nov: C1 A, C2 A, C3 A, C4 A ("All as recommended")</span>
+    <span class="pill"><span class="dot"></span>Built on LOCAL (§08); F1 A signed 1 Nov</span>
+    <span class="pill"><code>ci.yml</code> · new <code>scripts/ci_summary.py</code></span>
+    <span class="pill">Companion: the Release notes, built (§07)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Four decisions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>C1</b></td><td>What does each CI job write onto the run's page?</td><td><b>A</b> One section per job. It gives the counts (passed, failed, skipped) and the time, and every check the job ran as a pass or fail line (Ruff, BasedPyright, the generated-page checks, postgrestools, svelte-check, the four coherence gates). On a failure it names each failing test with its first error line.<br><b>B</b> The counts only.<br><b>C</b> Every test by name: 2,554 pytest tests, 1,256 Vitest tests and 1,619 pgTAP assertions.</td><td><span class="chip never">A</span> The failing test's name and error line are what you open the log for. A list of thousands of passing tests buries them.</td></tr>
+        <tr><td><b>C2</b></td><td>How is it made?</td><td><b>A</b> One standard-library script, <code>scripts/ci_summary.py</code>, reads what each tool already writes. That is pytest's JUnit XML (<code>--junitxml</code>, built in), pg_prove's own output (kept with <code>tee</code> under <code>shell: bash</code>, so a failing test still fails the step, WFPIPE.01), and each step's outcome passed in <code>env:</code>. Same escaping and 1 MiB budget as the Release notes.<br><b>B</b> A Marketplace reporter action (e.g. <code>dorny/test-reporter</code>, <code>EnricoMi/publish-unit-test-result-action</code>). These render JUnit into summaries and check runs.<br><b>C</b> Each job echoes its tool's last line.</td><td><span class="chip never">A</span> CI holds <code>contents: read</code> only (ADR-083). The reporter actions publish check runs, which needs <code>checks: write</code>, and they run someone else's code with the repository's token. C cannot name a failing test.</td></tr>
+        <tr><td><b>C3</b></td><td>Vitest</td><td><b>A</b> Keep Vitest's own summary, and pin it in <code>frontend/vite.config.ts</code> (<code>reporters</code>: the default reporter, plus <code>github-actions</code> with <code>jobSummary</code> on when <code>GITHUB_ACTIONS</code> is set). Then a later reporter setting cannot drop it without a test failing. svelte-check's result is added beside it.<br><b>B</b> Leave Vitest's default as it is.<br><b>C</b> Replace it with <code>ci_summary.py</code>'s own format, from Vitest's JUnit output.</td><td><span class="chip never">A</span> It already exists (§02). Pinning keeps it, and costs one config line and one test.</td></tr>
+        <tr><td><b>C4</b></td><td>The Release notes, built on 1 Nov and committed but not pushed (§07)</td><td><b>A</b> Push them first, as their own merge, once preflight is green. CI test summaries follow on their own branch, so each Release run is titled by its own change.<br><b>B</b> Hold them and ship both in one merge.<br><b>C</b> Drop the Release notes.</td><td><span class="chip never">A</span> They are signed, built, tested and independent of this. Two merges give two readable Release runs.</td></tr>
+      </tbody>
+    </table></div>
+    <p><span class="pill"><span class="dot"></span>Signed 1 Nov 2026: "All as recommended"</span> C1 A, C2 A, C3 A, C4 A. The CI branch, <code>claude/ci-runs-show-their-test-results</code>, starts from the Release notes commit <code>607ae066</code>, not from main. The shared escaping helper is taken out of <code>scripts/release_notes.py</code>, which is not on main yet. The Release notes branch stays at <code>607ae066</code>, so it integrates first and alone (C4 A).</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What is there today</p>
+    <h2>Read from <code>ci.yml</code>, the job logs and Vitest's own code</h2>
+    <ul>
+      <li><b>Four jobs, all with a read-only token</b> (<code>permissions: contents: read</code>). <b>pgTAP (database)</b> starts LOCAL Supabase, runs postgrestools, then <code>supabase test db</code>. <b>pytest (Python)</b> runs Ruff lint and format, BasedPyright, three generated-page checks, <code>check_docs.py</code> and <code>pytest</code>. <b>Vitest (frontend)</b> runs svelte-check, then <code>npm test</code>. <b>Coherence Checks</b> runs the four gates of <code>scripts/check-coherence.sh</code>.</li>
+      <li><b>Nothing in the repository writes a CI summary.</b> No step in <code>ci.yml</code> writes <code>$GITHUB_STEP_SUMMARY</code>.</li>
+      <li><b>Vitest probably already does.</b> Vitest 4.1.12, which came in with the frontend toolchain upgrade (25 Oct), adds its <code>github-actions</code> reporter by itself when no reporter is configured and <code>GITHUB_ACTIONS</code> is set. That reporter's <code>jobSummary</code> is on by default and writes to <code>GITHUB_STEP_SUMMARY</code> (its own source, <code>dist/chunks/coverage…js</code> line 457, and its type definitions). <code>frontend/vite.config.ts</code> configures no reporter. Fetching a run page could not show it, because GitHub loads summaries after the page; V1 checks it on a real run.</li>
+      <li><b>What the logs already say</b>, latest CI run 41300329245: pg_prove "All tests successful. Files=124, Tests=1619"; pytest "2554 passed, 20 skipped, 2 deselected in 52.65s"; Vitest "Test Files 73 passed, Tests 1256 passed, Duration 47.70s"; coherence four PASS lines. On a red run (CI 39112045045, 18 Oct) pg_prove printed <code># Failed test 2: "5.1b vw_score has all required columns"</code> and <code>03_views_api.sql (Wstat: 0 Tests: 27 Failed: 1)</code>. That is exactly the line a summary would show.</li>
+      <li><b>GitHub's rules</b> (the page you linked): each step's summary is its own file, up to 1 MiB. A job shows at most 20. Summaries are grouped per job when the job finishes, and jobs are ordered by when they finished. A summary that fails to upload does not change the step's status. Secrets are masked.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · How (C1 A, C2 A, C3 A)</p>
+    <h2>One script, one summary step per job</h2>
+    <ol class="steps">
+      <li><b><code>scripts/ci_summary.py</code></b>, standard library only, with three inputs. <code>junit &lt;file&gt;</code> reads pytest's XML: the counts, the time, and each failed or errored test's id with its first message line. <code>tap &lt;file&gt;</code> reads pg_prove's output: files, assertions, the result, and each failed file with its failed test numbers and descriptions. <code>checks</code> reads <code>NAME=outcome</code> pairs from <code>env:</code>. It prints HTML that GitHub reads as plain text. The escaping moves out of <code>scripts/release_notes.py</code> into one shared helper, so the two scripts escape alike.</li>
+      <li><b>pgTAP job:</b> <code>supabase test db</code> runs under <code>shell: bash</code> with <code>| tee pgtap.out</code>, so a failure still fails the step. A last step with <code>if: always()</code> writes the postgrestools line and the pgTAP section.</li>
+      <li><b>pytest job:</b> <code>pytest --junitxml=pytest.xml</code>. A last step with <code>if: always()</code> writes Ruff, format, BasedPyright, the three page checks and <code>check_docs.py</code> as pass or fail lines, then the pytest section.</li>
+      <li><b>Vitest job:</b> Vitest's own summary, pinned (C3 A). A last step with <code>if: always()</code> adds the svelte-check line.</li>
+      <li><b>Coherence job:</b> <code>check-coherence.sh</code> output kept with <code>tee</code>; a last step writes each gate's PASS or FAIL line as the script printed it.</li>
+      <li><b>A job that stopped before its tests ran</b>, such as a failed Docker pull, shows which step stopped and "tests did not run". Every value reaches a step through <code>env:</code>, and the token stays <code>contents: read</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">04 · What you would see</p>
+    <h2>Today's run, and the red run of 18 October</h2>
+    <p class="runtitle">CI · Say what a dry results-sync cycle would do; record release 3b (run 41300329245)</p>
+    <div class="gh">
+      <div class="bar"><span>pgTAP (database) summary</span><span>passed</span></div>
+      <div class="in"><h4>pgTAP</h4><p><span class="pass">PASS</span> postgrestools &nbsp; <span class="pass">PASS</span> 1,619 assertions in 124 files, all passed (8 s)</p></div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>pytest (Python) summary</span><span>passed</span></div>
+      <div class="in"><h4>pytest</h4><p><span class="pass">PASS</span> Ruff &nbsp; <span class="pass">PASS</span> Ruff format &nbsp; <span class="pass">PASS</span> BasedPyright &nbsp; <span class="pass">PASS</span> ADR pages &nbsp; <span class="pass">PASS</span> rendered docs &nbsp; <span class="pass">PASS</span> handbook frame &nbsp; <span class="pass">PASS</span> check_docs</p><p><span class="pass">PASS</span> 2,554 passed, 20 skipped, 2 deselected (52.7 s)</p></div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>Vitest (frontend) summary</span><span>passed</span></div>
+      <div class="in"><p><span class="pass">PASS</span> svelte-check, no warning</p><p class="sub">Then Vitest's own summary, in its own format: 73 files, 1,256 tests, 47.7 s.</p></div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>Coherence Checks summary</span><span>passed</span></div>
+      <div class="in"><p><span class="pass">PASS</span> Version sync: both at v0.1.0<br><span class="pass">PASS</span> ADR count: 116 ADR files = 116 spec rows<br><span class="pass">PASS</span> pgTAP total: 1619 assertions match documented total<br><span class="pass">PASS</span> Migration ↔ documentation: no migration changed, or its documentation changed with it</p></div>
+    </div>
+
+    <p class="runtitle">CI · Merge branch 'claude/equal-totals-shared-place' into integration/main (run 39112045045, 18 Oct)</p>
+    <div class="gh">
+      <div class="bar"><span>pgTAP (database) summary</span><span>failed</span></div>
+      <div class="in"><h4>pgTAP</h4><p><span class="pass">PASS</span> postgrestools &nbsp; <span class="fail">FAIL</span> 1 of 1,468 assertions failed, in 1 of 112 files</p>
+        <table><thead><tr><th>File</th><th>Failed</th></tr></thead><tbody><tr><td><code>supabase/tests/03_views_api.sql</code></td><td>test 2 of 27: "5.1b vw_score has all required columns"</td></tr></tbody></table>
+      </div>
+    </div>
+    <p>The numbers and texts above are from those runs' own logs. A failing pytest test reads the same way: its id, then its first error line.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Tests first, each seen failing</p>
+    <h2>New <code>python/tests/test_ci_summary.py</code></h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>What it proves</th></tr></thead>
+      <tbody>
+        <tr><td><b>CISUM.01</b></td><td>A JUnit file with passes, skips, a failure and an error gives the counts, the time, and each failing test's id with its first message line.</td></tr>
+        <tr><td><b>CISUM.02</b></td><td>pg_prove output, built in its real format (18 Oct's run, no personal data), gives files, assertions and the result. A failing file is listed with its failed test numbers and descriptions; an all-pass run shows no table.</td></tr>
+        <tr><td><b>CISUM.03</b></td><td>Step outcomes in <code>env:</code> become pass or fail lines in order; a skipped step after a failure says "did not run".</td></tr>
+        <tr><td><b>CISUM.04</b></td><td>A test id or message with <code>&lt;</code>, <code>&amp;</code>, <code>@</code> or <code>#12</code> comes out as plain text. The helper is shared with the Release notes, and RELNOTES.03 still passes.</td></tr>
+        <tr><td><b>CISUM.05</b></td><td>3,000 failing tests stay under 1 MiB: past the budget, ids only, then a count.</td></tr>
+        <tr><td><b>CISUM.06</b></td><td>(<code>ci.yml</code>) each of the four jobs ends with an <code>if: always()</code> summary step that uses <code>env:</code> only. pytest runs with <code>--junitxml</code>; the teed steps run under <code>shell: bash</code>; the workflow keeps <code>contents: read</code>.</td></tr>
+        <tr><td><b>CISUM.07</b></td><td>(<code>frontend/vite.config.ts</code>) on GitHub Actions the reporters are the default one plus <code>github-actions</code> with <code>jobSummary</code> on (C3 A).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Records, and when it is done</p>
+    <h2>Documentation in the same change; done is a verified run page</h2>
+    <ul>
+      <li><b>Handbook</b> <code>doc/handbook/reference/workflow-catalog.html</code>: the CI block says what its Summary page shows. <code>doc/handbook/reference/test-and-traceability.html</code>: where to read a CI failure first.</li>
+      <li><b>RTM</b>: NFR-17, "a CI run's Summary page shows each job's results and names what failed", with CISUM.01–07.</li>
+      <li><b>ADR</b>: none. This is reporting: no decision about what CI checks or blocks changes, and the token stays read-only (ADR-083 holds as written).</li>
+      <li><b>Both release skills</b>: on a red CI, read the run's Summary page first.</li>
+    </ul>
+    <div class="note">
+      <p class="lede"><span class="tick">☐</span> Documentation coherence gate complete</p>
+      <p><b>Impact:</b> operations | reference<br>
+      <b>Canonical docs affected:</b> <code>doc/handbook/reference/workflow-catalog.html</code>; <code>doc/handbook/reference/test-and-traceability.html</code>; <code>doc/requirements-traceability-matrix.md</code> + twin<br>
+      <b>ADR impact:</b> none (reporting only; ADR-083's read-only CI token unchanged)<br>
+      <b>Operational impact:</b> <code>workflow-catalog.html</code>, both release skills<br>
+      <b>Source-map / last-verified updated:</b> yes<br>
+      <b>Validation:</b> <code>python scripts/check_docs.py --changed-from origin/main</code> [pending]<br>
+      <b>Superseded prose archived rather than appended:</b> not applicable</p>
+    </div>
+    <ol class="steps">
+      <li>A new branch from main, <code>claude/ci-runs-show-their-test-results</code>, described.</li>
+      <li>RTM rows (Planned); CISUM.01–07 written and seen failing, each for its own reason.</li>
+      <li>GREEN: the shared escaping helper (RELNOTES.03 still green), <code>scripts/ci_summary.py</code>, <code>ci.yml</code>, the Vitest config.</li>
+      <li>Records; <code>scripts/preflight.sh</code> exits 0; graph refresh; docs reindex; one commit as Fencer4Life.</li>
+      <li>On your go: integrate and push; watch CI in the foreground. This change's own CI run is the first with summaries. Its Release deploys, since <code>ci.yml</code> and <code>scripts/</code> changed, and asks for your PROD approval.</li>
+      <li><b>V1</b> the run's page shows all four sections, and Vitest's own summary is there. <b>V2</b> a red run shows the failing test. CI has no manual start, but it runs on every pull request into main, and the Release never runs for one. So, only if you want that check: a draft pull request from a throwaway branch with one deliberately failing pgTAP assertion, closed unmerged afterwards. Opening it is your call, since it is public.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Where the Release notes stand</p>
+    <h2>Built, committed, not pushed; one thing only you can do</h2>
+    <p>Branch <code>claude/release-notes-on-every-release-run</code>, commit <code>607ae066</code>, rebased onto today's main. Its plan, with what was built in §11, is <code>doc/plans/release-notes-on-every-release-run-2026-11-01.html</code>.</p>
+    <p><code>scripts/preflight.sh</code>: 20 of 21 gates pass. pytest fails only in <code>python/tests/test_prod_mirror.py</code> (7 errors). That test compares LOCAL with PROD through the Supabase Management API, and the API answers <code>401 Invalid access token</code>. The other 2,581 tests pass.</p>
+    <div class="note warn">
+      <p class="lede">The Supabase access token in your local <code>.env</code> is rejected</p>
+      <p>Since ADR-119 G21, a token that is set but rejected fails <code>test_prod_mirror.py</code> instead of skipping it, so preflight cannot pass on this machine until the token works. CI does not hold that token and skips the test. The same token is what <code>scripts/cloud-sql.sh</code> uses to read CERT and PROD. <b>Only you can renew it</b>: Supabase, then Account, then Access Tokens; put the new one in <code>.env</code> as <code>SUPABASE_ACCESS_TOKEN</code>. Then I run preflight again. I will not make the test skip a rejected token.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Built · 1 Nov</p>
+    <h2>What landed on the branch, test-first, and one decision it turned up</h2>
+    <p>Branch <code>claude/ci-runs-show-their-test-results</code>, described: "Every CI run's Summary page shows each job's test results". It sits on the Release notes commit <code>607ae066</code>. Nothing is pushed.</p>
+    <ul>
+      <li><b>RED first.</b> The 7 CISUM tests (13 test functions) were written and run before any code. All 13 failed, each for its own reason: no script, no summary step, no <code>--junitxml</code>, no reporter pin.</li>
+      <li><b><code>scripts/github_text.py</code></b>: the escaping, moved out of <code>scripts/release_notes.py</code>, which now imports it. The 16 Release notes tests still pass, RELNOTES.03 included.</li>
+      <li><b><code>scripts/ci_summary.py</code></b> (standard library only): <code>--check</code>, <code>--junit</code>, <code>--tap</code> and <code>--gates</code>. Run on 18 Oct's real red pgTAP log, it prints exactly the row in §04, "test 2 of 27". It also shows the warning "<code>19_phase3_wizard.sql</code> planned 25 tests but ran 5" that pg_prove called <code>ok</code> (F1 below). On today's real coherence log it prints the four gates.</li>
+      <li><b><code>ci.yml</code></b>: step ids; <code>pytest --junitxml=pytest.xml</code>; pgTAP and coherence kept with <code>tee</code> under <code>shell: bash</code>; one <code>if: always()</code> summary step at the end of each job, with every value through <code>env:</code>. The token stays <code>contents: read</code>, and no Marketplace action is added.</li>
+      <li><b><code>frontend/vite.config.ts</code></b>: on GitHub Actions, the reporters are the default one plus <code>github-actions</code> with <code>jobSummary</code> on. They are typed with Vitest's own <code>TestUserConfig</code>; svelte-check shows 0 errors and 0 warnings. Run locally with <code>GITHUB_ACTIONS=true</code> and a summary file, Vitest wrote its "Vitest Test Report" there, so C3's pin works. Elsewhere Vitest keeps its own reporter choice.</li>
+      <li><b>Checks:</b> all 117 release, workflow and summary tests pass (WFALERT, WFINJ, WFPIPE, WFPERM, WFEXPR and GHWF among them). Ruff, Ruff format and BasedPyright over <code>python/</code>, <code>scripts/</code> and <code>tools/</code> are clean.</li>
+      <li><b>Records:</b> the workflow catalog's CI block (what the Summary page shows; read it first on a red run); <code>test-and-traceability.html</code>; RTM NFR-17 and CISUM.01–07, Landed on LOCAL; both release skills, still identical.</li>
+      <li><b><code>scripts/preflight.sh</code> on commit <code>bb85add6</code>:</b> 20 of 21 gates pass. pytest has 2,594 passed and 7 errors, all of them <code>test_prod_mirror.py</code>, because your local Supabase access token is rejected (§07). Both branches push only once preflight exits 0.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Two changes from the wording above, both on the safe side</p>
+      <p><b>The frontend job's step lists Vitest's own outcome too</b> ("svelte-check", "Vitest"). If svelte-check fails, Vitest never runs and writes no summary, and the line says so.</p>
+      <p><b>XML.</b> A security hook flagged the standard library's XML parser. The file it reads is pytest's own output from an earlier step of the same job, never outside input, and ElementTree fetches no external entity. The script says so in its header, instead of adding a third-party parser to a job that installs nothing.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decide</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>F1</b></td><td>Found while building: pg_prove calls a file <code>ok</code> when it ran fewer assertions than it planned. On 18 Oct (CI 39112045045) <code>19_phase3_wizard.sql</code> planned 25 and ran 5, and it was not in pg_prove's failure report. That case was fixed on 31 Oct: assertions inside savepoints went uncounted (F4 of the CERT event-details plan). Today's run has none. Nothing in CI fails on this today. Coherence gate 3 counts the plans the files declare, not the assertions that ran.</td><td><b>A</b> Make it a gate. The pgTAP job fails when pg_prove reports a file that ran short of its plan, and the summary names the file. Test first; RTM row.<br><b>B</b> Show it only. The summary already prints the warning, as built; nothing fails.</td><td><span class="chip never">A</span> A file that silently loses most of its assertions went unseen until 31 Oct. Your rule is that static checks are zero-finding hard gates, and this is a zero-finding check that costs nothing to run.</td></tr>
+      </tbody>
+    </table></div>
+    <p><span class="pill"><span class="dot"></span>Signed 1 Nov 2026: "F1 A"</span> <code>scripts/check_pgtap_plans.py</code> reads pg_prove's output through <code>ci_summary.py</code>'s parser, so the format is read in one place. It fails when any file ran fewer assertions than it planned, or when pg_prove did not finish. It runs as its own step in the pgTAP job, right after the tests, and as its own preflight gate after <code>supabase test db</code>, whose output preflight now keeps (a gate added to CI joins preflight in the same change). The summary's line for such a file becomes a failure line. Test CISUM.08, seen failing first.</p>
+    <p><b>Built 1 Nov.</b> The 5 CISUM.08 test functions, plus CISUM.02's glyph change, were written first; 6 failed, each for its own reason. Now they pass. On the two real logs the check passes today's run ("every file ran the tests it planned (124 files)", exit 0). It fails 18 Oct's run, naming "<code>supabase/tests/19_phase3_wizard.sql</code> planned 25 tests but ran 5" (exit 1). In preflight it is the gate "pgTAP plans all ran (CI)", and <code>--fast</code> skips it with <code>supabase test db</code>. The workflow catalog, <code>test-and-traceability.html</code>, both release skills (including their list of every preflight gate) and RTM CISUM.08 say so.</p>
+  </section>
+
+  <p class="foot">plan · ci-test-summaries · 1 Nov 2026 · read: ci.yml, CI runs 41300329245 and 39112045045 (job logs), Vitest 4.1.12's reporter source, GitHub's "Adding a job summary" · signed 1 Nov 2026</p>
+</div>
