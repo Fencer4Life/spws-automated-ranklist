@@ -132,7 +132,7 @@
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 7: G15–G18 built and rehearsed, all EQUAL · G18 signed A 31 Oct ("G18 A") · documents written 31 Oct: ADR-119 §3, the amendments, the RTM, spec Appendices C and D, six handbook pages; checks and the RAG current</span>
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 8: G19 found while writing the documents · signed B 31 Oct ("G19 B") · built test-first, N11.8 RED then GREEN</span>
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 9: G20–G23 found while building G19 · signed 1 Nov ("All as recommended": G20 A, G21 B, G22 A, G23 A) · built test-first, each seen RED then GREEN, and recorded</span>
-    <span class="pill warn"><span class="dot"></span>rev 17: release 3's build sheet (§03e) signed 1 Nov ("All as recommended"); building test-first on claude/results-sync-hourly-cycle · G28–G30 signed 1 Nov (all A); 3a released 1 Nov (main bfdc158b), CERT and PROD verified; 3b built test-first and documented, not pushed; G31–G35 signed 1 Nov (all A), G32 and G35 built; the push waits for your go · R2.2 waits · G21 needs you to remove the stale token</span>
+    <span class="pill warn"><span class="dot"></span>rev 17: release 3's build sheet (§03e) signed 1 Nov ("All as recommended"); building test-first on claude/results-sync-hourly-cycle · G28–G30 signed 1 Nov (all A); 3a released 1 Nov (main bfdc158b), CERT and PROD verified; 3b built test-first and documented, not pushed; 3b released 1 Nov (main e7f8a3a3), CERT and PROD verified, the switch off; dry dispatch on main twice; G36 waits for your sign-off · R2.2 waits · G21 needs you to remove the stale token</span>
     <span class="pill warn"><span class="dot"></span>9 gaps found in today's route · 4 more found while building (G10–G13) · G14 found while tracing release 2 · G15–G17 in the rehearsal</span>
     <span class="pill"><span class="dot"></span>rev 3: USA Fencing, the French veterans federation and any later organizer</span>
     <span class="pill">read-only research · CERT runs 1–8 · PROD read 31 Oct</span>
@@ -773,6 +773,41 @@
       <p><b>Built</b>, 1 Nov: SYNC.CYCLE.08 passes on arrival, since the code was right, and two mutations of <code>_read_for</code> turn it RED (a plan-style <code>finality</code>, as option B would pass, and a read with no connector); the module was restored unchanged, checked by its hash. Corrected: ADR-119 §4, ADR-113's amendment, the workflow catalog, the operator runbook, the codebase map, the event status lifecycle, the two workflows' comments and dry-run descriptions, <code>results_sync.py</code>'s docstrings and <code>--dry-run</code> help, and this plan's as-built note; the RTM, ADR-119 and spec Appendix C list SYNC.CYCLE.08.</p>
 
     </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> 3b released, 1 Nov (main <code>e7f8a3a3</code>)</p>
+
+      <p><b>The release,</b> on the user's "Yes, set it and push". The repository variable <code>RESULTS_SYNC</code> was set to <code>off</code> at 10:17 UTC, before the push (G31 A). Integrated in the integration checkout as merge <code>e7f8a3a3</code>, whose tree is the preflighted 3b tree (<code>e0c10f94</code>, branch tip <code>453e7b5e</code>). Its message is the branch description, which still said "a read-only compare", so the description was corrected (G35) and the unpushed merge's message amended, with the same tree and parents. CI <code>41296890199</code> and Release <code>41297044355</code> completed with every job a success, and the user approved <code>deploy-prod</code> (GitHub's approval record: Fencer4Life). Both deploys found no new migration and verified the schema fingerprint, and the security posture reports no failure on either. The tracking commits followed: <code>07c0499d</code> (CERT) and <code>275e9360</code> (PROD). Read afterwards: LOCAL, CERT and PROD report <code>17bf0b3531fcfb60ddaa56a88944d187</code>, and &ldquo;Results sync&rdquo; is active on main. Commit <code>77f7b627</code>'s own message still says "a read-only compare"; <code>453e7b5e</code> and the merge correct it, and it stays as history.</p>
+
+      <p><b>The dry dispatch on main, twice</b> (G31 A), with Madrid on the user's word ("Yes, dry Madrid", G34 A): runs <code>41297582008</code> and <code>41297584500</code>, both titled &ldquo;Results sync · manual · dry run&rdquo; (G32, seen) and both green.</p>
+      <ul>
+        <li>The select took one event, <code>PEW2efs-2026-2027</code>.</li>
+        <li>The compare read Engarde: 18 brackets, of which 10 are final and new against no CERT run, and 8 skipped. Seven are joined brackets that span categories, E1's open fixes in <code>doc/plans/pew-madrid-2026-engarde-readiness-2026-10-31.html</code>; the eighth is TABLE FOIL MALE 4, not final (Engarde shows it empty).</li>
+        <li>The refresh, the ingest and the promote were skipped, and so was every <code>Notify failure</code> step: nothing went to Telegram.</li>
+        <li>The lane held: the second run's select ended at 10:28:07, and its ingest job started at 10:28:32, two seconds after the first run's ended.</li>
+        <li>CERT and PROD, read before and after, are equal: Madrid is PLANNED on both; its result fingerprints are unchanged (CERT <code>d83b09a8…</code>, PROD <code>f9cb8170…</code>, which differ by the link CERT holds); there is no sighting (Engarde signals finished, G35) and no run; and <code>tbl_results_sync_event</code> is empty on both.</li>
+      </ul>
+
+      <p><b>Found while recording:</b> the RTM still marked release 2b's rows DRYRUN.01–02, P3.INT.5, MIRROR.TOKEN.01–02, SBCLIENT.01–04, P3.D13 and SCHEMAFP.01–03, and 3a's SYNC.PAUSE (pgTAP 123) and SYNC.SEED.01, as &ldquo;Covered (2026-11-01, LOCAL)&rdquo;. Each now names the release that carried it (main <code>644cbc9e</code>, <code>bfdc158b</code>), read from git: the first release merge whose tree holds the test. The dry dispatch found G36, below.</p>
+
+    </div>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr>
+</thead>
+      <tbody>
+        <tr><td><b>G36</b></td><td>A dry run's outcome says something a real cycle would not. In a dry run the refresh, the ingest and the promote never run, so the outcome job has no CERT run and no promote result. <code>run_outcome</code> still composes the verdict from them (<code>_said</code>), so a cycle whose compare found a change reads &ldquo;failed, paused: no run&rdquo;. Both dispatches printed <code>(dry run) PEW2efs-2026-2027: failed, paused: no run</code>, though their compare had just printed <code>changed (against CERT run none): new …</code>, and a real cycle would refresh CERT, ingest and promote. Nothing is written and nothing is sent (SYNC.CYCLE.05 holds); only the dry run's report is wrong, and no test pins what a dry run says.</td><td><b>A</b> A dry run's outcome says what the cycle would do, from the compare alone, before it reads any run:<br>&bull; unchanged;<br>&bull; &ldquo;would promote CERT run N to PROD&rdquo; (promote only);<br>&bull; &ldquo;would refresh CERT, ingest, and promote once the run finishes and its gate passes: K new listing(s)&rdquo; (changed);<br>&bull; a failed read as a real cycle reports it (&ldquo;would fail and pause: read failed: &lt;type&gt;&rdquo;), since the read is the same.<br>SYNC.CYCLE.09, seen RED first on today's line. It ships with this record as one small release (no migration), on this branch renamed to say the fix.<br><b>B</b> The outcome job does not run in a dry run, and the compare's line is the dry run's report. Less code, but a dry dispatch then no longer runs the outcome job, so its inputs and wiring would first be seen in a live cycle.<br><b>C</b> Leave it, and say in the runbook that a dry run's last line means nothing.</td><td><b>A</b> The dry dispatch keeps running every job of a cycle, and its last line becomes true.</td></tr>
+      </tbody>
+    </table>
+</div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">G36</span> Found by the dry dispatch on main, 1 Nov</p>
+
+      <p>It touches only a dry run's log; a scheduled or manual live cycle composes its verdict from a real run. The switch stays off; nothing changes before your answer.</p>
+
+    </div>
+
 
 
   </section>
