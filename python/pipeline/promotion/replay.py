@@ -6,8 +6,10 @@ Promote copies nothing from CERT. For one exact event code it:
    the one checked out: `promote.yml` checks out the commit the run recorded;
 2. runs the gate again, reading CERT and PROD only;
 3. checks what PROD holds for the event: nothing, an earlier FINISHED CERT run's
-   result (day 2 of a multi-day event, or a correction), or this run's result,
-   in which case the apply skips its writes. Anything else refuses;
+   result (day 2 of a multi-day event, or a correction), what CERT held when
+   this run began (the run's prior, ADR-119 G17: after a recompute moved both
+   sides), or this run's result, in which case the apply skips its writes.
+   Anything else refuses;
 4. plans the same ingestion against PROD (`plan_event`, reads only) and compares
    the plan with the run: every listing's hash, the created fencers and the
    birth-year moves, id for id;
@@ -25,6 +27,12 @@ Promote copies nothing from CERT. For one exact event code it:
 Every refusal before step 5's apply writes nothing. A call that ends without an
 answer (the network, not the database) is not called a refusal: promote reads
 PROD again and says what it holds.
+
+Every attempt on PROD that reached a CERT run is recorded on that run's row,
+the promote ledger (ADR-119 §3, D10): applied, skipped or refused, the reason
+and the fingerprint, through a writable Management-API transport used for this
+one write (`CertLedger`). A ledger that cannot be written never fails a
+promote. A dry run and the LOCAL rehearsal record nothing (B8).
 
     python -m python.pipeline.promotion.replay --resolve --event PPW1-2026-2027
     python -m python.pipeline.promotion.replay --event PPW1-2026-2027 [--dry-run]
@@ -114,6 +122,10 @@ class After(Protocol):
     def drain(self) -> list[int]: ...
 
 
+class Ledger(Protocol):
+    def record(self, run_id: int, entry: dict) -> None: ...
+
+
 @dataclass
 class Outcome:
     event_code: str
@@ -142,11 +154,19 @@ def resolve_code(text: str, exact: bool, matches: Sequence[str]) -> str:
 
 
 def prior_fingerprint(
-    code: str, *, run_fp: str, state: Mapping[str, Any] | None, earlier: Sequence[str]
+    code: str,
+    *,
+    run_fp: str,
+    state: Mapping[str, Any] | None,
+    earlier: Sequence[str],
+    run_prior: str | None = None,
 ) -> str | None:
     """What PROD must hold for the apply to replace it: None for nothing (or for
-    this run's own result, which the apply skips), or an earlier FINISHED CERT
-    run's result fingerprint. Anything else refuses."""
+    this run's own result, which the apply skips), an earlier FINISHED CERT
+    run's result fingerprint, or `run_prior`, what CERT held when this run
+    began (ADR-119 G17: a recompute can move both sides away from every
+    earlier run's fingerprint; from the same start the apply makes the same
+    change). Anything else refuses."""
     if state is None:
         raise PromoteRefused(
             f"{code} does not exist on PROD. Promote the calendar first (promote.py --mode calendar)."
@@ -157,7 +177,7 @@ def prior_fingerprint(
     held = state.get("fingerprint")
     if held == run_fp or not state.get("has_results"):
         return None
-    if held in earlier:
+    if held in earlier or (run_prior is not None and held == run_prior):
         return held
     raise PromoteRefused(
         f"PROD holds results for {code} that no FINISHED CERT run produced "
@@ -306,21 +326,79 @@ def replay(
     gate_fn: Callable[..., Any] | None = None,
     plan_fn: Callable[..., Any] | None = None,
     log: Callable[[str], None] = print,
+    ledger: Ledger | None = None,
 ) -> Outcome:
     """Replay the latest CERT run of `event_code` on PROD. `write=False` stops
-    after the dry apply."""
-    from python.pipeline.promotion.gate import run_gate
-    from python.pipeline.promotion.plan import PlanRefused, plan_event
-
-    gate_call = gate_fn or run_gate
-    plan_call = plan_fn or plan_event
-
+    after the dry apply. `ledger` records the outcome on the run (D10)."""
     code = resolve_code(event_code, *cert.codes(event_code))
     run = cert.latest_run(code)
     if run is None:
         raise PromoteRefused(
             f"No recorded CERT run of {code}. Run ingest-event.yml with target cert first."
         )
+    run_id = int(run["id_ingest_run"])
+    try:
+        outcome = _replay_run(
+            code,
+            run,
+            cert=cert,
+            prod=prod,
+            prod_db=prod_db,
+            applier=applier,
+            commit=commit,
+            after=after,
+            write=write,
+            gate_fn=gate_fn,
+            plan_fn=plan_fn,
+            log=log,
+        )
+    except PromoteRefused as e:
+        if write:
+            _record(
+                ledger, run_id, {"outcome": "refused", "fingerprint": None, "reason": str(e)}, log
+            )
+        raise
+    if write and outcome.applied:
+        entry = {
+            "outcome": "skipped" if outcome.skipped else "applied",
+            "fingerprint": outcome.fingerprint,
+            "reason": "; ".join(outcome.differences) or None,
+        }
+        _record(ledger, run_id, entry, log)
+    return outcome
+
+
+def _record(ledger: Ledger | None, run_id: int, entry: dict, log: Callable[[str], None]) -> None:
+    """The ledger write; a failure is logged, never a promote failure (D10)."""
+    if ledger is None:
+        return
+    try:
+        ledger.record(run_id, entry)
+    except Exception as e:  # the promote's outcome stands whatever the ledger does
+        log(f"(promote ledger not written: {type(e).__name__}: {e})")
+
+
+def _replay_run(
+    code: str,
+    run: Mapping[str, Any],
+    *,
+    cert: Side,
+    prod: Side,
+    prod_db: Any,
+    applier: Applier,
+    commit: str,
+    after: After | None,
+    write: bool,
+    gate_fn: Callable[..., Any] | None,
+    plan_fn: Callable[..., Any] | None,
+    log: Callable[[str], None],
+) -> Outcome:
+    """`replay` once the run is known: steps 1–6 of the module's description."""
+    from python.pipeline.promotion.gate import run_gate
+    from python.pipeline.promotion.plan import PlanRefused, plan_event
+
+    gate_call = gate_fn or run_gate
+    plan_call = plan_fn or plan_event
     run_id = int(run["id_ingest_run"])
     if run.get("txt_git_commit") != commit:
         raise PromoteRefused(
@@ -343,6 +421,7 @@ def replay(
         run_fp=fingerprint,
         state=prod.event_state(code),
         earlier=cert.earlier_fingerprints(code, run_id),
+        run_prior=run.get("txt_prior_fingerprint"),
     )
 
     master = run.get("jsonb_master_data") or {}
@@ -626,6 +705,39 @@ class ProdAfter:
         return drain_recompute_queue(self.db, debounce_window=0)
 
 
+class CertLedger:
+    """The promote ledger on the CERT run row (ADR-119 §3, D10): one call of
+    fn_ingest_run_promote through a writable transport used for nothing else.
+    The Actions run is added here; the database sets the time."""
+
+    def __init__(self, transport: Transport):
+        if getattr(transport, "read_only", True):
+            raise PromoteRefused(
+                "The promote ledger writes CERT's run row: it needs a writable transport."
+            )
+        self.transport = transport
+
+    def record(self, run_id: int, entry: dict) -> None:
+        from python.pipeline.promotion.refresh import _literal as literal
+        from python.pipeline.promotion.run_record import run_url
+
+        payload = {**entry, "run_url": run_url()}
+        self.transport.fetch_json(
+            "SELECT jsonb_build_object('recorded', TRUE) AS j FROM "
+            f"(SELECT fn_ingest_run_promote({int(run_id)}, {literal(payload)})) x"
+        )
+
+
+def ledger_for(prod_target: str, *, dry_run: bool, token: str) -> CertLedger | None:
+    """The ledger of a promote to PROD; a dry run and the LOCAL rehearsal keep
+    none, since the daily close reads it as PROD's (B8)."""
+    if prod_target != "prod" or dry_run:
+        return None
+    from python.pipeline.promotion.refresh import ManagementTransport
+
+    return CertLedger(ManagementTransport(CERT_REF, token, read_only=False))
+
+
 def _head() -> str:
     return subprocess.run(
         ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
@@ -697,6 +809,7 @@ def main(argv: Iterable[str] | None = None) -> int:
                 label=label,
             ),
             write=not args.dry_run,
+            ledger=ledger_for(args.prod_target, dry_run=args.dry_run, token=token),
         )
     except PromoteRefused as e:
         text = "\n".join([f"Promote of {args.event} to {label} refused: {e}", *e.lines])

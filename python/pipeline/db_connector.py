@@ -8,6 +8,10 @@ the operations needed by the orchestrator.
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from supabase import Client
 
 
 class DbConnector:
@@ -242,6 +246,46 @@ class DbConnector:
             .execute()
             .data
         )
+
+    def ingest_run_input_parts(self, run_id: int) -> dict:
+        """The input fingerprint's parts the run opened with; the recorded
+        ingest's apply checks that its database still holds them (ADR-119 §3)."""
+        resp = (
+            self._sb.table("tbl_ingest_run")
+            .select("jsonb_input_parts")
+            .eq("id_ingest_run", run_id)
+            .execute()
+        )
+        if not resp.data:
+            raise ValueError(f"run {run_id} is not in tbl_ingest_run")
+        return resp.data[0]["jsonb_input_parts"] or {}
+
+    def event_result_state(self, event_code: str) -> dict:
+        """What the event holds now: its result fingerprint and whether any
+        result exists. The recorded ingest's prior (ADR-119 §3, B3)."""
+        fingerprint = self._sb.rpc(
+            "fn_event_result_fingerprint", {"p_event_code": event_code}
+        ).execute()
+        event = self.find_event_by_code(event_code)
+        if event is None:
+            raise ValueError(f"Event {event_code!r} not found in tbl_event.")
+        tids = [t["id_tournament"] for t in self.fetch_event_tournaments(event["id_event"])]
+        held = (
+            self._sb.table("tbl_result")
+            .select("id_result")
+            .in_("id_tournament", tids)
+            .limit(1)
+            .execute()
+            .data
+            if tids
+            else []
+        )
+        return {"fingerprint": str(fingerprint.data), "has_results": bool(held)}
+
+    def reserve_fencer_id(self) -> int:
+        """The next fencer id, for a fencer the recorded ingest's plan creates;
+        its apply inserts with it (ADR-119 §3, B6). Inserts nothing."""
+        return int(self._sb.rpc("fn_reserve_fencer_id", {}).execute().data)
 
     def find_event_by_id(self, id_event: int) -> dict | None:
         """Look up an event by id_event (ADR-072 — RECOMPUTE_DOMESTIC resolves the
@@ -945,11 +989,24 @@ def gate_below_min_participants(
     return False, None
 
 
+def make_supabase_client(url: str, key: str) -> Client:
+    """A Supabase client handed its own HTTP client (ADR-119 G22). Every client
+    in the repository is built here.
+
+    supabase-py 2.31 passes `timeout` and `verify` to its PostgREST and Storage
+    clients unless it is given an HTTP client, and both libraries deprecate those
+    arguments. This one is configured as PostgREST's own would be: its default
+    timeout, redirects followed, HTTP/2. PostgREST, Storage and Auth share it and
+    send their own address and headers with each request, so Storage now waits
+    up to PostgREST's timeout rather than its own 20 seconds."""
+    import httpx
+    from postgrest.constants import DEFAULT_POSTGREST_CLIENT_TIMEOUT
+    from supabase import ClientOptions, create_client
+
+    http = httpx.Client(timeout=DEFAULT_POSTGREST_CLIENT_TIMEOUT, follow_redirects=True, http2=True)
+    return create_client(url, key, options=ClientOptions(httpx_client=http))
+
+
 def create_db_connector() -> DbConnector:
     """Create a DbConnector from environment variables."""
-    from supabase import create_client
-
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_KEY"]
-    client = create_client(url, key)
-    return DbConnector(client)
+    return DbConnector(make_supabase_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"]))

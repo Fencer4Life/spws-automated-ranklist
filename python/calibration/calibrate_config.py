@@ -11,12 +11,12 @@ import json
 import os
 from pathlib import Path
 
-from supabase import create_client
+from python.pipeline.db_connector import make_supabase_client
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
-sb = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+sb = make_supabase_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 
 def export_config(season_id: int, output_path: Path) -> None:

@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 # ===========================================================================
 # N11.1 — the `report` channel on Context
 # ===========================================================================
@@ -319,6 +321,31 @@ class TestStagingFormatterDiff:
         diff = list(tmp_path.glob("*.diff.md"))[0].read_text()
         assert "3-way diff" in diff
         assert "Match confidence distribution" in diff
+
+    @pytest.mark.parametrize(
+        ("md_target", "files"), [("none", 0), ("storage", 0), ("local", 1), ("both", 1)]
+    )
+    def test_diff_file_only_where_a_local_file_is_wanted(
+        self, monkeypatch, tmp_path, md_target, files
+    ):
+        """N11.8 (ADR-119 G19 B) the diff names fencers, so its file is written only
+        for md_target local or both, as the ingest passes it with no staging_dir
+        (the project's doc/staging). Telegram still gets the rendered diff."""
+        from python.pipeline import three_way_diff
+        from python.pipeline.core.contract import Services
+        from python.pipeline.plugins import staging_formatter
+        from python.pipeline.plugins.staging_formatter import StagingFormatter
+        from python.tests.test_pipeline_plugins import _ingest
+
+        b1 = _ingest(monkeypatch)
+        ctx = _event_ctx([b1.report], event=b1.get("event"))
+        svc = _formatter_svc(tmp_path)
+        monkeypatch.setattr(three_way_diff, "_project_root", lambda: tmp_path)
+        monkeypatch.setattr(staging_formatter, "write_for_event", MagicMock())
+        StagingFormatter().run(ctx, Services(db=svc.db, config={"md_target": md_target}))
+
+        assert len(list(tmp_path.rglob("*.diff.md"))) == files
+        assert "3-way diff" in ctx.data["_rendered_diff"]
 
 
 # ===========================================================================

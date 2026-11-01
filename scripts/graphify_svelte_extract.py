@@ -99,16 +99,34 @@ def _offset_location(location: object, delta: int) -> object:
     return f"L{int(m.group(1)) + delta}"
 
 
+def _same_file(source_file: object, path: Path, root: Path) -> bool:
+    """Whether a `source_file` graphify wrote names `path`.
+
+    graphify rewrites an absolute path under the resolved cache root relative to
+    it and keeps any other path as given (graphifyy 0.8.47, `extract.py`, its
+    relativize pass). Both forms are read back against `root` and compared
+    resolved, so the answer does not depend on whether the temporary folder sits
+    behind a symlink, as macOS's does. Comparing the raw string matched only
+    there, and everywhere else the rescue kept nothing (ADR-119 G26).
+    """
+    if not isinstance(source_file, str) or not source_file:
+        return False
+    named = Path(source_file)
+    if not named.is_absolute():
+        named = root / named
+    return named.resolve() == path.resolve()
+
+
 def _default_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
     """graphify's own JS/TS extractor. Imported late and behind a seam.
 
     graphify is installed in its OWN isolated interpreter, not the project venv
-    (`scripts/refresh-graph.sh` resolves it), so importing it at module scope
+    (`scripts/graphify-python.sh` resolves it), so importing it at module scope
     would make this file unimportable under pytest. The seam also lets the
     reattribution logic below — the part written here, and the part that can be
     wrong — be tested without graphify present.
     """
-    # graphify is imported from graphify's own interpreter (scripts/refresh-graph.sh runs this
+    # graphify is imported from graphify's own interpreter (scripts/graphify-python.sh runs this
     # file with it), not from the project venv the type checker reads; hence the per-line ignores.
     from graphify.extract import extract  # pyright: ignore[reportMissingImports]
 
@@ -130,7 +148,9 @@ def extract_svelte_scripts(
     components = [p for p in paths if p.suffix.lower() == SVELTE_SUFFIX and p.is_file()]
 
     with tempfile.TemporaryDirectory(prefix="graphify-svelte-") as tmp:
-        tmp_root = Path(tmp)
+        # Resolved, so graphify writes every staged path relative to it, the
+        # same on every machine (G26).
+        tmp_root = Path(tmp).resolve()
         for comp in components:
             rel = str(comp.resolve().relative_to(root))
             blocks = script_blocks(comp.read_text(encoding="utf-8", errors="replace"))
@@ -153,14 +173,13 @@ def extract_svelte_scripts(
                 staged.write_text(body, encoding="utf-8")
                 fragment = js_extract([staged], cache_root=tmp_root)
 
-                staged_str = str(staged)
                 # Keep only what belongs to this component. Everything else the
                 # JS extractor emits is a cross-file import stub; graphify's own
                 # svelte pass owns those.
                 kept: set[str] = set()
                 delta = tag_line - 1
                 for node in fragment.get("nodes", []):
-                    if node.get("source_file") != staged_str:
+                    if not _same_file(node.get("source_file"), staged, tmp_root):
                         continue
                     node_id = str(node.get("id", ""))
                     if not node_id or node_id in seen:
@@ -202,12 +221,96 @@ def extract_svelte_scripts(
     }
 
 
+# The component the premise check extracts: markup around a script body, the
+# shape of every component under frontend/src.
+PREMISE_SAMPLE = """\
+<script lang="ts">
+  import { onMount } from 'svelte'
+  let count = $state(0)
+
+  function increment() {
+    count += 1
+  }
+
+  async function loadThings(): Promise<void> {
+    await Promise.resolve()
+  }
+</script>
+
+<div class="wrap">
+  <button onclick={increment}>{count}</button>
+</div>
+
+<style>
+  .wrap { display: flex; }
+</style>
+"""
+
+# The functions PREMISE_SAMPLE declares.
+PREMISE_DECLARATIONS = ("increment", "loadThings")
+
+
+def _declared_name(node: dict) -> str:
+    """A node's name without the brackets graphify puts on a function (`increment()`)."""
+    return str(node.get("label", "")).removesuffix("()")
+
+
+def check_premise(js_extract: Callable[..., dict] = _default_js_extract) -> tuple[bool, str]:
+    """Whether the premise this module exists for still holds (sv.4b).
+
+    The script body must yield every function the sample declares, and the whole
+    `.svelte` file none of them. Nodes are matched to the file by graphify's own
+    path rule (`_same_file`) and named without graphify's brackets. Only
+    graphify's real extractor can say so, and graphify lives in its own
+    interpreter, so preflight runs `--check-premise` there (ADR-119 G24, G26).
+    Returns whether it holds and a line saying what was counted.
+    """
+    with tempfile.TemporaryDirectory(prefix="graphify-svelte-premise-") as tmp:
+        root = Path(tmp).resolve()
+        component = root / "src" / "components" / "Widget.svelte"
+        component.parent.mkdir(parents=True)
+        component.write_text(PREMISE_SAMPLE, encoding="utf-8")
+        whole = js_extract([component], cache_root=root)
+        rescued = extract_svelte_scripts([component], root=root, js_extract=js_extract)
+        whole_own = [
+            n for n in whole.get("nodes", []) if _same_file(n.get("source_file"), component, root)
+        ]
+    whole_names = {_declared_name(n) for n in whole_own}
+    body_names = {_declared_name(n) for n in rescued["nodes"]}
+    counted = (
+        f"the whole file yields {len(whole_own)} of its own nodes, "
+        f"its script body {len(rescued['nodes'])}"
+    )
+    missing = [name for name in PREMISE_DECLARATIONS if name not in body_names]
+    if missing:
+        return False, f"{counted}; the body lacks {', '.join(missing)}: the premise no longer holds"
+    kept = [name for name in PREMISE_DECLARATIONS if name in whole_names]
+    if kept:
+        return (
+            False,
+            f"{counted}; the whole file already yields {', '.join(kept)}: "
+            "the premise no longer holds",
+        )
+    return True, counted
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("paths", nargs="*", type=Path, help="`.svelte` files (default: all)")
     ap.add_argument("--root", type=Path, default=Path("."))
     ap.add_argument("--json", action="store_true", help="print the fragment")
+    ap.add_argument(
+        "--check-premise",
+        action="store_true",
+        help="check with graphify's real extractor that a whole .svelte file yields "
+        "less than its script body (sv.4b); exit 1 if it does not",
+    )
     args = ap.parse_args(argv)
+
+    if args.check_premise:
+        holds, message = check_premise()
+        print(f"svelte premise {'holds' if holds else 'FAILED'}: {message}")
+        return 0 if holds else 1
 
     root = args.root.resolve()
     paths = args.paths or sorted((root / "frontend" / "src").rglob("*.svelte"))

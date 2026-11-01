@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -24,43 +25,43 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
 from graphify_svelte_extract import (  # noqa: E402
+    PREMISE_SAMPLE,
+    check_premise,
     extract_svelte_scripts,
     script_blocks,
 )
 
-SAMPLE = """\
-<script lang="ts">
-  import { onMount } from 'svelte'
-  let count = $state(0)
+# The premise check's own component (sv.4b), so the fake and the real
+# extractor are judged on the same file.
+SAMPLE = PREMISE_SAMPLE
 
-  function increment() {
-    count += 1
-  }
 
-  async function loadThings(): Promise<void> {
-    await Promise.resolve()
-  }
-</script>
-
-<div class="wrap">
-  <button onclick={increment}>{count}</button>
-</div>
-
-<style>
-  .wrap { display: flex; }
-</style>
-"""
+def graphify_source_file(path: Path, cache_root: Path) -> str:
+    """graphify's own rule for `source_file` (graphifyy 0.8.47, `extract.py`, its
+    relativize pass): an absolute path under the RESOLVED cache root becomes
+    relative to it; any other path is kept. The path itself is not resolved, so
+    under macOS's symlinked temporary folder the rewrite fails and the path stays
+    absolute (ADR-119 G26)."""
+    try:
+        return path.relative_to(cache_root.resolve()).as_posix()
+    except ValueError:
+        return str(path)
 
 
 def fake_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
     """Stand in for graphify's JS extractor, in its output shape.
 
-    graphify lives in its own isolated interpreter (`scripts/refresh-graph.sh`
+    graphify lives in its own isolated interpreter (`scripts/graphify-python.sh`
     resolves it) and is not importable from the project venv, so the logic this
     module actually owns — reattribution, line offsets, id prefixes, edge
     filtering — is tested against a fake rather than left untested. The real
-    extractor is exercised by `test_real_graphify_recovers_what_the_file_loses`
-    when it happens to be importable.
+    extractor is exercised by `test_real_graphify_recovers_what_the_file_loses`,
+    which preflight runs under graphify's interpreter.
+
+    The fake returns what graphify returns, as measured on 1 Nov 2026: a
+    function's label carries brackets (`increment()`), the file node is labelled
+    with the file's name, and `source_file` follows `graphify_source_file`. A
+    fake with bare names and absolute paths hid three defects (G26).
 
     Deliberately emits a cross-file import stub too: dropping those is a
     behaviour worth pinning, not an implementation detail.
@@ -68,12 +69,13 @@ def fake_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
     staged = paths[0]
     body = staged.read_text(encoding="utf-8")
     stem_prefix = f"{staged.parent.name}_{staged.stem}".lower()
+    source_file = graphify_source_file(staged, cache_root)
     nodes: list[dict] = [
         {
             "id": stem_prefix,
-            "label": staged.stem,
+            "label": staged.name,
             "file_type": "code",
-            "source_file": str(staged),
+            "source_file": source_file,
             "source_location": "L1",
         }
     ]
@@ -87,9 +89,9 @@ def fake_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
         nodes.append(
             {
                 "id": node_id,
-                "label": name,
+                "label": f"{name}()",
                 "file_type": "code",
-                "source_file": str(staged),
+                "source_file": source_file,
                 "source_location": f"L{lineno}",
             }
         )
@@ -99,7 +101,7 @@ def fake_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
                 "target": node_id,
                 "relation": "contains",
                 "confidence": "EXTRACTED",
-                "source_file": str(staged),
+                "source_file": source_file,
             }
         )
     # An import stub, attributed to ANOTHER file — must not survive.
@@ -118,7 +120,7 @@ def fake_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
             "target": "lib_other",
             "relation": "imports",
             "confidence": "EXTRACTED",
-            "source_file": str(staged),
+            "source_file": source_file,
         }
     )
     return {"nodes": nodes, "edges": edges, "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
@@ -178,8 +180,8 @@ def test_extracts_the_declarations_the_whole_file_loses(sample_component: Path) 
     """sv.4 — the functions the JS parser drops are recovered."""
     result = run(sample_component)
     labels = {n["label"] for n in result["nodes"]}
-    assert "increment" in labels
-    assert "loadThings" in labels
+    assert "increment()" in labels
+    assert "loadThings()" in labels
     # The cross-file import stub is dropped: graphify's own svelte pass owns
     # imports, and a second opinion here is what produces stub collisions.
     assert "lib_other" not in {n["id"] for n in result["nodes"]}
@@ -187,22 +189,60 @@ def test_extracts_the_declarations_the_whole_file_loses(sample_component: Path) 
 
 @pytest.mark.skipif(
     __import__("importlib.util", fromlist=["util"]).find_spec("graphify") is None,
-    reason="graphify lives in its own interpreter; not importable from the project venv",
+    reason="graphify lives in its own interpreter; preflight runs this check there",
 )
-def test_real_graphify_recovers_what_the_file_loses(sample_component: Path) -> None:
+def test_real_graphify_recovers_what_the_file_loses() -> None:
     """sv.4b — against the REAL extractor, when it is importable.
 
     The fake pins this module's logic; only this pins the premise the module
     exists for — that the whole `.svelte` file yields almost nothing while its
-    script body yields the declarations.
+    script body yields the declarations. graphify is never importable here, so
+    preflight runs the same check under graphify's own interpreter
+    (`scripts/graphify-python.sh scripts/graphify_svelte_extract.py
+    --check-premise`, ADR-119 G24).
     """
-    from graphify.extract import extract  # type: ignore[import-not-found]
+    holds, message = check_premise()
+    assert holds, message
 
-    whole = extract([sample_component], cache_root=sample_component.parents[2], parallel=False)
-    whole_own = [n for n in whole["nodes"] if str(sample_component) in (n.get("source_file") or "")]
-    rescued = extract_svelte_scripts([sample_component], root=sample_component.parents[2])
-    assert len(rescued["nodes"]) > len(whole_own)
-    assert "increment" in {n["label"] for n in rescued["nodes"]}
+
+def whole_file_loses_everything(paths: list[Path], *, cache_root: Path) -> dict:
+    """What graphify's JS parser does to a whole `.svelte` file: the markup fails
+    the parse at the top level and only the file node survives. A staged script
+    body goes to the ordinary fake."""
+    if paths[0].suffix != ".svelte":
+        return fake_js_extract(paths, cache_root=cache_root)
+    whole = paths[0]
+    node = {
+        "id": "components_widget",
+        "label": whole.name,
+        "source_file": graphify_source_file(whole, cache_root),
+    }
+    return {"nodes": [node], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
+
+
+def test_premise_check_holds_when_the_whole_file_loses_the_declarations() -> None:
+    """sv.4c — the check passes when the script body yields more than the whole file."""
+    holds, message = check_premise(js_extract=whole_file_loses_everything)
+    assert holds, message
+
+
+def test_premise_check_fails_when_the_whole_file_keeps_them() -> None:
+    """sv.4d — the check can fail: an extractor that read the whole file's
+    declarations itself would leave this module nothing to rescue."""
+    holds, message = check_premise(js_extract=fake_js_extract)
+    assert not holds
+    assert "no longer holds" in message
+
+
+def test_check_premise_flag_exits_by_the_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    """sv.4e — `--check-premise` exits 1 when the premise fails, 0 when it holds;
+    preflight's gate reads nothing else."""
+    import graphify_svelte_extract as module
+
+    monkeypatch.setattr(module, "check_premise", lambda: (False, "broken"))
+    assert module.main(["--check-premise"]) == 1
+    monkeypatch.setattr(module, "check_premise", lambda: (True, "fine"))
+    assert module.main(["--check-premise"]) == 0
 
 
 def test_nodes_are_attributed_to_the_svelte_file(sample_component: Path) -> None:
@@ -238,8 +278,8 @@ def test_line_numbers_point_into_the_svelte_file(sample_component: Path) -> None
     """
     result = run(sample_component)
     by_label = {n["label"]: n for n in result["nodes"]}
-    assert by_label["increment"]["source_location"] == "L5"
-    assert by_label["loadThings"]["source_location"] == "L9"
+    assert by_label["increment()"]["source_location"] == "L5"
+    assert by_label["loadThings()"]["source_location"] == "L9"
 
 
 def test_edges_only_reference_nodes_that_were_kept(sample_component: Path) -> None:
@@ -262,6 +302,22 @@ def test_the_file_node_is_left_to_graphify(sample_component: Path) -> None:
     result = run(sample_component)
     assert "components_widget" not in {n["id"] for n in result["nodes"]}
     assert not any(str(n.get("label", "")).endswith(".ts") for n in result["nodes"])
+
+
+def test_rescue_does_not_depend_on_the_temporary_folders_path(
+    sample_component: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """sv.11 (ADR-119 G26) — graphify rewrites a staged path under the resolved
+    cache root to a relative one. macOS's temporary folder sits behind a
+    symlink, so there the rewrite failed and the staged path matched by
+    accident; in a temporary folder with a real path (Linux, or a TMPDIR set to
+    one) every node was dropped and the rescue returned nothing, silently.
+    """
+    real = (tmp_path / "real-tmp").resolve()
+    real.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(real))
+    result = run(sample_component)
+    assert {n["label"] for n in result["nodes"]} >= {"increment()", "loadThings()"}
 
 
 def test_returns_the_standard_zero_token_shape(sample_component: Path) -> None:

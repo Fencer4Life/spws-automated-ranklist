@@ -362,6 +362,25 @@ class TestGateAndProd:
         with pytest.raises(replay.PromoteRefused, match=needle):
             replay.prior_fingerprint(CODE, run_fp=FP, state=state, earlier=[FP_DAY1])
 
+    def test_prod_holding_what_cert_held_when_the_run_began_is_the_prior(self):
+        """PROMO.REPLAY.32 (ADR-119 G17) — a recompute moved CERT and PROD away
+        from every earlier run's fingerprint (PPW1 2026/27, 4 Oct). PROD holding
+        exactly the prior the run started from is accepted: the apply makes the
+        change CERT made, from the same start. Anything else still refuses."""
+        moved = "7" * 64
+        state = {"status": "COMPLETED", "fingerprint": moved, "has_results": True}
+        assert (
+            replay.prior_fingerprint(
+                CODE, run_fp=FP, state=state, earlier=[FP_DAY1], run_prior=moved
+            )
+            == moved
+        )
+        for other in (None, "8" * 64):
+            with pytest.raises(replay.PromoteRefused, match="no FINISHED CERT run"):
+                replay.prior_fingerprint(
+                    CODE, run_fp=FP, state=state, earlier=[FP_DAY1], run_prior=other
+                )
+
 
 class TestPlanCompare:
     def test_a_plan_refusal_refuses_promote(self):
@@ -553,6 +572,20 @@ class TestApply:
         assert real["p_status"] == "IN_PROGRESS"
         assert real["p_plan"]["event_code"] == CODE and len(real["p_plan"]["ops"]) == 3
         assert outcome.applied and outcome.fingerprint == FP and outcome.writes == 58
+
+    def test_the_runs_recorded_prior_reaches_the_apply(self):
+        """PROMO.REPLAY.33 (ADR-119 G17) — the run row's prior is what promote
+        accepts PROD holding, and the apply is called with it."""
+        moved = "7" * 64
+        cert = FakeSide("cert", run=_run(txt_prior_fingerprint=moved), earlier=[FP_DAY1])
+        prod = FakeSide(
+            "prod",
+            run=None,
+            state={"status": "COMPLETED", "fingerprint": moved, "has_results": True},
+        )
+        outcome, parts = _replay(cert=cert, prod=prod)
+        _, real = parts["applier"].calls
+        assert real["p_prior_fingerprint"] == moved and outcome.applied
 
     @pytest.mark.parametrize(
         ("dry", "needle"),
@@ -804,3 +837,117 @@ class TestWiring:
         assert sent[0]["extras"]["promote_hint"] == f"reply `promote {CODE}` to push to PROD"
         gas = (ROOT / "scripts/gas_telegram_bot.js").read_text()
         assert "promote &lt;exact code&gt;" in gas
+
+
+# ---------------------------------------------------------------------------
+# LEDGER.02–03, 05 — the promote ledger on the CERT run row (ADR-119 §3, D10)
+# ---------------------------------------------------------------------------
+
+
+class FakeLedger:
+    def __init__(self, fail: Exception | None = None):
+        self.entries: list[tuple[int, dict]] = []
+        self.fail = fail
+
+    def record(self, run_id: int, entry: dict) -> None:
+        if self.fail is not None:
+            raise self.fail
+        self.entries.append((run_id, entry))
+
+
+class TestLedger:
+    def test_an_applied_promote_is_recorded_on_the_run_it_replayed(self):
+        """LEDGER.02"""
+        ledger = FakeLedger()
+        _replay(ledger=ledger)
+        assert ledger.entries == [(7, {"outcome": "applied", "fingerprint": FP, "reason": None})]
+
+    def test_a_skipped_promote_is_recorded(self):
+        """LEDGER.02 — PROD already held the run."""
+        ledger = FakeLedger()
+        prod = FakeSide(
+            "prod",
+            run=None,
+            state={"status": "IN_PROGRESS", "fingerprint": FP, "has_results": True},
+        )
+        applier = FakeApplier(real={"skipped": True, "writes": 0, "fingerprint": FP})
+        _replay(prod=prod, applier=applier, ledger=ledger)
+        assert ledger.entries == [(7, {"outcome": "skipped", "fingerprint": FP, "reason": None})]
+
+    @pytest.mark.parametrize(
+        "over, needle",
+        [
+            ({"gate_fn": _gate(False)}, "The gate blocks promote"),
+            ({"plan_fn": _plan_fn(PlanRefused("precondition", "the url differs"))}, "url differs"),
+            ({"applier": FakeApplier(real=replay.ApplyError("PROMOTE_PRIOR: x"))}, "PROMOTE_PRIOR"),
+        ],
+    )
+    def test_a_refusal_is_recorded_with_its_reason(self, over, needle):
+        """LEDGER.02 — by the gate, the plan or the apply."""
+        ledger = FakeLedger()
+        e, _ = _refused(ledger=ledger, **over)
+        ((run_id, entry),) = ledger.entries
+        assert run_id == 7 and entry["outcome"] == "refused" and entry["fingerprint"] is None
+        assert needle in entry["reason"] and entry["reason"] == str(e)
+
+    def test_a_refusal_before_a_run_is_found_records_nothing(self):
+        """LEDGER.02 — no run, no row to write on."""
+        ledger = FakeLedger()
+        _refused(cert=FakeSide("cert", run=None), ledger=ledger)
+        assert ledger.entries == []
+
+    def test_a_ledger_that_cannot_be_written_never_fails_a_promote(self, capsys):
+        """LEDGER.03"""
+        broken = FakeLedger(fail=RuntimeError("CERT unreachable"))
+        outcome, _ = _replay(ledger=broken)
+        assert outcome.applied
+        assert "promote ledger not written: RuntimeError: CERT unreachable" in (
+            capsys.readouterr().out
+        )
+        e, _ = _refused(gate_fn=_gate(False), ledger=FakeLedger(fail=RuntimeError("x")))
+        assert "The gate blocks promote" in str(e)
+
+    def test_a_dry_run_records_nothing(self):
+        """LEDGER.05 (B8)"""
+        ledger = FakeLedger()
+        _replay(ledger=ledger, write=False)
+        assert ledger.entries == []
+
+    def test_only_a_promote_to_prod_writes_the_ledger(self):
+        """LEDGER.05 (B8) — not a rehearsal on LOCAL, not a dry run."""
+        assert replay.ledger_for("local", dry_run=False, token="t") is None
+        assert replay.ledger_for("prod", dry_run=True, token="t") is None
+        ledger = replay.ledger_for("prod", dry_run=False, token="t")
+        assert isinstance(ledger, replay.CertLedger)
+        assert ledger.transport.read_only is False
+
+    def test_the_cert_ledger_writes_one_call_with_the_actions_run(self, monkeypatch):
+        """LEDGER.02 — the row write: fn_ingest_run_promote, with the run URL."""
+        monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+        monkeypatch.setenv("GITHUB_REPOSITORY", "Fencer4Life/SPWSranklist")
+        monkeypatch.setenv("GITHUB_RUN_ID", "99")
+        seen: list[str] = []
+
+        class T:
+            read_only = False
+
+            def fetch_json(self, sql: str):
+                seen.append(sql)
+                return {"recorded": True}
+
+        replay.CertLedger(T()).record(7, {"outcome": "refused", "fingerprint": None, "reason": "x"})
+        (sql,) = seen
+        assert "fn_ingest_run_promote(7, " in sql
+        assert '"run_url": "https://github.com/Fencer4Life/SPWSranklist/actions/runs/99"' in sql
+
+    def test_the_cert_ledger_refuses_a_read_only_transport(self):
+        """LEDGER.02 — the one write needs the writable transport."""
+
+        class T:
+            read_only = True
+
+            def fetch_json(self, sql: str):
+                raise AssertionError(f"a read-only ledger wrote: {sql}")
+
+        with pytest.raises(replay.PromoteRefused, match="writable"):
+            replay.CertLedger(T())

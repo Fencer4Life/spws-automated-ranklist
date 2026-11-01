@@ -83,8 +83,11 @@ What preflight covers: ruff (lint + format), basedpyright, `render_adrs.py
 --check`, `render_docs.py --check`, `render_handbook_frame.py --check`,
 `check_docs.py`, pytest, Vitest, `check-coherence.sh`, the LOCAL stack matching
 CI's (CLI pin, extensions), the postgrestools hard gate
-(`scripts/check-postgrestools.sh`), `supabase test db`, `check-spec-sync.sh`, the
-anon allowlist, `svelte-check`, the published scoring pages matching `scoring.ts`,
+(`scripts/check-postgrestools.sh`), `supabase test db`, the pipeline's LOCAL-database
+tests (`scripts/run_local_integration.py`, which fails on a skip),
+`check-spec-sync.sh`, the anon allowlist, `svelte-check`, the published scoring pages matching `scoring.ts`,
+the graph's `.svelte` premise under graphify's own interpreter
+(`scripts/graphify-python.sh scripts/graphify_svelte_extract.py --check-premise`),
 and the two checks `integrate-agent-branch.sh` enforces: `git diff --check` and
 "branch, merge and release named" (above).
 

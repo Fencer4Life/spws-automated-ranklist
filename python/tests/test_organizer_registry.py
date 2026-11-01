@@ -158,6 +158,7 @@ def test_ROUTE_ORG_04_a_fifth_organizer_needs_nothing_outside_the_registry():
     from python.pipeline import ingest_cli, organizers
     from python.pipeline.engine.flows import Flow
     from python.pipeline.promotion import plan as pl
+    from python.tests.cert_apply_fakes import cert_state, recorded
     from python.tests.test_route_international import _committed, _recs
 
     fifth = organizers.Organizer("XVF", "A fixture veterans federation", organizers.INTERNATIONAL)
@@ -178,6 +179,7 @@ def test_ROUTE_ORG_04_a_fifth_organizer_needs_nothing_outside_the_registry():
         }
         db.open_ingest_run.return_value = 9
         db.finish_ingest_run.return_value = {}
+        cert_state(db)
         flow = MagicMock(side_effect=_committed)
         kept = [
             {"uuid": "A1", "name": "x", "finished": True},
@@ -191,12 +193,12 @@ def test_ROUTE_ORG_04_a_fifth_organizer_needs_nothing_outside_the_registry():
             patch("python.pipeline.ingest_cli._run_parsed_through_flow", side_effect=flow),
             patch("python.pipeline.ingest_cli._fire_staging_report", return_value=None),
             patch("python.pipeline.ingest_cli._after_event_run"),
+            recorded(),
         ):
             ingest_cli.ingest_event_from_url(
                 event_code="XVC1-2026-2027",
                 season_end_year=2027,
                 db=db,
-                replace=True,
                 record_run="cert",
             )
         assert flow.call_count == 2

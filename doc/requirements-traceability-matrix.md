@@ -727,6 +727,7 @@ Acceptance IDs for [ADR-119](adr/119-partial-ingest-promote-and-organizer-regist
 | MIRROR.TOKEN.01–02 | The LOCAL-equals-PROD check fails on a token the Management API rejects, naming no token; any other error propagates (ADR-119 G21, ADR-036 amendment). | pytest | `python/tests/test_prod_mirror_token.py` | Covered (2026-11-01, LOCAL) |
 | SBCLIENT.01–04 | Every Supabase client is built by `make_supabase_client` with its own HTTP client (PostgREST's default timeout, redirects, HTTP/2): building one and touching PostgREST and Storage raises no warning, both send their own address and key with each request, and no other module calls `create_client` (ADR-119 G22). | pytest | `python/tests/test_db_connector.py` | Covered (2026-11-01, LOCAL) |
 | P3.D13 | No test writes the repository's `doc/staging`: an autouse fixture points the fallback folder of the 3-way diff and of the staging report at each test's temporary folder, and a write given no folder lands there (ADR-119 G25). | pytest | `python/tests/test_staging_guard.py`, `python/tests/conftest.py` | Covered (2026-11-01, LOCAL) |
+| SCHEMAFP.01–03 | `scripts/schema-fingerprint.sh local` reaches LOCAL through the Docker Supabase stack: it sends the query to the `supabase_db_SPWSranklist` container and prints its answer, never calls a `psql` on the host, and a failure gives its own message and exit 1 (ADR-119 G27, [ADR-011](adr/011-artifact-release-pipeline.md)). | pytest | `python/tests/test_schema_fingerprint.py` | Covered (2026-11-01, LOCAL) |
 
 ## Cross-references
 

@@ -5,7 +5,8 @@
 #   LOCAL:  ./scripts/schema-fingerprint.sh local
 #   CLOUD:  ./scripts/schema-fingerprint.sh cloud <SUPABASE_REF>
 #
-# Requires: psql (local) or curl + SUPABASE_ACCESS_TOKEN env var (cloud)
+# Requires: the LOCAL Docker Supabase stack running (local), or curl, jq and
+# SUPABASE_ACCESS_TOKEN (cloud)
 #
 # Output: prints the schema fingerprint (md5 hex string) to stdout.
 # Exit 0 on success, 1 on error.
@@ -51,10 +52,12 @@ FROM func_hash f, col_hash c;
 EOSQL
 
 if [ "$MODE" = "local" ]; then
-  # Local Docker Supabase — psql on port 54322
-  RESULT=$(psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-    -t -A -c "$FINGERPRINT_SQL" 2>&1)
-  if [ $? -ne 0 ]; then
+  # LOCAL is the Docker Supabase stack, on a developer's machine and in the
+  # Release's build job (`supabase start`), so the query goes to its database
+  # container; a psql on the host is never LOCAL (ADR-119 G27). The failure is
+  # tested inside `if`, where `set -e` lets the message through.
+  if ! RESULT=$(docker exec -i supabase_db_SPWSranklist psql -U postgres -d postgres -t -A \
+    <<<"$FINGERPRINT_SQL" 2>&1); then
     echo "ERROR: Failed to compute local fingerprint: $RESULT" >&2
     exit 1
   fi

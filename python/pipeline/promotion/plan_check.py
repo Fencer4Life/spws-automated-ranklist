@@ -8,16 +8,25 @@ as promote starts each event from PROD's state:
     python -m python.pipeline.promotion.plan_check live --events PPW1-2026-2027 --out S.json
     ./scripts/reset-dev.sh
     python -m python.pipeline.promotion.plan_check plan --state S.json [--apply sql]
+    python -m python.pipeline.promotion.plan_check recorded --state S.json
+
+`recorded` is the CERT ingest of ADR-119 §3 on LOCAL (CERTAPPLY.10): the
+recorded path, plan with reserved fencer ids and one fn_promote_event_apply,
+compared with the live run. It needs SUPABASE_ACCESS_TOKEN, since the gate
+reads PROD after each apply.
 
 `live` ingests each event from its FTL URL as `ingest-event.yml` does, notes the
 fencers each one created, and saves what the events left in the database. `plan`
 plans each event on LOCAL through the recording connector, with the live run's
-created fencers, applies the plan with `apply_plan`, and compares the database
+created fencers and, for a PZSz event, the start lists LOCAL stores (the live
+half read the same), applies the plan with `apply_plan`, and compares the database
 with the saved state. `--apply sql` applies through fn_promote_event_apply instead
-(build step 9): a dry run, then the apply, with the live run's result fingerprint
-and the inputs it started from. Exit 0 means equal, 1 different. An event whose live run
-fails has nothing to compare: `plan` reports the live error and what plan mode
-does with the event, and exits 3. It refuses any database but LOCAL.
+(build step 9): a dry run, then the apply, with the live run's result fingerprint,
+the inputs it started from and, as the prior, the result fingerprint the event
+held before it (none when it held no results; ADR-119 G18). Exit 0 means equal,
+1 different. An event whose live run fails has nothing to compare: `plan`
+reports the live error and what plan mode does with the event, and exits 3. It
+refuses any database but LOCAL.
 """
 
 from __future__ import annotations
@@ -115,10 +124,14 @@ def live(event_codes: list[str], out: Path) -> int:
     created: dict[str, list[dict]] = {}
     errors: dict[str, str] = {}
     inputs: dict[str, dict] = {}
+    priors: dict[str, str | None] = {}
     fingerprints: dict[str, str] = {}
     for code in event_codes:
         before = {f["id_fencer"] for f in db.fetch_fencer_db()}
         inputs[code] = _rpc(db, "fn_event_input_fingerprint", {"p_event_code": code})["parts"]
+        # What the event held before the run: the SQL apply's prior (G18).
+        held = db.event_result_state(code)
+        priors[code] = held.get("fingerprint") if held.get("has_results") else None
         try:
             ingest_cli.ingest_event_from_url(code, _season_end(code), db=db, md_target="none")
         except Exception as e:  # recorded: an event that fails live has nothing to compare
@@ -142,6 +155,7 @@ def live(event_codes: list[str], out: Path) -> int:
         "created": created,
         "errors": errors,
         "inputs": inputs,
+        "priors": priors,
         "fingerprints": fingerprints,
         "snapshot": snapshot(db, event_codes),
     }
@@ -163,7 +177,8 @@ def _sql_apply(db: Any, plan: Any, state: dict, code: str) -> dict:
         "p_plan": json.loads(json.dumps(plan.to_json(), default=str)),
         "p_expected_fingerprint": expected,
         "p_expected_inputs": state["inputs"][code],
-        "p_prior_fingerprint": None,
+        # G18: what the event held before the live run, as promote names PROD's.
+        "p_prior_fingerprint": (state.get("priors") or {}).get(code),
         "p_status": plan.status,  # ADR-108 §7, the lifecycle rule's status
         "p_dry_run": True,
     }
@@ -179,6 +194,18 @@ def _sql_apply(db: Any, plan: Any, state: dict, code: str) -> dict:
     return _rpc(db, "fn_promote_event_apply", {**params, "p_dry_run": False})
 
 
+def _stored_start_lists(db: Any, event: dict | None) -> dict | None:
+    """A PZSz event's start lists as the live half read them: LOCAL's newest
+    stored version of each weapon and gender, as promote reads the CERT run's
+    (ADR-112 §4, ADR-119 G15). None for an event of another route."""
+    id_pzsz = (event or {}).get("id_pzsz_event")
+    if not id_pzsz:
+        return None
+    from python.scrapers.pzsz_start_list_store import newest_by_series
+
+    return newest_by_series(db.fetch_pzsz_start_lists(int(id_pzsz)))
+
+
 def plan(state_path: Path, apply: str = "python") -> int:
     from python.pipeline.promotion.plan import PlanRefused, apply_plan, plan_event
 
@@ -192,7 +219,12 @@ def plan(state_path: Path, apply: str = "python") -> int:
             url = (event or {}).get("url_event") or ""
             try:
                 p = plan_event(
-                    code, _season_end(code), db, url_event=url, created=state["created"][code]
+                    code,
+                    _season_end(code),
+                    db,
+                    url_event=url,
+                    created=state["created"][code],
+                    pzsz_start_lists=_stored_start_lists(db, event),
                 )
                 print(f"  plan mode: {len(p.ops)} operation(s); the apply meets the same error")
             except PlanRefused as e:
@@ -203,7 +235,14 @@ def plan(state_path: Path, apply: str = "python") -> int:
     for code in state["events"]:
         event = db.find_event_by_code(code)
         url = (event or {}).get("url_event") or ""
-        p = plan_event(code, _season_end(code), db, url_event=url, created=state["created"][code])
+        p = plan_event(
+            code,
+            _season_end(code),
+            db,
+            url_event=url,
+            created=state["created"][code],
+            pzsz_start_lists=_stored_start_lists(db, event),
+        )
         counts: dict[str, int] = {}
         for op in p.ops:
             counts[op["op"]] = counts.get(op["op"], 0) + 1
@@ -227,6 +266,49 @@ def plan(state_path: Path, apply: str = "python") -> int:
     return 0
 
 
+def recorded(state_path: Path) -> int:
+    """CERTAPPLY.10 (ADR-119 §3): each event ingested the way a recorded CERT
+    run is, read, plan with reserved ids, one fn_promote_event_apply, and the
+    database compared with the saved live state, fingerprint for fingerprint
+    and fencer id for fencer id. The gate runs after each apply; a block is
+    reported and the comparison goes on, since the run is written."""
+    from python.pipeline import ingest_cli
+    from python.pipeline.promotion.cert_apply import GateBlocked
+
+    db = _local_db()
+    state = json.loads(state_path.read_text())
+    if state.get("errors"):
+        for code, error in state["errors"].items():
+            print(f"LIVE FAILED {code}: {error}")
+        return 3
+    differ: list[str] = []
+    for code in state["events"]:
+        try:
+            ingest_cli.ingest_event_from_url(
+                code, _season_end(code), db=db, md_target="none", record_run="local"
+            )
+        except GateBlocked as e:
+            print(f"recorded {code}: {e}")
+        reached = _rpc(db, "fn_event_result_fingerprint", {"p_event_code": code})
+        if reached != state["fingerprints"][code]:
+            differ.append(
+                f"{code}: live {state['fingerprints'][code][:12]}, recorded {reached[:12]}"
+            )
+        print(f"recorded {code}: result {reached[:12]}")
+    applied = json.loads(json.dumps(snapshot(db, state["events"]), default=str))
+    diffs = differ + _diff(state["snapshot"], applied)
+    if diffs:
+        print(f"DIFFERENT: {len(diffs)} difference(s)")
+        for d in diffs[:60]:
+            print("  " + d)
+        return 1
+    print(
+        f"EQUAL: {len(state['events'])} event(s), {len(applied['tournaments'])} tournaments, "
+        f"{len(applied['results'])} results, {len(applied['fencers'])} fencers"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Plan mode: plan, then apply, equals a live run (LOCAL)."
@@ -238,9 +320,13 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("plan")
     b.add_argument("--state", required=True, type=Path)
     b.add_argument("--apply", choices=("python", "sql"), default="python")
+    c = sub.add_parser("recorded", help="the recorded CERT path against the live state")
+    c.add_argument("--state", required=True, type=Path)
     args = ap.parse_args(argv)
     if args.mode == "live":
         return live([c.strip() for c in args.events.split(",") if c.strip()], args.out)
+    if args.mode == "recorded":
+        return recorded(args.state)
     return plan(args.state, args.apply)
 
 
