@@ -861,7 +861,12 @@ class StagingFormatter(BasePlugin):
         )
         from pathlib import Path
 
-        write_diff(event_code, diff_md, Path(staging_dir) if staging_dir else None, timestamp=stamp)
+        # ADR-119 G19 B: the diff names fencers, so its file is written only where
+        # a local file is wanted; "none" and "storage" keep it in memory for Telegram.
+        if md_target in ("local", "both"):
+            write_diff(
+                event_code, diff_md, Path(staging_dir) if staging_dir else None, timestamp=stamp
+            )
 
         # N15: expose the rendered bytes so the caller (ingest_event_from_url) can send
         # the exact full + diff documents to Telegram without re-rendering.

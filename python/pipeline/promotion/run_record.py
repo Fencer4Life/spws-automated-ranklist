@@ -138,6 +138,39 @@ class ListingLog:
         self.refusal: dict | None = None
         self.pzsz_event: int | None = None
         self.sources: list[dict] | None = None
+        # Each listing's entry, by the record it was read from, so the commit
+        # adds its outcome to the entry the read made (ADR-119 §3, B9).
+        self._entries: dict[int, dict] = {}
+
+    def add_read(self, read: Any) -> None:
+        """Everything a route's reader read (ingest_cli.EventRead), before the
+        commit starts: a run that fails part-way still lists every listing."""
+        if read.pzsz_event is not None:
+            self.add_pzsz_event(int(read.pzsz_event))
+        if read.sources is not None:
+            self.add_sources(read.sources)
+        self.add_schedule(read.kept, read.skipped)
+        for u in read.unparseable:
+            self.add_unparseable(u["name"], u["uuid"])
+        for rec, decision in zip(read.listings, read.decisions, strict=True):
+            self.add_round(rec, decision)
+
+    def add_outcome(self, rec: Mapping, decision: Mapping, ctx: Any) -> None:
+        """What the commit of a listing already read did, and the keep-rule's
+        final verdict on it (an international bracket with no fencer of ours
+        is dropped after its commit)."""
+        entry = self._entries.get(id(rec))
+        if entry is None:
+            self.add_round(rec, decision, ctx)
+            return
+        entry.update(
+            status=decision["status"],
+            reason=decision.get("reason", ""),
+            committed_categories=list(decision.get("commit_cats") or []),
+            outcome=_outcome(ctx),
+            identity=_identity(ctx),
+        )
+        self.current = None
 
     def add_pzsz_event(self, id_pzsz_event: int) -> None:
         """The PZSz event whose start lists a PZSz run read (ADR-111 §6).
@@ -194,6 +227,7 @@ class ListingLog:
             entry["outcome"] = _outcome(ctx)
             entry["identity"] = _identity(ctx)
         self.rounds.append(entry)
+        self._entries[id(rec)] = entry
         self.current = None
 
     def listings(self) -> dict:
@@ -217,8 +251,17 @@ class RunRecord(ListingLog):
 
     @classmethod
     def open(
-        cls, db: Any, *, event_code: str, environment: str, season_end_year: int, url_event: str
+        cls,
+        db: Any,
+        *,
+        event_code: str,
+        environment: str,
+        season_end_year: int,
+        url_event: str,
+        prior_fingerprint: str | None = None,
     ) -> RunRecord:
+        """Open the row. `prior_fingerprint` is what the event held when the
+        run began (ADR-119 G17), None when it held no results."""
         if environment not in ENVIRONMENTS:
             raise ValueError(
                 f"A run is recorded on {' or '.join(ENVIRONMENTS)}, not {environment!r} (ADR-108 §4)."
@@ -233,6 +276,7 @@ class RunRecord(ListingLog):
                 "p_url_event": url_event,
                 "p_run_url": run_url(),
                 "p_override_sha256": override_sha256(event_code),
+                "p_prior_fingerprint": prior_fingerprint,
             }
         )
         print(f"run record {run_id} opened on {environment} (commit {commit[:12]})")

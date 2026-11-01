@@ -99,6 +99,10 @@ if [[ $FAST -eq 1 ]]; then
 else
   gate "supabase test db (CI)"        supabase test db
 fi
+# CI's pytest job has no database, so it skips the pipeline's LOCAL-database
+# tests (P3.INT); a skip hid them while they failed (ADR-119 G20). This runs
+# them against LOCAL and fails on any skip. They take seconds and are not dropped.
+gate "pipeline tests on LOCAL (AGENTS)" python scripts/run_local_integration.py
 
 # ---------------------------------------------------------------------------
 # Gates AGENTS.md requires that CI does not run. A green CI does not make these
@@ -116,6 +120,12 @@ if [[ $CI_ONLY -eq 0 ]]; then
   # and a stale copy means the pages and the database disagree about the
   # formula — which no other gate would notice.
   gate "published pages match scoring.ts" node frontend/scripts/build-scoring-pages.mjs --check
+  # The .svelte rescue in the graph refresh exists because graphify's extractor
+  # loses what a whole component declares. Only graphify's real extractor can
+  # show that, and graphify is not in the project venv, so sv.4b skipped
+  # everywhere (ADR-119 G24). This runs the same check under graphify's own
+  # interpreter and fails when the interpreter is missing.
+  gate "graphify svelte premise (AGENTS)" bash scripts/graphify-python.sh scripts/graphify_svelte_extract.py --check-premise
   # Trailing whitespace blocks scripts/integrate-agent-branch.sh, which runs
   # `git diff --check` before it will merge a task branch.
   gate "git diff --check (integrate)" bash -c 'git fetch origin main -q 2>/dev/null; git diff --check origin/main...HEAD'

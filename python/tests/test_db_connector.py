@@ -137,3 +137,71 @@ class TestDbConnector:
         mock_sb2.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
         db2 = DbConnector(mock_sb2)
         assert db2.has_existing_results(5) is False
+
+
+class TestSupabaseClient:
+    """SBCLIENT.01–04 (ADR-119 G22): supabase-py 2.31 hands `timeout` and `verify`
+    to its PostgREST and Storage clients unless it is given an HTTP client, and
+    both libraries deprecate those arguments. Every client is built by one helper
+    that gives it one, so none raises the warning."""
+
+    def test_connector_builds_without_deprecation_warnings(self, monkeypatch):
+        """SBCLIENT.01"""
+        import warnings
+
+        from python.pipeline.db_connector import create_db_connector
+
+        monkeypatch.setenv("SUPABASE_URL", "http://127.0.0.1:54321")
+        monkeypatch.setenv("SUPABASE_KEY", "header.payload.signature")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            db = create_db_connector()
+            # Both are built on first use; that is where the warnings came from.
+            assert db._sb.postgrest is not None
+            assert db._sb.storage is not None
+
+    def test_the_http_client_keeps_the_librarys_defaults(self):
+        """SBCLIENT.02"""
+        from postgrest.constants import DEFAULT_POSTGREST_CLIENT_TIMEOUT
+
+        from python.pipeline.db_connector import make_supabase_client
+
+        sb = make_supabase_client("http://127.0.0.1:54321", "header.payload.signature")
+        session = sb.postgrest.session
+        assert session.timeout.read == DEFAULT_POSTGREST_CLIENT_TIMEOUT
+        assert session.follow_redirects is True
+        assert sb.storage.session is session
+
+    def test_postgrest_and_storage_send_their_own_address_and_key(self, httpx_mock):
+        """SBCLIENT.03 The shared HTTP client carries no address or headers of its
+        own, so each sub-client must send them with every request. LOCAL runs
+        without Storage, so the requests are recorded here instead."""
+        from python.pipeline.db_connector import make_supabase_client
+
+        base, key = "http://127.0.0.1:54321", "header.payload.signature"
+        httpx_mock.add_response(url=f"{base}/rest/v1/tbl_season?select=txt_code", json=[])
+        httpx_mock.add_response(url=f"{base}/storage/v1/bucket", json=[])
+        sb = make_supabase_client(base, key)
+        sb.table("tbl_season").select("txt_code").execute()
+        sb.storage.list_buckets()
+
+        requests = httpx_mock.get_requests()
+        assert [r.url.path for r in requests] == ["/rest/v1/tbl_season", "/storage/v1/bucket"]
+        for r in requests:
+            assert r.headers["apikey"] == key
+            assert r.headers["authorization"] == f"Bearer {key}"
+
+    def test_every_client_is_built_by_the_helper(self):
+        """SBCLIENT.04 No Python the repository runs calls create_client itself."""
+        from pathlib import Path
+
+        repo = Path(__file__).resolve().parents[2]
+        direct = sorted(
+            str(p.relative_to(repo))
+            for top in ("python", "scripts", "tools")
+            for p in (repo / top).rglob("*.py")
+            if "tests" not in p.parts
+            and p.name != "db_connector.py"
+            and "create_client(" in p.read_text(encoding="utf-8")
+        )
+        assert direct == [], f"build clients with db_connector.make_supabase_client: {direct}"

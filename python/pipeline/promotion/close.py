@@ -26,7 +26,7 @@ import datetime as dt
 import os
 import re
 import sys
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -139,8 +139,33 @@ def check(
     if cert.result_fingerprint(code) != fingerprint:
         reasons.append("CERT no longer holds its run's result: ingest CERT again")
     if prod.result_fingerprint(code) != fingerprint:
-        reasons.append("PROD does not hold the CERT run's result: promote it")
+        reasons.append(_promote_reason(run.get("promote")))
     return reasons
+
+
+class Quoted(str):
+    """A reason quoting the promote ledger: Telegram gets it whole, the public
+    Actions log only `public`, since a refusal can name a fencer (D12)."""
+
+    public: str
+
+    def __new__(cls, text: str, public: str) -> Quoted:
+        quoted = super().__new__(cls, text)
+        quoted.public = public
+        return quoted
+
+
+def _promote_reason(entry: Mapping[str, Any] | None) -> str:
+    """Why PROD lacks the CERT run's result: the ledger's refusal when the last
+    promote was refused (ADR-119 §3, D10), else the instruction to promote."""
+    if not entry or entry.get("outcome") != "refused":
+        return "PROD does not hold the CERT run's result: promote it"
+    ts = dt.datetime.fromisoformat(str(entry.get("ts")))
+    head = f"promote refused at {ts.astimezone(lifecycle.WARSAW):%Y-%m-%d %H:%M}"
+    return Quoted(
+        f"{head}: {entry.get('reason')}",
+        f"{head} (the reason is in Telegram and on the CERT run's row)",
+    )
 
 
 def close_events(
@@ -165,10 +190,9 @@ def close_events(
             continue
         if reasons:
             outcomes.append(Outcome(code, False, reasons))
-            message = f"Daily close: {code} stays IN_PROGRESS.\n" + "\n".join(
-                f"• {r}" for r in reasons
-            )
-            print(message)
+            head = f"Daily close: {code} stays IN_PROGRESS.\n"
+            message = head + "\n".join(f"• {r}" for r in reasons)
+            print(head + "\n".join(f"• {getattr(r, 'public', r)}" for r in reasons))
             if notifier is not None and write:
                 notifier.warning(message)
             continue
@@ -243,7 +267,8 @@ class SqlEnv:
     def latest_finished_run(self, code: str) -> dict | None:
         return self.transport.fetch_json(
             "SELECT jsonb_build_object('url_event', url_event, 'listings', jsonb_listings, "
-            "'result_fingerprint', txt_result_fingerprint) AS j FROM tbl_ingest_run "
+            "'result_fingerprint', txt_result_fingerprint, 'promote', jsonb_promote) AS j "
+            "FROM tbl_ingest_run "
             f"WHERE txt_event_code = '{_code(code)}' AND txt_environment = 'cert' "
             "AND txt_status = 'FINISHED' ORDER BY id_ingest_run DESC LIMIT 1"
         )

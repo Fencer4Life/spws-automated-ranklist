@@ -11,8 +11,11 @@ replays that run on PROD, so the record holds what the replay must repeat:
   - the input fingerprint and the master-data changes, computed in SQL by
     fn_ingest_run_open / fn_ingest_run_finish (pgTAP 100_ingest_run).
 
-The run opens before the ingestion writes anything and closes FINISHED, or
-FAILED with the error.
+From ADR-119 §3 (release 2) a recorded run is plan + apply: it reads every
+listing first, saves a link given with the command, opens the run, plans
+against CERT and writes in one apply; it closes FINISHED, or FAILED with the
+error. A read failure opens no run (B1). The apply, the drain and the gate are
+faked here (python/tests/cert_apply_fakes.py); test_cert_apply.py drives them.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ import yaml
 
 from python.pipeline.ir import ParsedResult
 from python.pipeline.promotion import run_record as rr
+from python.tests.cert_apply_fakes import cert_state, recorded
 
 ROOT = Path(__file__).resolve().parents[2]
 EVENT = "PPW1-2026-2027"
@@ -112,7 +116,7 @@ def _db() -> MagicMock:
         "aliases_added": [],
         "other": [],
     }
-    return db
+    return cert_state(db)
 
 
 def _committed_ctx(*a, **k):
@@ -150,24 +154,32 @@ def _ingest(
         patch("python.pipeline.ingest_cli._run_parsed_through_flow", side_effect=run_flow),
         patch("python.pipeline.ingest_cli._fire_staging_report", return_value=None),
         patch("python.pipeline.ingest_cli._after_event_run"),
+        recorded(),
     ):
+        # B10: a recorded run replaces through its apply; --replace is the live path's.
         return ingest_cli.ingest_event_from_url(
             event_code=EVENT,
             season_end_year=2027,
             db=db,
-            replace=True,
+            replace=record_run is None,
             url_event_override=url,
             record_run=record_run,
         )
 
 
 class TestRecordedRun:
-    def test_the_run_opens_before_the_ingestion_writes(self):
-        """PROMO.RUN.03 — before the URL write and before the wipe."""
+    def test_the_run_opens_after_the_read_and_the_given_link(self):
+        """PROMO.RUN.03 — ADR-119 §3 (B1, B2): the given link is saved after the
+        read succeeds, then the run opens; the plan writes nothing to CERT and
+        the one apply writes the rest."""
         db = _db()
         _ingest(db, record_run="cert")
         names = [c[0] for c in db.method_calls]
-        assert names.index("open_ingest_run") < names.index("set_event_url_event")
+        assert names.index("set_event_url_event") < names.index("open_ingest_run")
+        after_open = names[names.index("open_ingest_run") :]
+        assert not {"insert_fencer", "ingest_results", "find_or_create_tournament"} & set(
+            after_open
+        ), "the plan wrote to CERT outside the apply"
         params = db.open_ingest_run.call_args.args[0]
         assert params == {
             "p_event_code": EVENT,
@@ -177,6 +189,7 @@ class TestRecordedRun:
             "p_url_event": SCHEDULE_URL,
             "p_run_url": "https://github.com/spws/ranklist/actions/runs/123",
             "p_override_sha256": rr.override_sha256(EVENT),
+            "p_prior_fingerprint": None,  # G17: CERT held no results when the run began
         }
 
     def test_the_run_finishes_with_every_listing_hashed_and_its_outcome(self):
@@ -233,8 +246,8 @@ class TestRecordedRun:
 class TestTheSourceIsAnFtlSchedule:
     """CALURL.16–17 (issue #3 of the 25 Oct results-link RCA): LOCAL run 403
     took a pzszerm.pl page as its event URL and finished green with nothing
-    read. The ingest now refuses it, before the URL is saved or anything is
-    wiped, and closes the run FAILED."""
+    read. The ingest refuses it before the URL is saved or anything is
+    written; from ADR-119 §3 (B1) a read failure opens no run at all."""
 
     def test_a_url_that_is_not_an_ftl_schedule_is_refused_and_not_saved(self):
         """CALURL.16"""
@@ -247,11 +260,10 @@ class TestTheSourceIsAnFtlSchedule:
             _ingest(db, record_run="cert", url=page)
         db.set_event_url_event.assert_not_called()
         wipe.assert_not_called()
-        _run_id, error, _listings = db.fail_ingest_run.call_args.args
-        assert "not an FTL event schedule" in error
-        db.finish_ingest_run.assert_not_called()
+        db.open_ingest_run.assert_not_called()
+        db.fail_ingest_run.assert_not_called()
 
-    def test_a_schedule_that_lists_nothing_is_refused_before_the_wipe(self):
+    def test_a_schedule_that_lists_nothing_is_refused_before_anything_is_written(self):
         """CALURL.17"""
         db = _db()
         with (
@@ -260,9 +272,9 @@ class TestTheSourceIsAnFtlSchedule:
         ):
             _ingest(db, record_run="cert", schedule=([], []))
         wipe.assert_not_called()
-        _run_id, error, _listings = db.fail_ingest_run.call_args.args
-        assert "lists no events" in error
-        db.finish_ingest_run.assert_not_called()
+        db.set_event_url_event.assert_not_called()
+        db.open_ingest_run.assert_not_called()
+        db.fail_ingest_run.assert_not_called()
 
     def test_every_ftl_schedule_shape_is_accepted(self):
         """CALURL.16: www or apex host, a fragment or a query after the id."""

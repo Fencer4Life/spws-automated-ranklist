@@ -36,21 +36,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 
-PY_PIN="graphify-out/.graphify_python"
-PY_FALLBACK="/Users/aleks/.local/share/uv/tools/graphifyy/bin/python"
-
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit 0
 fi
 
-PYTHON=""
-if [ -f "$PY_PIN" ]; then PYTHON="$(cat "$PY_PIN")"; fi
-if [ -z "$PYTHON" ] || [ ! -x "$PYTHON" ]; then PYTHON="$PY_FALLBACK"; fi
-if [ ! -x "$PYTHON" ] || ! "$PYTHON" -c "import graphify" 2>/dev/null; then
-  echo "refresh-graph: graphify interpreter not found (looked at '$PYTHON')." >&2
-  echo "  Install with: uv tool install graphifyy   then run a full /graphify ." >&2
-  exit 2
-fi
-
-exec "$PYTHON" "${SCRIPT_DIR}/graphify_refresh.py" "$@"
+# scripts/graphify-python.sh finds the interpreter (and exits 2 without one),
+# the same lookup preflight's svelte premise check uses.
+exec "${SCRIPT_DIR}/graphify-python.sh" "${SCRIPT_DIR}/graphify_refresh.py" "$@"

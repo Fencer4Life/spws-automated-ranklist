@@ -520,9 +520,9 @@ def main(argv: list[str] | None = None) -> None:
         cert_key = os.environ.get("SUPABASE_CERT_SERVICE_ROLE_KEY")
         if cert_key and not args.dry_run:
             try:
-                from supabase import create_client
+                from python.pipeline.db_connector import make_supabase_client
 
-                sb_cert = create_client(f"https://{cert_ref}.supabase.co", cert_key)
+                sb_cert = make_supabase_client(f"https://{cert_ref}.supabase.co", cert_key)
             except Exception:  # noqa: BLE001 — report is best-effort, never fails the promote
                 sb_cert = None
         report_target: Target = "none" if args.dry_run else ("both" if sb_cert else "local")

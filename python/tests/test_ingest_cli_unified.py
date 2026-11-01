@@ -236,3 +236,58 @@ class TestUnifiedXmlIngest:
             "process_xml_file must emit a DeprecationWarning pointing to "
             "ingest_xml_unified so any remaining caller is forced to migrate"
         )
+
+
+class TestDryRunWritesNothing:
+    """DRYRUN.01 (ADR-119 G23 A): `--dry-run` promises "Parse without writing", but it
+    handed run_pipeline the real connector, so Stage 0 created every new
+    participant and moved matched fencers' birth years before any later stage
+    could halt. The dry run now records those writes and prints them instead."""
+
+    def test_dry_run_records_stage_zero_writes(self, capsys):
+        from datetime import date
+
+        from python.pipeline import ingest_cli
+        from python.pipeline.ir import ParsedTournament, SourceKind
+        from python.tests.test_s0_reconcile_roster import FakeDB, _fencer, _result
+
+        class _Db(FakeDB):
+            def find_event_by_code(self, code):
+                return {
+                    "id_event": 1,
+                    "txt_code": code,
+                    "url_event": "https://x.test/e",
+                    "dt_start": "2025-10-04",
+                }
+
+            def fetch_registration_birth_years(self, _code):
+                return []
+
+            def find_seasons_containing_dates(self, _start, _end):
+                return []  # S2 halts, as it did in G20's run, after Stage 0
+
+        # ZIELINSKI Tomasz is confirmed 1991 (V0); a V1 bracket moves him (10.4.2).
+        db = _Db([_fencer(1, "ZIELINSKI", "Tomasz", by=1991, estimated=False)])
+        parsed = ParsedTournament(
+            source_kind=SourceKind.FENCINGTIME_XML,
+            results=[_result("ZIELINSKI Tomasz", 1), _result("NOWAK Jan", 2)],
+            parsed_date=date(2025, 10, 4),
+            weapon="EPEE",
+            gender="M",
+            category_hint="V1",
+        )
+        with patch("python.scrapers.fencingtime_xml.parse", return_value=parsed):
+            run_id = ingest_cli.ingest_xml_unified(
+                path=str(FIXTURES / "combined_v0v1.xml"),
+                event_code="PPW3-2025-2026",
+                season_end_year=2026,
+                db=db,
+                notifier=_silent_notifier(),
+                dry_run=True,
+            )
+
+        assert run_id is None
+        assert db.inserted == [] and db.updated == []
+        out = capsys.readouterr().out
+        assert "would create NOWAK Jan" in out
+        assert "would set the birth year of fencer #1 to 1986 (estimated)" in out

@@ -12,12 +12,13 @@ from pathlib import Path
 from typing import Any, cast
 
 import openpyxl
-from supabase import create_client
+
+from python.pipeline.db_connector import make_supabase_client
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
-sb = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+sb = make_supabase_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 
 def load_excel_scores(excel_path: Path, sheet_name: str = "Ranking") -> dict:

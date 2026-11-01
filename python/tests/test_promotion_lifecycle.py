@@ -413,6 +413,37 @@ class TestDailyClose:
         assert cert.writes == [] and prod.writes == []
         assert "promote" in notifier.messages[0][1]
 
+    def test_a_refused_promote_is_quoted_from_the_ledger(self, capsys):
+        """LEDGER.04 — ADR-119 §3 (D10): the close says why PROD lacks the run,
+        from the ledger on the CERT run's row. Telegram gets the reason whole;
+        the public log only its time (D12: no fencer name in a log line)."""
+        run = _run()
+        run["promote"] = {
+            "outcome": "refused",
+            "fingerprint": None,
+            "reason": "[identity] PROD would create KOWALSKI Jan (1972); the CERT run did not.",
+            "run_url": None,
+            "ts": "2026-09-28T13:08:41.5+00:00",
+        }
+        cert, prod = FakeEnv("cert", run=run), FakeEnv("prod", fingerprint="0" * 64)
+        outcomes, notifier = _close(cert, prod)
+        (outcome,) = outcomes
+        assert not outcome.closed
+        quoted = "promote refused at 2026-09-28 15:08: [identity] PROD would create KOWALSKI Jan"
+        assert any(r.startswith(quoted) for r in outcome.reasons)
+        assert quoted in notifier.messages[0][1]
+        out = capsys.readouterr().out
+        assert "promote refused at 2026-09-28 15:08" in out and "KOWALSKI" not in out
+
+    @pytest.mark.parametrize("promote", [None, {"outcome": "applied", "fingerprint": "f" * 64}])
+    def test_without_a_refusal_on_the_ledger_the_close_asks_for_a_promote(self, promote):
+        """LEDGER.04 — no entry, or an applied one PROD no longer holds."""
+        run = _run()
+        run["promote"] = promote
+        cert, prod = FakeEnv("cert", run=run), FakeEnv("prod", fingerprint="0" * 64)
+        (outcome,), _ = _close(cert, prod)
+        assert "PROD does not hold the CERT run's result: promote it" in outcome.reasons
+
     def test_a_listing_not_final_or_dated_after_the_end_date_is_not_closed(self):
         """PROMO.LIFE.15"""
         cert, prod = FakeEnv("cert", run=_run()), FakeEnv("prod")

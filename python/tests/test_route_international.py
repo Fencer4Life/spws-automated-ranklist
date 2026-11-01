@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
+from python.tests.cert_apply_fakes import cert_state, recorded
 
 SCHEDULE = "https://www.fencingtimelive.com/tournaments/eventSchedule/CD17"
 ENGARDE = "https://engarde-service.com/competition/evf/budapest2025"
@@ -409,7 +410,7 @@ def _intl_db(code="MSW-2026-2027"):
     }
     db.open_ingest_run.return_value = 5
     db.finish_ingest_run.return_value = {}
-    return db
+    return cert_state(db)
 
 
 def _committed(*a, **k):
@@ -459,9 +460,11 @@ class TestDriver:
             patch("python.pipeline.ingest_cli._run_parsed_through_flow", side_effect=flow),
             patch("python.pipeline.ingest_cli._fire_staging_report", return_value=None),
             patch("python.pipeline.ingest_cli._after_event_run"),
+            recorded(),
         ):
+            # ADR-119 §3: a recorded run is plan + apply, and replaces through the apply.
             ingest_cli.ingest_event_from_url(
-                event_code=code, season_end_year=2027, db=db, replace=True, record_run=record_run
+                event_code=code, season_end_year=2027, db=db, record_run=record_run
             )
         return read
 
@@ -665,6 +668,7 @@ class TestLifecycle:
             patch("python.pipeline.ingest_cli._run_parsed_through_flow", side_effect=_committed),
             patch("python.pipeline.ingest_cli._fire_staging_report", return_value=None),
             patch("python.pipeline.ingest_cli._after_event_run"),
+            recorded(),
         ):
             ingest_cli.ingest_event_from_url(
                 event_code="MSW-2026-2027", season_end_year=2027, db=db, record_run="cert"

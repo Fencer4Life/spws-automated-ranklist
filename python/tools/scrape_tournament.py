@@ -319,10 +319,9 @@ def main():
 
     # 3. Fetch fencer DB and split parsed rows per V-cat using birth_year truth
     from python.pipeline.age_split import SplitResult, split_combined_results
-    from python.pipeline.db_connector import DbConnector
-    from supabase import create_client
+    from python.pipeline.db_connector import DbConnector, make_supabase_client
 
-    db = DbConnector(create_client(supabase_url, supabase_key))
+    db = DbConnector(make_supabase_client(supabase_url, supabase_key))
     fencer_db = db.fetch_fencer_db()
 
     # ADR-105: an international tournament is one source bracket, never split

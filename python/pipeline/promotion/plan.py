@@ -16,6 +16,11 @@ the same operations in one transaction.
 
 The after-run steps (staging report, joining check, Telegram) are not planned:
 promote runs them after the apply commits (ADR-108 §6, step 11).
+
+From ADR-119 §3 the recorded CERT ingest takes this path too, against CERT
+itself (promotion/cert_apply.py): the plan reads CERT, a new fencer reserves
+CERT's next id instead of taking an earlier run's, and the same
+fn_promote_event_apply writes it, so ingest and promote write one way.
 """
 
 from __future__ import annotations
@@ -56,19 +61,36 @@ class PlanRefused(Exception):
 
 
 class RecordingConnector:
-    """The database connector's surface for INGEST_DOMESTIC: reads from PROD,
+    """The database connector's surface for INGEST_DOMESTIC: reads from the
+    target (PROD for promote, CERT or LOCAL for a recorded ingest, ADR-119 §3),
     writes recorded in `ops`, reads of the run's own writes answered from them.
 
     `created` is the CERT run's created fencers (its master-data changes):
     {id_fencer, surname, first_name}. A creation takes the first unused CERT id
-    for the same surname and first name, in id order."""
+    for the same surname and first name, in id order. With `created` None (the
+    recorded ingest, where no earlier run created anyone) a creation reserves
+    the target's next fencer id instead (`reserve_fencer_id`, B6). With `reserve`
+    False as well (the XML dry run, ADR-119 G23) a creation takes a placeholder
+    id below zero and reserves nothing, so the run leaves even the sequence as
+    it found it."""
 
-    def __init__(self, prod: Any, created: Iterable[Mapping[str, Any]]):
+    def __init__(
+        self,
+        prod: Any,
+        created: Iterable[Mapping[str, Any]] | None,
+        *,
+        target: str = "PROD",
+        reserve: bool = True,
+    ):
         self._prod = prod
+        self.target = target
         self.ops: list[dict] = []
         self.created: list[dict] = []
+        self._placeholder = created is None and not reserve
+        self._reserve = created is None and reserve
+        self._next_fencer_ref = -1
         self._cert_ids: dict[tuple[str, str], deque[int]] = {}
-        for c in sorted(created, key=lambda c: int(c["id_fencer"])):
+        for c in sorted(created or [], key=lambda c: int(c["id_fencer"])):
             key = (str(c["surname"]), str(c["first_name"]))
             self._cert_ids.setdefault(key, deque()).append(int(c["id_fencer"]))
         self._new: dict[int, dict] = {}
@@ -132,20 +154,29 @@ class RecordingConnector:
 
     def insert_fencer(self, fencer_dict: dict) -> int:
         surname, first = fencer_dict.get("txt_surname"), fencer_dict.get("txt_first_name")
-        ids = self._cert_ids.get((str(surname), str(first)))
-        if not ids:
-            raise PlanRefused(
-                "identity",
-                f"PROD would create {surname} {first} ({fencer_dict.get('int_birth_year')}); "
-                "the CERT run did not. Refresh CERT from PROD and re-run the CERT ingestion.",
-            )
-        id_fencer = ids.popleft()
+        if self._placeholder:
+            id_fencer = self._next_fencer_ref
+            self._next_fencer_ref -= 1
+            whose = f"The dry run numbered {surname} {first}"
+        elif self._reserve:
+            id_fencer = int(self._prod.reserve_fencer_id())
+            whose = f"The {self.target} fencer sequence handed {surname} {first}"
+        else:
+            ids = self._cert_ids.get((str(surname), str(first)))
+            if not ids:
+                raise PlanRefused(
+                    "identity",
+                    f"PROD would create {surname} {first} ({fencer_dict.get('int_birth_year')}); "
+                    "the CERT run did not. Refresh CERT from PROD and re-run the CERT ingestion.",
+                )
+            id_fencer = ids.popleft()
+            whose = f"The CERT run created {surname} {first} as"
         if self._prod_ids is None:
             self._prod_ids = {r["id_fencer"] for r in self._prod.fetch_fencer_db()}
         if id_fencer in self._prod_ids:
             raise PlanRefused(
                 "precondition",
-                f"The CERT run created {surname} {first} as #{id_fencer}, an id PROD already uses.",
+                f"{whose} #{id_fencer}, an id {self.target} already uses.",
             )
         self.ops.append(
             {"op": "insert_fencer", "id_fencer": id_fencer, "fencer": dict(fencer_dict)}
@@ -307,11 +338,14 @@ def plan_event(
     prod: Any,
     *,
     url_event: str,
-    created: Iterable[Mapping[str, Any]],
+    created: Iterable[Mapping[str, Any]] | None,
     pzsz_event: int | None = None,
     pzsz_start_lists: Mapping[tuple[str, str], Any] | None = None,
     sources: Sequence[Mapping[str, Any]] | None = None,
     taken: Iterable[Mapping[str, Any]] | None = None,
+    read: Any = None,
+    log: Any = None,
+    target: str = "PROD",
 ) -> Plan:
     """Plan the CERT run of `event_code` on PROD. `prod` is read only; `url_event`
     is the URL the CERT run ingested; `created` its created fencers; `pzsz_event`
@@ -321,16 +355,26 @@ def plan_event(
     result slots and URLs an international run read (ADR-113): the plan reads
     exactly them, and a blank PROD slot takes the run's URL. `taken` are the
     run's rounds: a bracket from an engine without a finished signal is taken
-    exactly when the run took the same content (ADR-119 §1)."""
+    exactly when the run took the same content (ADR-119 §1).
+
+    The recorded ingest plans against its own database (ADR-119 §3): `prod` is
+    then CERT or LOCAL, named by `target`; `created` is None, so a new fencer
+    reserves the target's next id; `read` is what its reader already read
+    (ingest_cli.EventRead), so nothing is read twice; and `log` is its run
+    record, which takes every listing and each outcome."""
     from python.pipeline import ingest_cli, organizers
     from python.pipeline.international_sources import TakenByRun
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
 
-    recorder = RecordingConnector(prod, created)
+    recorder = RecordingConnector(prod, created, target=target)
     event = recorder.find_event_by_code(event_code)
     if event is None:
-        raise PlanRefused("precondition", f"Event {event_code} does not exist on PROD.")
+        raise PlanRefused("precondition", f"Event {event_code} does not exist on {target}.")
+    if read is not None:
+        pzsz_event = read.pzsz_event
+        pzsz_start_lists = read.start_lists
+        sources = read.sources
     try:
         route = organizers.require_route(event_code)
     except ValueError as e:
@@ -343,8 +387,8 @@ def plan_event(
     if current and current != url_event:
         raise PlanRefused(
             "precondition",
-            f"PROD's url_event for {event_code} is {current}; the CERT run ingested {url_event}. "
-            "Correct the URL on one of them and re-run the CERT ingestion.",
+            f"{target}'s url_event for {event_code} is {current}; the CERT run ingested "
+            f"{url_event}. Correct the URL on one of them and re-run the CERT ingestion.",
         )
     if route == organizers.ROSTER:
         # PROD's row may lack id_pzsz_event (it reached PROD's calendar only
@@ -375,7 +419,7 @@ def plan_event(
             )
     if international:
         _fill_blank_slots(recorder, event, event_code, sources or [])
-    log = ListingLog()
+    log = log if log is not None else ListingLog()
     contexts = ingest_cli._ingest_event_rounds(
         event,
         event_code,
@@ -392,6 +436,7 @@ def plan_event(
         pzsz_start_lists=pzsz_start_lists,
         sources=sources if international else None,
         finality=TakenByRun(taken or []) if international else None,
+        read=read,
     )
     listings = log.listings()
     end = event.get("dt_end") or event.get("dt_start")
@@ -445,7 +490,10 @@ def apply_plan(
     """The reference apply: every operation through the ordinary connector, in
     order, then the plan's status (ADR-108 §7) when one is given. Returns each
     tournament reference with the id it resolved to. Not atomic, so it runs in
-    tests and on LOCAL only; PROD's apply is fn_promote_event_apply (build step 9)."""
+    tests and on LOCAL only; PROD's apply is fn_promote_event_apply (build step 9).
+    It does not delete the tournaments a plan does not name (ADR-119 D4): it
+    runs on an event that holds none, as plan_check's reset leaves it, and the
+    database function, which does, is tested by pgTAP 120."""
     refs: dict[int, int] = {}
     for op in ops:
         kind = op["op"]

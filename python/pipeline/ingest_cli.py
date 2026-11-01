@@ -30,7 +30,9 @@ import argparse
 import os
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_diff import format_diff
@@ -109,6 +111,34 @@ def run_ingest(
         return r
 
 
+def _dry_run_writes(ops: list[dict], since: int) -> list[str]:
+    """What a live run would have written, from a dry run's recorded operations
+    from `since` on. A fencer the dry run itself created is named, since its id
+    is only a placeholder (ADR-119 G23)."""
+    names = {
+        op["id_fencer"]: f"{op['fencer'].get('txt_surname')} {op['fencer'].get('txt_first_name')}"
+        for op in ops
+        if op["op"] == "insert_fencer"
+    }
+    lines = []
+    for op in ops[since:]:
+        if op["op"] == "insert_fencer":
+            by = op["fencer"].get("int_birth_year")
+            estimated = ", estimated" if op["fencer"].get("bool_birth_year_estimated") else ""
+            year = "birth year unknown" if by is None else f"born {by}{estimated}"
+            lines.append(f"[dry-run] would create {names[op['id_fencer']]} ({year})")
+        elif op["op"] == "update_fencer_birth_year":
+            fid = op["id_fencer"]
+            who = f"the new fencer {names[fid]}" if fid in names else f"fencer #{fid}"
+            estimated = " (estimated)" if op["estimated"] else ""
+            lines.append(
+                f"[dry-run] would set the birth year of {who} to {op['birth_year']}{estimated}"
+            )
+        else:
+            lines.append(f"[dry-run] would {op['op']}")
+    return lines
+
+
 def ingest_xml_unified(
     path: str | list[str],
     event_code: str,
@@ -139,7 +169,9 @@ def ingest_xml_unified(
         url_event_override: If given, used instead of tbl_event.url_event.
         db: DbConnector (created from env if None).
         notifier: TelegramNotifier (created from env if None).
-        dry_run: Parse + pipeline only; do not write drafts.
+        dry_run: Parse + pipeline only; nothing is written. Stage 0's fencer
+            creations and birth-year moves are recorded and printed instead
+            (ADR-119 G23).
 
     Returns:
         run_id (str) if drafts were materialized; None if dry_run.
@@ -200,6 +232,15 @@ def ingest_xml_unified(
     # keeps the URL clickable AND distinct per source file.
     url_event_base = url_event.split("#", 1)[0]
 
+    # A dry run's pipeline writes nothing (ADR-119 G23): the recording connector
+    # keeps Stage 0's writes and answers them back to later stages and files, so
+    # the dry run decides what a live run would. New fencers get ids below zero.
+    recorder = None
+    if dry_run:
+        from python.pipeline.promotion.plan import RecordingConnector
+
+        recorder = RecordingConnector(db, None, target="the database", reserve=False)
+
     for p in paths:
         p_str = str(p)
         file_bytes = Path(p_str).read_bytes()
@@ -214,15 +255,16 @@ def ingest_xml_unified(
         per_file_url = f"{url_event_base}#{Path(p_str).name}"
         parsed = _ft_xml.parse(file_bytes, source_url=per_file_url)
 
-        if dry_run:
-            # Run S1-S7 but skip draft writes — useful for diagnostics.
+        if recorder is not None:
+            # Run S1-S7 against the recorder; no drafts, no master data.
             from python.pipeline.orchestrator import run_pipeline
             from python.pipeline.overrides import load_for_event
 
+            since = len(recorder.ops)
             ctx = run_pipeline(
                 parsed=parsed,
                 overrides=load_for_event(event_code),
-                db=db,
+                db=recorder,
                 season_end_year=season_end_year,
                 event_code=event_code,
             )
@@ -231,6 +273,8 @@ def ingest_xml_unified(
                 f"halted={ctx.halted}, "
                 f"halt={(ctx.halt_reason.value if ctx.halt_reason else '-')}"
             )
+            for line in _dry_run_writes(recorder.ops, since):
+                print(line)
             continue
 
         # Pre-check for structural pool-only files — skip cleanly with a
@@ -661,14 +705,29 @@ def ingest_event_from_url(
     re-ingest). No notifier is built unless one is passed (avoids Telegram).
 
     `record_run` ('local' or 'cert') records the run in tbl_ingest_run for
-    promote (ADR-108 §4): opened before the first write, closed FINISHED with
-    every listing's hash and outcome, or FAILED with the error.
+    promote (ADR-108 §4) and makes it plan + apply (ADR-119 §3,
+    python/pipeline/promotion/cert_apply.py): every listing read first, the
+    ingestion planned against the database and written by one
+    fn_promote_event_apply call, which replaces the event, so `replace` is
+    refused with it. A recorded run returns the plan's per-listing contexts.
     """
     # ADR-119 §2: an event the route does not carry is refused by name, before
     # anything is read or recorded.
     from python.pipeline.organizers import require_route
 
     require_route(event_code)
+    if record_run:
+        from python.pipeline.promotion.run_record import ENVIRONMENTS
+
+        if record_run not in ENVIRONMENTS:
+            raise ValueError(
+                f"A run is recorded on {' or '.join(ENVIRONMENTS)}, not {record_run!r} (ADR-108 §4)."
+            )
+        if replace:
+            raise ValueError(
+                "--replace is refused with --record-run: a recorded run replaces the event "
+                "through its one apply (ADR-119 §3). Nothing was read or written."
+            )
     if db is None:
         db = create_db_connector()
 
@@ -683,48 +742,41 @@ def ingest_event_from_url(
     if not url_event and not _is_international_intake(event):
         raise ValueError(f"Event {event_code!r} has no url_event populated.")
 
-    # ADR-108 §4: the run record opens before anything is written, so its input
-    # fingerprint and roster are the ones this run started from.
-    run = None
     if record_run:
-        from python.pipeline.promotion.run_record import RunRecord
+        from python.pipeline.promotion import cert_apply
 
-        run = RunRecord.open(
-            db,
-            event_code=event_code,
-            environment=record_run,
-            season_end_year=season_end_year,
-            url_event=url_event or "",
-        )
-    from python.pipeline.promotion import lifecycle
-    from python.pipeline.promotion.run_record import ListingLog
-
-    # ADR-108 §7: every run keeps the listings it read, recorded or not, so the
-    # lifecycle rule can set the event's status at the end.
-    log = run if run is not None else ListingLog()
-    try:
-        contexts = _ingest_event_rounds(
+        return cert_apply.ingest_recorded(
             event,
             event_code,
             season_end_year,
             url_event,
             url_event_override,
             db=db,
+            environment=record_run,
             notifier=notifier,
-            replace=replace,
             send_telegram=send_telegram,
             md_target=md_target,
-            run=log,
-        )
-    except BaseException as e:
-        if run is not None:
-            from python.pipeline.core.contract import ListingRefused
+        ).contexts
 
-            kind = e.kind if isinstance(e, ListingRefused) else None
-            run.fail(f"{type(e).__name__}: {e}", kind=kind, message=str(e))
-        raise
-    if run is not None:
-        run.finish()
+    from python.pipeline.promotion import lifecycle
+    from python.pipeline.promotion.run_record import ListingLog
+
+    # ADR-108 §7: every run keeps the listings it read, so the lifecycle rule
+    # can set the event's status at the end.
+    log = ListingLog()
+    contexts = _ingest_event_rounds(
+        event,
+        event_code,
+        season_end_year,
+        url_event,
+        url_event_override,
+        db=db,
+        notifier=notifier,
+        replace=replace,
+        send_telegram=send_telegram,
+        md_target=md_target,
+        run=log,
+    )
     if hasattr(db, "set_event_status"):
         current = db.find_event_by_code(event_code)
         if current is not None:
@@ -732,58 +784,65 @@ def ingest_event_from_url(
     return contexts
 
 
-def _ingest_event_rounds(
+@dataclass
+class EventRead:
+    """Everything a route's reader read before anything is written (ADR-119 §3,
+    B9): the schedule's kept and skipped listings, the listings whose names were
+    not understood, every listing read with its parsed rows and the keep-rule's
+    verdict (`decisions`, one per listing, in listing order), and the route's
+    own inputs (the international result slots, the PZSz event and its start
+    lists). The committer writes from it alone; a recorded run logs it before
+    the commit starts, so a run that fails part-way still lists every listing."""
+
+    route: str
+    kept: list
+    skipped: list
+    unparseable: list
+    listings: list
+    decisions: list
+    overrides: Any
+    sources: list | None = None
+    pzsz_event: int | None = None
+    start_lists: dict | None = None
+
+
+def read_event(
     event,
     event_code,
     season_end_year,
     url_event,
-    url_event_override,
+    url_event_override=None,
     *,
     db,
-    notifier,
-    replace,
-    send_telegram,
-    md_target,
-    run,
-    post_run=True,
     pzsz_start_lists=None,
     sources=None,
     finality=None,
-) -> list:
-    """`ingest_event_from_url` from its first write on. `run` is the open run
-    record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
-    every listing. Plan mode passes `post_run=False`: the staging report, the
-    joining check and Telegram run after promote's apply commits (ADR-108 §6).
-
-    Ingest (CERT) and promote's plan (PROD) both come through here, and the
-    organizer registry's route class picks the driver (ADR-119 §2): domestic
-    (SPWS), roster (PZSz: plan mode passes the CERT run's stored start lists,
-    ADR-112 §4), or international (EVF, FIE and any federation registered as
-    such: plan mode passes the result slots and URLs the CERT run read,
-    `sources`, and what it took from engines without a finished signal,
-    `finality`; ADR-113, ADR-119 §1)."""
+) -> EventRead:
+    """Read an event's final listings without writing a result (ADR-119 §3).
+    The organizer registry's route class picks the reader (ADR-119 §2):
+    domestic (SPWS), roster (PZSz: plan mode passes the CERT run's stored
+    start lists, ADR-112 §4), or international (EVF, FIE and any federation
+    registered as such: plan mode passes the result slots and URLs the CERT
+    run read, `sources`, and what it took from engines without a finished
+    signal, `finality`; ADR-113, ADR-119 §1). A reader stores only its own
+    inputs: the sightings of a bracket without a finished signal, and a PZSz
+    start list it captured (ADR-112 §3)."""
     from python.pipeline import organizers
 
     route = organizers.require_route(event_code)
     if route == organizers.INTERNATIONAL:
-        return _ingest_international_event_rounds(
+        return _read_international(
             event,
             event_code,
             season_end_year,
             url_event_override,
             db=db,
-            notifier=notifier,
-            replace=replace,
-            send_telegram=send_telegram,
-            md_target=md_target,
-            run=run,
-            post_run=post_run,
             sources=sources,
             finality=finality,
         )
     # The 25 Oct 2026 results-link RCA (issue #3): a calendar page in the
     # results link finished a run green with nothing read. Refused here,
-    # before the link is saved or anything is wiped.
+    # before the link is saved or anything is written.
     if not is_ftl_schedule(url_event):
         raise ValueError(
             f"Event {event_code!r}: {url_event!r} is not an FTL event schedule "
@@ -791,25 +850,27 @@ def _ingest_event_rounds(
             "nothing was read, saved or written."
         )
     if route == organizers.ROSTER:
-        return _ingest_pzsz_event_rounds(
+        return _read_pzsz(
             event,
             event_code,
             season_end_year,
             url_event,
-            url_event_override,
             db=db,
-            notifier=notifier,
-            replace=replace,
-            send_telegram=send_telegram,
-            md_target=md_target,
-            run=run,
-            post_run=post_run,
             pzsz_start_lists=pzsz_start_lists,
         )
+    return _read_domestic(event, event_code, season_end_year, url_event)
+
+
+def _read_domestic(event, event_code, season_end_year, url_event) -> EventRead:
+    """An SPWS event: every final listing of its FTL schedule, the keep-rule's
+    one source per category (N13.3), each listing to commit only the
+    categories it owns."""
     from datetime import date as _date
 
+    from python.pipeline import organizers
     from python.pipeline.ir import ParsedTournament, SourceKind
     from python.pipeline.overrides import load_for_event
+    from python.pipeline.promotion.lifecycle import split_final
     from python.scrapers import ftl
     from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
     from python.tools.scrape_ftl_event_urls import (
@@ -817,21 +878,14 @@ def _ingest_event_rounds(
         parse_tournament_name,
     )
 
-    # N15: the Telegram `ingest <prefix> <url>` command supplies the FTL URL. It is an
-    # admin-managed write to tbl_event.url_event (operator-entered, never auto-scraped),
-    # then we ingest from it.
-    if url_event_override:
-        if hasattr(db, "set_event_url_event"):
-            db.set_event_url_event(event["id_event"], url_event_override)
-        event["url_event"] = url_event_override
-
     overrides = load_for_event(event_code)  # identity/alias overrides
     src_overrides = event.get(
         "json_source_overrides"
     )  # admin skip/process (N13.4 col; None until set)
     dt = str(event.get("dt_start") or "")[:10]
     parsed_date = _date.fromisoformat(dt) if dt else None
-    contexts = []
+    unparseable = []
+    round_recs = []
 
     with get_authed_ftl_client() as client:
         sched = client.get(normalize_ftl_url(url_event))
@@ -840,28 +894,18 @@ def _ingest_event_rounds(
         _require_listings(kept, skipped, url_event)
         # ADR-108 §7: a listing whose schedule row does not say Finished is
         # skipped and listed; it keeps the event IN_PROGRESS.
-        from python.pipeline.promotion.lifecycle import split_final
-
         kept, not_final = split_final(kept)
         skipped = [*skipped, *not_final]
         print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
         for s in skipped:
             print(f"  schedule-skip {s['name']!r}: {s['reason']}")
-        if run is not None:
-            run.add_schedule(kept, skipped)
-
-        if replace:
-            nr, nt = _wipe_event_live(db, event["id_event"])
-            print(f"replace: deleted {nr} results + {nt} tournaments\n")
 
         # 1) classify each kept round: DE present? which categories? how many fencers?
-        round_recs = []
         for b in kept:
             pn = parse_tournament_name(b["name"])
             if pn is None:
                 print(f"  SKIP {b['name']!r}: unparseable name")
-                if run is not None:
-                    run.add_unparseable(b["name"], b["uuid"])
+                unparseable.append({"name": b["name"], "uuid": b["uuid"]})
                 continue
             combined = isinstance(pn, list)
             weapon, gender = (pn[0][0], pn[0][1]) if combined else (pn[0], pn[1])
@@ -885,20 +929,15 @@ def _ingest_event_rounds(
                 )
             )
 
-        # 2) keep-rule: one source per category (Rule 2), honouring admin overrides
-        decisions = _resolve_sources(round_recs, overrides=src_overrides)
-        dec = {d["uuid"]: d for d in decisions}
+    # 2) keep-rule: one source per category (Rule 2), honouring admin overrides.
+    # The verdicts come back one per listing, in listing order.
+    decisions = _resolve_sources(round_recs, overrides=src_overrides)
 
-        # 3) ingest only the categories each committed round OWNS (commit_cats)
-        for r in round_recs:
-            d = dec[r["uuid"]]
-            if d["status"] != "committed":
-                print(f"  {d['status'].upper()} {r['name']!r}: {d['reason']}")
-                if run is not None:
-                    run.add_round(r, d)
-                continue
-            combined = len(r["cats"]) != 1
-            parsed = ParsedTournament(
+    # 3) a committed listing writes only the categories it OWNS (commit_cats)
+    for r, d in zip(round_recs, decisions, strict=True):
+        combined = len(r["cats"]) != 1
+        r["_commit"] = {
+            "parsed": ParsedTournament(
                 source_kind=SourceKind.FTL,
                 results=r["_base"].results,
                 raw_pool_size=len(r["_base"].results),
@@ -910,28 +949,110 @@ def _ingest_event_rounds(
                 source_url=r["url"],
                 organizer_hint="SPWS",
                 tournament_name=r["name"],
-            )
-            label = f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]"
-            if run is not None:
-                run.begin(r)
-            ctx = _run_parsed_through_flow(
-                parsed,
-                event_code,
-                season_end_year,
-                overrides,
-                db,
-                label=label,
-                commit_cats=set(d["commit_cats"]),
-            )
-            contexts.append(ctx)
-            if run is not None:
-                run.add_round(r, d, ctx)
+            ),
+            "label": f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]",
+            "commit_cats": set(d["commit_cats"]),
+            "flow": None,
+            "start_list": None,
+        }
+    return EventRead(
+        organizers.DOMESTIC, kept, skipped, unparseable, round_recs, decisions, overrides
+    )
 
-    # 4) persist the discovered rounds + status for the event accordion (N13.4)
-    sources = _ingest_source_records(decisions, skipped)
+
+def _commit_event(read: EventRead, event_code, season_end_year, *, db, run) -> list:
+    """Commit every listing the keep-rule kept, from what was read: one flow
+    per listing (ADR-119 §3, B9). `run` receives each listing's outcome."""
+    from python.pipeline import organizers
+
+    contexts = []
+    for r, d in zip(read.listings, read.decisions, strict=True):
+        if d["status"] != "committed":
+            print(f"  {d['status'].upper()} {r['name']!r}: {d['reason']}")
+            continue
+        commit = r["_commit"]
+        if run is not None:
+            run.begin(r)
+        ctx = _run_parsed_through_flow(
+            commit["parsed"],
+            event_code,
+            season_end_year,
+            read.overrides,
+            db,
+            label=commit["label"],
+            commit_cats=commit["commit_cats"],
+            flow=commit["flow"],
+            start_list=commit["start_list"],
+        )
+        contexts.append(ctx)
+        if read.route == organizers.INTERNATIONAL and _no_fencer_of_ours(ctx):
+            # ADR-105: only our fencers' rows are stored, so a bracket none of
+            # them fenced stores nothing. That is not a failed commit (gate).
+            d.update(status="dropped", reason=NO_FENCER_OF_OURS, commit_cats=[])
+        if run is not None:
+            run.add_outcome(r, d, ctx)
+    return contexts
+
+
+def _ingest_event_rounds(
+    event,
+    event_code,
+    season_end_year,
+    url_event,
+    url_event_override,
+    *,
+    db,
+    notifier,
+    replace,
+    send_telegram,
+    md_target,
+    run,
+    post_run=True,
+    pzsz_start_lists=None,
+    sources=None,
+    finality=None,
+    read=None,
+) -> list:
+    """`ingest_event_from_url` from its read on: read every final listing
+    (`read_event`, or the `read` a recorded run made), save a link given with
+    the command, commit the listings, then the staging report, Telegram and
+    the joining check. `run` is the run record (ADR-108 §4), a ListingLog, or
+    None; it receives everything read before the commit starts, then each
+    listing's outcome. Plan mode passes `post_run=False`: the staging report,
+    the joining check and Telegram run after the apply commits (ADR-108 §6,
+    ADR-119 §3)."""
+    if read is None:
+        read = read_event(
+            event,
+            event_code,
+            season_end_year,
+            url_event,
+            url_event_override,
+            db=db,
+            pzsz_start_lists=pzsz_start_lists,
+            sources=sources,
+            finality=finality,
+        )
+    if run is not None:
+        run.add_read(read)
+
+    # N15: an admin-managed write to tbl_event.url_event (operator-entered,
+    # never auto-scraped), saved once the listings it names were read.
+    if url_event_override:
+        if hasattr(db, "set_event_url_event"):
+            db.set_event_url_event(event["id_event"], url_event_override)
+        event["url_event"] = url_event_override
+    if replace:
+        nr, nt = _wipe_event_live(db, event["id_event"])
+        print(f"replace: deleted {nr} results + {nt} tournaments\n")
+
+    contexts = _commit_event(read, event_code, season_end_year, db=db, run=run)
+
+    # persist the discovered rounds + status for the event accordion (N13.4)
+    sources_rec = _ingest_source_records(read.decisions, read.skipped)
     if hasattr(db, "set_event_ingest_sources"):
         try:
-            db.set_event_ingest_sources(event["id_event"], sources)
+            db.set_event_ingest_sources(event["id_event"], sources_rec)
         except Exception as e:  # never fail an ingest on the display-data write
             print(f"  (ingest-sources persist skipped: {e})")
 
@@ -941,8 +1062,8 @@ def _ingest_event_rounds(
         event,
         contexts,
         db,
-        schedule_skips=skipped,
-        source_decisions=sources,
+        schedule_skips=read.skipped,
+        source_decisions=sources_rec,
         notifier=notifier,
         md_target=md_target,
     )  # ADR-075
@@ -967,32 +1088,25 @@ def _no_fencer_of_ours(ctx) -> bool:
     )
 
 
-def _ingest_international_event_rounds(
+def _read_international(
     event,
     event_code,
     season_end_year,
     url_event_override,
     *,
     db,
-    notifier,
-    replace,
-    send_telegram,
-    md_target,
-    run,
-    post_run=True,
     sources=None,
     finality=None,
-) -> list:
+) -> EventRead:
     """An event on the international route (EVF, FIE and any federation
     registered as international; ADR-113, ADR-119 §2): every final bracket of
     every result URL the event holds, or of EVF's results when it holds none
-    (`international_sources`), each through `Flow.INGEST_INTERNATIONAL`.
-    Every bracket is read and checked before anything is written; one bracket
-    is one tournament with the source N and each fencer's source place
-    (ADR-105), and the rows are decided by identity (ADR-106). Promote's plan
-    passes the slots and URLs the CERT run read (`sources`) and what that run
-    took from engines without a finished signal (`finality`), so PROD reads
-    exactly them; the live ingest decides with the sightings it stores."""
+    (`international_sources`), each to go through `Flow.INGEST_INTERNATIONAL`.
+    One bracket is one tournament with the source N and each fencer's source
+    place (ADR-105), and the rows are decided by identity (ADR-106). Promote's
+    plan passes the slots and URLs the CERT run read (`sources`) and what that
+    run took from engines without a finished signal (`finality`), so PROD reads
+    exactly them; the CERT ingest decides with the sightings it stores."""
     from dataclasses import replace as _replace
     from datetime import date as _date
 
@@ -1009,96 +1123,62 @@ def _ingest_international_event_rounds(
     )
     # A finished FTL bracket whose name is not understood is recorded as not
     # read, as the domestic driver does, so the event stays IN_PROGRESS.
-    unparseable = [s for s in skipped if s.get("reason") == international_sources.UNPARSEABLE]
+    unparseable = [
+        {"name": s["name"], "uuid": s["uuid"]}
+        for s in skipped
+        if s.get("reason") == international_sources.UNPARSEABLE
+    ]
     skipped = [s for s in skipped if s.get("reason") != international_sources.UNPARSEABLE]
     print(f"discovered {len(recs)} bracket(s), {len(skipped)} skipped")
     for s in [*skipped, *unparseable]:
-        print(f"  skip {s['name']!r}: {s['reason']}")
+        print(f"  skip {s['name']!r}: {s.get('reason', international_sources.UNPARSEABLE)}")
     for r in recs:
         if note := getattr(r["_base"], "weapon_note", None):
             print(f"  weapon {r['name']!r}: {note}")
-    if run is not None:
-        run.add_sources(sources)
-        run.add_schedule(kept, skipped)
-        for u in unparseable:
-            run.add_unparseable(u["name"], u["uuid"])
-
-    if url_event_override:
-        if hasattr(db, "set_event_url_event"):
-            db.set_event_url_event(event["id_event"], url_event_override)
-        event["url_event"] = url_event_override
-    if replace:
-        nr, nt = _wipe_event_live(db, event["id_event"])
-        print(f"replace: deleted {nr} results + {nt} tournaments\n")
 
     organizer = organizers.organizer_of(event_code)
     overrides = load_for_event(event_code)
     dt = str(event.get("dt_start") or "")[:10]
     event_date = _date.fromisoformat(dt) if dt else None
-    contexts = []
     decisions = []
     for r in recs:
         category = r["cats"][0]
-        parsed = _replace(
-            r["_base"],
-            parsed_date=r["_base"].parsed_date or event_date,
-            season_end_year=season_end_year,
-            organizer_hint=organizer,
-        )
-        decision = {
-            "name": r["name"],
-            "url": r["url"],
-            "uuid": r["uuid"],
-            "weapon": r["weapon"],
-            "gender": r["gender"],
-            "cats": r["cats"],
-            "count": r["count"],
-            "status": "committed",
-            "reason": "",
-            "commit_cats": [category],
+        r["_commit"] = {
+            "parsed": _replace(
+                r["_base"],
+                parsed_date=r["_base"].parsed_date or event_date,
+                season_end_year=season_end_year,
+                organizer_hint=organizer,
+            ),
+            "label": f"{r['name']} [{r['weapon']}/{r['gender']} {category}, {organizer}]",
+            "commit_cats": None,
+            "flow": Flow.INGEST_INTERNATIONAL,
+            "start_list": None,
         }
-        decisions.append(decision)
-        if run is not None:
-            run.begin(r)
-        ctx = _run_parsed_through_flow(
-            parsed,
-            event_code,
-            season_end_year,
-            overrides,
-            db,
-            label=f"{r['name']} [{r['weapon']}/{r['gender']} {category}, {organizer}]",
-            flow=Flow.INGEST_INTERNATIONAL,
+        decisions.append(
+            {
+                "name": r["name"],
+                "url": r["url"],
+                "uuid": r["uuid"],
+                "weapon": r["weapon"],
+                "gender": r["gender"],
+                "cats": r["cats"],
+                "count": r["count"],
+                "status": "committed",
+                "reason": "",
+                "commit_cats": [category],
+            }
         )
-        contexts.append(ctx)
-        if _no_fencer_of_ours(ctx):
-            # ADR-105: only our fencers' rows are stored, so a bracket none of
-            # them fenced stores nothing. That is not a failed commit (gate).
-            decision.update(status="dropped", reason=NO_FENCER_OF_OURS, commit_cats=[])
-        if run is not None:
-            run.add_round(r, decision, ctx)
-
-    sources = _ingest_source_records(decisions, skipped)
-    if hasattr(db, "set_event_ingest_sources"):
-        try:
-            db.set_event_ingest_sources(event["id_event"], sources)
-        except Exception as e:  # never fail an ingest on the display-data write
-            print(f"  (ingest-sources persist skipped: {e})")
-
-    if not post_run:
-        return contexts
-    post = _fire_staging_report(
-        event,
-        contexts,
-        db,
-        schedule_skips=skipped,
-        source_decisions=sources,
-        notifier=notifier,
-        md_target=md_target,
-    )  # ADR-075
-    if send_telegram:
-        _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
-    _after_event_run(event, db, notifier)
-    return contexts
+    return EventRead(
+        organizers.INTERNATIONAL,
+        kept,
+        skipped,
+        unparseable,
+        recs,
+        decisions,
+        overrides,
+        sources=[{"slot": s["slot"], "url": s["url"]} for s in sources],
+    )
 
 
 def _pzsz_fetch(url: str, params: dict) -> str:
@@ -1155,24 +1235,17 @@ def _pzsz_weapon_gender(name: str) -> tuple[str, str] | None:
     return weapon, gender
 
 
-def _ingest_pzsz_event_rounds(
+def _read_pzsz(
     event,
     event_code,
     season_end_year,
     url_event,
-    url_event_override,
     *,
     db,
-    notifier,
-    replace,
-    send_telegram,
-    md_target,
-    run,
-    post_run=True,
     pzsz_start_lists=None,
-) -> list:
+) -> EventRead:
     """A PZSz event (PPS, MPS), ADR-111: the places from the event's FTL schedule,
-    the birth years from the PZSz start lists, every kept listing through
+    the birth years from the PZSz start lists, every kept listing to go through
     `Flow.INGEST_PZSZ_SENIOR`. The keep-rule is the domestic one, with one
     category per listing, SENIOR.
 
@@ -1182,6 +1255,7 @@ def _ingest_pzsz_event_rounds(
     Everything is read before anything is written."""
     from datetime import date as _date
 
+    from python.pipeline import organizers
     from python.pipeline.engine.flows import Flow
     from python.pipeline.ir import ParsedTournament, SourceKind
     from python.pipeline.overrides import load_for_event
@@ -1200,18 +1274,12 @@ def _ingest_pzsz_event_rounds(
         start_lists = _pzsz_start_lists_for_cert(int(id_pzsz), event_code, db)
     else:
         start_lists = pzsz_start_lists
-    if run is not None:
-        run.add_pzsz_event(int(id_pzsz))
-
-    if url_event_override:
-        if hasattr(db, "set_event_url_event"):
-            db.set_event_url_event(event["id_event"], url_event_override)
-        event["url_event"] = url_event_override
 
     overrides = load_for_event(event_code)
     dt = str(event.get("dt_start") or "")[:10]
     parsed_date = _date.fromisoformat(dt) if dt else None
-    contexts = []
+    unparseable = []
+    round_recs = []
 
     with get_authed_ftl_client() as client:
         sched = client.get(normalize_ftl_url(url_event))
@@ -1223,16 +1291,12 @@ def _ingest_pzsz_event_rounds(
         print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
         for s in skipped:
             print(f"  schedule-skip {s['name']!r}: {s['reason']}")
-        if run is not None:
-            run.add_schedule(kept, skipped)
 
-        round_recs = []
         for b in kept:
             wg = _pzsz_weapon_gender(b["name"])
             if wg is None:
                 print(f"  SKIP {b['name']!r}: unparseable name")
-                if run is not None:
-                    run.add_unparseable(b["name"], b["uuid"])
+                unparseable.append({"name": b["name"], "uuid": b["uuid"]})
                 continue
             weapon, gender = wg
             if (weapon, gender) not in start_lists:
@@ -1267,21 +1331,10 @@ def _ingest_pzsz_event_rounds(
                 )
             )
 
-        decisions = _resolve_sources(round_recs, overrides=event.get("json_source_overrides"))
-        dec = {d["uuid"]: d for d in decisions}
-
-        if replace:
-            nr, nt = _wipe_event_live(db, event["id_event"])
-            print(f"replace: deleted {nr} results + {nt} tournaments\n")
-
-        for r in round_recs:
-            d = dec[r["uuid"]]
-            if d["status"] != "committed":
-                print(f"  {d['status'].upper()} {r['name']!r}: {d['reason']}")
-                if run is not None:
-                    run.add_round(r, d)
-                continue
-            parsed = ParsedTournament(
+    decisions = _resolve_sources(round_recs, overrides=event.get("json_source_overrides"))
+    for r in round_recs:
+        r["_commit"] = {
+            "parsed": ParsedTournament(
                 source_kind=SourceKind.FTL,
                 results=r["_base"].results,
                 raw_pool_size=len(r["_base"].results),
@@ -1293,44 +1346,23 @@ def _ingest_pzsz_event_rounds(
                 source_url=r["url"],
                 organizer_hint="PZSz",
                 tournament_name=r["name"],
-            )
-            if run is not None:
-                run.begin(r)
-            ctx = _run_parsed_through_flow(
-                parsed,
-                event_code,
-                season_end_year,
-                overrides,
-                db,
-                label=f"{r['name']} [{r['weapon']}/{r['gender']}, PZSz senior field]",
-                flow=Flow.INGEST_PZSZ_SENIOR,
-                start_list=r["_starters"],
-            )
-            contexts.append(ctx)
-            if run is not None:
-                run.add_round(r, d, ctx)
-
-    sources = _ingest_source_records(decisions, skipped)
-    if hasattr(db, "set_event_ingest_sources"):
-        try:
-            db.set_event_ingest_sources(event["id_event"], sources)
-        except Exception as e:  # never fail an ingest on the display-data write
-            print(f"  (ingest-sources persist skipped: {e})")
-
-    if not post_run:
-        return contexts
-    post = _fire_staging_report(
-        event,
-        contexts,
-        db,
-        schedule_skips=skipped,
-        source_decisions=sources,
-        notifier=notifier,
-        md_target=md_target,
+            ),
+            "label": f"{r['name']} [{r['weapon']}/{r['gender']}, PZSz senior field]",
+            "commit_cats": None,
+            "flow": Flow.INGEST_PZSZ_SENIOR,
+            "start_list": r["_starters"],
+        }
+    return EventRead(
+        organizers.ROSTER,
+        kept,
+        skipped,
+        unparseable,
+        round_recs,
+        decisions,
+        overrides,
+        pzsz_event=int(id_pzsz),
+        start_lists=start_lists,
     )
-    if send_telegram:
-        _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
-    return contexts
 
 
 def _ingest_source_records(decisions, schedule_skips):
@@ -1367,6 +1399,16 @@ def _ingest_source_records(decisions, schedule_skips):
             }
         )
     return out
+
+
+def _github_output(**values: str) -> None:
+    """Step outputs for the workflow (ingest-event.yml reads `reported`)."""
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as f:
+        for k, v in values.items():
+            f.write(f"{k}={v}\n")
 
 
 def _handle_draft_commands(args, notifier) -> bool:
@@ -1568,6 +1610,11 @@ def main() -> None:
         parser.error(
             "--record-run records a URL ingestion: it needs --flow ingest_domestic --from-url"
         )
+    if args.record_run and args.replace:
+        parser.error(
+            "--replace is refused with --record-run: a recorded run replaces the event "
+            "through its one apply (ADR-119 §3)"
+        )
 
     if is_draft_cmd:
         notifier = TelegramNotifier(
@@ -1614,7 +1661,12 @@ def main() -> None:
                     notifier=notifier,
                 )
         except Exception as e:
-            notifier.notify_pipeline_failure(str(e))
+            # ADR-119 §3 (B7): one message per failure. A failure the recorded
+            # run already told Telegram is not repeated, and the workflow's own
+            # generic line is skipped once this step has reported.
+            if not getattr(e, "reported", False):
+                notifier.notify_pipeline_failure(str(e))
+            _github_output(reported="true")
             raise
         return
 
@@ -1622,9 +1674,9 @@ def main() -> None:
         from python.pipeline.storage_handler import StorageHandler
 
         db = create_db_connector()
-        from supabase import create_client
+        from python.pipeline.db_connector import make_supabase_client
 
-        sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+        sb = make_supabase_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
         storage = StorageHandler(sb)
         notifier = TelegramNotifier(
             os.environ.get("TELEGRAM_BOT_TOKEN"),

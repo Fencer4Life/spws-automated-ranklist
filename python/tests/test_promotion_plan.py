@@ -672,6 +672,110 @@ class TestPlanEvent:
             monkeypatch.setattr(pl, "plan_event", boom)
             assert plan_check.plan(state) == 3
 
+    def test_the_local_check_plans_a_pzsz_event_from_the_stored_lists(self, tmp_path, monkeypatch):
+        """PROMO.PLAN.14 (ADR-119 G15) — a PZSz event is planned from the start
+        lists the live half read: LOCAL's newest stored version of each weapon
+        and gender, as promote reads the CERT run's (ADR-112 §4). Plan mode
+        never fetches pzszerm.pl, and an event of another route is given none."""
+        from python.pipeline.promotion import plan_check
+        from python.pipeline.promotion.run_record import start_list_sha256
+        from python.scrapers.pzsz_start_list import Starter
+
+        old = [Starter("Wzorcowy Jan", 1970)]
+        new = [Starter("Wzorcowy Jan", 1971)]
+
+        def row(id_, starters):
+            return {
+                "id_pzsz_start_list": id_,
+                "id_pzsz_event": 4596,
+                "id_pzsz_tournament": 0,
+                "enum_weapon": "EPEE",
+                "enum_gender": "M",
+                "txt_sha256": start_list_sha256(starters),
+                "jsonb_starters": [[s.name, s.birth_year] for s in starters],
+                "txt_source": "saved page",
+            }
+
+        class _Db:
+            def find_event_by_code(self, code):
+                if code == "PPS1e-2026-2027":
+                    return {"url_event": SCHEDULE, "id_pzsz_event": 4596}
+                return {"url_event": SCHEDULE, "id_pzsz_event": None}
+
+            def fetch_pzsz_start_lists(self, id_pzsz_event):
+                assert id_pzsz_event == 4596
+                return [row(1, old), row(2, new)]
+
+        given: dict[str, object] = {}
+
+        class _Stop(Exception):
+            pass
+
+        def capture(code, *_a, **k):
+            given[code] = k.get("pzsz_start_lists")
+            raise _Stop
+
+        monkeypatch.setattr(plan_check, "_local_db", _Db)
+        monkeypatch.setattr(pl, "plan_event", capture)
+        for code in ("PPS1e-2026-2027", "PPW1-2026-2027"):
+            state = tmp_path / f"{code}.json"
+            state.write_text(json.dumps({"events": [code], "created": {code: []}}))
+            with pytest.raises(_Stop):
+                plan_check.plan(state)
+        lists = given["PPS1e-2026-2027"]
+        assert isinstance(lists, dict) and set(lists) == {("EPEE", "M")}
+        assert list(lists[("EPEE", "M")].starters) == new
+        assert given["PPW1-2026-2027"] is None
+
+    def test_the_sql_apply_names_the_prior_the_live_half_started_from(self, tmp_path, monkeypatch):
+        """PROMO.PLAN.15 (ADR-119 G18) — `live` records each event's result
+        fingerprint before its run (None when it held no results), and the SQL
+        apply names it as the prior, dry run and apply alike, as promote names
+        PROD's. Without it an event that already holds results is refused."""
+        from python.pipeline import ingest_cli
+        from python.pipeline.promotion import plan_check
+
+        held = {
+            "PPW1-2026-2027": {"fingerprint": "b" * 64, "has_results": True},
+            "PPW2-2026-2027": {"fingerprint": "0" * 64, "has_results": False},
+        }
+
+        class _Db:
+            def fetch_fencer_db(self):
+                return []
+
+            def event_result_state(self, code):
+                return held[code]
+
+        applies: list[dict] = []
+
+        def rpc(_db, fn, params):
+            if fn == "fn_event_input_fingerprint":
+                return {"parts": {"schema": "s"}}
+            if fn == "fn_event_result_fingerprint":
+                return "f" * 64
+            applies.append(params)
+            if params["p_dry_run"]:
+                raise RuntimeError(f"PROMOTE_DRY_RUN_OK {'f' * 64}")
+            return {"skipped": False}
+
+        class _Plan:
+            status = "COMPLETED"
+
+            def to_json(self):
+                return {"event_code": "PPW1-2026-2027", "ops": []}
+
+        monkeypatch.setattr(plan_check, "_local_db", _Db)
+        monkeypatch.setattr(plan_check, "_rpc", rpc)
+        monkeypatch.setattr(plan_check, "snapshot", lambda _db, _codes: {})
+        monkeypatch.setattr(ingest_cli, "ingest_event_from_url", lambda *_a, **_k: None)
+        out = tmp_path / "s.json"
+        plan_check.live(list(held), out)
+        state = json.loads(out.read_text())
+        assert state["priors"] == {"PPW1-2026-2027": "b" * 64, "PPW2-2026-2027": None}
+        plan_check._sql_apply(_Db(), _Plan(), state, "PPW1-2026-2027")
+        assert [a["p_prior_fingerprint"] for a in applies] == ["b" * 64, "b" * 64]
+
     def test_the_plan_carries_every_listings_hash(self):
         """PROMO.PLAN.12 — promote compares them with the CERT run's."""
         plan, _, _ = _drive(
