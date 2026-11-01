@@ -713,7 +713,11 @@ def run_outcome(
 ) -> int:
     """The outcome job (R3.2 A): the cycle recorded on the event's row, the
     pause on any failure, and the one Telegram line. The log carries the
-    verdict and the pause reason, never the line, which can name a fencer."""
+    verdict and the pause reason, never the line, which can name a fencer.
+    A dry run says what the cycle would do and writes and sends nothing."""
+    if dry_run:
+        print(f"(dry run) {code}: {_would(comparison, error)}")
+        return 0
     previous = cert.run(comparison.previous_run) if comparison and comparison.previous_run else None
     run = (
         cert.run(run_id) if run_id else previous if comparison and comparison.promote_only else None
@@ -739,9 +743,6 @@ def run_outcome(
     )
     said = _said(cycle)
     told = f"{code}: {said.verdict}" + (f", paused: {said.pause}" if said.pause else "")
-    if dry_run:
-        print(f"(dry run) {told}")
-        return 0
     cert.cycle(code, said.verdict)
     if said.pause is not None:
         cert.pause(code, said.pause, run_url)
@@ -749,6 +750,21 @@ def run_outcome(
         send(said.line)
     print(told)
     return 0
+
+
+def _would(comparison: Comparison | None, error: str | None) -> str:
+    """A dry run's outcome (G36 A): the cycle never refreshed, ingested or
+    promoted, so there is no run to judge; it says what the cycle would do
+    from the compare alone. A failed read is reported as a real cycle reports
+    it, since the read is the same."""
+    if comparison is None:
+        return f"would fail and pause: read failed: {_error_type(error)}"
+    if comparison.changed:
+        would = "would refresh CERT, ingest, and promote once the run finishes and its gate passes"
+        return f"{would}: {len(comparison.new)} new listing(s)" if comparison.new else would
+    if comparison.promote_only:
+        return f"would promote CERT run {comparison.previous_run} to PROD"
+    return UNCHANGED
 
 
 def _github_output(**values: Any) -> None:

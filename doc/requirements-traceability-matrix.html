@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="e11803eab3a079c694ab01b5f65f55df161c04ff9b8673e42bfa5e0b16a2affa">
+<meta name="doc-source-sha256" content="7c23ee349b26b93f3e9ce112c128b8087bea7b9938bb6ee0802bbe69ee5fa9b7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>759 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>760 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1111,7 +1111,7 @@
 <td>FR-164</td>
 <td><strong>An event in its window syncs itself: every hour it is read, compared with its last CERT run, ingested on CERT and promoted to PROD when something changed, and a failure stops it until a person resumes it.</strong> The hourly results sync takes each active-season event on the route from its first day to the day after its end date, neither completed nor cancelled, only with a results link on CERT or PROD (the link is the switch), one at a time. A cycle in which nothing changed writes nothing and says nothing; any failed step pauses the event, with its reason (never a person) and the Actions run, until <code>sync &lt;code&gt;</code> or a finished manual ingest lifts it; <code>RESULTS_SYNC=off</code> stops the schedule. The pause and each cycle's verdict are kept per event on CERT, service role only, and never reach the PROD seed.</td>
 <td><a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §4, ADR-108 §9, ADR-113 §7, ADR-077, ADR-072, ADR-083</td>
-<td>SYNC.SEL.01–05, SYNC.DUE.01, SYNC.CYCLE.01–08, SYNC.PAUSE.01–06 (and pgTAP 123), SYNC.SEED.01, SYNC.PZSZ.01–04, LOG.PRIV.01–03, WFLANE.02, GAS.SYNC.01, RUNNAME.03</td>
+<td>SYNC.SEL.01–05, SYNC.DUE.01, SYNC.CYCLE.01–09, SYNC.PAUSE.01–06 (and pgTAP 123), SYNC.SEED.01, SYNC.PZSZ.01–04, LOG.PRIV.01–03, WFLANE.02, GAS.SYNC.01, RUNNAME.03</td>
 <td>Covered (2026-11-01: 3a and 3b released, main e7f8a3a3, CERT + PROD)</td>
 </tr>
 <tr>
@@ -4094,6 +4094,13 @@
 <td><strong>Released</strong> (2026-11-01, main e7f8a3a3, CERT + PROD)</td>
 </tr>
 <tr>
+<td>SYNC.CYCLE.09</td>
+<td>A dry run says what the cycle would do (G36 A): unchanged, would promote CERT run N, would refresh, ingest and promote with the new listings, or a failed read as a real cycle reports it; it writes and sends nothing.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
 <td>WFLANE.02</td>
 <td>The sync and the two workflows it calls: their triggers, the two cron lines, and a called job keeping its lane (<code>cert-write</code>, <code>prod-write</code>); the sync holds none.</td>
 <td>pytest</td>
@@ -4141,5 +4148,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>e11803eab3a079c694ab01b5f65f55df161c04ff9b8673e42bfa5e0b16a2affa</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7c23ee349b26b93f3e9ce112c128b8087bea7b9938bb6ee0802bbe69ee5fa9b7</code></footer>
 </div></body></html>

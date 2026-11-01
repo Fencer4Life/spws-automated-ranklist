@@ -132,7 +132,7 @@
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 7: G15–G18 built and rehearsed, all EQUAL · G18 signed A 31 Oct ("G18 A") · documents written 31 Oct: ADR-119 §3, the amendments, the RTM, spec Appendices C and D, six handbook pages; checks and the RAG current</span>
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 8: G19 found while writing the documents · signed B 31 Oct ("G19 B") · built test-first, N11.8 RED then GREEN</span>
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 9: G20–G23 found while building G19 · signed 1 Nov ("All as recommended": G20 A, G21 B, G22 A, G23 A) · built test-first, each seen RED then GREEN, and recorded</span>
-    <span class="pill warn"><span class="dot"></span>rev 17: release 3's build sheet (§03e) signed 1 Nov ("All as recommended"); building test-first on claude/results-sync-hourly-cycle · G28–G30 signed 1 Nov (all A); 3a released 1 Nov (main bfdc158b), CERT and PROD verified; 3b built test-first and documented, not pushed; 3b released 1 Nov (main e7f8a3a3), CERT and PROD verified, the switch off; dry dispatch on main twice; G36 waits for your sign-off · R2.2 waits · G21 needs you to remove the stale token</span>
+    <span class="pill warn"><span class="dot"></span>rev 17: release 3's build sheet (§03e) signed 1 Nov ("All as recommended"); building test-first on claude/results-sync-hourly-cycle · G28–G30 signed 1 Nov (all A); 3a released 1 Nov (main bfdc158b), CERT and PROD verified; 3b built test-first and documented, not pushed; 3b released 1 Nov (main e7f8a3a3), CERT and PROD verified, the switch off; dry dispatch on main twice; G36 signed 1 Nov (A), built test-first; the push waits for your go · R2.2 waits · G21 needs you to remove the stale token</span>
     <span class="pill warn"><span class="dot"></span>9 gaps found in today's route · 4 more found while building (G10–G13) · G14 found while tracing release 2 · G15–G17 in the rehearsal</span>
     <span class="pill"><span class="dot"></span>rev 3: USA Fencing, the French veterans federation and any later organizer</span>
     <span class="pill">read-only research · CERT runs 1–8 · PROD read 31 Oct</span>
@@ -805,6 +805,10 @@
       <p class="lede"><span class="tick">G36</span> Found by the dry dispatch on main, 1 Nov</p>
 
       <p>It touches only a dry run's log; a scheduled or manual live cycle composes its verdict from a real run. The switch stays off; nothing changes before your answer.</p>
+
+      <p><b>Signed</b> by the user in chat on 1 Nov 2026: "A as recommended". Built test-first as SYNC.CYCLE.09 on this branch, renamed <code>claude/dry-sync-says-what-it-would-do</code>, and it ships with this record.</p>
+
+      <p><b>Built</b>, 1 Nov: SYNC.CYCLE.09 seen RED on the promote-only case, where today's dry run says &ldquo;failed, paused: promote failed&rdquo; (a second wrong line of the same kind), then GREEN. <code>run_outcome</code> answers a dry run first, from the compare (<code>_would</code>), and reads no run; the unreachable dry-run branch after the verdict is gone. Documented in ADR-119 §4, its status and open items, spec Appendix C, the RTM and the operator runbook.</p>
 
     </div>
 
