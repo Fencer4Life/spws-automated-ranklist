@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a9b34e6361330afc9210bbbaecf1094a381116935a40ba2c63e85621f2ba2866">
+<meta name="doc-source-sha256" content="68bd7676b973d6b9af526e2e0a2a6a21083bf9511b8f21c0353970f6f6532e04">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -92,7 +92,7 @@
 <td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created. At an FIE event (MSW, PSW, the IMSW code) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a user-confirmed, unrevoked alias counts as identity (ADR-106 amendment of 2026-10-17, D9 A).</td>
 <td>§8.5, ADR-106</td>
 <td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–12, INTL.POL.01–06, NAME.CELLS.01–07, OVR.DRIFT.01–07, EXCLUDED.01–04, SRC.CONS.01–10, SRC.REGR.01–09, RUNNAME.04, IDENTITY.ONCE.01–04</td>
-<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 released main 9fc4cbc1; a fencer found twice counted once, IDENTITY.ONCE, built in push 3, 2026-11-01)</td>
+<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 released main 9fc4cbc1; a fencer found twice counted once, IDENTITY.ONCE, released main b65deadb)</td>
 </tr>
 <tr>
 <td>FR-10</td>
@@ -4782,56 +4782,56 @@
 <td>At an FIE event a row that identity and a confirmed alias both find (SĘKOWSKI, KORONA, KORNAŚ) is one fit and is stored, with or without an SPWS start.</td>
 <td>pytest</td>
 <td><code>python/tests/test_identity_counted_once.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>IDENTITY.ONCE.03</td>
 <td>A reading that names the same fencer as the printed name is one fit, at an FIE and an EVF event.</td>
 <td>pytest</td>
 <td><code>python/tests/test_identity_counted_once.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>IDENTITY.ONCE.04</td>
 <td>Two fencers who both fit are still two: PENDING, &quot;two roster fencers fit&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_identity_counted_once.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.01–02</td>
 <td>An international PENDING refusal's summary counts its rows and the admission's reasons; another reason is counted, never printed.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.03–04</td>
 <td>A joined-bracket refusal names its places; a refusal without its own summary says what its kind means.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.05–06</td>
 <td>No results link, a combined bracket and two sources for one bracket are a <code>SourceRefused</code> (a <code>ValueError</code>) with its kind; the public error passes it with its meaning.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.07</td>
 <td>The sync's pause reason gives the kind, the listing and what the refusal means; a run recorded before G60 falls back to its kind's meaning.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.08–10</td>
 <td>The re-read says whether an event was read and then refused, refused before anything was written, or failed; it records the engines read, a refused read included; the summary line and the log end with the sources read.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4846,5 +4846,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a9b34e6361330afc9210bbbaecf1094a381116935a40ba2c63e85621f2ba2866</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>68bd7676b973d6b9af526e2e0a2a6a21083bf9511b8f21c0353970f6f6532e04</code></footer>
 </div></body></html>
