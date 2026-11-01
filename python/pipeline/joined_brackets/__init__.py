@@ -173,6 +173,7 @@ def listing_order(categories: Sequence[tuple[int, str]], listing: Sequence[int])
             f"Place(s) {missing} of the listing have no category (a pending match or no "
             "birth year): the category order cannot be written, so the listing waits "
             "until each is resolved.",
+            public=f"place(s) {missing} of the listing have no category",
         )
     size = len(listing)
     digits = {category_digit(v) for _, v in categories}
@@ -185,6 +186,7 @@ def listing_order(categories: Sequence[tuple[int, str]], listing: Sequence[int])
             "joined_bracket",
             f"A joined listing repeats place(s) {repeated}: nothing says which fencer "
             "fenced ahead. Ask the organiser for the fenced order.",
+            public=f"a joined listing repeats place(s) {repeated}",
         )
     by_place = dict(categories)
     if sorted(by_place) != list(range(1, size + 1)):
@@ -192,6 +194,7 @@ def listing_order(categories: Sequence[tuple[int, str]], listing: Sequence[int])
             "joined_bracket",
             f"A joined listing's places {sorted(by_place)} are not 1..{size}. "
             "Ask the organiser for the fenced order.",
+            public=f"a joined listing's places {sorted(by_place)} are not 1..{size}",
         )
     return "".join(category_digit(by_place[p]) for p in range(1, size + 1))
 

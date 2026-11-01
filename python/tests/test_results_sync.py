@@ -534,7 +534,10 @@ class TestCycleLine:
             f"   PAUSED. Fix it, then send: sync {PEW}"
         )
         assert rs.verdict(cycle) == "failed"
-        assert rs.pause_for(cycle) == ("identity, Women's Foil V1", RUN_URL)
+        assert rs.pause_for(cycle) == (
+            "identity, Women's Foil V1: a row fits no single roster fencer",
+            RUN_URL,
+        )  # REFUSAL.SAY (G60 A): what the refusal means, still no name
 
     def test_SYNC_CYCLE_05_a_failed_first_run(self):
         cycle = _cycle(
@@ -1165,7 +1168,12 @@ class TestOutcomeCli:
         _, sent, writes = self._run(run=run)
         assert writes == [
             ("cycle", PPW, "failed"),
-            ("pause", PPW, "identity, Women's Foil V1", RUN_URL_77),
+            (
+                "pause",
+                PPW,
+                "identity, Women's Foil V1: a row fits no single roster fencer",
+                RUN_URL_77,
+            ),
         ]
         assert len(sent) == 1 and REFUSAL in sent[0]
         log = capsys.readouterr()

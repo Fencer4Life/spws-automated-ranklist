@@ -11,6 +11,8 @@ switches the split to read governed BY.
 
 from __future__ import annotations
 
+from collections import Counter
+
 from python.pipeline.core.contract import Context, ListingRefused, PluginKind, Services
 from python.pipeline.ir import SourceKind
 from python.pipeline.joined_brackets import (
@@ -666,6 +668,7 @@ class Commit(BasePlugin):
             + "; ".join(lines)
             + ". Correct the roster birth year, or add an identity entry with the fencer's "
             f"birth year to doc/overrides/{code or '<event code>'}.yaml, then run the ingest again.",
+            public=f"{len(held)} row(s) fit no single roster fencer",
         )
 
     @staticmethod
@@ -674,9 +677,10 @@ class Commit(BasePlugin):
         ListingRefused("identity"). The message names each row and the fix: an
         identity entry in the event's override file, or match_method EXCLUDED
         with a note; at an FIE event a Pole missing from the roster is added
-        first (ADR-106 §1 and its FIE amendment)."""
+        first (ADR-106 §1 and its FIE amendment). Its public summary counts the
+        rows and the admission's reasons, which name no one (G60 A)."""
         from python.pipeline.db_connector import derive_tourn_type_from_event_code
-        from python.pipeline.international_admission import is_fie_type
+        from python.pipeline.international_admission import REASONS, is_fie_type
 
         held = [
             m
@@ -698,7 +702,16 @@ class Commit(BasePlugin):
         )
         if is_fie_type(derive_tourn_type_from_event_code(code or "")):
             fix += " A Pole missing from the roster is added first (the add-fencer route)."
-        raise ListingRefused("identity", f"{weapon} {gender} listing not written: {rows}. {fix}")
+        reasons = Counter(
+            note if note in REASONS else "another reason"
+            for note in (getattr(m, "notes", None) or "no identity match" for m in held)
+        )
+        tally = ", ".join(f"{r}: {n}" for r, n in reasons.most_common())
+        raise ListingRefused(
+            "identity",
+            f"{weapon} {gender} listing not written: {rows}. {fix}",
+            public=f"{len(held)} row(s) fit no single roster fencer ({tally})",
+        )
 
     @staticmethod
     def _module(db, event, ttype) -> JoinedBracketModule:

@@ -294,16 +294,27 @@ class RunRecord(ListingLog):
         print(f"run record {self.run_id} finished: {len(self.rounds)} listing(s); {counts}")
         return changes
 
-    def fail(self, error: str, *, kind: str | None = None, message: str | None = None) -> None:
+    def fail(
+        self,
+        error: str,
+        *,
+        kind: str | None = None,
+        message: str | None = None,
+        public: str | None = None,
+    ) -> None:
         """Close the row FAILED. A refused listing (ListingRefused) is named with
-        its kind, for the gate. Never masks the ingestion's own error."""
+        its kind, for the gate, and its nameless summary, `public`, for the
+        sync's pause reason (G60 A). Never masks the ingestion's own error."""
         if kind:
             self.refusal = {"listing": self.current, "kind": kind, "message": message or error}
+            if public:
+                self.refusal["public"] = public
         try:
             self.db.fail_ingest_run(self.run_id, error, self.listings())
-            # The row holds the whole error; the log its kind and listing,
-            # since a refusal names fencers (D12).
+            # The row holds the whole error; the log its kind, listing and
+            # summary, since a refusal's message names fencers (D12, G60 A).
             where = f" [{kind}]" + (f" {self.current}" if self.current else "") if kind else ""
-            print(f"run record {self.run_id} failed: {error.split(':', 1)[0]}{where}")
+            said = f": {public}" if kind and public else ""
+            print(f"run record {self.run_id} failed: {error.split(':', 1)[0]}{where}{said}")
         except Exception as e:
             print(f"  (run record {self.run_id} could not be closed: {e})")

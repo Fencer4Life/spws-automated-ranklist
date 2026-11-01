@@ -338,6 +338,18 @@ def _error_type(error: str | None) -> str:
     return str(error or "").split(":", 1)[0].strip() or "error"
 
 
+def refusal_reason(refusal: dict) -> str:
+    """A recorded refusal as the pause reason says it: its kind, its listing and
+    what it means, never a name (D12, G60 A). A run recorded before G60 has no
+    summary; its kind's meaning stands in."""
+    from python.pipeline.core.contract import REFUSAL_MEANING
+
+    kind = refusal["kind"]
+    head = ", ".join(str(x) for x in (kind, refusal.get("listing")) if x)
+    said = refusal.get("public") or REFUSAL_MEANING.get(kind)
+    return f"{head}: {said}" if said else head
+
+
 def _paused(code: str, fix: str = "Fix it") -> str:
     return f"   PAUSED. {fix}, then send: sync {code}"
 
@@ -410,7 +422,7 @@ def _said(c: Cycle) -> _Said:
         if refusal:
             where = f" {refusal['listing']}" if refusal.get("listing") else ""
             detail = f"{kind} [{refusal['kind']}]{where}: {refusal.get('message')}"
-            reason = ", ".join(str(x) for x in (refusal["kind"], refusal.get("listing")) if x)
+            reason = refusal_reason(refusal)
         else:
             detail, reason = str(run.get("error")), kind
         cert_part = f"CERT unchanged (run {prev} stands)" if prev else "CERT unchanged"
@@ -558,14 +570,18 @@ def morning_line(moment: dt.datetime, selection: Selection) -> str:
 def public_error(e: BaseException) -> str:
     """A failure that opened no run, as a step may hand it on: a step's
     environment is printed in its log (D12), so only the pipeline's own
-    messages pass with their text; any other error passes as its type."""
+    messages pass with their text; any other error passes as its type. A
+    source the reader refused says what its kind means (G60 A)."""
+    from python.pipeline.core.contract import REFUSAL_MEANING, SourceRefused
     from python.pipeline.promotion.cert_apply import GateUnavailable
     from python.scrapers.ftl_auth import FtlAuthError
     from python.scrapers.name_cells import SourceNotUnderstood
     from python.scrapers.pzsz_start_list_store import StoredStartListError
 
     kind = type(e).__name__
-    if not isinstance(
+    if isinstance(e, SourceRefused):
+        kind += f" ({REFUSAL_MEANING.get(e.kind, e.kind)})"
+    elif not isinstance(
         e, (FtlAuthError, GateUnavailable, SourceNotUnderstood, StoredStartListError)
     ):
         return kind

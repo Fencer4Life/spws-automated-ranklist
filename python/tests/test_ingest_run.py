@@ -483,6 +483,7 @@ class TestWhatTheGateReads:
             "listing": "Szpada Mężczyzn kat. 2",
             "kind": "identity",
             "message": "SABRE M listing not written: X (place 3): namesakes",
+            "public": "a row fits no single roster fencer",  # REFUSAL.SAY (G60 A)
         }
 
     def test_the_refusals_carry_their_kind_and_stay_value_errors(self):

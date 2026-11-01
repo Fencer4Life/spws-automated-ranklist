@@ -52,6 +52,7 @@ from dataclasses import dataclass, replace
 from datetime import date
 from typing import Any, Protocol
 
+from python.pipeline.core.contract import REFUSAL_MEANING, SourceRefused
 from python.pipeline.ir import ParsedResult, ParsedTournament, SourceKind
 from python.pipeline.promotion import lifecycle
 
@@ -250,9 +251,10 @@ def read_brackets(
     kept: list[dict] = []
     skipped: list[dict] = []
     if not urls:
-        raise ValueError(
+        raise SourceRefused(
+            "no_link",
             f"Event {event.get('txt_code')!r} has no result URL and no EVF event to read "
-            "EVF's results from. Set the organiser's results URL on the event (Admin)."
+            "EVF's results from. Set the organiser's results URL on the event (Admin).",
         )
     weapons = weapons_of(event)
     for url in urls:
@@ -358,10 +360,12 @@ def _waiting(rec: Mapping[str, Any]) -> dict:
 
 def _refuse_uncategorised(name: str, url: str | None, category: str | None) -> None:
     if category not in CATEGORIES:
-        raise ValueError(
+        raise SourceRefused(
+            "combined",
             f"International bracket {name!r} ({url}) has no single source category "
             f"({category!r}); its results are filed under the bracket's own category and "
-            "none is derived from birth years (ADR-105). Nothing was written."
+            "none is derived from birth years (ADR-105). Nothing was written.",
+            public=f"{REFUSAL_MEANING['combined']}: {name!r}",
         )
 
 
@@ -568,10 +572,13 @@ def _refuse_two_sources(event: Mapping[str, Any], recs: list[dict]) -> None:
     for r in recs:
         key = (r["weapon"], r["gender"], r["cats"][0])
         if key in seen:
-            raise ValueError(
+            bracket = "/".join(str(k) for k in key)
+            raise SourceRefused(
+                "two_sources",
                 f"Event {event.get('txt_code')!r} has two sources for one bracket "
-                f"{'/'.join(str(k) for k in key)}: {seen[key]} and {r['url'] or r['uuid']}. "
+                f"{bracket}: {seen[key]} and {r['url'] or r['uuid']}. "
                 "A tournament holds one source bracket's N (ADR-105 §5.4); keep one URL. "
-                "Nothing was written."
+                "Nothing was written.",
+                public=f"{REFUSAL_MEANING['two_sources']} {bracket}",
             )
         seen[key] = r["url"] or r["uuid"]

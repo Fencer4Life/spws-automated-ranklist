@@ -47,6 +47,13 @@ STORED = "STORED"
 PENDING = "PENDING"
 REJECTED = "REJECTED"
 
+# Why a row is not stored. None names a fencer, so a refusal's public summary
+# counts them (ADR-119 G60 A).
+NO_SPWS_START = "identity, no SPWS start"
+TWO_FIT = "two roster fencers fit"
+NO_MATCH = "no identity match"
+REASONS = (TWO_FIT, NO_MATCH, NO_SPWS_START)
+
 _FEDERATION_FOLD = {"PL": "POL"}
 _FEDERATION = re.compile(r"[A-Z]{3}")
 
@@ -170,7 +177,8 @@ def admit(
     more than ADR-106 §1 does. ``readings`` are the "SURNAME First" readings
     of a row whose source repeats the name in both name cells (G41 A): every
     fencer one of them names counts as a fit, and the rule is otherwise the
-    same, so exactly one fit is needed to store the row."""
+    same, so exactly one fit is needed to store the row. A fencer found more
+    than once (by identity and by alias, or by two readings) is one fit (G59)."""
     entered_for = fold_federation(printed_country)
     fie = is_fie_type(tournament_type)
     hits: list[int] = []
@@ -178,7 +186,9 @@ def admit(
         found = identity_matches(text, category, season_end_year, roster)
         if fie:
             found += alias_matches(text, category, season_end_year, roster)
-        hits += [h for h in found if h not in hits]
+        for h in found:
+            if h not in hits:
+                hits.append(h)
     read = " (read past the name the source repeats in both name cells)" if readings else ""
     if len(hits) == 1 and hits[0] in spws_starters:
         return Admission(STORED, hits[0], 100.0, entered_for, f"identity, SPWS start{read}")
@@ -187,11 +197,11 @@ def admit(
             STORED, hits[0], 100.0, entered_for, f"identity, entered by POL at an FIE event{read}"
         )
     if len(hits) == 1:
-        reason = "identity, no SPWS start"
+        reason = NO_SPWS_START
     elif len(hits) > 1:
-        reason = "two roster fencers fit"
+        reason = TWO_FIT
     else:
-        reason = "no identity match"
+        reason = NO_MATCH
     if entered_for == "POL":
         if len(hits) == 1:
             return Admission(PENDING, hits[0], 100.0, entered_for, reason)

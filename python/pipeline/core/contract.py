@@ -62,6 +62,18 @@ class Outcome(StrEnum):
     ABORTED = "ABORTED"  # an Abort broke the run at this plugin
 
 
+# What each refusal kind means, as a public log says it (ADR-119 G60 A): a
+# kind alone ("identity") read as an FTL sign-in failure. None names a fencer.
+REFUSAL_MEANING = {
+    "identity": "a row fits no single roster fencer",
+    "joined_bracket": "the listing's category order cannot be written",
+    "nothing_final": "no listing is final, and the event holds an earlier run's results",
+    "no_link": "no results link",
+    "combined": "a combined bracket (no single category)",
+    "two_sources": "two sources for one bracket",
+}
+
+
 class ListingRefused(ValueError):
     """A listing the ingestion will not write, refused before any write.
 
@@ -70,13 +82,38 @@ class ListingRefused(ValueError):
     a listing whose category order cannot be written (ADR-104 §§3-4). It is a
     ValueError, as the refusal always was, so the run still stops on it.
     `listing` is the listing it refused, set by a recorded run, so a public
-    log can name the listing and not the fencer (ADR-119 D12).
+    log can name the listing and not the fencer (ADR-119 D12). `public` is
+    the refusal as a public log may say it, with counts and no name, and
+    `read_from` the engines whose pages were read before it (G60 A).
     """
 
-    def __init__(self, kind: str, message: str):
+    def __init__(self, kind: str, message: str, *, public: str | None = None):
         super().__init__(message)
         self.kind = kind
         self.listing: str | None = None
+        self.public = public
+        self.read_from: tuple[str, ...] = ()
+
+    @property
+    def summary(self) -> str:
+        """What the refusal means, without a name: its own summary, or its kind's."""
+        return self.public or REFUSAL_MEANING.get(self.kind, self.kind)
+
+
+class SourceRefused(ValueError):
+    """A source the international reader refuses before anything is written
+    (ADR-119 G60 A): "no_link", "combined" or "two_sources". Its message names
+    a bracket, a link or an event, never a fencer, so a public log may print
+    it. It is a ValueError, as these refusals always were."""
+
+    def __init__(self, kind: str, message: str, *, public: str | None = None):
+        super().__init__(message)
+        self.kind = kind
+        self.public = public
+
+    @property
+    def summary(self) -> str:
+        return self.public or REFUSAL_MEANING.get(self.kind, self.kind)
 
 
 class Abort(Exception):
