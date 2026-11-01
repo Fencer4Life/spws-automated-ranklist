@@ -6,8 +6,10 @@
  * text below is the bot's command list; python/tests/test_gas_bot.py keeps it in
  * step with the commands (GAS.HELP.01–04).
  *
- * One function runs on a 5-minute timer:
- *   checkTelegramCommands() — polls Telegram getUpdates for admin commands
+ * Two functions run on timers:
+ *   checkTelegramCommands() — every 5 minutes, polls Telegram getUpdates for admin commands
+ *   dispatchScheduledSync() — every hour, starts the results sync's hourly cycle
+ *                             (ADR-119 §4, G47 A)
  *
  * Setup (Script Properties):
  *   SUPABASE_PROJECT_REF   — CERT project ref; the database commands run there
@@ -23,7 +25,7 @@
  * Deploy:
  *   1. Create GAS project linked to spws.weterani@gmail.com
  *   2. Set Script Properties above
- *   3. Run createTimeTrigger() once to start 5-minute polling
+ *   3. Run createTimeTrigger() once to start both timers
  */
 
 
@@ -445,6 +447,30 @@ function callRpc(fnName, params, overrideRef) {
 
 
 // ═══════════════════════════════════════════════════════════════
+// THE HOURLY RESULTS SYNC (ADR-119 §4, G47 A)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GitHub starts the repository's crons hours late or not at all, so this hourly
+ * trigger starts the results sync's cycle: in the UTC hours 08 to 20 it dispatches
+ * results-sync.yml as a scheduled cycle. The workflow takes the 08 hour as the
+ * morning cycle, obeys RESULTS_SYNC=off, and ends a cycle that begins within 20
+ * minutes of the last; GitHub's cron lines stay as a backstop
+ * (python/tests/test_gas_bot.py GAS.SYNC.02-04).
+ */
+function dispatchScheduledSync() {
+  var hour = new Date().getUTCHours();
+  if (hour < 8 || hour > 20) return;
+  var props = PropertiesService.getScriptProperties();
+  try {
+    triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'results-sync.yml', { scheduled: 'true' });
+  } catch (e) {
+    sendTelegramMessage(props, '❌ results sync: the bot could not start the hourly cycle (' + e.message + ')');
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // GITHUB + TELEGRAM HELPERS
 // ═══════════════════════════════════════════════════════════════
 
@@ -508,12 +534,17 @@ function sendTelegramMessage(props, message) {
 
 /**
  * Run once after pasting: removes every existing trigger (including the retired
- * e-mail check's) and sets up the 5-minute Telegram polling trigger.
+ * e-mail check's) and sets up the 5-minute Telegram polling trigger and the
+ * hourly results-sync dispatch.
  */
 function createTimeTrigger() {
   ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('checkTelegramCommands')
     .timeBased()
     .everyMinutes(5)
+    .create();
+  ScriptApp.newTrigger('dispatchScheduledSync')
+    .timeBased()
+    .everyHours(1)
     .create();
 }

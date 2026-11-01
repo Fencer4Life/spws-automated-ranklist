@@ -49,7 +49,9 @@ class CommitPzszSenior(BasePlugin):
 
     # Same provenance -> legacy-status mapping Commit uses (kept in sync
     # deliberately rather than imported, since Commit's own version is a
-    # private module detail, not a shared contract).
+    # private module detail, not a shared contract). Only these rows are
+    # written: a row the admission skipped is EXCLUDED, and may carry an id
+    # (G50 A).
     _METHOD_TO_STATUS = {
         "AUTO_MATCHED": "AUTO_MATCHED",
         "USER_CONFIRMED": "APPROVED",
@@ -80,7 +82,7 @@ class CommitPzszSenior(BasePlugin):
 
         rows: list[dict] = []
         for m in matches:
-            if m.id_fencer is not None:
+            if m.id_fencer is not None and m.method in self._METHOD_TO_STATUS:
                 vcat = (
                     vcat_for_age(season_end - m.governed_birth_year)
                     if (season_end is not None and m.governed_birth_year is not None)

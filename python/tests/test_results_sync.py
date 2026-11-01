@@ -27,10 +27,17 @@ outputs, no database and no network:
   SYNC.PZSZ.01-02  a start list's hash is part of the compare;
   SYNC.PAUSE.06  RESULTS_SYNC=off ends a scheduled select silently;
   SYNC.CYCLE.08  the compare reads as the ingest reads (G35 A);
-  SYNC.CYCLE.09  a dry run says what the cycle would do (G36 A).
+  SYNC.CYCLE.09  a dry run says what the cycle would do (G36 A);
+  SYNC.BOT.01-03  the Telegram bot's hourly trigger starts a scheduled cycle
+               (G47 A): its slot is the UTC hour it runs in, it works on the
+               moment it runs, obeys RESULTS_SYNC and sends the ☀ line in the
+               08 UTC hour, and outside the cycles' hours runs none;
+  SYNC.DEDUP.01-04  a scheduled cycle that begins within 20 minutes of the
+               last ends at its select, the day's ☀ line is sent once, and a
+               manual run or a dry run records no start.
 
-The morning cycle is told by the cron line that fired (G28 A), and the select
-sends the ☀ line (G29 A).
+The morning cycle is told by the cron line that fired (G28 A), or by the hour
+the bot runs in (G47 A), and the select sends the ☀ line (G29 A).
 """
 
 from __future__ import annotations
@@ -790,7 +797,14 @@ class _Sql:
     write it makes, in order."""
 
     def __init__(
-        self, events=(), pauses=None, links=None, runs=None, latest=None, fingerprints=None
+        self,
+        events=(),
+        pauses=None,
+        links=None,
+        runs=None,
+        latest=None,
+        fingerprints=None,
+        begun=None,
     ):
         self._events = [dict(e) for e in events]
         self._pauses = dict(pauses or {})
@@ -798,7 +812,12 @@ class _Sql:
         self._runs = dict(runs or {})
         self._latest = dict(latest or {})
         self._fps = dict(fingerprints or {})
+        self._begun = begun
         self.writes: list[tuple] = []
+
+    def begin(self, trigger, morning, day):
+        self.writes.append(("begin", trigger, morning, day))
+        return self._begun or {"begun": True, "morning_line": morning}
 
     def events(self):
         return [dict(e) for e in self._events]
@@ -878,7 +897,8 @@ class TestSelectCli:
         assert dt.datetime.fromisoformat(out["moment"]).astimezone(UTC) == dt.datetime(
             2026, 11, 14, 13, 13, tzinfo=UTC
         )
-        assert cert.writes == []
+        # G47 A: a scheduled select records that its cycle began, and nothing else.
+        assert cert.writes == [("begin", "cron", False, DAY)]
 
     def test_SYNC_PAUSE_05_the_select_sends_the_morning_line_on_the_morning_cycle(self):
         """G29 A: the select sees every event in window, so it sends the ☀
@@ -920,6 +940,111 @@ class TestSelectCli:
         code, sent, out = _cli_select(cert, now=LATE_MORNING, cron=rs.MORNING, switch="off")
         assert (code, sent, out["count"]) == (0, [], "0")
         assert capsys.readouterr().out.strip() == "RESULTS_SYNC=off: no scheduled cycle runs"
+
+
+# --------------------------------------------------------------------------
+# SYNC.BOT, SYNC.DEDUP — the bot starts the hourly cycle (G47 A)
+# --------------------------------------------------------------------------
+
+BOT_MORNING = dt.datetime(2026, 11, 14, 8, 41, tzinfo=UTC)  # 09:41 Warsaw
+BOT_HOURLY = dt.datetime(2026, 11, 14, 13, 41, tzinfo=UTC)
+
+
+class TestBotCycle:
+    """GitHub starts this repository's crons hours late or not at all; the
+    Telegram bot's hourly trigger dispatches the sync as a scheduled cycle."""
+
+    def test_SYNC_BOT_01_the_slot_is_the_utc_hour_the_bot_runs_in(self):
+        slots = {h: rs.bot_slot(dt.datetime(2026, 11, 14, h, 41, tzinfo=UTC)) for h in range(24)}
+        assert slots[8] == rs.MORNING
+        assert {h for h, s in slots.items() if s == rs.HOURLY} == set(range(9, 21))
+        assert {h for h, s in slots.items() if s is None} == set(range(8)) | {21, 22, 23}
+        # by the UTC hour, whatever zone the clock is read in
+        warsaw = dt.datetime(2026, 11, 14, 9, 41, tzinfo=rs.lifecycle.WARSAW)
+        assert rs.bot_slot(warsaw) == rs.MORNING
+
+    def test_SYNC_BOT_01_a_bot_cycle_works_on_the_moment_it_runs(self):
+        cert = _Sql([_event(code=PEW, url_event="https://e/1")])
+        code, sent, out = _cli_select(cert, now=BOT_HOURLY, cron=None, by_bot=True)
+        assert (code, sent, out["count"]) == (0, [], "1")
+        assert dt.datetime.fromisoformat(out["moment"]) == BOT_HOURLY
+        assert cert.writes == [("begin", "bot", False, DAY)]
+
+    def test_SYNC_BOT_02_the_bot_morning_cycle_sends_the_morning_line(self):
+        cert = _Sql([_event(code=PEW, url_event="https://e/1")])
+        code, sent, out = _cli_select(cert, now=BOT_MORNING, cron=None, by_bot=True)
+        assert (code, out["count"]) == (0, "1")
+        assert sent == [f"☀ 09:41 · in window: {PEW} (syncing)"]
+        assert cert.writes == [("begin", "bot", True, DAY)]
+
+    def test_SYNC_BOT_02_the_switch_ends_a_bot_cycle_silently(self, capsys):
+        cert = _Sql([_event(code=PEW, url_event="https://e/1")])
+        code, sent, out = _cli_select(cert, now=BOT_MORNING, cron=None, by_bot=True, switch="off")
+        assert (code, sent, out["count"]) == (0, [], "0")
+        assert cert.writes == []
+        assert capsys.readouterr().out.strip() == "RESULTS_SYNC=off: no scheduled cycle runs"
+
+    def test_SYNC_BOT_03_outside_the_cycles_hours_a_bot_dispatch_runs_no_cycle(self, capsys):
+        cert = _Sql([_event(code=PEW, url_event="https://e/1")])
+        late = dt.datetime(2026, 11, 14, 21, 5, tzinfo=UTC)
+        code, sent, out = _cli_select(cert, now=late, cron=None, by_bot=True)
+        assert (code, sent, out["count"], out["events"]) == (0, [], "0", "[]")
+        assert cert.writes == []
+        assert capsys.readouterr().out.strip() == (
+            "no cycle is due at 21:05 UTC: the cycles run in the UTC hours 08 to 20"
+        )
+
+    def test_SYNC_BOT_03_a_bot_cycle_takes_no_event_code(self, capsys):
+        with pytest.raises(SystemExit):
+            rs.main(["select", "--scheduled", "--code", PEW])
+        assert "a scheduled cycle takes no event code" in capsys.readouterr().err
+
+
+class TestOneCycleAtATime:
+    """G47 A: GitHub's two cron lines stay as a backstop, so a scheduled cycle
+    may start twice for one hour; the second ends at its select."""
+
+    def test_SYNC_DEDUP_01_within_20_minutes_of_the_last_a_scheduled_cycle_ends(self, capsys):
+        cert = _Sql(
+            [_event(code=PEW, url_event="https://e/1")], begun={"begun": False, "minutes": 7}
+        )
+        code, sent, out = _cli_select(cert, now=LATE_MORNING, cron=rs.MORNING)
+        assert (code, sent, out["count"], out["events"]) == (0, [], "0", "[]")
+        assert cert.writes == [("begin", "cron", True, DAY)]
+        assert capsys.readouterr().out.strip() == (
+            "a scheduled cycle began 7 minute(s) ago: this one ends here"
+        )
+
+    def test_SYNC_DEDUP_02_the_days_morning_line_is_sent_once(self):
+        """GitHub's morning run arriving hours after the bot's morning cycle
+        still syncs, and sends no second ☀ line."""
+        cert = _Sql(
+            [_event(code=PEW, url_event="https://e/1")],
+            begun={"begun": True, "morning_line": False},
+        )
+        late = dt.datetime(2026, 11, 14, 11, 19, tzinfo=UTC)
+        code, sent, out = _cli_select(cert, now=late, cron=rs.MORNING)
+        assert (code, sent, out["count"]) == (0, [], "1")
+
+    def test_SYNC_DEDUP_03_a_manual_run_or_a_dry_run_records_no_start(self):
+        cert = _Sql([_event(code=PEW, url_event="https://e/1")])
+        _cli_select(cert, cron=None)
+        _cli_select(cert, cron=None, code=PEW)
+        _cli_select(cert, now=LATE_MORNING, cron=rs.MORNING, dry_run=True)
+        _cli_select(cert, now=BOT_HOURLY, cron=None, by_bot=True, dry_run=True)
+        assert cert.writes == []
+
+    def test_SYNC_DEDUP_04_the_start_is_recorded_on_cert_by_one_function(self):
+        transport = MagicMock()
+        transport.fetch_json.return_value = {"begun": True, "morning_line": True}
+        got = rs.SyncSql(transport).begin("bot", True, DAY)
+        assert got == {"begun": True, "morning_line": True}
+        (sql,), _ = transport.fetch_json.call_args
+        assert (
+            "fn_results_sync_begin(p->>'trigger', (p->>'morning')::boolean, (p->>'day')::date)"
+            in sql
+        )
+        assert '{"trigger": "bot", "morning": true, "day": "2026-11-14"}' in sql
 
 
 class TestCompareCli:

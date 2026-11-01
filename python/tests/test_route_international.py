@@ -763,7 +763,8 @@ class TestDailyClose:
             notifier=MagicMock(),
             today=lifecycle_date("2026-10-20"),
         )
-        read_sources.assert_called_once_with([SCHEDULE, ENGARDE])
+        (urls,), kwargs = read_sources.call_args
+        assert urls == [SCHEDULE, ENGARDE] and set(kwargs) == {"event"}
         assert [o.closed for o in outcomes] == [True]
         assert (cert.status, prod.status) == ("COMPLETED", "COMPLETED")
 

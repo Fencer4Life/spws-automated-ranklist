@@ -151,6 +151,52 @@ jobs:
             --check "Handbook frame=$HANDBOOK_FRAME" --check "check_docs=$CHECK_DOCS" \
             --junit pytest.xml >> "$GITHUB_STEP_SUMMARY"
 
+  # G43 A: every identity entry of doc/overrides/*.yaml names exactly one fencer
+  # on CERT's roster (PROD's master data), read only; preflight runs the same gate
+  # against LOCAL. Its own job, so only it holds the token. A line names the file
+  # and the entry, never a fencer or a birth year (D12). The last step writes the
+  # job's summary section and, unless the gate passed, tells Telegram (CISUM.06,
+  # WFALERT.01).
+  override-drift:
+    name: Override files (CERT roster)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install httpx pyyaml rapidfuzz
+
+      - name: Override files name the roster
+        id: override_drift
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: python -m python.pipeline.override_drift --roster cert
+
+      - name: Write the run summary, and tell Telegram unless the gate passed
+        if: always()
+        env:
+          OVERRIDE_DRIFT: ${{ steps.override_drift.outcome }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          python3 scripts/ci_summary.py --title "Override files (CERT roster)" \
+            --check "Override files=$OVERRIDE_DRIFT" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$OVERRIDE_DRIFT" == "success" ]]; then
+            exit 0
+          elif [[ "$OVERRIDE_DRIFT" == "failure" ]]; then
+            MSG="❌ CI: an override file no longer names exactly one roster fencer (G43); the run lists the file and the entry. Check: ${RUN_URL}"
+          else
+            MSG="❌ CI: the override-file check did not run (${OVERRIDE_DRIFT}). Check: ${RUN_URL}"
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
+
   test-frontend:
     name: Vitest (frontend)
     runs-on: ubuntu-24.04

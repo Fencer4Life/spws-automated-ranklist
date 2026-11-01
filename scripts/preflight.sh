@@ -75,6 +75,8 @@ gate "render_adrs.py --check (CI)"    python scripts/render_adrs.py --check
 gate "render_docs.py --check (CI)"    python scripts/render_docs.py --check
 gate "render_handbook_frame.py --check (CI)" python scripts/render_handbook_frame.py --check
 gate "check_docs.py (CI)"             python scripts/check_docs.py
+# G43 A: CI reads CERT's roster; here, LOCAL's (the Docker stack, PROD's mirror).
+gate "override files name the roster (CI: CERT)" python -m python.pipeline.override_drift --roster local
 gate "pytest (CI)"                    pytest -q
 
 # test-frontend

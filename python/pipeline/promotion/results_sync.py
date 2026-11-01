@@ -1,6 +1,8 @@
 """The hourly results sync (ADR-119 §4: D5–D9, D12, G7).
 
-`results-sync.yml` runs a cycle every hour from 08:13 to 20:13 UTC. Its select
+`results-sync.yml` runs a cycle every hour from 08:13 to 20:13 UTC, started by
+the Telegram bot's hourly trigger, GitHub's two cron lines staying as a backstop
+(G47 A); a scheduled cycle within 20 minutes of the last ends at its select. Its select
 takes the active-season events on the route whose window is open (the first
 day to the day after the end date in Warsaw, by the moment the cron was due),
 neither COMPLETED nor CANCELLED, with a results link on CERT or on PROD (the
@@ -74,6 +76,20 @@ def in_window(row: Mapping[str, Any], day: dt.date) -> bool:
 def is_morning(cron: str | None) -> bool:
     """The day's first cycle, which sends the ☀ line (G28 A, G29 A)."""
     return (cron or "").strip() == MORNING
+
+
+def _hours(cron: str) -> range:
+    """The UTC hours of one of the two cron lines: `13 8 * * *` → 8, `13 9-20 * * *` → 9–20."""
+    first, _, last = cron.split()[1].partition("-")
+    return range(int(first), int(last or first) + 1)
+
+
+def bot_slot(now: dt.datetime) -> str | None:
+    """The cron line a cycle the Telegram bot starts stands for (G47 A): the
+    UTC hour it runs in, so the 08 UTC hour is the morning cycle; outside the
+    cycles' hours, none."""
+    hour = now.astimezone(dt.UTC).hour
+    return next((line for line in (MORNING, HOURLY) if hour in _hours(line)), None)
 
 
 def due_moment(cron: str | None, now: dt.datetime) -> dt.datetime:
@@ -623,6 +639,20 @@ class SyncSql:
             verdict=verdict,
         )
 
+    def begin(self, trigger: str, morning: bool, day: dt.date) -> dict:
+        """A scheduled cycle's start (G47 A): {"begun": true, "morning_line": …},
+        or {"begun": false, "minutes": …} within 20 minutes of the last."""
+        return (
+            self._call(
+                "SELECT fn_results_sync_begin(p->>'trigger', (p->>'morning')::boolean, "
+                "(p->>'day')::date) AS j FROM {p}",
+                trigger=trigger,
+                morning=morning,
+                day=day.isoformat(),
+            )
+            or {}
+        )
+
     def latest_finished_run(self, code: str) -> dict | None:
         return self._call(
             "SELECT jsonb_build_object('id', id_ingest_run, 'listings', jsonb_listings, "
@@ -665,13 +695,28 @@ def run_select(
     code: str | None = None,
     switch: str | None = None,
     dry_run: bool = False,
+    by_bot: bool = False,
     send: Send,
     output: Output,
 ) -> int:
     """The select job: the matrix of this cycle's events, a manual code's pause
-    lifted first, and the ☀ line on the morning cycle (G29 A). Its log names
-    events and reasons only."""
-    moment = due_moment(cron, now)
+    lifted first, and the ☀ line on the morning cycle (G29 A). A cycle the
+    Telegram bot starts (`by_bot`) is scheduled, its slot the UTC hour it runs
+    in, its moment now (G47 A). A scheduled cycle records its start on CERT
+    first, and ends here within 20 minutes of the last; the day's ☀ line goes
+    to the first morning cycle only. Its log names events and reasons only."""
+    if by_bot:
+        cron = bot_slot(now)
+        if cron is None:
+            output(events="[]", count=0, moment=now.astimezone(lifecycle.WARSAW).isoformat())
+            print(
+                f"no cycle is due at {now.astimezone(dt.UTC):%H:%M} UTC: "
+                "the cycles run in the UTC hours 08 to 20"
+            )
+            return 0
+        moment = now.astimezone(lifecycle.WARSAW)
+    else:
+        moment = due_moment(cron, now)
     selection = select(
         cert.events(),
         prod.links(),
@@ -681,6 +726,17 @@ def run_select(
         scheduled=cron is not None,
         switch=switch,
     )
+    morning = is_morning(cron)
+    if cron is not None and not selection.off and not dry_run:
+        begun = cert.begin("bot" if by_bot else "cron", morning, moment.date())
+        if not begun.get("begun"):
+            output(events="[]", count=0, moment=moment.isoformat())
+            print(
+                f"a scheduled cycle began {begun.get('minutes', 0)} minute(s) ago: "
+                "this one ends here"
+            )
+            return 0
+        morning = morning and bool(begun.get("morning_line"))
     output(events=selection.matrix(), count=selection.count, moment=moment.isoformat())
     if selection.off:
         print("RESULTS_SYNC=off: no scheduled cycle runs")
@@ -698,7 +754,7 @@ def run_select(
             cert.resume(c)
             print(f"lifted the pause of {c}")
     print(f"{selection.count} event(s) to sync: {', '.join(selection.events) or 'none'}")
-    if is_morning(cron):
+    if morning:
         line = morning_line(moment, selection)
         print(line)
         if not dry_run:
@@ -859,7 +915,14 @@ def main(argv: Iterable[str] | None = None) -> int:
         action="store_true",
         help="select and compare only: no result, verdict or pause written, nothing sent",
     )
+    ap.add_argument(
+        "--scheduled",
+        action="store_true",
+        help="started by the Telegram bot's hourly trigger: a scheduled cycle (G47 A)",
+    )
     args = ap.parse_args(list(argv) if argv is not None else None)
+    if args.scheduled and args.code:
+        ap.error("a scheduled cycle takes no event code")
 
     token = supabase_access_token()
     if not token:
@@ -881,6 +944,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             code=code,
             switch=os.environ.get("RESULTS_SYNC"),
             dry_run=args.dry_run,
+            by_bot=args.scheduled,
             send=notifier.send,
             output=_github_output,
         )

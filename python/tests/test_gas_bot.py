@@ -258,3 +258,111 @@ def test_GAS_SYNC_01_sync_dispatches_the_results_sync_with_or_without_a_code():
     assert re.search(r"event_code:\s*arg\s*\|\|\s*''", block.group(1))
     description = dict(_help_entries(src))["sync"]
     assert "CERT" in description and "PROD" in description and "pause" in description
+
+
+# --------------------------------------------------------------------------
+# GAS.SYNC.02-04 — the bot starts the hourly results sync (ADR-119 §4, G47 A)
+# --------------------------------------------------------------------------
+
+TIMER_HARNESS = r"""
+const vm = require('vm');
+const fs = require('fs');
+const src = fs.readFileSync(process.argv[1], 'utf8');
+const pick = (name) =>
+  src.match(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}\\n'))[0];
+const mode = process.argv[2];
+const args = JSON.parse(process.argv[3]);
+const out = { runs: [], triggers: [], deleted: [] };
+let hour = 0;
+let dispatched = [];
+let sent = [];
+class FakeDate extends Date {
+  constructor(...a) { if (a.length) { super(...a); } else { super(Date.UTC(2026, 10, 14, hour, 41)); } }
+}
+const ctx = {
+  Date: FakeDate,
+  PropertiesService: { getScriptProperties: () => ({
+    getProperty: (k) => ({ GITHUB_PAT: 'p', GITHUB_REPO: 'o/r' })[k] }) },
+  triggerGitHubWorkflow: (pat, repo, workflow, inputs) => {
+    if (args.fail) { throw new Error('GitHub dispatch failed: {"message":"422 Unexpected inputs"}'); }
+    dispatched.push({ workflow: workflow, inputs: inputs });
+  },
+  sendTelegramMessage: (props, message) => { sent.push(message); },
+  ScriptApp: {
+    getProjectTriggers: () => [{ id: 'old-1' }, { id: 'old-2' }],
+    deleteTrigger: (t) => { out.deleted.push(t.id); },
+    newTrigger: (fn) => {
+      const t = { fn: fn };
+      out.triggers.push(t);
+      const b = {
+        timeBased: () => b,
+        everyMinutes: (n) => { t.everyMinutes = n; return b; },
+        everyHours: (n) => { t.everyHours = n; return b; },
+        create: () => { t.created = true; return t; },
+      };
+      return b;
+    },
+  },
+};
+vm.createContext(ctx);
+if (mode === 'setup') {
+  vm.runInContext(pick('createTimeTrigger'), ctx);
+  ctx.createTimeTrigger();
+} else {
+  vm.runInContext(pick('dispatchScheduledSync'), ctx);
+  for (const h of args.hours) {
+    hour = h; dispatched = []; sent = [];
+    ctx.dispatchScheduledSync();
+    out.runs.push({ hour: h, dispatched: dispatched, sent: sent });
+  }
+}
+console.log(JSON.stringify(out));
+"""
+
+
+def _timer(mode: str, **args: Any) -> dict[str, Any]:
+    out = subprocess.run(
+        ["node", "-e", TIMER_HARNESS, str(BOT), mode, json.dumps(args)],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    ).stdout
+    result: dict[str, Any] = json.loads(out)
+    return result
+
+
+def test_GAS_SYNC_02_the_bot_starts_the_hourly_cycle_in_the_cycles_hours():
+    """GitHub starts this repository's crons hours late or not at all (G47);
+    the bot's hourly trigger dispatches the sync as a scheduled cycle in the
+    UTC hours the cycles run in, the select's own slots, and in no other."""
+    import datetime as dt
+
+    from python.pipeline.promotion import results_sync as rs
+
+    runs = _timer("dispatch", hours=list(range(24)))["runs"]
+    started = {r["hour"] for r in runs if r["dispatched"]}
+    slots = {h for h in range(24) if rs.bot_slot(dt.datetime(2026, 11, 14, h, 41, tzinfo=dt.UTC))}
+    assert started == slots == set(range(8, 21))
+    (one,) = [r for r in runs if r["hour"] == 13]
+    assert one["dispatched"] == [{"workflow": "results-sync.yml", "inputs": {"scheduled": "true"}}]
+    assert all(r["sent"] == [] for r in runs)
+
+
+def test_GAS_SYNC_03_a_dispatch_that_fails_is_told_in_the_chat():
+    (run,) = _timer("dispatch", hours=[13], fail=True)["runs"]
+    assert run["dispatched"] == []
+    (line,) = run["sent"]
+    assert line.startswith("❌ results sync: the bot could not start the hourly cycle")
+    assert "422 Unexpected inputs" in line
+
+
+def test_GAS_SYNC_04_one_setup_starts_both_timers():
+    """createTimeTrigger(), run once after pasting, replaces every trigger with
+    the 5-minute command poll and the hourly results-sync dispatch."""
+    got = _timer("setup")
+    assert got["deleted"] == ["old-1", "old-2"]
+    assert got["triggers"] == [
+        {"fn": "checkTelegramCommands", "everyMinutes": 5, "created": True},
+        {"fn": "dispatchScheduledSync", "everyHours": 1, "created": True},
+    ]
