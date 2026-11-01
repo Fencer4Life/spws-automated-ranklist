@@ -132,7 +132,7 @@
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 7: G15–G18 built and rehearsed, all EQUAL · G18 signed A 31 Oct ("G18 A") · documents written 31 Oct: ADR-119 §3, the amendments, the RTM, spec Appendices C and D, six handbook pages; checks and the RAG current</span>
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 8: G19 found while writing the documents · signed B 31 Oct ("G19 B") · built test-first, N11.8 RED then GREEN</span>
     <span class="pill"><span class="dot" style="background:var(--good)"></span>rev 9: G20–G23 found while building G19 · signed 1 Nov ("All as recommended": G20 A, G21 B, G22 A, G23 A) · built test-first, each seen RED then GREEN, and recorded</span>
-    <span class="pill warn"><span class="dot"></span>rev 17: release 3's build sheet (§03e) signed 1 Nov ("All as recommended"); building test-first on claude/results-sync-hourly-cycle · G28–G30 signed 1 Nov (all A); 3a released 1 Nov (main bfdc158b), CERT and PROD verified; 3b built test-first and documented, not pushed; G31–G34 wait for your sign-off · R2.2 waits · G21 needs you to remove the stale token</span>
+    <span class="pill warn"><span class="dot"></span>rev 17: release 3's build sheet (§03e) signed 1 Nov ("All as recommended"); building test-first on claude/results-sync-hourly-cycle · G28–G30 signed 1 Nov (all A); 3a released 1 Nov (main bfdc158b), CERT and PROD verified; 3b built test-first and documented, not pushed; G31–G34 signed 1 Nov (all A); the push waits for your go · R2.2 waits · G21 needs you to remove the stale token</span>
     <span class="pill warn"><span class="dot"></span>9 gaps found in today's route · 4 more found while building (G10–G13) · G14 found while tracing release 2 · G15–G17 in the rehearsal</span>
     <span class="pill"><span class="dot"></span>rev 3: USA Fencing, the French veterans federation and any later organizer</span>
     <span class="pill">read-only research · CERT runs 1–8 · PROD read 31 Oct</span>
@@ -726,6 +726,8 @@
     <div class="note warn">
       <p class="lede"><span class="tick">G31–G34</span> Found while building 3b, 1 Nov</p>
       <p>Building goes on with everything these do not touch. The run title, the dry dispatch and the switch wait for your answer; G33's fix is built test-first under D12.</p>
+
+      <p><b>Signed</b> by the user in chat on 1 Nov 2026: "All as recommended", that is G31 A (3b goes to main with <code>RESULTS_SYNC=off</code> set before the push; the dry dispatch then runs on main twice, and you remove the switch after it), G32 A (the run titles &ldquo;Results sync · scheduled&rdquo;, &ldquo;Results sync · &lt;code&gt;&rdquo; and &ldquo;Results sync · manual&rdquo;, with &ldquo; · dry run&rdquo; for a dry run), G33 A (promote's refusal line names no fencer, built as LOG.PRIV.03) and G34 A (the switch covers Madrid; a dry compare of Madrid runs only on your word). G32 is built test-first as RUNNAME.03. The switch and the push wait for your go.</p>
       <p><b>Readings made while building:</b> a cycle needs the season end year, which <code>ingest-event.yml</code> requires, so each matrix entry carries the event code and its season end year. Jobs do not share a temporary folder, so the outcome job cannot open the refresh report file. The ingest job hands on its status and counts as job outputs, which name no one. An error that opened no run reaches the outcome job as its type, plus the message only for errors whose text is the pipeline's own (a refused session, a missing stored start list, a missing token). A step's environment is printed in its log, so nothing else passes that way.</p>
     </div>
 
@@ -746,7 +748,9 @@
 
       <p><b>The documents:</b> ADR-119 §4 and its consequences as built; amendments of ADR-072, ADR-077, ADR-108 and ADR-113, dated 1 Nov; spec Appendix C; the RTM (FR-164 Covered with every test above; Covered 144, Partial 5) and its SYNC rows; the handbook's workflow catalog (the results sync's row and chain, the called forms and lanes), operator runbooks (a new runbook, "Run, pause and resume the results sync", the <code>sync</code> command, a paused event in "Diagnose a failure"), event status lifecycle, ingestion subsystem and codebase map.</p>
 
-      <p><b>Not done yet, waiting for you:</b> the run title (G32), the switch before the push (G31, G34), the push, then the dry dispatch on main twice and the verification on CERT and PROD.</p>
+      <p><b>G32, after the sign-off:</b> RUNNAME.03 seen RED (<code>results-sync.yml</code> had no <code>run-name</code>), then GREEN with <code>Results sync · ${{ github.event_name == 'schedule' &amp;&amp; 'scheduled' || inputs.event_code || 'manual' }}</code> and the dry-run part promote uses. A scheduled run has no inputs, so its title is &ldquo;Results sync · scheduled&rdquo;. The pin checks the text; the titles themselves are seen in the Actions list during the dry dispatch on main. Documented in ADR-119 §5, spec Appendix C, the RTM and the workflow catalog.</p>
+
+      <p><b>Not done yet, waiting for your go:</b> the switch before the push (G31, G34), the push, then the dry dispatch on main twice and the verification on CERT and PROD.</p>
 
     </div>
 

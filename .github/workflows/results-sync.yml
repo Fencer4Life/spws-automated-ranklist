@@ -1,4 +1,7 @@
 name: Results sync
+# G32 A: the title is fixed before the select counts anything, so it says what
+# started the run; the count is the select job's log and the cycle jobs.
+run-name: Results sync · ${{ github.event_name == 'schedule' && 'scheduled' || inputs.event_code || 'manual' }}${{ inputs.dry_run && ' · dry run' || '' }}
 
 # ADR-119 §4: every hour, each event in its window is read, compared with its
 # latest finished CERT run, refreshed, ingested on CERT and promoted to PROD
