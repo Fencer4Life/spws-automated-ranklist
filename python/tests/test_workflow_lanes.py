@@ -133,6 +133,31 @@ def test_SYNC_CYCLE_07_in_sync_mode_the_ingest_compares_first_and_is_quiet():
     assert {"refresh_status", "refresh_counts", "gate"} <= set(job["outputs"])
 
 
+def test_LOG_PRIV_06_the_refresh_report_goes_to_storage_and_telegram_not_the_log():
+    """G48 A: the refresh stores its report in CERT's staging-reports bucket;
+    its place is handed on to the outcome; a stopped or refused refresh's
+    Telegram message carries the report's named lines and that place instead
+    of sending the administrator to the public run log."""
+    jobs = _spec("ingest-event.yml")["jobs"]
+    job = jobs["ingest-event"]
+    (refresh,) = [s for s in job["steps"] if str(s.get("name", "")).startswith("Refresh CERT")]
+    assert "--report-storage" in refresh["run"]
+    assert refresh["env"]["SUPABASE_KEY"] == "${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}"
+    handed = _step(job, "refresh_report")["run"]
+    assert "report=" in handed and "reason=" in handed
+    assert job["outputs"]["refresh_report"] == "${{ steps.refresh_report.outputs.report }}"
+    assert job["outputs"]["refresh_reason"] == "${{ steps.refresh_report.outputs.reason }}"
+    outcome_env = next(s for s in jobs["outcome"]["steps"] if "results_sync" in s.get("run", ""))[
+        "env"
+    ]
+    assert outcome_env["SYNC_REFRESH_REPORT"] == "${{ needs.ingest-event.outputs.refresh_report }}"
+    assert outcome_env["SYNC_REFRESH_REASON"] == "${{ needs.ingest-event.outputs.refresh_reason }}"
+    notify = job["steps"][-1]["run"]
+    assert "^status: (stopped_|refused)" in notify
+    assert "DETAIL" in notify and "stored:" in notify
+    assert "Report: ${RUN_URL}" not in notify
+
+
 def test_SYNC_CYCLE_07_promote_follows_a_finished_run_whose_gate_passed():
     jobs = _spec("ingest-event.yml")["jobs"]
     promote = jobs["promote"]

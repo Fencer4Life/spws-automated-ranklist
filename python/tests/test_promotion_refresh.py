@@ -719,3 +719,154 @@ def test_the_mirror_loads_registrations_through_the_refresh():
     assert "python.pipeline.promotion.refresh --target local --mode registrations" in script
     assert "INSERT INTO tbl_registration" not in script
     assert "txt_consent_version" not in script
+
+
+# --------------------------------------------------------------------------
+# LOG.PRIV.06 — the refresh names no one in a public log (G48 A)
+# --------------------------------------------------------------------------
+
+NAMED_LINES = [
+    "renumber 5 → 7 · 7 PRZYKŁADOWA Anna (1975) (exact name and birth year)",
+    "create 9 · WZORCOWY Jan (1980)",
+    "  12 TESTOWA Ewa (1969) · json_user_confirmed_aliases: target [], PROD ['TESTOWA E.']",
+]
+LEAKS = ("PRZYKŁADOWA", "WZORCOWY", "TESTOWA", "1975", "1980", "1969")
+
+
+class TestPublicLog:
+    """LOG.PRIV.06 (G48 A): in a GitHub Actions job, whose log is public, the
+    refresh prints its head only (status and counts) and names no fencer and
+    no birth year; the named lines go to the report file and to CERT's
+    private staging-reports bucket. A terminal keeps the whole report."""
+
+    def _main(
+        self, monkeypatch, tmp_path, *, actions=True, status="applied", raises=None, broken=False
+    ):
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "x")
+        monkeypatch.setenv("SUPABASE_URL", f"https://{rf.CERT_REF}.supabase.co")
+        if actions:
+            monkeypatch.setenv("GITHUB_ACTIONS", "true")
+        else:
+            monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        counts = {"paired": 3, "renumbered": 1, "created": 1, "values_changed": 1}
+        outcome = rf.RefreshOutcome(status, MagicMock(), rf.Report(counts, list(NAMED_LINES)))
+
+        def fake_run(*a, **k):
+            if raises is not None:
+                raise raises
+            return outcome
+
+        stored: list[tuple[str, str]] = []
+
+        def store(code, text, stamp):
+            if broken:
+                raise RuntimeError("storage down")
+            stored.append((code, text))
+            return f"PEW2efs-2026-2027/refresh/{stamp}.md"
+
+        monkeypatch.setattr(rf, "run_refresh", fake_run)
+        monkeypatch.setattr(rf, "ManagementTransport", MagicMock())
+        monkeypatch.setattr(rf, "store_report", store)
+        report = tmp_path / "refresh-report.md"
+        argv = ["--target", "cert", "--mode", "apply", "--event", "PEW2efs-2026-2027"]
+        argv += ["--snapshot", str(tmp_path / "s.json"), "--auto", "--report", str(report)]
+        code = rf.main([*argv, "--report-storage"])
+        return code, report, stored
+
+    @pytest.mark.parametrize("status", ["applied", "stopped_renumbering"])
+    def test_LOG_PRIV_06_an_actions_log_has_the_head_only(
+        self, monkeypatch, tmp_path, capsys, status
+    ):
+        _, report, stored = self._main(monkeypatch, tmp_path, status=status)
+        out = capsys.readouterr()
+        text = out.out + out.err
+        assert f"status: {status}" in text and '"renumbered": 1' in text
+        for leak in LEAKS:
+            assert leak not in text, leak
+        assert "3 change line(s)" in text
+        assert "stored: staging-reports/PEW2efs-2026-2027/refresh/" in text
+        written = report.read_text()
+        assert all(line in written for line in NAMED_LINES)
+        assert "stored: staging-reports/PEW2efs-2026-2027/refresh/" in written
+        ((code, uploaded),) = stored
+        assert code == "PEW2efs-2026-2027" and all(line in uploaded for line in NAMED_LINES)
+
+    def test_LOG_PRIV_06_a_terminal_keeps_the_whole_report(self, monkeypatch, tmp_path, capsys):
+        """The administrator's own terminal is not public: `--mode plan` shows
+        the pairing there, as the runbook says."""
+        self._main(monkeypatch, tmp_path, actions=False)
+        text = capsys.readouterr().out
+        assert all(line in text for line in NAMED_LINES)
+
+    @pytest.mark.parametrize(
+        ("message", "kind"),
+        [
+            ("ALIGN_VCAT: 12 TESTOWA Ewa (1969), PEW2efs-2026-2027", "ALIGN_VCAT"),
+            # CERT answers through the Management API, which wraps the
+            # database's text: the marker is found inside it.
+            (
+                "Failed to run sql query: ERROR:  P0001: ALIGN_VCAT: 12 TESTOWA Ewa (1969)\n"
+                "CONTEXT:  PL/pgSQL function fn_align_fencers_to(jsonb) line 160 at RAISE",
+                "ALIGN_VCAT",
+            ),
+            (
+                'Failed to run sql query: ERROR:  23505: duplicate key value violates "uq_x"\n'
+                "DETAIL:  Key (txt_surname, int_birth_year)=(TESTOWA, 1969) already exists.",
+                "database error 23505",
+            ),
+            (
+                "after the refresh the roster differs from PROD's:\n  12 TESTOWA Ewa (1969)",
+                "after the refresh the roster differs from PROD's",
+            ),
+        ],
+        ids=["marker", "marker-in-api-text", "sqlstate", "own-message"],
+    )
+    def test_LOG_PRIV_06_a_refusal_logs_its_kind_and_keeps_its_text_in_the_report(
+        self, monkeypatch, tmp_path, capsys, message, kind
+    ):
+        """The align function's ALIGN_VCAT names the fencer it refuses."""
+        code, report, _ = self._main(monkeypatch, tmp_path, raises=rf.RefreshError(message))
+        out = capsys.readouterr()
+        text = out.out + out.err
+        assert code == 1
+        assert f"REFRESH STOPPED: {kind}\n" in text
+        for leak in LEAKS:
+            assert leak not in text, leak
+        written = report.read_text()
+        assert f"status: refused\nreason: {kind}\n" in written and "TESTOWA" in written
+
+    def test_LOG_PRIV_06_a_refusal_is_stored_and_the_log_says_where(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        """A results-sync cycle sends no failure message of its own: the
+        stored report is where the administrator reads a refusal."""
+        refusal = rf.RefreshError("ALIGN_VCAT: 12 TESTOWA Ewa (1969), PEW2efs-2026-2027")
+        _, report, stored = self._main(monkeypatch, tmp_path, raises=refusal)
+        text = capsys.readouterr().err
+        assert "stored: staging-reports/PEW2efs-2026-2027/refresh/" in text
+        ((code, uploaded),) = stored
+        assert code == "PEW2efs-2026-2027" and "TESTOWA Ewa (1969)" in uploaded
+        assert "stored: staging-reports/PEW2efs-2026-2027/refresh/" in report.read_text()
+
+    def test_LOG_PRIV_06_a_store_failure_is_said_and_never_fails_the_refresh(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        code, report, _ = self._main(monkeypatch, tmp_path, broken=True)
+        assert code == 0
+        assert "stored: not stored (RuntimeError)" in capsys.readouterr().out
+        assert all(line in report.read_text() for line in NAMED_LINES)
+
+
+def test_LOG_PRIV_06_the_report_is_uploaded_beside_the_staging_report():
+    """`staging-reports/<event>/refresh/<stamp>.md`, append-only, in CERT's
+    private bucket (the staging report's own)."""
+    from python.pipeline.storage_md import StorageMdHandler
+
+    sb = MagicMock()
+    path = StorageMdHandler(sb).upload_refresh("PEW2efs-2026-2027", b"x", "20261101-142900Z")
+    assert path == "PEW2efs-2026-2027/refresh/20261101-142900Z.md"
+    sb.storage.from_.assert_called_with("staging-reports")
+    args, kwargs = sb.storage.from_.return_value.upload.call_args
+    assert args[0] == path and kwargs["file_options"]["upsert"] == "false"
+    with pytest.raises(ValueError):
+        StorageMdHandler(sb).upload_refresh("PEW2efs-2026-2027", b"x", "today")

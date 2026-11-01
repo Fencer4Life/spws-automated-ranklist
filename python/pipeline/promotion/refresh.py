@@ -849,6 +849,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--recorded", type=Path, default=RECORDED_PAIRS_FILE)
     parser.add_argument("--report", type=Path, help="also write the report to this file")
     parser.add_argument(
+        "--report-storage",
+        action="store_true",
+        help="also store the report in CERT's staging-reports bucket (ingest-event.yml)",
+    )
+    parser.add_argument(
         "--snapshot",
         type=Path,
         help="restore point: written before an apply (a new file), read by a restore",
@@ -859,6 +864,9 @@ def main(argv: list[str] | None = None) -> int:
         help="the refresh ingest runs first (ADR-113): stop, exit 3, if any id would move",
     )
     args = parser.parse_args(argv)
+    # A GitHub Actions log is public: there the report's named lines stay out
+    # of it (ADR-119 D12, G48 A). The administrator's terminal shows them all.
+    public = os.environ.get("GITHUB_ACTIONS") == "true"
 
     if args.mode in ("apply", "restore") and args.snapshot is None:
         print(f"--mode {args.mode} needs --snapshot PATH (the restore point)", file=sys.stderr)
@@ -943,28 +951,86 @@ def main(argv: list[str] | None = None) -> int:
             refuse_renumbering=args.auto,
         )
     except RefreshError as e:
-        print(f"REFRESH STOPPED: {e}", file=sys.stderr)
+        # The align function's refusal can name a fencer (ALIGN_VCAT): a public
+        # log gets its kind, the report file and the bucket the whole of it, and
+        # the log says where (G48 A).
+        kind = refusal_kind(str(e))
+        print(f"REFRESH STOPPED: {kind if public else e}", file=sys.stderr)
+        head = ["status: refused", f"reason: {kind}"]
+        if args.report_storage:
+            whole = "\n".join([*head, "", str(e)])
+            head.append(f"stored: {_stored(args.event, whole, datetime.now(UTC))}")
+            print(head[-1], file=sys.stderr)
+        if args.report:
+            _write(args.report, "\n".join([*head, "", str(e)]))
         return 1
 
-    stamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
-    text = "\n".join(
-        [
-            f"# Refresh {args.target} from PROD · {args.mode} · {stamp}",
-            "",
-            f"status: {out.status}",
-            f"counts: {json.dumps(out.report.counts)}",
-            f"database: {json.dumps(out.align_summary) if out.align_summary else '-'}",
-            f"registrations: {json.dumps(out.registrations) if out.registrations else '-'}",
-            f"results links: {json.dumps(out.result_links) if out.result_links else '-'}",
-            "",
-        ]
-        + out.report.lines
-    )
-    print(text)
+    now = datetime.now(UTC)
+    head = [
+        f"# Refresh {args.target} from PROD · {args.mode} · {now:%Y-%m-%d %H:%M UTC}",
+        "",
+        f"status: {out.status}",
+        f"counts: {json.dumps(out.report.counts)}",
+        f"database: {json.dumps(out.align_summary) if out.align_summary else '-'}",
+        f"registrations: {json.dumps(out.registrations) if out.registrations else '-'}",
+        f"results links: {json.dumps(out.result_links) if out.result_links else '-'}",
+    ]
+    full = "\n".join([*head, "", *out.report.lines])
+    if args.report_storage:
+        head.append(f"stored: {_stored(args.event, full, now)}")
+        full = "\n".join([*head, "", *out.report.lines])
     if args.report:
-        args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(text + "\n")
+        _write(args.report, full)
+    if public and out.report.lines:
+        # ADR-119 D12, G48 A: each line names a fencer and a birth year.
+        print("\n".join(head))
+        print(
+            f"{len(out.report.lines)} change line(s), naming fencers: in the report file"
+            + (" and in CERT's staging-reports bucket" if args.report_storage else "")
+        )
+    else:
+        print(full)
     return {"stopped_unpaired": 2, "stopped_renumbering": 3}.get(out.status, 0)
+
+
+def refusal_kind(message: str) -> str:
+    """A refusal in words that name no one (G48 A): the database's marker
+    (ALIGN_VCAT), found inside the Management API's "Failed to run sql query:
+    ERROR:  P0001: …" too; else a database error's SQLSTATE; else the refresh's
+    own message up to its first colon, after which it puts any name."""
+    marker = re.search(r"\b([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+):", message)
+    if marker:
+        return marker.group(1)
+    sqlstate = re.search(r"\bERROR:\s+([0-9A-Z]{5}):", message)
+    if sqlstate:
+        return f"database error {sqlstate.group(1)}"
+    return re.split(r"[:\n]", message, maxsplit=1)[0].strip()[:120] or "refused"
+
+
+def _write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text + "\n")
+
+
+def store_report(event_code: str, text: str, stamp: str) -> str:
+    """The report in CERT's private staging-reports bucket, beside the event's
+    staging report (G48 A); its path in the bucket."""
+    from python.pipeline.db_connector import make_supabase_client
+    from python.pipeline.storage_md import StorageMdHandler
+
+    sb = make_supabase_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+    return StorageMdHandler(sb).upload_refresh(event_code, text.encode("utf-8"), stamp)
+
+
+def _stored(event_code: str | None, text: str, now: datetime) -> str:
+    """Where the report was stored, or why not; a failure to store is said and
+    never fails the refresh, whose report file still holds every line."""
+    if not event_code:
+        return "not stored (no --event)"
+    try:
+        return f"staging-reports/{store_report(event_code, text, f'{now:%Y%m%d-%H%M%S}Z')}"
+    except Exception as e:  # the refresh has applied; its report must not undo that
+        return f"not stored ({type(e).__name__})"
 
 
 if __name__ == "__main__":

@@ -281,14 +281,22 @@ class _Said:
     pause: str | None = None
 
 
-def _refresh_stop(text: str | None) -> tuple[str, str] | None:
-    """The refresh report's stop: its status and its counts, or None."""
-    status = re.search(r"^status: (stopped_\w+)$", text or "", re.M)
+def _refresh_stop(text: str | None) -> tuple[str, str, str | None] | None:
+    """The refresh report's stop or refusal: its status, what it says (a
+    stop's counts, a refusal's kind) and where its named lines are stored
+    (G48 A), or None."""
+    status = re.search(r"^status: (stopped_\w+|refused)$", text or "", re.M)
     if status is None:
         return None
+    reason = re.search(r"^reason: (.+)$", text or "", re.M)
     counts_line = re.search(r"^counts: (\{.*\})$", text or "", re.M)
     counts = json.loads(counts_line.group(1)) if counts_line else {}
-    return status.group(1), ", ".join(f"{n} {what}" for what, n in counts.items())
+    stored = re.search(r"^stored: (staging-reports/\S+)$", text or "", re.M)
+    return (
+        status.group(1),
+        reason.group(1) if reason else ", ".join(f"{n} {what}" for what, n in counts.items()),
+        stored.group(1) if stored else None,
+    )
 
 
 def _plural(n: int, word: str) -> str:
@@ -321,14 +329,27 @@ def _said(c: Cycle) -> _Said:
     head = f"{c.code} · cycle {c.moment.astimezone(lifecycle.WARSAW):%H:%M}"
     stop = _refresh_stop(c.refresh)
     if stop is not None:
-        status, counts = stop
-        detail = f"{status}; {counts}" if counts else status
+        status, said, stored = stop
+        where = f"; its report: {stored}" if stored else ""
+        if status == "refused":
+            return _Said(
+                FAILED,
+                "\n".join(
+                    [
+                        f"❌ {head} · nothing written, CERT and PROD unchanged",
+                        f"   the PROD→CERT refresh refused ({said}){where}",
+                        _paused(c.code),
+                    ]
+                ),
+                f"refresh refused: {said}",
+            )
+        detail = f"{status}; {said}" if said else status
         return _Said(
             STOPPED,
             "\n".join(
                 [
                     f"⏸ {head} · nothing written",
-                    f"   the PROD→CERT refresh needs the administrator ({detail})",
+                    f"   the PROD→CERT refresh needs the administrator ({detail}){where}",
                     _paused(c.code, "Apply the refresh"),
                 ]
             ),
@@ -735,6 +756,15 @@ def run_outcome(
         cert.run(run_id) if run_id else previous if comparison and comparison.promote_only else None
     )
     status = (refresh or {}).get("status")
+    stored = (refresh or {}).get("stored")  # G48 A: where the named lines are
+    reason = (refresh or {}).get("reason")  # a refusal's kind, which names no one
+    refresh_text = (
+        f"status: {status}\ncounts: {(refresh or {}).get('counts') or '{}'}"
+        + (f"\nreason: {reason}" if reason else "")
+        + (f"\nstored: {stored}" if stored else "")
+        if status
+        else None
+    )
     writes = str((promote or {}).get("writes") or "").strip()
     cycle = Cycle(
         code,
@@ -742,9 +772,7 @@ def run_outcome(
         comparison,
         run_url=run_url,
         run=run,
-        refresh=f"status: {status}\ncounts: {(refresh or {}).get('counts') or '{}'}"
-        if status
-        else None,
+        refresh=refresh_text,
         promote={
             "result": (promote or {}).get("result"),
             "writes": int(writes) if writes.isdigit() else None,
@@ -889,6 +917,8 @@ def main(argv: Iterable[str] | None = None) -> int:
         refresh={
             "status": env.get("SYNC_REFRESH_STATUS", ""),
             "counts": env.get("SYNC_REFRESH_COUNTS", ""),
+            "stored": env.get("SYNC_REFRESH_REPORT", ""),
+            "reason": env.get("SYNC_REFRESH_REASON", ""),
         },
         promote={
             "result": env.get("SYNC_PROMOTE_RESULT", ""),
