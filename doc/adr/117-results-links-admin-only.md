@@ -104,3 +104,7 @@ Signed off with ADR-117 in chat on 25 October 2026 (`doc/plans/pzsz-results-url-
 ## Amendment (2026-10-31, [ADR-118](118-event-details-cert-to-prod-scraper-contract.md)) — a newer letter on CERT reaches PROD
 
 The sentence "An older EVF PDF on PROD (Madrid, Skopje) is not a calendar page and stays (D7 B was not chosen)" is superseded. The mirror now takes CERT's letter, with the rest of the nine event details, when CERT wrote them later than a person last changed them on PROD (ADR-118 amendment F9). The first run after the release replaces Madrid's August letter with the October one and Skopje's V2 with V3. D7 A stands: a calendar page on PROD gives way to a letter whichever side wrote last. Results links stay outside every calendar write (§1).
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3) — a given link is saved after a successful read
+
+A link given with the ingest command (`ingest <code> <url>` in Telegram, the `url_event` input of `ingest-event.yml`) is still the administrator's write. It is now saved on CERT after the read succeeds and before the run opens (B2), so a link that reads nothing is never saved. The refusals of CALURL.16–17 open no run at all: nothing is saved, nothing is written, and there is no FAILED run to close. Promote's fill-blank tier is unchanged, so promote never overwrites PROD's link.

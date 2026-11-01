@@ -206,3 +206,7 @@ Migration `20261001000003_recompute_keeps_provenance.sql` makes the RPC keep wha
 - Promote waits for the PROD drain after its apply and compares the affected events with CERT's.
 
 Implemented 2026-10-03 (ADR-108 build step 12): `recompute-drain.yml` and `ingest-event.yml` are in `cert-write`. Because promote holds `prod-write`, it drains PROD's queue itself with the same worker after its apply rather than wait for the drain workflow queued behind it.
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3) — the CERT drain runs inside the ingest job
+
+The CERT ingest now ends with its own drain, as promote does on PROD. After the apply has committed and the run has closed, the job drains CERT's recompute queue to empty with the same worker (`drain_recompute_queue`, at most `MAX_DRAIN_ROUNDS` rounds), and only then runs the gate, which compares exactly that state. The ingest holds `cert-write`, so it does not wait for `recompute-drain.yml`, which stays in `cert-write` for queue items any other writer leaves. Tests: CERTAPPLY.05.

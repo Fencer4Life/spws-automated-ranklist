@@ -111,7 +111,9 @@ if [ -f "$RTM" ]; then
   #   one contract for every calendar scraper; ADR-118).
   # 161 since 2026-10-31: +FR-162 (only final brackets, one engine contract, one
   #   organizer registry; ADR-119 release 1).
-  EXPECTED=161
+  # 162 since 2026-10-31: +FR-163 (one apply on both sides and the promote
+  #   ledger; ADR-119 release 2).
+  EXPECTED=162
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

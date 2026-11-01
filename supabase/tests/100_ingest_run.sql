@@ -53,7 +53,7 @@ SELECT ok(NOT has_table_privilege('anon', 'tbl_ingest_run', 'SELECT')
 SELECT is((SELECT count(*)::INT FROM unnest(ARRAY[
              'fn_schema_fingerprint()', 'fn_roster_snapshot()', 'fn_event_input_fingerprint(text)',
              'fn_roster_changes(jsonb,jsonb)',
-             'fn_ingest_run_open(text,text,text,integer,text,text,text)',
+             'fn_ingest_run_open(text,text,text,integer,text,text,text,text)',  -- the prior since ADR-119 G17
              'fn_ingest_run_close(bigint,text,jsonb,text)', 'fn_ingest_run_finish(bigint,jsonb)',
              'fn_ingest_run_fail(bigint,text,jsonb)']) f
             WHERE NOT has_function_privilege('anon', f, 'EXECUTE')
