@@ -166,6 +166,18 @@ def _render_automation_gaps(m) -> str:
             "one the source declared (WPN.TITLE): "
             + "; ".join(f"{n['name']} — {n['note']}" for n in notes)
         )
+    exceptions = [(b["name"], e) for b in m["source_exceptions"] for e in b["exceptions"]]
+    if exceptions:
+        gaps.append(
+            f"- **Source exceptions: {len(exceptions)} row(s) whose source repeats the name "
+            "in both name cells** (NAME.CELLS). Each is read by the readings of the whole "
+            "name; exactly one fit is stored, anything else waits as PENDING: "
+            + "; ".join(
+                f'{name}, place {e.get("place")}: "{e.get("printed")}" read as '
+                + " or ".join(e.get("readings") or ["nothing"])
+                for name, e in exceptions
+            )
+        )
     dups = [c for c in m["created"] if c.get("near_miss") and (c["near_miss"].get("name"))]
     if dups:
         gaps.append(
@@ -659,7 +671,13 @@ STAGING_TEMPLATE = [
 
 
 def _assemble(
-    event_code, db, bracket_reports, schedule_skips, source_decisions=None, weapon_notes=None
+    event_code,
+    db,
+    bracket_reports,
+    schedule_skips,
+    source_decisions=None,
+    weapon_notes=None,
+    source_exceptions=None,
 ) -> dict:
     brackets = [_bracket_model(r) for r in bracket_reports]
 
@@ -743,6 +761,7 @@ def _assemble(
         "schedule_skips": schedule_skips or [],
         "source_decisions": source_decisions or [],
         "weapon_notes": weapon_notes or [],
+        "source_exceptions": source_exceptions or [],
         "fencer_by_id": fencer_by_id,
         "null_by": null_by,
         "estimated_by": estimated_by,
@@ -760,11 +779,22 @@ def render_staging_md(
     source_decisions=None,
     extra_sections=None,
     weapon_notes=None,
+    source_exceptions=None,
 ) -> str:
     """The report. `extra_sections` are lines rendered before the footer: an
     EVF or FIE event's international section (ADR-113). `weapon_notes` are the
-    brackets whose title's weapon overrode the declared one (WPN.TITLE)."""
-    m = _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions, weapon_notes)
+    brackets whose title's weapon overrode the declared one (WPN.TITLE);
+    `source_exceptions` the rows whose source repeated the name in both name
+    cells (NAME.CELLS, G41 A)."""
+    m = _assemble(
+        event_code,
+        db,
+        bracket_reports,
+        schedule_skips,
+        source_decisions,
+        weapon_notes,
+        source_exceptions,
+    )
     lines = [f"# Automation report — {event_code}", "", f"_Generated {stamp} (UTC)_", ""]
     for heading, renderer in STAGING_TEMPLATE:
         if not heading and extra_sections:
@@ -812,6 +842,7 @@ class StagingFormatter(BasePlugin):
             source_decisions=ctx.get("_source_decisions"),
             extra_sections=ctx.get("_international_section"),
             weapon_notes=ctx.get("_weapon_notes"),
+            source_exceptions=ctx.get("_source_exceptions"),
         )
         write_for_event(
             event_code,

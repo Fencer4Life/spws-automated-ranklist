@@ -153,14 +153,15 @@ class TestRule:
         assert any("end date" in r for r in v.reasons)
 
     def test_a_listing_that_is_not_final_keeps_the_event_in_progress(self):
-        """PROMO.LIFE.07"""
-        v = lifecycle.event_status(
-            _listings(not_final=["FLORET WETERANI kobiety 1"]),
-            dt_end=END,
-            today=END + dt.timedelta(days=3),
-        )
+        """PROMO.LIFE.07, amended by G44 A (3): through the day after the end
+        date; from the next day the event completes without it, named."""
+        listings = _listings(not_final=["FLORET WETERANI kobiety 1"])
+        v = lifecycle.event_status(listings, dt_end=END, today=END + dt.timedelta(days=1))
         assert v.status == "IN_PROGRESS"
         assert any("FLORET WETERANI kobiety 1" in r for r in v.reasons)
+        v = lifecycle.event_status(listings, dt_end=END, today=END + dt.timedelta(days=3))
+        assert v.status == "COMPLETED"
+        assert v.left_out == ["FLORET WETERANI kobiety 1"]
 
     def test_a_listing_dated_after_the_end_date_keeps_it_in_progress(self):
         """PROMO.LIFE.08 — the event's dates need correcting."""
@@ -239,13 +240,15 @@ def _drive_schedule(fn, *args, finished=("U3", "U4"), day="2027-02-13", today=No
 
 class TestIngestionSetsTheStatus:
     def test_a_listing_not_final_is_skipped_listed_and_keeps_the_event_in_progress(self):
-        """PROMO.LIFE.11"""
+        """PROMO.LIFE.11, on the day after the end date: the last day a listing
+        not final holds the event (G44 A (3))."""
         from python.pipeline import ingest_cli
 
         db = _db("2027-02-13")
         _drive_schedule(
             ingest_cli.ingest_event_from_url,
             finished=("U3",),
+            today=dt.date(2027, 2, 14),
             event_code="PPW4-2026-2027",
             season_end_year=2027,
             db=db,
@@ -278,6 +281,7 @@ class TestIngestionSetsTheStatus:
         _drive_schedule(
             ingest_cli.ingest_event_from_url,
             finished=("U3",),
+            today=dt.date(2027, 2, 14),
             event_code="PPW4-2026-2027",
             season_end_year=2027,
             db=live,
@@ -289,6 +293,7 @@ class TestIngestionSetsTheStatus:
             2027,
             _ReadOnly(planned),
             finished=("U3",),
+            today=dt.date(2027, 2, 14),
             url_event=SCHEDULE,
             created=[],
         )
@@ -452,11 +457,15 @@ class TestDailyClose:
         assert [o.closed for o in outcomes] == [False]
         assert "2026-09-28" in notifier.messages[0][1]
 
+        # G44 A (3): two days after the end date a listing still not final no
+        # longer holds the event by itself (STUCK.04); this one was final when
+        # CERT ran, so the schedule changed since the run, and that holds it.
         cert, prod = FakeEnv("cert", run=_run()), FakeEnv("prod")
         open_ = [KEPT[0], {**KEPT[1], "finished": False}]
         outcomes, notifier = _close(cert, prod, schedule=(open_, []))
         assert [o.closed for o in outcomes] == [False]
-        assert "FLORET WETERANI kobiety 1" in notifier.messages[0][1]
+        assert "not final yet" not in notifier.messages[0][1]
+        assert "the schedule changed since the CERT run" in notifier.messages[0][1]
 
     def test_it_is_idempotent_and_finishes_a_half_done_close(self):
         """PROMO.LIFE.16 — CERT set, PROD failed: the next day's run finishes it."""

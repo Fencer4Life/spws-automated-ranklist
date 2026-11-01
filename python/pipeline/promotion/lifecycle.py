@@ -69,6 +69,16 @@ class Verdict:
     status: str
     committed: bool
     reasons: list[str] = field(default_factory=list)
+    # G44 A (3): listings still not final at the source after the day after the
+    # end date; the event completes without them, and they are named.
+    left_out: list[str] = field(default_factory=list)
+
+
+def holds_open(dt_end: dt.date, today: dt.date) -> bool:
+    """A listing not final holds its event open through the day after the end
+    date, the results sync's last day (G44 A (3)). After it the event
+    completes without the listing; a manual ingest takes it if it appears."""
+    return today <= dt_end + dt.timedelta(days=1)
 
 
 def event_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date) -> Verdict:
@@ -76,10 +86,13 @@ def event_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date
     schedule = listings.get("schedule") or {}
     rounds = listings.get("rounds") or []
     reasons: list[str] = []
+    left_out: list[str] = []
 
     not_final = [s["name"] for s in schedule.get("skipped") or [] if is_not_final(s.get("reason"))]
-    if not_final:
+    if not_final and holds_open(dt_end, today):
         reasons.append(f"not final yet: {', '.join(not_final)}")
+    else:
+        left_out = not_final
 
     unparseable = [r["name"] for r in rounds if r.get("status") == "unparseable"]
     read = [r for r in rounds if r.get("status") != "unparseable"]
@@ -101,7 +114,7 @@ def event_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date
         )
 
     committed = any(r.get("status") == "committed" for r in rounds)
-    return Verdict(COMPLETED if not reasons else IN_PROGRESS, committed, reasons)
+    return Verdict(COMPLETED if not reasons else IN_PROGRESS, committed, reasons, left_out)
 
 
 def target_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date) -> str | None:

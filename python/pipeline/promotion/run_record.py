@@ -223,6 +223,8 @@ class ListingLog:
             entry["start_list_sha256"] = rec["start_list_sha256"]
         if weapon_note := getattr(rec["_base"], "weapon_note", None):
             entry["weapon_note"] = weapon_note  # WPN.TITLE: the title's weapon won
+        if exceptions := getattr(rec["_base"], "source_exceptions", None):
+            entry["source_exceptions"] = list(exceptions)  # NAME.CELLS (G41 A)
         if ctx is not None:
             entry["outcome"] = _outcome(ctx)
             entry["identity"] = _identity(ctx)

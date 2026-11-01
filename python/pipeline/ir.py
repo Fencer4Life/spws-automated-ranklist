@@ -112,6 +112,11 @@ class ParsedTournament:
     # its source declared, and the title's weapon was taken (the title wins).
     weapon_note: str | None = None
 
+    # NAME.CELLS (G41 A): the rows whose two name cells repeat each other, each
+    # {"kind", "place", "printed", "readings"}. On the bracket, not the row, so
+    # a listing's hash is unchanged (python/scrapers/name_cells.py).
+    source_exceptions: list[dict] = field(default_factory=list)
+
     season_end_year: int | None = None
     organizer_hint: str | None = None
     source_artifact_path: str | None = None

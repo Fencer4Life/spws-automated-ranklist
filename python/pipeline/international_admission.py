@@ -161,22 +161,30 @@ def admit(
     roster: list[dict],
     spws_starters: set[int] | frozenset[int],
     tournament_type: str | None = None,
+    readings: tuple[str, ...] = (),
 ) -> Admission:
     """Decide one international row (ADR-106 §1, and its FIE amendment).
 
     ``tournament_type`` is the event's type (the IMSW code derives to MSW).
     Without one the row is decided as at an EVF event, which never stores
-    more than ADR-106 §1 does."""
+    more than ADR-106 §1 does. ``readings`` are the "SURNAME First" readings
+    of a row whose source repeats the name in both name cells (G41 A): every
+    fencer one of them names counts as a fit, and the rule is otherwise the
+    same, so exactly one fit is needed to store the row."""
     entered_for = fold_federation(printed_country)
     fie = is_fie_type(tournament_type)
-    hits = identity_matches(name, category, season_end_year, roster)
-    if fie:
-        hits += [h for h in alias_matches(name, category, season_end_year, roster) if h not in hits]
+    hits: list[int] = []
+    for text in (name, *readings):
+        found = identity_matches(text, category, season_end_year, roster)
+        if fie:
+            found += alias_matches(text, category, season_end_year, roster)
+        hits += [h for h in found if h not in hits]
+    read = " (read past the name the source repeats in both name cells)" if readings else ""
     if len(hits) == 1 and hits[0] in spws_starters:
-        return Admission(STORED, hits[0], 100.0, entered_for, "identity, SPWS start")
+        return Admission(STORED, hits[0], 100.0, entered_for, f"identity, SPWS start{read}")
     if fie and len(hits) == 1 and entered_for == "POL":
         return Admission(
-            STORED, hits[0], 100.0, entered_for, "identity, entered by POL at an FIE event"
+            STORED, hits[0], 100.0, entered_for, f"identity, entered by POL at an FIE event{read}"
         )
     if len(hits) == 1:
         reason = "identity, no SPWS start"

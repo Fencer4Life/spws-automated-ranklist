@@ -500,15 +500,20 @@ class TestDriver:
 
     def test_a_refused_bracket_fails_the_run(self):
         """ROUTE.INTL.03 a PENDING row refuses its listing, and the run closes
-        FAILED (ADR-106 §1: a PENDING row is a person's decision)."""
+        FAILED (ADR-106 §1: a PENDING row is a person's decision). The refusal
+        is an identity refusal, named with its listing (G37 A)."""
+        from python.pipeline.core.contract import ListingRefused
+
         db = _intl_db()
 
         def refuse(*a, **k):
-            raise ValueError("international PENDING rows must be resolved before commit")
+            raise ListingRefused("identity", "EPEE F listing not written: X (place 11)")
 
-        with pytest.raises(ValueError, match="PENDING"):
+        with pytest.raises(ListingRefused) as refused:
             self._ingest(db, MagicMock(side_effect=refuse))
+        assert refused.value.kind == "identity" and refused.value.listing
         db.fail_ingest_run.assert_called_once()
+        assert db.fail_ingest_run.call_args.args[2]["refusal"]["kind"] == "identity"
         db.finish_ingest_run.assert_not_called()
 
     def test_a_bracket_with_no_fencer_of_ours_is_dropped_not_failed(self):

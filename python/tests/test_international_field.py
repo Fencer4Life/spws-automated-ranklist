@@ -172,6 +172,34 @@ class TestCommitIngest:
         assert n == 60
         assert [r["int_place"] for r in rows] == [31, 48]
 
+    @pytest.mark.parametrize(("code", "fie"), [(EVENT_CODE, False), ("MSW-2026-2027", True)])
+    def test_LOG_PRIV_04_a_pending_row_is_an_identity_refusal(self, code, fie):
+        """LOG.PRIV.04 (G37 A) an international PENDING row refuses its listing
+        as the domestic route does, with ListingRefused("identity"): the
+        recorded run then logs its kind and listing only. Its message, for the
+        run row and Telegram, names the row and the fix; never the Phase 5
+        runner (ADR-113)."""
+        from python.pipeline.core.contract import ListingRefused
+
+        held = StageMatchResult(
+            scraped_name="PRZYKŁADOWA Anna PRZYKŁADOWA Anna",
+            place=11,
+            id_fencer=None,
+            confidence=0.0,
+            method="PENDING",
+            notes="no identity match",
+        )
+        db = _db()
+        with pytest.raises(ListingRefused) as refused:
+            _run(_ingest_ctx({"V2": [_match(12, 3), held]}, _parsed(20), code=code), db)
+        assert refused.value.kind == "identity"
+        text = str(refused.value)
+        assert "PRZYKŁADOWA Anna PRZYKŁADOWA Anna (place 11): no identity match" in text
+        assert f"doc/overrides/{code}.yaml" in text and "EXCLUDED" in text
+        assert ("add-fencer" in text) is fie
+        assert "Phase 5" not in text
+        db.ingest_results.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # INTL.RECOMP — recompute never re-partitions or recounts an international event

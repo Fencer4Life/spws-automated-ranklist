@@ -461,19 +461,11 @@ class Commit(BasePlugin):
             [r.place for r in parsed.results],
         )
 
-        # ADR-106 §1: a PENDING row is a person's decision, never written; an
-        # international event with one is resolved through the Phase 5 runner.
-        pending = [
-            m.scraped_name
-            for members in final_vcats.values()
-            for m in members
-            if getattr(m, "method", None) == "PENDING"
-        ]
-        if pending and module.name == SOURCE_FIELD_PLACE:
-            raise ValueError(
-                "international PENDING rows must be resolved before commit "
-                f"(Phase 5 runner, override file): {', '.join(pending)}"
-            )
+        # ADR-106 §1: a PENDING row is a person's decision, never written. The
+        # listing is refused as the domestic one is (G37 A), so a recorded run
+        # logs its kind and listing only (D12).
+        if module.name == SOURCE_FIELD_PLACE:
+            self._refuse_international_pending(pctx, final_vcats, weapon, gender)
 
         written: list[dict] = []
         held: list[str] = []
@@ -673,6 +665,38 @@ class Commit(BasePlugin):
             + ". Correct the roster birth year, or add an identity entry with the fencer's "
             f"birth year to doc/overrides/{code or '<event code>'}.yaml, then run the ingest again.",
         )
+
+    @staticmethod
+    def _refuse_international_pending(pctx, final_vcats, weapon, gender) -> None:
+        """G37 A: an international listing with a PENDING row is refused with
+        ListingRefused("identity"). The message names each row and the fix: an
+        identity entry in the event's override file, or match_method EXCLUDED
+        with a note; at an FIE event a Pole missing from the roster is added
+        first (ADR-106 §1 and its FIE amendment)."""
+        from python.pipeline.db_connector import derive_tourn_type_from_event_code
+        from python.pipeline.international_admission import is_fie_type
+
+        held = [
+            m
+            for members in final_vcats.values()
+            for m in members
+            if getattr(m, "method", None) == "PENDING"
+        ]
+        if not held:
+            return
+        code = (pctx.event or {}).get("txt_code") if pctx else None
+        rows = "; ".join(
+            f"{m.scraped_name} (place {m.place}): {getattr(m, 'notes', None) or 'no identity match'}"
+            for m in held
+        )
+        fix = (
+            f"Add an identity entry for each row to doc/overrides/{code or '<event code>'}.yaml "
+            "(the fencer and the birth year), or match_method: EXCLUDED with a note, "
+            "then run the ingest again."
+        )
+        if is_fie_type(derive_tourn_type_from_event_code(code or "")):
+            fix += " A Pole missing from the roster is added first (the add-fencer route)."
+        raise ListingRefused("identity", f"{weapon} {gender} listing not written: {rows}. {fix}")
 
     @staticmethod
     def _module(db, event, ttype) -> JoinedBracketModule:

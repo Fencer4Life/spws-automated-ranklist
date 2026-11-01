@@ -32,6 +32,8 @@ ENGARDE_LIST_URL = (
 )
 _TOURNAMENT_RE = re.compile(r"engarde-service\.com/tournament/([^/?#]+)/([^/?#]+)", re.IGNORECASE)
 _POOL_RE = re.compile(r"\b(poules?|pools?)\b", re.IGNORECASE)
+# Engarde's "empty": a competition nobody fenced, never a bracket waiting (G44 A).
+EMPTY = "nobody fenced (Engarde shows it empty)"
 # The headings Engarde gives the nationality column, by language, folded (lower
 # case, no accents, letters only). A column headed anything else is not a
 # nationality: the Budapest Cup 2025 prints "Club" there on three brackets
@@ -175,16 +177,21 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
         url = f"{ENGARDE_COMPETITION_BASE}/{org}/{event}/{slug}"
         state = comp.get("etat", "")
         categories = sorted(set(parse_engarde_category(slug, title)))
+        # G44 A: what a competition is comes before its state, so one we would
+        # never take (a joined one, or one without a category) never holds the
+        # event open; and "empty" is a competition nobody fenced, not a listing.
         if comp.get("estindividuelle") == "0":
             reason = "team event"
         elif _POOL_RE.search(title):
             reason = "pool round"
-        elif state != "completed":
-            reason = f"not completed ({state})"
         elif not categories:
             reason = "no category in the title"
         elif len(categories) > 1:
             reason = "spans categories " + ", ".join(categories)
+        elif state == "empty":
+            reason = EMPTY
+        elif state != "completed":
+            reason = f"not completed ({state})"
         else:
             reason = None
         gender = parse_engarde_gender(comp.get("sexe", ""), title)
@@ -331,9 +338,12 @@ def parse_html(
     if table is None:
         raise ValueError("No table with class='liste' found in Engarde HTML")
 
+    from python.scrapers.name_cells import NameCellCheck
+
     parsed_results: list[ParsedResult] = []
     row_index = 0
     nationality = _nationality_column(table)
+    names = NameCellCheck()
 
     for row in table.find_all("tr"):
         if row.find("th"):
@@ -356,6 +366,7 @@ def parse_html(
         if not fencer_name:
             continue
 
+        names.row(surname, firstname, printed=fencer_name, place=place)
         row_index += 1
         parsed_results.append(
             ParsedResult(
@@ -380,4 +391,5 @@ def parse_html(
         results=parsed_results,
         raw_pool_size=len(parsed_results),
         source_url=source_url,
+        source_exceptions=names.checked(len(parsed_results), source_url),
     )
