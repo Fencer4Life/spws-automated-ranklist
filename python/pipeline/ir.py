@@ -117,6 +117,11 @@ class ParsedTournament:
     # a listing's hash is unchanged (python/scrapers/name_cells.py).
     source_exceptions: list[dict] = field(default_factory=list)
 
+    # SRC.CONS (ADR-119 G42 A): what the source states twice and disagrees on,
+    # each {"kind", "detail"}, naming no fencer. On the bracket, not the row,
+    # so a listing's hash is unchanged (python/pipeline/source_consistency.py).
+    source_disagreements: list[dict] = field(default_factory=list)
+
     season_end_year: int | None = None
     organizer_hint: str | None = None
     source_artifact_path: str | None = None

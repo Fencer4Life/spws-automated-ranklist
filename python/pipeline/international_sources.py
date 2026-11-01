@@ -513,6 +513,7 @@ def _evf_brackets(
             gender=gender,
             category_hint=category,
             tournament_name=name,
+            source_disagreements=_evf_disagreements(rows, weapon, gender),
         )
         rec = _listing(parsed, name=name, uuid=uuid)
         if not _settled(rec, "evf", finality):
@@ -520,6 +521,46 @@ def _evf_brackets(
             continue
         recs.append(rec)
     return recs, skipped
+
+
+def _evf_disagreements(rows: list[dict], weapon: Any, gender: Any) -> list[dict]:
+    """SRC.CONS.07 (ADR-119 G42 A, G58 A): an EVF bracket's rows against their
+    competitions. A known `weapon_abbr` naming another weapon than its
+    competition wins, as before, and is counted; an unknown one keeps the
+    competition's weapon and its gender is guessed. The details count rows and
+    name no fencer."""
+    from python.pipeline import source_consistency as sc
+    from python.scrapers.evf_results import WEAPON_ABBR_MAP
+
+    found: list[dict] = []
+    declared: dict[str, int] = {}
+    unknown: list[str] = []
+    for r in rows:
+        abbr = r.get("weapon_abbr")
+        if abbr is None:
+            continue  # a row from before SRC.CONS.07 carries no abbreviation
+        if abbr not in WEAPON_ABBR_MAP:
+            unknown.append(str(abbr))
+        elif r.get("declared_weapon") not in (None, "?", weapon):
+            declared[str(r["declared_weapon"])] = declared.get(str(r["declared_weapon"]), 0) + 1
+    for said, n in sorted(declared.items()):
+        found.append(
+            {
+                "kind": sc.WEAPON,
+                "detail": f"{n} row(s) whose weapon_abbr says {weapon}; "
+                f"their competition declared {said}; the abbreviation wins",
+            }
+        )
+    if unknown:
+        found.append(
+            {
+                "kind": sc.GENDER,
+                "detail": f"{len(unknown)} row(s) with an unknown weapon_abbr "
+                f"({', '.join(repr(a) for a in sorted(set(unknown)))}): "
+                f"the competition's weapon is kept and the gender guessed {gender}",
+            }
+        )
+    return found
 
 
 def _refuse_two_sources(event: Mapping[str, Any], recs: list[dict]) -> None:

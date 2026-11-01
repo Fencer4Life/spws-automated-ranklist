@@ -290,16 +290,19 @@ def parse(
     arme = root.attrib.get("Arme", "")
     weapon_map = {"E": "EPEE", "F": "FOIL", "S": "SABRE"}
     weapon, weapon_note = weapon_from_title(weapon_map.get(arme) or None, alt_name)
-    gender = sexe if sexe in ("M", "F") else None
-    for pl_gender, en_gender in _GENDER_MAP.items():
-        if pl_gender in alt_name.upper():
-            gender = en_gender
-            break
+    declared = sexe if sexe in ("M", "F") else None
+    titled = next((en for pl, en in _GENDER_MAP.items() if pl in alt_name.upper()), None)
+    gender = titled or declared
 
     parsed_date = _parse_date_dmy(root.attrib.get("Date"))
     category_hint = _extract_category_hint(alt_name)
 
+    from python.pipeline import source_consistency as sc
     from python.scrapers.name_cells import NameCellCheck
+
+    # SRC.CONS (ADR-119 G42 A): AltName's gender word wins over Sexe, as
+    # before, and a disagreement between them is reported.
+    said = sc.label(sc.GENDER, alt_name, titled, declared, gender)
 
     parsed_results: list[ParsedResult] = []
     names = NameCellCheck()
@@ -360,4 +363,5 @@ def parse(
         weapon_note=weapon_note,
         is_pool_only_qualifier=is_pool_only,
         source_exceptions=names.checked(len(parsed_results), alt_name or source_url),
+        source_disagreements=[said] if said else [],
     )

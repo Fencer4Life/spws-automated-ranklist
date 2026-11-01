@@ -37,3 +37,10 @@ def test_RUNNAME_03_a_results_sync_run_says_what_started_it():
         " || inputs.event_code || 'manual' }}"
         "${{ inputs.dry_run && ' · dry run' || '' }}"
     )
+
+
+def test_RUNNAME_04_a_source_re_read_says_what_started_it():
+    """G45 A: the daily run, or one started by hand, which always re-reads."""
+    assert _run_name("source-regression.yml") == (
+        "Source re-read · ${{ github.event_name == 'schedule' && 'daily' || 'manual' }}"
+    )

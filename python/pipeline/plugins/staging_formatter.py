@@ -178,6 +178,14 @@ def _render_automation_gaps(m) -> str:
                 for name, e in exceptions
             )
         )
+    disagreements = [(b["name"], d) for b in m["source_disagreements"] for d in b["disagreements"]]
+    if disagreements:
+        gaps.append(
+            f"- **Source disagreements: {len(disagreements)}** — what a source states twice "
+            "and disagrees on, or a bracket that does not add up; the reader's choice is "
+            "unchanged (SRC.CONS): "
+            + "; ".join(f"{name} — {d['kind']}: {d['detail']}" for name, d in disagreements)
+        )
     dups = [c for c in m["created"] if c.get("near_miss") and (c["near_miss"].get("name"))]
     if dups:
         gaps.append(
@@ -678,6 +686,7 @@ def _assemble(
     source_decisions=None,
     weapon_notes=None,
     source_exceptions=None,
+    source_disagreements=None,
 ) -> dict:
     brackets = [_bracket_model(r) for r in bracket_reports]
 
@@ -762,6 +771,7 @@ def _assemble(
         "source_decisions": source_decisions or [],
         "weapon_notes": weapon_notes or [],
         "source_exceptions": source_exceptions or [],
+        "source_disagreements": source_disagreements or [],
         "fencer_by_id": fencer_by_id,
         "null_by": null_by,
         "estimated_by": estimated_by,
@@ -780,12 +790,14 @@ def render_staging_md(
     extra_sections=None,
     weapon_notes=None,
     source_exceptions=None,
+    source_disagreements=None,
 ) -> str:
     """The report. `extra_sections` are lines rendered before the footer: an
     EVF or FIE event's international section (ADR-113). `weapon_notes` are the
     brackets whose title's weapon overrode the declared one (WPN.TITLE);
     `source_exceptions` the rows whose source repeated the name in both name
-    cells (NAME.CELLS, G41 A)."""
+    cells (NAME.CELLS, G41 A); `source_disagreements` what each bracket's
+    source states twice and disagrees on (SRC.CONS, G42 A)."""
     m = _assemble(
         event_code,
         db,
@@ -794,6 +806,7 @@ def render_staging_md(
         source_decisions,
         weapon_notes,
         source_exceptions,
+        source_disagreements,
     )
     lines = [f"# Automation report — {event_code}", "", f"_Generated {stamp} (UTC)_", ""]
     for heading, renderer in STAGING_TEMPLATE:
@@ -843,6 +856,7 @@ class StagingFormatter(BasePlugin):
             extra_sections=ctx.get("_international_section"),
             weapon_notes=ctx.get("_weapon_notes"),
             source_exceptions=ctx.get("_source_exceptions"),
+            source_disagreements=ctx.get("_source_disagreements"),
         )
         write_for_event(
             event_code,

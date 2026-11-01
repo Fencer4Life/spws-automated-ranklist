@@ -479,7 +479,13 @@ class Fetcher:
             results.append(
                 _annotate_parsed(
                     _dc.replace(
-                        parsed, tournament_name=comp["title"], weapon_note=comp.get("weapon_note")
+                        parsed,
+                        tournament_name=comp["title"],
+                        weapon_note=comp.get("weapon_note"),
+                        source_disagreements=[
+                            *comp.get("disagreements", []),
+                            *parsed.source_disagreements,
+                        ],
                     ),
                     weapon=comp["weapon"],
                     gender=comp["gender"],
@@ -537,6 +543,11 @@ class Fetcher:
                 tournament_name=comp["title"],
                 parsed_date=comp["date"],
                 weapon_note=comp.get("weapon_note"),
+                # SRC.CONS: the competition list's disagreements, then the page's.
+                source_disagreements=[
+                    *comp.get("disagreements", []),
+                    *per_parsed.source_disagreements,
+                ],
             )
             results.append(
                 _annotate_parsed(
