@@ -310,7 +310,7 @@
       <thead><tr><th>main</th><th>Runs</th></tr></thead>
       <tbody><tr><td><code>3060ac49</code>, rebased onto main before the push</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321236369">CI</a> ✓, each job's summary step ran · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321421158">Release</a> ✓, every job</td></tr></tbody>
     </table></div>
-    <p><b>Checks:</b> V1 open (GitHub shows a run's Summary sections only to a signed-in reader, so they are not yet read for this record). V2 waits for a red run.</p>
+    <p><b>Checks:</b> V1 open (GitHub shows a run's Summary sections only to a signed-in reader, so they are not yet read for this record). V2's red run exists: a throwaway draft pull request (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/26">#26</a>, closed unmerged, branch deleted) carried one failing test, <code>test_CISUM_V2_probe_fails_on_purpose</code>. In CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41331953619">41331953619</a> the pytest job failed and its &ldquo;Write the pytest section of the run summary&rdquo; step still ran and succeeded; pgTAP, Vitest and coherence stayed green and wrote theirs. The same script, given that failure locally, writes &ldquo;❌ pytest: 1 failed&rdquo; and a row naming the test with its first error line, &ldquo;AssertionError: deliberate failure for the CI summary check V2&rdquo;. Reading that section on the run page itself needs a signed-in reader.</p>
     <p>Recorded by <code>doc/plans/integration-checkout-env-link-and-release-records-2026-11-01.html</code> (E2 A).</p>
   </section>
 
