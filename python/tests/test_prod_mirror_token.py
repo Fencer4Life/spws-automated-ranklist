@@ -12,15 +12,17 @@ import pytest
 
 
 def test_rejected_token_fails_instead_of_skipping(monkeypatch):
-    """MIRROR.TOKEN.01 a 401 from the Management API fails the check, and says the token
-    in the environment was rejected without showing it."""
+    """MIRROR.TOKEN.01 a 401 from the Management API fails the check, and says where
+    the rejected token was read from (.env, else the environment) without showing it."""
     from python.tests import test_prod_mirror as mirror
 
     def rejected(_table: str) -> int:
         raise RuntimeError('Management API error: 401 {"message":"Unauthorized"}')
 
     monkeypatch.setattr(mirror, "_prod_count", rejected)
-    with pytest.raises(pytest.fail.Exception, match="SUPABASE_ACCESS_TOKEN was rejected"):
+    with pytest.raises(
+        pytest.fail.Exception, match=r"SUPABASE_ACCESS_TOKEN was rejected .* read from \.env"
+    ):
         mirror.fetch_prod_counts()
 
 

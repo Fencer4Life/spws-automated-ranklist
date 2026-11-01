@@ -49,6 +49,7 @@ from python.scrapers.ftl_auth import (
     get_authed_ftl_client,
     normalize_ftl_url,
 )
+from python.supabase_token import supabase_access_token
 
 
 def _get_active_season(ref: str, token: str) -> dict | None:
@@ -1172,7 +1173,7 @@ def main() -> None:
     args = parser.parse_args()
 
     ref = os.environ.get("SUPABASE_CERT_REF", "")
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
 

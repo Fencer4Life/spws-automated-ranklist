@@ -5,20 +5,26 @@ Compares row counts for all data tables between PROD (via Management API)
 and local DB (via docker exec). Fails if any table has a count mismatch.
 
 Skipped in CI (requires SUPABASE_ACCESS_TOKEN). A token that is set but
-rejected fails it (ADR-119 G21).
+rejected fails it (ADR-119 G21). The token comes from .env before the
+environment (python/supabase_token.py); this is the one module that reads the
+checkout's real .env under pytest (marker real_dotenv, conftest.py).
 Run locally: python -m pytest python/tests/test_prod_mirror.py -v
 """
 
-import os
 import subprocess
 
 import pytest
 
+from python.supabase_token import supabase_access_token
+
 # Skip entire module if no access token (CI environment)
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("SUPABASE_ACCESS_TOKEN"),
-    reason="SUPABASE_ACCESS_TOKEN not set (skipped in CI)",
-)
+pytestmark = [
+    pytest.mark.real_dotenv,
+    pytest.mark.skipif(
+        not supabase_access_token(),
+        reason="no SUPABASE_ACCESS_TOKEN in .env or the environment (skipped in CI)",
+    ),
+]
 
 from python.tools.audit_results import query_db  # noqa: E402  (after pytestmark skip guard)
 
@@ -71,8 +77,8 @@ def fetch_prod_counts() -> dict[str, int]:
     except RuntimeError as exc:
         if str(exc).startswith("Management API error: 401"):
             pytest.fail(
-                "SUPABASE_ACCESS_TOKEN was rejected (HTTP 401). The token this process "
-                "was given is not a valid one; fix it where your environment sets it.",
+                "SUPABASE_ACCESS_TOKEN was rejected (HTTP 401). It is read from .env "
+                "when .env holds one, else from the environment; replace it there.",
                 pytrace=False,
             )
         raise

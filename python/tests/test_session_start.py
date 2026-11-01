@@ -14,6 +14,8 @@ contained in origin/main and not in use (ended, or idle for 30 days).
 
 from __future__ import annotations
 
+import importlib.util
+import io
 import json
 import os
 import shutil
@@ -372,3 +374,35 @@ def test_clean_worker_with_no_commits_is_fast_forwarded(setup: Setup):
     assert git("rev-parse", "HEAD", cwd=worker) == git(
         "rev-parse", "origin/main", cwd=setup.primary
     )
+
+
+# --- the token rule -----------------------------------------------------------
+
+
+def test_every_session_is_told_the_token_reader(
+    setup: Setup, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """ENVTOKEN.09 — the context the hook adds names both SUPABASE_ACCESS_TOKEN readers,
+    on its normal path and on its failure path, so every session reads the token
+    through them (doc/plans/supabase-token-read-from-env-first-2026-11-01.html, T1 A)."""
+    normal = context(run(setup, setup.worker("token")))
+
+    spec = importlib.util.spec_from_file_location("session_start_under_test", SCRIPT)
+    assert spec and spec.loader
+    hook = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, spec.name, hook)  # its dataclasses look it up
+    spec.loader.exec_module(hook)
+
+    def broken(_payload: dict) -> dict:
+        raise RuntimeError("stand-in failure")
+
+    monkeypatch.setattr(hook, "start", broken)
+    monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT)])
+    assert hook.main() == 0
+    failed = context(json.loads(capsys.readouterr().out))
+    assert "FAILED" in failed
+
+    for text in (normal, failed):
+        assert "python/supabase_token.py" in text
+        assert "scripts/supabase-token.sh" in text

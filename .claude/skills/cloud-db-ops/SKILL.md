@@ -49,21 +49,27 @@ ad-hoc command.
 expired. It means the token being sent is wrong — which is usually not the one
 you think you are sending.
 
-`cloud-sql.sh` reads `.env` **in preference to** the shell environment,
-inverting the usual convention on purpose. A stale `SUPABASE_ACCESS_TOKEN`
-exported from a shell profile shadows the good value in `.env` and produces a
-bare 401, indistinguishable from expiry. That misdiagnosis cost the entire
-detour on 2026-08-17: the user was told their token was dead and asked to mint
-a replacement they did not need. They were right; the script was wrong.
+Every reader takes `.env` **in preference to** the shell environment, inverting
+the usual convention on purpose: Python through `python/supabase_token.py`
+(`supabase_access_token()`), shell through `scripts/supabase-token.sh`
+(`supabase_access_token`, `export_supabase_access_token`). A stale
+`SUPABASE_ACCESS_TOKEN` exported from a shell profile, or left in a session's
+environment, would otherwise shadow the good value in `.env` and produce a bare
+401, indistinguishable from expiry. That misdiagnosis cost the entire detour on
+2026-08-17: the user was told their token was dead and asked to mint a
+replacement they did not need. On 2026-11-01 every Python reader still read the
+environment only, and a session reported the stale environment copy again and
+again instead of fixing the readers. Preflight now fails on a reader that goes
+round the helpers (ENVTOKEN.05–06; ADR-036 amendment 2026-11-01).
 
 Before concluding a credential is dead:
 
-- Re-run with `env -u SUPABASE_ACCESS_TOKEN` to force the `.env` value.
-- Check whether the shell profile exports one:
-  `grep -rn SUPABASE_ACCESS_TOKEN ~/.zshrc ~/.zprofile ~/.bashrc`.
-- Remember `apply-migrations.sh` and `schema-fingerprint.sh` read that variable
-  from the environment **only**, with no `.env` fallback — so a stale export
-  breaks them locally while CI, which injects the secret, stays green.
+- Check that the failing code reads the token through one of the two helpers.
+  If it does not, that is the defect: route it through the helper, test first.
+- A tool that reads the variable itself (the supabase CLI) gets it from
+  `source scripts/supabase-token.sh && export_supabase_access_token`, in the
+  same command.
+- Never report the environment's copy as the problem, and never print a value.
 
 Never tell the user a credential is expired on the strength of one 401.
 

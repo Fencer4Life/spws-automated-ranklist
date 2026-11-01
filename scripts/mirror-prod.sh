@@ -26,7 +26,10 @@ echo "=== Step 2.5: Update test expected values ==="
 echo ""
 echo "=== Step 3: Verify local matches PROD ==="
 source .venv/bin/activate
-# Load token for PROD count verification
+# The token for PROD count verification: .env, the environment, then the older
+# local file.
+source scripts/supabase-token.sh
+export_supabase_access_token
 if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -f "$HOME/.supabase_token" ]; then
   export SUPABASE_ACCESS_TOKEN="$(cat "$HOME/.supabase_token" | tr -d '[:space:]')"
 fi

@@ -23,6 +23,8 @@ from datetime import date
 
 import httpx
 
+from python.supabase_token import supabase_access_token
+
 # tbl_result columns the export leaves out of the generic data columns: the
 # auto-id, the two FKs it writes itself (id_fencer as PROD's id, id_tournament
 # by sub-SELECT), and every scoring-engine output, which the post-seed
@@ -574,7 +576,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not token:
         print("ERROR: SUPABASE_ACCESS_TOKEN not set", file=sys.stderr)
         sys.exit(1)

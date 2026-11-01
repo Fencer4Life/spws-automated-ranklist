@@ -33,6 +33,7 @@ from python.pipeline import md_writer
 from python.pipeline.calendar_details import DETAIL_FIELDS
 from python.pipeline.md_writer import Target
 from python.pipeline.reconcile_report import compute_changes, render_report
+from python.supabase_token import supabase_access_token
 
 
 def _management_query(ref: str, access_token: str, sql: str) -> list[dict]:
@@ -493,7 +494,10 @@ def main(argv: list[str] | None = None) -> None:
 
         sys.exit(replay.main(["--event", args.event, *(["--dry-run"] if args.dry_run else [])]))
 
-    access_token = os.environ["SUPABASE_ACCESS_TOKEN"]
+    access_token = supabase_access_token()
+    if not access_token:
+        print("SUPABASE_ACCESS_TOKEN is required", file=sys.stderr)
+        sys.exit(1)
     cert_ref = os.environ["SUPABASE_CERT_REF"]
     prod_ref = os.environ["SUPABASE_PROD_REF"]
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # seed-remote.sh — Truncate and re-seed a remote Supabase database.
 #
-# Usage:  SUPABASE_ACCESS_TOKEN=... SUPABASE_REF=... ./scripts/seed-remote.sh
+# Usage:  SUPABASE_REF=... ./scripts/seed-remote.sh
+#         (SUPABASE_ACCESS_TOKEN from .env, else the environment; supabase-token.sh)
 #
 # Steps:
 #   1. TRUNCATE all data tables in FK-safe order
@@ -16,6 +17,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# The token by the one rule: .env first, then the environment (supabase-token.sh).
+source "$SCRIPT_DIR/supabase-token.sh"
+export_supabase_access_token
 
 PROD_REF="ywgymtgcyturldazcpmw"
 SEED_FILE="$PROJECT_ROOT/supabase/seed_prod_latest.sql"

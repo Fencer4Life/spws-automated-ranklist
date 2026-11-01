@@ -42,6 +42,7 @@ asyncio_mode = "auto"
 addopts = "-m 'not integration'"
 markers = [
     "integration: tests requiring live external APIs (opt-in: pytest -m integration)",
+    "real_dotenv: reads the checkout's own .env for the Supabase token (the LOCAL = PROD check); every other test reads none (conftest.py)",
 ]
 # A deprecation raised from our own code (module python.*) fails the run: it is
 # either a bug to fix or behaviour a test must assert with pytest.warns. A test

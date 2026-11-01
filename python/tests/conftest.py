@@ -17,3 +17,17 @@ def staging_writes_stay_in_the_test(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(three_way_diff, "_project_root", lambda: tmp_path)
     monkeypatch.setattr(md_writer, "DEFAULT_STAGING_DIR", tmp_path / "doc" / "staging")
+
+
+@pytest.fixture(autouse=True)
+def the_checkouts_token_stays_out_of_the_test(
+    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every Supabase token reader takes the checkout's .env before the environment
+    (python/supabase_token.py, scripts/supabase-token.sh), so a test that sets or
+    removes SUPABASE_ACCESS_TOKEN would be handed the real token instead, and send it
+    wherever the test points. Here both readers, and every process a test starts,
+    read a .env that does not exist; a module marked real_dotenv (the LOCAL = PROD
+    check) reads the real one (ENVTOKEN.07)."""
+    if request.node.get_closest_marker("real_dotenv") is None:
+        monkeypatch.setenv("SUPABASE_TOKEN_ENV_FILE", str(tmp_path / "no-such.env"))

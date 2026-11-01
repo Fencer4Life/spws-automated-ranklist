@@ -54,6 +54,7 @@ from python.scrapers.pzsz_sources import (
 )
 from python.scrapers.pzsz_start_list import is_js_check
 from python.scrapers.pzsz_write_rules import Candidate, FieldState, decide
+from python.supabase_token import supabase_access_token
 
 ORGANIZER_CODE = "PZSz"
 _TERMINAL = ("COMPLETED", "CANCELLED")
@@ -721,7 +722,7 @@ def main() -> None:
     ref = os.environ.get("SUPABASE_CERT_REF", "")
     # Read only, for the ingest notice: the results link set in PROD's Admin (D2 A).
     prod_ref = os.environ.get("SUPABASE_PROD_REF", "")
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not ref or not token:

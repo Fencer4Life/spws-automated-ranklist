@@ -1,6 +1,6 @@
 # ADR-036: PROD Export & Local Mirror (Single Monolithic Dump)
 
-**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; 2026-10-04 — the mirror loads registrations by the refresh's copy, §3 of the 2026-10-03 amendment; 2026-10-25 — a CERT export is `seed_cert_<date>.sql` and never moves `seed_prod_latest.sql`; see the amendments)
+**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; 2026-10-04 — the mirror loads registrations by the refresh's copy, §3 of the 2026-10-03 amendment; 2026-10-25 — a CERT export is `seed_cert_<date>.sql` and never moves `seed_prod_latest.sql`; 2026-11-01 — a rejected token fails the mirror check (ADR-119 G21), and every Management API token reader takes `.env` before the environment; see the amendments)
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
 **Amended by:** this ADR's amendment of 2026-10-25 (D4 A: the mirror also loads CERT's stored PZSz start lists; D5 A: the seed load takes the roster's first names through the writer's rule).
@@ -310,3 +310,16 @@ The PZSz start lists are CERT's stored inputs ([ADR-112](112-pzsz-start-lists-ar
 ## Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3, G21) — a rejected token fails the mirror check
 
 Step 3's check (`python/tests/test_prod_mirror.py`) skipped when the Management API answered 401, exactly as when no token is set. On 31 Oct 2026 the token in a session's environment was a stale one, so the check said nothing while LOCAL held three fencers PROD did not (376 against 373). A token that is set but rejected now fails it: "SUPABASE_ACCESS_TOKEN was rejected (HTTP 401) … fix it where your environment sets it", with no token shown. No token at all still skips it, as in CI. The stale value is the user's to remove where their environment sets it. Signed B by the user on 2026-11-01. Tests MIRROR.TOKEN.01–02 (`python/tests/test_prod_mirror_token.py`, which runs without a token).
+
+## Amendment (2026-11-01) — every Management API token reader takes `.env` first
+
+The amendment above left a stale token in a session's environment as "the user's to remove". The readers were the defect: every Python reader and six shell scripts read `SUPABASE_ACCESS_TOKEN` from the process environment only, so on 1 Nov 2026 preflight's `test_prod_mirror.py` failed with HTTP 401 while the checkout's `.env` held a working token. Only `scripts/cloud-sql.sh` took `.env` first (since 2026-08-17), and `scripts/mirror-prod-local.sh` read `.env` alone.
+
+Every reader now keeps one rule, written once per language: `python/supabase_token.py` (`supabase_access_token()`) and `scripts/supabase-token.sh` (sourced, never run: `supabase_access_token` prints the value, `export_supabase_access_token` sets and exports it for a child such as the supabase CLI).
+
+1. The first `SUPABASE_ACCESS_TOKEN=` line of the checkout's `.env`, without quotes or carriage returns (`cloud-sql.sh`'s reading, unchanged).
+2. Otherwise the process environment's value.
+3. `CLOUD_SQL_TOKEN_FROM_ENV=1` swaps 1 and 2.
+4. `SUPABASE_TOKEN_ENV_FILE` names a file to read instead of `.env`. `python/tests/conftest.py` points it at a missing file for every test, so no test is handed the real token; only `test_prod_mirror.py`, marked `real_dotenv`, reads the checkout's `.env`.
+
+CI ships no `.env` and injects the secret as an environment variable, so CI reads what it read before. The rejected-token failure now says where the token comes from ("read from .env when .env holds one, else from the environment; replace it there"), which replaces the amendment above's "fix it where your environment sets it" and its last-but-one sentence. `promote.py` and `promote_season.py` print "SUPABASE_ACCESS_TOKEN is required" and exit 1 instead of raising `KeyError`, and `audit_results.query_db` reads the token when it queries, not at import. Three things hold the rule: preflight fails on a Python read of the variable outside the helper (ENVTOKEN.05) and on a shell script that uses the token without sourcing the helper (ENVTOKEN.06), and the SessionStart hook names both helpers in every session's context (ENVTOKEN.09). Signed by the user on 2026-11-01 (T1 A, T2 A; `doc/plans/supabase-token-read-from-env-first-2026-11-01.html`). Tests ENVTOKEN.01–08 (`python/tests/test_supabase_token.py`), ENVTOKEN.09 (`python/tests/test_session_start.py`), MIRROR.TOKEN.01.

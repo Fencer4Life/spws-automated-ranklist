@@ -44,6 +44,7 @@ from python.scrapers.pzsz_start_list import (
     read_event_start_lists_for_capture,
     start_list_window,
 )
+from python.supabase_token import supabase_access_token
 
 SOURCE_PZSZERM = "pzszerm.pl"
 SOURCE_SAVED_PAGE = "saved page"
@@ -508,7 +509,7 @@ def _store_command(args: argparse.Namespace) -> int:
         print(f"not an event code: {code!r}", file=sys.stderr)
         return 2
     ref = os.environ.get("SUPABASE_CERT_REF", "")
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     if not ref or not token:
         print("SUPABASE_CERT_REF and SUPABASE_ACCESS_TOKEN are required", file=sys.stderr)
         return 2
@@ -536,7 +537,7 @@ def _capture_command(args: argparse.Namespace) -> int:
     event's start lists to CERT and send one digest. Catches the start-fatal so
     the run still reports red on Telegram rather than crashing silently."""
     ref = os.environ.get("SUPABASE_CERT_REF", "")
-    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    token = supabase_access_token()
     bot = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not ref or not token:

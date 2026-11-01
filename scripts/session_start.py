@@ -72,6 +72,17 @@ RESEARCH_RULE = (
     "path); code -> graphify query/explain (symbol names) and the LSP; grep or git show "
     "only confirm a literal already located. Skill: research-gate."
 )
+# Every session reads the Management API token by the one rule (ENVTOKEN.09). A
+# session that went round it sent a stale exported token and reported the 401 as
+# the user's problem, again and again (1 Nov 2026).
+TOKEN_RULE = (
+    "Supabase token: read SUPABASE_ACCESS_TOKEN only through python/supabase_token.py "
+    "(Python) or scripts/supabase-token.sh (shell); both take .env before the environment. "
+    "Never os.environ for it (ENVTOKEN.05-06 fail preflight). A tool that reads the "
+    "variable itself (the supabase CLI): source scripts/supabase-token.sh && "
+    "export_supabase_access_token first, in the same command. A 401 means that token "
+    "was rejected; never report the environment's copy."
+)
 
 
 # --- small helpers ------------------------------------------------------------
@@ -482,7 +493,7 @@ def start(payload: dict) -> dict:
         "systemMessage": message,
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": "\n".join(head + notes + [RESEARCH_RULE]),
+            "additionalContext": "\n".join(head + notes + [RESEARCH_RULE, TOKEN_RULE]),
         },
     }
 
@@ -524,7 +535,9 @@ def main() -> int:
                         "python3 scripts/session_start.py by hand before analysing.\n"
                         + traceback.format_exc(limit=3)
                         + "\n"
-                        + RESEARCH_RULE,
+                        + RESEARCH_RULE
+                        + "\n"
+                        + TOKEN_RULE,
                     },
                 }
             )

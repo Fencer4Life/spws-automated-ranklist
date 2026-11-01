@@ -5,6 +5,7 @@
 #
 # Env vars required:
 #   SUPABASE_ACCESS_TOKEN  — Supabase Management API personal access token
+#                            (.env first, then the environment; supabase-token.sh)
 #   SUPABASE_REF           — Target project ref (e.g. sdomfjncmfydlkygzpgw)
 #
 # Steps:
@@ -16,6 +17,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# The token by the one rule: .env first, then the environment (supabase-token.sh).
+source "$SCRIPT_DIR/supabase-token.sh"
+export_supabase_access_token
 TARGET_ENV="${1:?Usage: apply-migrations.sh <cert|prod> <LOCAL_FINGERPRINT>}"
 LOCAL_FINGERPRINT="${2:?Usage: apply-migrations.sh <cert|prod> <LOCAL_FINGERPRINT>}"
 
