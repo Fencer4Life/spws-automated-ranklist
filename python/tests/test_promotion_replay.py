@@ -951,3 +951,77 @@ class TestLedger:
 
         with pytest.raises(replay.PromoteRefused, match="writable"):
             replay.CertLedger(T())
+
+
+# --------------------------------------------------------------------------
+# Release 3 (ADR-119 §4): promote called by the results sync
+# --------------------------------------------------------------------------
+
+NAMED_PROMOTE_REFUSAL = "PROD holds NOWAK Adam (1970) where the CERT run created him"
+
+
+class TestPromoteCli:
+    """LOG.PRIV.03 (G33 A), SYNC.CYCLE.06 (quiet) and the `writes` output (G30 A),
+    through promote's `main()`."""
+
+    def _main(self, monkeypatch, tmp_path, *flags, outcome=None, refused=None):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock, patch
+
+        from python.pipeline.promotion import replay as rp
+
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "token")
+        out = tmp_path / "github_output"
+        out.write_text("")
+        monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+        notifier = MagicMock()
+        done = outcome or SimpleNamespace(
+            applied=True,
+            event_code="PPW4-2026-2027",
+            run_id=41,
+            writes=41,
+            skipped=False,
+            status="IN_PROGRESS",
+            drained=[],
+            differences=[],
+            fingerprint="f" * 64,
+        )
+        with (
+            patch("python.pipeline.notifications.TelegramNotifier", return_value=notifier),
+            patch("python.pipeline.promotion.refresh.ManagementTransport"),
+            patch("python.pipeline.db_connector.create_db_connector"),
+            patch.object(rp, "SqlSide"),
+            patch.object(rp, "check_target"),
+            patch.object(rp, "ledger_for", return_value=None),
+            patch.object(rp, "_head", return_value="c" * 40),
+            patch.object(
+                rp,
+                "replay",
+                side_effect=rp.PromoteRefused(refused) if refused else None,
+                return_value=done,
+            ),
+        ):
+            code = rp.main(["--event", "PPW4-2026-2027", *flags])
+        values = dict(line.split("=", 1) for line in out.read_text().splitlines() if "=" in line)
+        return code, notifier, values
+
+    def test_LOG_PRIV_03_a_refusal_logs_no_name(self, monkeypatch, tmp_path, capsys):
+        """G33 A: the log says it was refused and where the reason is."""
+        code, notifier, values = self._main(monkeypatch, tmp_path, refused=NAMED_PROMOTE_REFUSAL)
+        log = capsys.readouterr()
+        assert (code, values["applied"]) == (1, "false")
+        assert "NOWAK" not in log.out + log.err and "1970" not in log.out + log.err
+        assert "refused (the reason is in Telegram and on the CERT run's row)" in log.err
+        (call,) = notifier.error.call_args_list
+        assert NAMED_PROMOTE_REFUSAL in call.args[0]
+
+    def test_SYNC_CYCLE_06_a_quiet_promote_sends_nothing(self, monkeypatch, tmp_path):
+        code, notifier, _ = self._main(monkeypatch, tmp_path, "--quiet", refused="x")
+        assert code == 1 and notifier.method_calls == []
+        code, notifier, _ = self._main(monkeypatch, tmp_path, "--quiet")
+        assert code == 0 and notifier.method_calls == []
+
+    def test_SYNC_CYCLE_05_promote_outputs_its_writes(self, monkeypatch, tmp_path):
+        """G30 A: the outcome job reads the count from the called promote."""
+        _, _, values = self._main(monkeypatch, tmp_path, "--quiet")
+        assert (values["applied"], values["writes"]) == ("true", "41")

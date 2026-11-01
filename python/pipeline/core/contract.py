@@ -69,11 +69,14 @@ class ListingRefused(ValueError):
     a row the identity step could not decide (NAMESAKE.07), "joined_bracket" for
     a listing whose category order cannot be written (ADR-104 §§3-4). It is a
     ValueError, as the refusal always was, so the run still stops on it.
+    `listing` is the listing it refused, set by a recorded run, so a public
+    log can name the listing and not the fencer (ADR-119 D12).
     """
 
     def __init__(self, kind: str, message: str):
         super().__init__(message)
         self.kind = kind
+        self.listing: str | None = None
 
 
 class Abort(Exception):

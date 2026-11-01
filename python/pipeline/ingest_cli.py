@@ -1401,8 +1401,23 @@ def _ingest_source_records(decisions, schedule_skips):
     return out
 
 
+def _is_recorded_refusal(e: BaseException) -> bool:
+    """A recorded run's own stop: a refused listing, apply or gate (ADR-119 §3)."""
+    from python.pipeline.core.contract import ListingRefused
+    from python.pipeline.promotion.cert_apply import RecordedRunError
+
+    return isinstance(e, (ListingRefused, RecordedRunError))
+
+
+def _refusal_head(e: BaseException) -> str:
+    """A refusal as the public log shows it: its kind and its listing (D12)."""
+    kind, listing = getattr(e, "kind", None), getattr(e, "listing", None)
+    return type(e).__name__ + (f" [{kind}]" if kind else "") + (f" {listing}" if listing else "")
+
+
 def _github_output(**values: str) -> None:
-    """Step outputs for the workflow (ingest-event.yml reads `reported`)."""
+    """Step outputs for the workflow (ingest-event.yml reads `reported`, and a
+    recorded run's `run_id`, `finished` and `gate`)."""
     path = os.environ.get("GITHUB_OUTPUT")
     if not path:
         return
@@ -1575,6 +1590,12 @@ def main() -> None:
         "(ADR-108 §4). ingest-event.yml passes cert when its target is cert.",
     )
     parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="With --record-run: send nothing to Telegram; the results sync's outcome "
+        "job reports the cycle in one line (ADR-119 §4, R3.2 A).",
+    )
+    parser.add_argument(
         "--md-target",
         choices=["local", "storage", "both"],
         default="local",
@@ -1615,6 +1636,8 @@ def main() -> None:
             "--replace is refused with --record-run: a recorded run replaces the event "
             "through its one apply (ADR-119 §3)"
         )
+    if args.quiet and not args.record_run:
+        parser.error("--quiet is for a recorded run (--record-run), as the results sync runs it")
 
     if is_draft_cmd:
         notifier = TelegramNotifier(
@@ -1643,10 +1666,10 @@ def main() -> None:
                 ingest_event_from_url(
                     event_code=args.event_code,
                     season_end_year=args.season_end_year,
-                    notifier=notifier,
+                    notifier=None if args.quiet else notifier,
                     replace=args.replace,
                     url_event_override=args.url_event,
-                    send_telegram=args.send_telegram,
+                    send_telegram=args.send_telegram and not args.quiet,
                     md_target=args.md_target,
                     record_run=args.record_run,
                 )
@@ -1664,9 +1687,18 @@ def main() -> None:
             # ADR-119 §3 (B7): one message per failure. A failure the recorded
             # run already told Telegram is not repeated, and the workflow's own
             # generic line is skipped once this step has reported.
-            if not getattr(e, "reported", False):
+            if not args.quiet and not getattr(e, "reported", False):
                 notifier.notify_pipeline_failure(str(e))
             _github_output(reported="true")
+            if args.record_run:
+                from python.pipeline.promotion.results_sync import public_error
+
+                _github_output(error=public_error(e))
+            # D12 (S9): a recorded run's refusal names fencers; its message is
+            # on the run row and in Telegram, the log gets its kind and listing.
+            if args.record_run and _is_recorded_refusal(e):
+                print(f"{_refusal_head(e)}: the reason is on the CERT run's row", file=sys.stderr)
+                sys.exit(1)
             raise
         return
 

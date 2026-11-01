@@ -12,6 +12,9 @@ run-name: Promote · ${{ inputs.event_code }}${{ inputs.dry_run && ' · dry run'
 #
 # Triggered by the Telegram `promote <exact code>` command (GAS) or:
 #   gh workflow run promote.yml -f event_code=PPW1-2026-2027 [-f dry_run=true]
+# and called by ingest-event.yml in the results sync's mode (ADR-119 §4), with
+# `quiet`: the cycle's outcome job reports it in one line from the ledger and
+# the `writes` handed back; a manual promote is unchanged.
 
 on:
   workflow_dispatch:
@@ -23,6 +26,23 @@ on:
         description: 'Plan, compare and dry-apply only; write nothing'
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      event_code:
+        type: string
+        required: true
+      dry_run:
+        type: boolean
+        default: false
+      quiet:
+        description: 'Send nothing to Telegram (the results sync says the cycle in one line)'
+        type: boolean
+        default: false
+    outputs:
+      applied:
+        value: ${{ jobs.promote.outputs.applied }}
+      writes:
+        value: ${{ jobs.promote.outputs.writes }}
 
 permissions:
   contents: read
@@ -59,11 +79,17 @@ jobs:
 
       - name: Find the latest CERT run
         id: run
-        run: python -m python.pipeline.promotion.replay --resolve --event "$EVENT_CODE"
         env:
+          QUIET: ${{ inputs.quiet }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          ARGS=(--resolve --event "$EVENT_CODE")
+          if [[ "$QUIET" == "true" ]]; then
+            ARGS+=(--quiet)
+          fi
+          python -m python.pipeline.promotion.replay "${ARGS[@]}"
 
       - name: The run's commit is on main and can replay
         env:
@@ -96,6 +122,7 @@ jobs:
       queue: max
     outputs:
       applied: ${{ steps.replay.outputs.applied }}
+      writes: ${{ steps.replay.outputs.writes }}
     env:
       EVENT_CODE: ${{ needs.resolve.outputs.event }}
     steps:
@@ -116,6 +143,7 @@ jobs:
         id: replay
         env:
           DRY_RUN: ${{ inputs.dry_run }}
+          QUIET: ${{ inputs.quiet }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
@@ -127,6 +155,9 @@ jobs:
           ARGS=(--event "$EVENT_CODE")
           if [[ "$DRY_RUN" == "true" ]]; then
             ARGS+=(--dry-run)
+          fi
+          if [[ "$QUIET" == "true" ]]; then
+            ARGS+=(--quiet)
           fi
           python -m python.pipeline.promotion.replay "${ARGS[@]}"
 
@@ -188,10 +219,13 @@ jobs:
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MSG}" > /dev/null
 
+  # A called, quiet promote is reported by the results sync's outcome job from
+  # the ledger. The seed export's own failure line above stays: no cycle line
+  # can see it, since that job's failure does not fail the promote.
   notify:
     name: Notify failure
     needs: [resolve, promote]
-    if: failure()
+    if: failure() && !inputs.quiet
     runs-on: ubuntu-24.04
     steps:
       - name: Telegram

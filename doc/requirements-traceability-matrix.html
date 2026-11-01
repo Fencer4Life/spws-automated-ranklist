@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="43b10fd1d5b1abfaf8afb2c338272c0bc911acb39e1e9c5aff167923cc5c761e">
+<meta name="doc-source-sha256" content="754fa65f333e7dc5cd9aae5372f44319c5338f1ab4427651d40f889cfb65b8a7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>747 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>757 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1111,8 +1111,8 @@
 <td>FR-164</td>
 <td><strong>An event in its window syncs itself: every hour it is read, compared with its last CERT run, ingested on CERT and promoted to PROD when something changed, and a failure stops it until a person resumes it.</strong> The hourly results sync takes each active-season event on the route from its first day to the day after its end date, neither completed nor cancelled, only with a results link on CERT or PROD (the link is the switch), one at a time. A cycle in which nothing changed writes nothing and says nothing; any failed step pauses the event, with its reason (never a person) and the Actions run, until <code>sync &lt;code&gt;</code> or a finished manual ingest lifts it; <code>RESULTS_SYNC=off</code> stops the schedule. The pause and each cycle's verdict are kept per event on CERT, service role only, and never reach the PROD seed.</td>
 <td><a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §4, ADR-108 §9, ADR-113 §7, ADR-077, ADR-072, ADR-083</td>
-<td>SYNC.PAUSE (pgTAP 123), SYNC.SEED.01; the sync's own IDs come with release 3b</td>
-<td>Partial (2026-11-01: 3a, the pause store, on LOCAL; the sync is release 3b)</td>
+<td>SYNC.SEL.01–05, SYNC.DUE.01, SYNC.CYCLE.01–07, SYNC.PAUSE.01–06 (and pgTAP 123), SYNC.SEED.01, SYNC.PZSZ.01–04, LOG.PRIV.01–03, WFLANE.02, GAS.SYNC.01</td>
+<td>Covered (2026-11-01, LOCAL; the pause store, release 3a, on CERT and PROD)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -1143,13 +1143,13 @@
 <tbody>
 <tr>
 <td>Covered</td>
-<td>143</td>
-<td>FR-01–FR-14, FR-17–FR-33, FR-35–FR-41, FR-43, FR-45–FR-52, FR-55–FR-68, FR-70–FR-74, FR-78–FR-86, FR-88–FR-101, FR-103–FR-104, FR-107, FR-109–FR-126, FR-128–FR-130, FR-132–FR-137, FR-139–FR-140, FR-142–FR-163</td>
+<td>144</td>
+<td>FR-01–FR-14, FR-17–FR-33, FR-35–FR-41, FR-43, FR-45–FR-52, FR-55–FR-68, FR-70–FR-74, FR-78–FR-86, FR-88–FR-101, FR-103–FR-104, FR-107, FR-109–FR-126, FR-128–FR-130, FR-132–FR-137, FR-139–FR-140, FR-142–FR-164</td>
 </tr>
 <tr>
 <td>Partial</td>
-<td>6</td>
-<td>FR-53–FR-54, FR-102, FR-105–FR-106, FR-164</td>
+<td>5</td>
+<td>FR-53–FR-54, FR-102, FR-105–FR-106</td>
 </tr>
 <tr>
 <td>Modified</td>
@@ -4018,7 +4018,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</h2>
-<p>Acceptance IDs for <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> release 3 (§4) and <a href="plans/partial-ingest-promote-results-sync-2026-10-31.html">doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</a> §03e (build sheet signed &quot;All as recommended&quot;: R3.1–R3.4 A and the readings S1–S12). Release 3a, the pause store; the sync's own IDs are added with 3b.</p>
+<p>Acceptance IDs for <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> release 3 (§4) and <a href="plans/partial-ingest-promote-results-sync-2026-10-31.html">doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</a> §03e (build sheet signed &quot;All as recommended&quot;: R3.1–R3.4 A and the readings S1–S12). Release 3a, the pause store, then 3b, the sync; gaps G28–G30 signed &quot;All as recommended&quot;.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -4044,6 +4044,76 @@
 <td><code>python/tests/test_results_finality.py</code></td>
 <td>Covered (2026-11-01, LOCAL)</td>
 </tr>
+<tr>
+<td>SYNC.SEL.01–05</td>
+<td>The window runs from the first day to the day after the end date in Warsaw, by the cron's due moment, in both DST states; COMPLETED and CANCELLED are never taken; only an event with a results link on CERT or PROD (or an EVF id on the international route) is; a manual code is taken out of its window, a closed or unknown one and one without a link refused with one line; a paused event is skipped and a manual code lifts its pause first; the matrix carries each event's season end year.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>SYNC.DUE.01</td>
+<td><code>scheduled_moment</code> reads a range of hours: the latest due slot, across midnight, the daily form unchanged; the morning cycle is told by the cron line that fired (G28 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>SYNC.CYCLE.01–05</td>
+<td>The compare: nothing changed and PROD current is quiet and recorded, the same hashes with PROD behind promote only, a changed listing, round, schedule or result slot is a change with its new rounds, and two reads of an unchanged source compare equal; the one line of every outcome, composed from the run row, the ledger, the refresh's status and the promote's write count (G30 A), and no line for a quiet cycle; a read that fails hands on its type only.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>SYNC.CYCLE.06</td>
+<td>In sync mode the recorded ingest and the called promote send nothing to Telegram (<code>--quiet</code>); a manual run keeps its full report and its failure line.</td>
+<td>pytest</td>
+<td><code>python/tests/test_cert_apply.py</code>, <code>python/tests/test_promotion_replay.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>SYNC.CYCLE.07</td>
+<td>The workflows: <code>workflow_call</code> on the ingest and the promote, the compare first, the refresh and the ingest only when something changed, the promote job's condition on the ingest's outputs, <code>contents: write</code> on both calling jobs, <code>fail-fast: false</code> and <code>max-parallel: 1</code>, the empty-matrix guard, the matrix job named by its event, the switch and the cron line that fired; the ingest step outputs its run, whether it finished and its gate.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_lanes.py</code>, <code>python/tests/test_cert_apply.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>WFLANE.02</td>
+<td>The sync and the two workflows it calls: their triggers, the two cron lines, and a called job keeping its lane (<code>cert-write</code>, <code>prod-write</code>); the sync holds none.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_lanes.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>SYNC.PAUSE.01–06</td>
+<td>A failed run, a refresh stop, a blocked gate, a refused promote and a failed read each pause the event with a reason that names no fencer and the Actions run; the database takes exactly the cycle's verdicts; a finished manual ingest lifts the pause; the select sends the morning line on the morning cycle only, naming every event in window; <code>RESULTS_SYNC=off</code> ends a scheduled select silently.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code>, <code>python/tests/test_cert_apply.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>SYNC.PZSZ.01–04</td>
+<td>A start list's hash is part of the compare, and a new stored list alone is a change; no stored list pauses the event with the store command in the line; promote's by-hash read is unchanged (PROMO.REPLAY.29–31).</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code>, <code>python/tests/test_promotion_replay.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>LOG.PRIV.01–03</td>
+<td>No log line names a fencer or a birth year (D12): a recorded run's refusal is logged by its kind and listing and exits 1 without a traceback, its message on the run row and in Telegram; a PZSz cycle's log names no starter; promote's refusal is logged by where its reason is (G33).</td>
+<td>pytest</td>
+<td><code>python/tests/test_cert_apply.py</code>, <code>python/tests/test_promotion_replay.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>GAS.SYNC.01</td>
+<td><code>sync [&lt;code&gt;]</code> dispatches <code>results-sync.yml</code> with or without a code, and its help line says where it acts.</td>
+<td>pytest</td>
+<td><code>python/tests/test_gas_bot.py</code></td>
+<td>Covered (2026-11-01, LOCAL)</td>
+</tr>
 </tbody>
 </table></div>
 </section>
@@ -4057,5 +4127,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>43b10fd1d5b1abfaf8afb2c338272c0bc911acb39e1e9c5aff167923cc5c761e</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>754fa65f333e7dc5cd9aae5372f44319c5338f1ab4427651d40f889cfb65b8a7</code></footer>
 </div></body></html>

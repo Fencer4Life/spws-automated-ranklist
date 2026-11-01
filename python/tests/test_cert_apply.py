@@ -445,7 +445,10 @@ class TestReplaceAndWorkflow:
         assert "--replace" not in command
         assert "SUPABASE_ACCESS_TOKEN" in ingest["env"]
         (notify,) = [s for s in steps if s.get("name") == "Notify failure"]
-        assert notify["if"] == "failure() && steps.ingest.outputs.reported != 'true'"
+        # Release 3: in sync mode the outcome job sends the cycle's one line instead.
+        assert notify["if"] == (
+            "failure() && inputs.mode != 'sync' && steps.ingest.outputs.reported != 'true'"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -550,7 +553,8 @@ class TestGateFindings:
         assert _run(db)["status"] == "FINISHED", "CERT is written; the gate blocks promote only"
 
     def test_main_does_not_repeat_a_reported_failure(self, monkeypatch, tmp_path):
-        """CERTAPPLY.12 (B7) — one message, and the workflow is told."""
+        """CERTAPPLY.12 (B7) — one message, and the workflow is told. Since
+        release 3 (S9) a recorded run's stop exits 1 without a traceback."""
         out = tmp_path / "out"
         monkeypatch.setenv("GITHUB_OUTPUT", str(out))
         argv = ["ingest_cli", "--flow", "ingest_domestic", "--event-code", CODE]
@@ -563,7 +567,7 @@ class TestGateFindings:
                 "python.pipeline.ingest_cli.ingest_event_from_url",
                 side_effect=cert_apply.GateBlocked("The gate blocks promote of X: 1 identity"),
             ),
-            pytest.raises(cert_apply.GateBlocked),
+            pytest.raises(SystemExit, match="1"),
         ):
             ingest_cli.main()
         notifier.notify_pipeline_failure.assert_not_called()
@@ -596,3 +600,157 @@ def test_a_mock_cert_answers_a_recorded_run():
     """The MagicMock CERT the driver tests use answers the recorded path."""
     db = cert_state(MagicMock())
     assert db.event_result_state(CODE) == {"fingerprint": "f" * 64, "has_results": False}
+
+
+# --------------------------------------------------------------------------
+# Release 3 (ADR-119 §4): the recorded run in the sync's cycle
+# --------------------------------------------------------------------------
+
+NAMED_REFUSAL = (
+    "SABRE M listing not written: NOWAK Adam declared 1970, and the namesake "
+    "ZIELIŃSKI Marek 1968 is two categories away"
+)
+
+
+class TestSyncMode:
+    """SYNC.CYCLE.06, SYNC.PAUSE.04, LOG.PRIV.01 and the ingest step's outputs,
+    through `ingest_cli.main()` as the workflow runs it."""
+
+    def _main(self, monkeypatch, tmp_path, *flags, refuse=False, db=None):
+        db = db or _cert()
+        notifier = MagicMock()
+        outputs = tmp_path / "github_output"
+        outputs.write_text("")
+        monkeypatch.setenv("GITHUB_OUTPUT", str(outputs))
+        argv = [
+            "ingest_cli",
+            "--flow",
+            "ingest_domestic",
+            "--event-code",
+            CODE,
+            "--season-end-year",
+            "2027",
+            "--from-url",
+            "--md-target",
+            "storage",
+            "--record-run",
+            "cert",
+            *flags,
+        ]
+        monkeypatch.setattr("sys.argv", argv)
+        real = ingest_cli._run_parsed_through_flow
+
+        def flow(parsed, *a, **k):
+            if refuse and parsed.weapon == "SABRE":
+                from python.pipeline.core.contract import ListingRefused
+
+                raise ListingRefused("identity", NAMED_REFUSAL)
+            return real(parsed, *a, **k)
+
+        kept = [
+            {"uuid": u, "name": name, "finished": True, "day": None}
+            for u, (name, _) in FTL.listings.items()
+        ]
+        exit_code = 0
+        with (
+            recorded(applier=MemoryApplier(db), order=db.order),
+            patch("python.scrapers.ftl_auth.get_authed_ftl_client", return_value=FTL),
+            patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u),
+            patch(
+                "python.tools.scrape_ftl_event_urls.parse_event_schedule", return_value=(kept, [])
+            ),
+            patch("python.pipeline.ingest_cli._fire_staging_report", return_value=None),
+            patch("python.pipeline.ingest_cli._after_event_run"),
+            patch("python.pipeline.ingest_cli._run_parsed_through_flow", side_effect=flow),
+            patch("python.pipeline.ingest_cli.create_db_connector", return_value=db),
+            patch("python.pipeline.ingest_cli.TelegramNotifier", return_value=notifier),
+        ):
+            try:
+                ingest_cli.main()
+            except SystemExit as e:
+                exit_code = e.code
+        values = dict(
+            line.split("=", 1) for line in outputs.read_text().splitlines() if "=" in line
+        )
+        return exit_code, notifier, values, db
+
+    def test_LOG_PRIV_01_a_refusal_logs_its_kind_and_listing_and_no_name(
+        self, monkeypatch, tmp_path, capsys
+    ):
+        """D12: the refusal names a fencer and two birth years; the log has
+        its kind and its listing, Telegram and the run row the whole of it."""
+        code, notifier, _, db = self._main(monkeypatch, tmp_path, refuse=True)
+        log = capsys.readouterr()
+        text = log.out + log.err
+        assert code == 1
+        assert "ListingRefused [identity] Szabla Mężczyzn kat. 2" in text
+        for leak in ("NOWAK", "ZIELIŃSKI", "KOWALSKI", "1970", "1968", "Traceback"):
+            assert leak not in text, leak
+        (call,) = notifier.notify_pipeline_failure.call_args_list
+        assert NAMED_REFUSAL in call.args[0]
+        assert NAMED_REFUSAL in _run(db)["error"]
+
+    def test_SYNC_CYCLE_06_quiet_sends_nothing_to_telegram(self, monkeypatch, tmp_path):
+        """R3.2 A: in sync mode the outcome job speaks; the ingest step is quiet."""
+        code, notifier, values, _ = self._main(monkeypatch, tmp_path, "--quiet", refuse=True)
+        assert code == 1 and notifier.method_calls == []
+        assert values["reported"] == "true"
+        code, notifier, _, _ = self._main(monkeypatch, tmp_path, "--quiet")
+        assert code == 0 and notifier.method_calls == []
+
+    def test_SYNC_CYCLE_06_quiet_is_for_a_recorded_run_only(self, monkeypatch):
+        argv = ["ingest_cli", "--flow", "ingest_domestic", "--event-code", CODE]
+        monkeypatch.setattr(
+            "sys.argv", [*argv, "--season-end-year", "2027", "--from-url", "--quiet"]
+        )
+        with pytest.raises(SystemExit):
+            ingest_cli.main()
+
+    def test_SYNC_CYCLE_07_the_ingest_step_outputs_its_run(self, monkeypatch, tmp_path):
+        """S3: the promote job's condition reads them."""
+        _, _, values, _ = self._main(monkeypatch, tmp_path, "--quiet")
+        assert (values["run_id"], values["finished"], values["gate"]) == ("41", "true", "passed")
+        _, _, values, _ = self._main(monkeypatch, tmp_path, "--quiet", refuse=True)
+        assert (values["run_id"], values["finished"], values["gate"]) == ("41", "false", "")
+        assert values["error"] == "ListingRefused"  # its type only: the message names fencers
+
+    def test_SYNC_PAUSE_04_a_finished_run_lifts_the_events_pause(self, monkeypatch, tmp_path):
+        """D8, S5: a manual ingest whose run finishes lifts the pause; a failed one does not."""
+        _, _, _, db = self._main(monkeypatch, tmp_path)
+        assert db.resumed == [CODE]
+        assert db.order.index("resume") > db.order.index("finished")
+        _, _, _, db = self._main(monkeypatch, tmp_path, refuse=True)
+        assert db.resumed == []
+
+
+def test_LOG_PRIV_02_a_pzsz_cycle_logs_no_starter(capsys):
+    """D12, §04.9: the log of a recorded PZSz run carries counts and capture
+    times, never a starter's name or birth year."""
+    from python.tests import test_pzsz_routing as pz
+
+    class CertPzsz(CertMemoryDb, pz.PzszMemoryDb):
+        pass
+
+    event = _event(9, pz.CODE, "2026-10-04", 2)
+    event["dt_end"] = "2026-10-05"
+    event["id_pzsz_event"] = 4588
+    roster = [
+        _fencer(301, "PRZYKŁADOWY", "Jan", 1971),
+        _fencer(302, "WZORCOWY", "Jakub", 1976),
+        _fencer(303, "PRZYKŁADOWA", "Anna", 1969, gender="F"),
+    ]
+    cert = CertPzsz(roster, [event])
+    with recorded(applier=MemoryApplier(cert), order=cert.order):
+        pz._with_pages(
+            pz._pages(),
+            ingest_cli.ingest_event_from_url,
+            event_code=pz.CODE,
+            season_end_year=2027,
+            db=cert,
+            record_run="cert",
+        )
+    log = capsys.readouterr()
+    text = log.out + log.err
+    assert "starters" in text or "start list" in text  # the capture is logged, by count
+    for leak in ("PRZYKŁADOW", "WZORCOWY", "TESTOWSKA", "1971", "1976", "1969"):
+        assert leak not in text, leak

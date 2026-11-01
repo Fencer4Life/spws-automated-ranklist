@@ -295,6 +295,9 @@ class RunRecord(ListingLog):
             self.refusal = {"listing": self.current, "kind": kind, "message": message or error}
         try:
             self.db.fail_ingest_run(self.run_id, error, self.listings())
-            print(f"run record {self.run_id} failed: {error}")
+            # The row holds the whole error; the log its kind and listing,
+            # since a refusal names fencers (D12).
+            where = f" [{kind}]" + (f" {self.current}" if self.current else "") if kind else ""
+            print(f"run record {self.run_id} failed: {error.split(':', 1)[0]}{where}")
         except Exception as e:
             print(f"  (run record {self.run_id} could not be closed: {e})")

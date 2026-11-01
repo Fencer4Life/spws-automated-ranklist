@@ -210,3 +210,7 @@ Implemented 2026-10-03 (ADR-108 build step 12): `recompute-drain.yml` and `inges
 ## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3) — the CERT drain runs inside the ingest job
 
 The CERT ingest now ends with its own drain, as promote does on PROD. After the apply has committed and the run has closed, the job drains CERT's recompute queue to empty with the same worker (`drain_recompute_queue`, at most `MAX_DRAIN_ROUNDS` rounds), and only then runs the gate, which compares exactly that state. The ingest holds `cert-write`, so it does not wait for `recompute-drain.yml`, which stays in `cert-write` for queue items any other writer leaves. Tests: CERTAPPLY.05.
+
+## Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §4) — the drains of a sync cycle
+
+A cycle of the results sync drains CERT's queue inside its ingest job, as §3's amendment placed it, and PROD's inside the called promote. A quiet cycle writes nothing, so it queues nothing.

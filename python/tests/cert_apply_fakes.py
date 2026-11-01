@@ -40,6 +40,7 @@ class CertMemoryDb(MemoryDb):
         self.runs: dict[int, dict] = {}
         self.reserved: list[int] = []
         self._run_seq = 40
+        self.resumed: list[str] = []
 
     # the run record
     def open_ingest_run(self, params):
@@ -105,6 +106,12 @@ class CertMemoryDb(MemoryDb):
             if t["id_event"] == ev
         )
         return hashlib.sha256(json.dumps(body).encode()).hexdigest()
+
+    def resume_results_sync(self, code):
+        """fn_results_sync_resume: a finished run lifts the sync's pause (D8)."""
+        self.order.append("resume")
+        self.resumed.append(code)
+        return False
 
     def event_result_state(self, code):
         ev = self._event_id(code)

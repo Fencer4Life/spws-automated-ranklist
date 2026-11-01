@@ -244,3 +244,17 @@ def test_any_other_refusal_is_logged():
     sent = _send([(403, '{"ok":false,"description":"Forbidden: bot was blocked"}')], "hello")
     assert len(sent["calls"]) == 1
     assert any("bot was blocked" in line for line in sent["logs"])
+
+
+def test_GAS_SYNC_01_sync_dispatches_the_results_sync_with_or_without_a_code():
+    """ADR-119 §4 (D9, S10): `sync` runs the results sync now; `sync <code>`
+    syncs that one event and lifts its pause first. Its help line says where
+    it acts, as every command's does (GAS.HELP.01-04)."""
+    src = _source()
+    assert "sync" in _handled(src)
+    block = re.search(r"case 'sync':(.*?)\n\s*(?:// ---|case ')", src, re.S)
+    assert block, "the sync case was not found"
+    assert "'results-sync.yml'" in block.group(1)
+    assert re.search(r"event_code:\s*arg\s*\|\|\s*''", block.group(1))
+    description = dict(_help_entries(src))["sync"]
+    assert "CERT" in description and "PROD" in description and "pause" in description

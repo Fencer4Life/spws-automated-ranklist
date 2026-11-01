@@ -144,6 +144,12 @@ class DbConnector:
         ).execute()
         return str(resp.data)
 
+    def resume_results_sync(self, event_code: str) -> bool:
+        """Lift the results sync's pause of the event, as a finished run does
+        (ADR-119 §4, D8); true when it was paused."""
+        resp = self._sb.rpc("fn_results_sync_resume", {"p_event_code": event_code}).execute()
+        return bool(resp.data)
+
     def fetch_pzsz_start_lists(self, id_pzsz_event: int) -> list[dict]:
         """Every stored start-list version of a PZSz event; the ingest keeps
         the newest per weapon and gender (ADR-112 §3)."""

@@ -12,6 +12,11 @@ run-name: Ingest · ${{ inputs.event_code }}
 #   * Telegram `ingest <event code>` (scripts/gas_telegram_bot.js), dispatched
 #     straight to GitHub; no admin screen starts it
 #   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=cert
+#   * results-sync.yml, as a called workflow in mode `sync` (ADR-119 §4): the
+#     compare step reads first and writes nothing; the refresh and the ingest run
+#     only when something changed; the ingest is quiet; promote.yml follows a
+#     finished run whose gate passed (or PROD behind, `promote_only`); the outcome
+#     job records the cycle, pauses the event on any failure and sends one line.
 #
 # ADR-113: this path ingests every organizer's event (SPWS, PZSz, EVF, FIE);
 # an international event reads each result URL slot, or its EVF results
@@ -38,6 +43,33 @@ on:
         description: 'Optional FTL eventSchedule URL — saved as the event results link (URL wyników, tbl_event.url_event) before ingest; anything else is refused (ADR-117). Blank = use the stored url_event.'
         required: false
         default: ''
+  # ADR-119 §4: the results sync calls this workflow once per event in window.
+  workflow_call:
+    inputs:
+      event_code:
+        type: string
+        required: true
+      season_end_year:
+        type: number
+        required: true
+      target:
+        type: string
+        default: 'cert'
+      url_event:
+        type: string
+        default: ''
+      mode:
+        description: 'manual (a dispatch) or sync (the results sync)'
+        type: string
+        default: 'manual'
+      moment:
+        description: "the cycle's due moment (the select's output)"
+        type: string
+        default: ''
+      dry_run:
+        description: 'sync mode: compare only; write and send nothing'
+        type: boolean
+        default: false
 
 # ADR-083: least-privilege GITHUB_TOKEN. Default repo scope is far wider than
 # any job here needs; an injected step should not inherit write access.
@@ -55,11 +87,25 @@ jobs:
       # cancels the older, so a waiting ingest could be dropped by the next drain
       # (test_workflow_lanes.py WFLANE.01).
       queue: max
+    # Sync mode: what the promote and outcome jobs read. None names a fencer: an
+    # error that opened no run passes as its type (results_sync.public_error).
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+      promote_only: ${{ steps.compare.outputs.promote_only }}
+      previous_run: ${{ steps.compare.outputs.previous_run }}
+      new: ${{ steps.compare.outputs.new }}
+      error: ${{ steps.compare.outputs.error || steps.ingest.outputs.error }}
+      run_id: ${{ steps.ingest.outputs.run_id }}
+      finished: ${{ steps.ingest.outputs.finished }}
+      gate: ${{ steps.ingest.outputs.gate }}
+      refresh_status: ${{ steps.refresh_report.outputs.status }}
+      refresh_counts: ${{ steps.refresh_report.outputs.counts }}
     env:
       EVENT_CODE: ${{ inputs.event_code }}
       SEASON_END_YEAR: ${{ inputs.season_end_year }}
       TARGET_ENV: ${{ inputs.target }}
       URL_EVENT: ${{ inputs.url_event }}
+      MODE: ${{ inputs.mode || 'manual' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -93,12 +139,33 @@ jobs:
             echo "::error::invalid url_event (must be empty or an http(s) URL)"
             exit 1
           fi
+          if [[ "$MODE" != "manual" && "$MODE" != "sync" ]]; then
+            echo "::error::mode must be manual or sync"
+            exit 1
+          fi
+
+      # ADR-119 §4 (R3.3 A): the sync reads the schedule and every final listing
+      # and compares them with the latest finished CERT run and PROD's
+      # fingerprint. It writes nothing of the event; a quiet cycle ends here.
+      - name: Compare with the latest finished CERT run
+        id: compare
+        if: inputs.mode == 'sync'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
+        run: |
+          python -m python.pipeline.promotion.results_sync compare \
+            --code "$EVENT_CODE" --season-end-year "$SEASON_END_YEAR"
 
       # ADR-113 (Q4 A): CERT takes PROD's fencers before it ingests, so the run
       # promote replays was resolved against the roster PROD holds. --auto
       # applies only a refresh that renumbers nobody and leaves nobody
       # unpaired; anything else stops here with the report (ADR-108 §2).
       - name: Refresh CERT master data from PROD
+        if: inputs.mode != 'sync' || (steps.compare.outputs.changed == 'true' && !inputs.dry_run)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
@@ -109,8 +176,21 @@ jobs:
             --snapshot "$RUNNER_TEMP/refresh-$EVENT_CODE-$GITHUB_RUN_ID.json" \
             --report "$RUNNER_TEMP/refresh-report.md"
 
+      # The outcome job runs on another runner and cannot open the report file:
+      # its status and counts, which name no one, are handed on (S7).
+      - name: The refresh's status for the outcome
+        id: refresh_report
+        if: always() && inputs.mode == 'sync'
+        run: |
+          REPORT="$RUNNER_TEMP/refresh-report.md"
+          if [[ -f "$REPORT" ]]; then
+            echo "status=$(sed -n 's/^status: //p' "$REPORT" | head -1)" >> "$GITHUB_OUTPUT"
+            echo "counts=$(sed -n 's/^counts: //p' "$REPORT" | head -1)" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Re-ingest event from URL (keep-rule + source overrides)
         id: ingest
+        if: inputs.mode != 'sync' || (steps.compare.outputs.changed == 'true' && !inputs.dry_run)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
@@ -129,8 +209,15 @@ jobs:
                 --event-code "$EVENT_CODE"
                 --season-end-year "$SEASON_END_YEAR"
                 --from-url
-                --send-telegram --md-target storage
+                --md-target storage
                 --record-run cert)
+          # ADR-119 §4 (R3.2 A, S11): a manual run reports in full; in sync mode
+          # the outcome job says the cycle in one line, so the ingest is quiet.
+          if [[ "$MODE" == "sync" ]]; then
+            ARGS+=(--quiet)
+          else
+            ARGS+=(--send-telegram)
+          fi
           if [[ -n "$URL_EVENT" ]]; then
             ARGS+=(--url-event "$URL_EVENT")
           fi
@@ -139,7 +226,7 @@ jobs:
       # B7: one message per failure. When the ingest step has already told
       # Telegram what happened (output `reported`), this generic line is skipped.
       - name: Notify failure
-        if: failure() && steps.ingest.outputs.reported != 'true'
+        if: failure() && inputs.mode != 'sync' && steps.ingest.outputs.reported != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -152,6 +239,81 @@ jobs:
             COUNTS=$(grep -m1 '^counts:' "$REFRESH")
             MSG="⏸ ingest ${EVENT_CODE} stopped before ingesting: the PROD→CERT refresh needs the administrator (${STATUS}; ${COUNTS}). Nothing was written. Report: ${RUN_URL}"
           fi
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
+
+  # ADR-119 §4 (S3): sync mode promotes a finished run whose gate passed, or a
+  # run PROD is behind (promote_only). The called promote keeps its prod-write
+  # lane; its seed export pushes to main, so this job grants contents: write.
+  promote:
+    name: Promote to PROD
+    needs: ingest-event
+    if: >-
+      inputs.mode == 'sync' && !inputs.dry_run &&
+      ((needs.ingest-event.outputs.finished == 'true' && needs.ingest-event.outputs.gate == 'passed')
+      || needs.ingest-event.outputs.promote_only == 'true')
+    permissions:
+      contents: write
+    uses: ./.github/workflows/promote.yml
+    with:
+      event_code: ${{ inputs.event_code }}
+      quiet: true
+    secrets: inherit
+
+  # ADR-119 §4 (R3.2 A): the one voice of a cycle. It records the cycle on the
+  # event's row, pauses the event on any failure (D8) and sends the one line
+  # of §04.6. Its log carries the verdict and the reason, never the line (D12).
+  outcome:
+    name: The cycle's line
+    needs: [ingest-event, promote]
+    if: always() && inputs.mode == 'sync'
+    runs-on: ubuntu-24.04
+    env:
+      EVENT_CODE: ${{ inputs.event_code }}
+      SEASON_END_YEAR: ${{ inputs.season_end_year }}
+      MOMENT: ${{ inputs.moment }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
+
+      - name: Record the cycle and send its line
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SYNC_CHANGED: ${{ needs.ingest-event.outputs.changed }}
+          SYNC_PROMOTE_ONLY: ${{ needs.ingest-event.outputs.promote_only }}
+          SYNC_PREVIOUS_RUN: ${{ needs.ingest-event.outputs.previous_run }}
+          SYNC_NEW: ${{ needs.ingest-event.outputs.new }}
+          SYNC_ERROR: ${{ needs.ingest-event.outputs.error }}
+          SYNC_RUN_ID: ${{ needs.ingest-event.outputs.run_id }}
+          SYNC_REFRESH_STATUS: ${{ needs.ingest-event.outputs.refresh_status }}
+          SYNC_REFRESH_COUNTS: ${{ needs.ingest-event.outputs.refresh_counts }}
+          SYNC_PROMOTE_RESULT: ${{ needs.promote.result }}
+          SYNC_PROMOTE_WRITES: ${{ needs.promote.outputs.writes }}
+        run: |
+          ARGS=(outcome --code "$EVENT_CODE" --season-end-year "$SEASON_END_YEAR" --moment "$MOMENT")
+          if [[ "$DRY_RUN" == "true" ]]; then
+            ARGS+=(--dry-run)
+          fi
+          python -m python.pipeline.promotion.results_sync "${ARGS[@]}"
+
+      - name: Notify failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          MSG="❌ results sync: the cycle of ${EVENT_CODE} was not recorded, and the event is not paused. Check: ${RUN_URL}"
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MSG}" > /dev/null

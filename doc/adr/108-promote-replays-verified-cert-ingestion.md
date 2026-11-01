@@ -357,3 +357,7 @@ The CERT ingest becomes the plan and one `fn_promote_event_apply`, the path prom
 - **§9, who may write.** `--replace` together with `--record-run` is refused before anything is read, and `ingest-event.yml` no longer passes it: the apply replaces. The CERT drain runs inside the ingest job, within `cert-write` ([ADR-072](072-cdc-recompute-debounce.md), amendment of the same day).
 - **The acceptance.** `plan_check recorded` checks the recorded path against a live run. `plan_check plan` gives a PZSz event its stored start lists, and its SQL apply names the prior. Rehearsed on LOCAL on PPW1, MSW and PPS1e of 2026/27, every result equal to the live run.
 - **Tests.** CERTAPPLY.01–13, APPLY.REPLACE.01–08, APPLY.RESERVE.01–02, LEDGER.01–05, RUN.PRIOR.01–04, PROMO.REPLAY.32–33, PROMO.PLAN.14–15; migrations `20261031000004` and `20261031000005`.
+
+## Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §4) — the results sync holds no lane
+
+§9's lanes are unchanged in membership. `results-sync.yml` holds no lane of its own: its cycle job calls `ingest-event.yml` in mode `sync`, whose ingest job keeps `cert-write` with `queue: max`, and that workflow's promote job calls `promote.yml`, whose promote job keeps `prod-write` with `queue: max`. A called workflow's job keeps its own concurrency block, so a cycle waits in the same queue as a manual ingest or promote (WFLANE.01–02). The cycles run one event at a time (`max-parallel: 1`).
