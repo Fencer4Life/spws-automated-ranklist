@@ -174,7 +174,7 @@ class CaptureOutcome:
         return start_list_window(self.first_day, self.last_day or self.first_day)
 
 
-_DAILY_CRON = re.compile(r"(\d{1,2}) (\d{1,2}) \* \* \*")
+_DAILY_CRON = re.compile(r"(\d{1,2}) (\d{1,2})(?:-(\d{1,2}))? \* \* \*")
 
 
 def scheduled_moment(cron: str, now: datetime) -> datetime:
@@ -182,15 +182,18 @@ def scheduled_moment(cron: str, now: datetime) -> datetime:
     before ``now`` matching the cron's minute and hour in UTC, read in Warsaw.
     GitHub starts scheduled runs hours late (0.2-3.5 hours measured), so a run
     can start after midnight, or after noon, in Warsaw; it still works on the
-    moment it was due, for both the window and its alarms. Pure."""
+    moment it was due, for both the window and its alarms. The hour may be a
+    range of one day's hours, as the results sync's (SYNC.DUE.01). Pure."""
     match = _DAILY_CRON.fullmatch(cron.strip())
-    if match is None:
-        raise ValueError(f"not one daily UTC time: {cron!r}")
-    minute, hour = int(match.group(1)), int(match.group(2))
-    due = now.astimezone(UTC).replace(hour=hour, minute=minute, second=0, microsecond=0)
-    if due > now:
-        due -= timedelta(days=1)
-    return due.astimezone(WARSAW)
+    minute, first = (int(match.group(1)), int(match.group(2))) if match else (60, 0)
+    last = int(match.group(3)) if match and match.group(3) else first
+    if minute > 59 or not first <= last <= 23:
+        raise ValueError(f"not one daily UTC time or range of hours: {cron!r}")
+    day = now.astimezone(UTC).replace(minute=minute, second=0, microsecond=0)
+    for hour in range(last, first - 1, -1):
+        if (due := day.replace(hour=hour)) <= now:
+            return due.astimezone(WARSAW)
+    return (day.replace(hour=last) - timedelta(days=1)).astimezone(WARSAW)
 
 
 def scheduled_day(cron: str, now: datetime) -> date:

@@ -1,0 +1,126 @@
+name: Results sync
+# G32 A: the title is fixed before the select counts anything, so it says what
+# started the run; the count is the select job's log and the cycle jobs.
+run-name: Results sync · ${{ github.event_name == 'schedule' && 'scheduled' || inputs.event_code || 'manual' }}${{ inputs.dry_run && ' · dry run' || '' }}
+
+# ADR-119 §4: every hour, each event in its window is read, compared with its
+# latest finished CERT run, refreshed, ingested on CERT and promoted to PROD
+# when something changed. The select job (read-only on PROD; on CERT it only
+# lifts a manual code's pause) takes the active-season events on the route from
+# their first day to the day after their end date in Warsaw, by the moment the
+# cron was due, neither COMPLETED nor CANCELLED, with a results link on CERT or
+# PROD (the link is the switch, G7), and not paused (D8). The cycle job runs
+# ingest-event.yml in mode `sync` once per event, one at a time; each cycle
+# takes the cert-write lane, and its promote the prod-write lane, of the called
+# workflows. A failed cycle pauses its event until `sync <code>` (Telegram,
+# dispatching this workflow with the code) or a finished manual ingest lifts it.
+#
+# The repository variable RESULTS_SYNC=off ends every scheduled cycle at the
+# select, with one log line and no message; a manual run ignores it (S6).
+# No log line names a fencer or a birth year (D12).
+
+on:
+  schedule:
+    # G28 A: the thirteen cycles as two lines, so the morning cycle is known by
+    # the line that fired even when GitHub starts it late. It sends the ☀ line.
+    - cron: '13 8 * * *'     # the morning cycle — 09:13 Warsaw in winter, 10:13 in summer
+    - cron: '13 9-20 * * *'  # hourly — 10:13–21:13 Warsaw in winter, 11:13–22:13 in summer
+  workflow_dispatch:
+    inputs:
+      event_code:
+        description: 'One event to sync now, in its window or not; its pause is lifted first. Blank = every event in window.'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Select and compare only; no result written, nothing sent'
+        type: boolean
+        default: false
+
+# ADR-083: least privilege; the cycle job grants contents: write for promote's seed export.
+permissions:
+  contents: read
+
+jobs:
+  select:
+    name: The events in window
+    runs-on: ubuntu-24.04
+    outputs:
+      events: ${{ steps.select.outputs.events }}
+      count: ${{ steps.select.outputs.count }}
+      moment: ${{ steps.select.outputs.moment }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
+
+      - name: Validate input
+        env:
+          EVENT_CODE: ${{ inputs.event_code }}
+        run: |
+          if [[ -n "$EVENT_CODE" && ! "$EVENT_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::invalid event_code (must match [A-Za-z0-9_-]+)"
+            exit 1
+          fi
+
+      # The morning cycle sends the ☀ line: every event in window, syncing,
+      # paused or without a link (G29 A). A manual code is selected in or out of
+      # its window, after its pause is lifted; a code without a link is refused.
+      - name: Select
+        id: select
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RESULTS_SYNC: ${{ vars.RESULTS_SYNC }}
+          CRON: ${{ github.event.schedule }}
+          EVENT_CODE: ${{ inputs.event_code }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          ARGS=(select --cron "$CRON")
+          if [[ -n "$EVENT_CODE" ]]; then
+            ARGS+=(--code "$EVENT_CODE")
+          fi
+          if [[ "$DRY_RUN" == "true" ]]; then
+            ARGS+=(--dry-run)
+          fi
+          python -m python.pipeline.promotion.results_sync "${ARGS[@]}"
+
+      - name: Notify failure
+        if: failure() && steps.select.outputs.reported != 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          MSG="❌ results sync: the select failed, so no event was synced this hour. Check: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
+
+  # One event at a time (max-parallel: 1); one event's failure never cancels
+  # the next (fail-fast: false). A matrix built from an empty list fails its job,
+  # so a cycle with nothing in window ends at the select (S4).
+  cycle:
+    name: ${{ matrix.cycle.event_code }}
+    needs: select
+    if: needs.select.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        cycle: ${{ fromJSON(needs.select.outputs.events) }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ingest-event.yml
+    with:
+      event_code: ${{ matrix.cycle.event_code }}
+      season_end_year: ${{ matrix.cycle.season_end_year }}
+      mode: sync
+      moment: ${{ needs.select.outputs.moment }}
+      dry_run: ${{ inputs.dry_run || false }}
+    secrets: inherit

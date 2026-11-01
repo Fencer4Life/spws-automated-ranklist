@@ -48,6 +48,10 @@ class TelegramNotifier:
     def info(self, message: str) -> None:
         self._send(f"ℹ️ {message}")
 
+    def send(self, message: str) -> None:
+        """A line sent as written: the results sync composes its own (ADR-119 §4)."""
+        self._send(message)
+
     def summary(self, result: object) -> None:
         """Format and send a batch summary from an IngestResult-like object."""
         t_count = len(getattr(result, "tournament_ids", []))

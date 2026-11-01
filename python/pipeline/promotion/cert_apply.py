@@ -148,6 +148,16 @@ def gate_for(event_code: str, environment: str) -> Any:
     return run_gate(event_code, target, prod, main_commit=git_commit(), environment=environment)
 
 
+def _lift_pause(db: Any, event_code: str) -> None:
+    """D8: a finished run lifts the results sync's pause of its event. A
+    failure to lift it is said, never a failure of the run."""
+    try:
+        if db.resume_results_sync(event_code):
+            print(f"the results sync's pause of {event_code} is lifted")
+    except Exception as e:
+        print(f"(the results sync's pause of {event_code} was not lifted: {type(e).__name__})")
+
+
 # ---------------------------------------------------------------- the run
 
 
@@ -198,6 +208,7 @@ def ingest_recorded(
         url_event=url_event or "",
         prior_fingerprint=prior,
     )
+    ingest_cli._github_output(run_id=str(run.run_id))
 
     # 5) The plan: every write recorded, none made.
     try:
@@ -213,7 +224,10 @@ def ingest_recorded(
         )
     except BaseException as e:
         kind = e.kind if isinstance(e, ListingRefused) else None
+        if isinstance(e, ListingRefused):
+            e.listing = run.current  # the CLI's log names the listing, never the fencer (D12)
         run.fail(f"{type(e).__name__}: {e}", kind=kind, message=str(e))
+        ingest_cli._github_output(finished="false", gate="")
         raise
 
     # R2.1 C: nothing final writes nothing, and never empties an event.
@@ -224,8 +238,11 @@ def ingest_recorded(
                 "an earlier run; nothing was deleted. Look at the source, then ingest again."
             )
             run.fail(f"NothingFinal: {message}", kind=NOTHING_FINAL, message=message)
+            ingest_cli._github_output(finished="false", gate="")
             raise NothingFinal(message)
         run.finish()
+        ingest_cli._github_output(finished="true", gate="")
+        _lift_pause(db, event_code)
         print(f"nothing is final yet in {event_code}: nothing was written (run {run.run_id})")
         return Recorded(run.run_id, None, state.get("fingerprint"), contexts=plan.contexts)
 
@@ -251,6 +268,7 @@ def ingest_recorded(
                     "(ADR-108 §6, option A)."
                 )
             run.fail(f"ApplyRefused: {message}", message=message)
+            ingest_cli._github_output(finished="false", gate="")
             raise ApplyRefused(message) from e
         # B5: only the apply writes the event inside the cert-write lane, so an
         # event that moved from the prior is the apply's commit.
@@ -264,12 +282,16 @@ def ingest_recorded(
                 "what it held before: run the ingest again."
             )
             run.fail(f"ApplyUnanswered: {message}", message=message)
+            ingest_cli._github_output(finished="false", gate="")
             raise ApplyUnanswered(message) from e
         print(f"the apply's call ended without an answer ({e}); {target} moved, so it committed")
         result = {"fingerprint": now.get("fingerprint"), "writes": None}
 
-    # 7) The run closes on what the apply wrote.
+    # 7) The run closes on what the apply wrote; a finished run lifts the
+    # results sync's pause of the event (D8).
     run.finish()
+    ingest_cli._github_output(finished="true")
+    _lift_pause(db, event_code)
     reached = result.get("fingerprint")
     print(
         f"applied: {result.get('writes')} write(s), "
@@ -292,6 +314,7 @@ def ingest_recorded(
     counts = Counter(f.kind for f in gate.findings if f.blocking)
     summary = ", ".join(f"{n} {kind}" for kind, n in counts.items())
     print(f"gate: {'passed' if gate.passed else 'BLOCKED'}" + (f" ({summary})" if summary else ""))
+    ingest_cli._github_output(gate="passed" if gate.passed else "blocked")
 
     current = db.find_event_by_code(event_code) or event
     sources = next(

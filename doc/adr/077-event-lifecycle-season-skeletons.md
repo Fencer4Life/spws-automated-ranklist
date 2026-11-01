@@ -329,3 +329,7 @@ The 2026-10-03 amendment's "every scheduled individual listing is final (its sch
 ## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3) — the CERT status is set by the ingest's one apply
 
 §1's "promote sets the status inside its apply transaction" now holds on CERT too: the CERT ingest writes the event, its results and its status in one `fn_promote_event_apply`, so a refused ingest leaves the status as it was. A run in which no listing is final writes nothing, the status included. It closes FINISHED while the event holds no result, and FAILED while it does, with nothing deleted (R2.1 C). Until then the workflow's `--replace` emptied such an event, left its status and finished green. The validator and the daily close are unchanged.
+
+## Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §4) — the sync sets no status of its own
+
+A cycle of the results sync sets an event's status exactly as a manual run does: the CERT ingest's one apply on CERT, promote's replay on PROD, by §1's rule. The sync takes an event from its first day to the day after its end date and never a COMPLETED or CANCELLED one; the daily close still completes events after their end date.

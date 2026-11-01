@@ -945,7 +945,7 @@ class TestIngestRefreshesFirst:
 
         path = Path(__file__).resolve().parents[2] / ".github/workflows/ingest-event.yml"
         wf = yaml.safe_load(path.read_text())
-        (job,) = wf["jobs"].values()
+        job = wf["jobs"]["ingest-event"]  # release 3 adds the sync's promote and outcome jobs
         runs = [s.get("run", "") for s in job["steps"]]
         refresh = next(i for i, r in enumerate(runs) if "python.pipeline.promotion.refresh" in r)
         ingest = next(i for i, r in enumerate(runs) if "python.pipeline.ingest_cli" in r)

@@ -344,7 +344,7 @@ class TestWiring:
     def test_the_cert_target_records_its_run(self):
         """PROMO.RUN.08"""
         wf = yaml.safe_load((ROOT / ".github/workflows/ingest-event.yml").read_text())
-        (job,) = wf["jobs"].values()
+        job = wf["jobs"]["ingest-event"]  # release 3 adds the sync's promote and outcome jobs
         run = next(s["run"] for s in job["steps"] if "ingest_cli" in s.get("run", ""))
         # ADR-108 §9: the only target is cert (prod is refused), so every run is recorded.
         assert "--record-run cert)" in run

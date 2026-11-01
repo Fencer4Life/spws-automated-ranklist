@@ -24,3 +24,14 @@ def test_RUNNAME_02_a_promote_run_names_its_event_and_a_dry_run():
     assert _run_name("promote.yml") == (
         "Promote · ${{ inputs.event_code }}${{ inputs.dry_run && ' · dry run' || '' }}"
     )
+
+
+def test_RUNNAME_03_a_results_sync_run_says_what_started_it():
+    """G32 A: a run's title is fixed before the select counts anything, so it
+    says what started the run: "scheduled", the code of a manual run, or
+    "manual" without one, and " · dry run" for a dry run. A scheduled run has
+    no inputs, so its dry-run part is empty."""
+    assert _run_name("results-sync.yml") == (
+        "Results sync · ${{ github.event_name == 'schedule' && 'scheduled' || inputs.event_code || 'manual' }}"
+        "${{ inputs.dry_run && ' · dry run' || '' }}"
+    )

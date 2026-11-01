@@ -108,6 +108,14 @@ function handleCommand(props, command, arg) {
         + '<pre>' + arg + '</pre>\n'
         + '<i>The verified CERT run (SPWS, PZSz, EVF or FIE) will be replayed on PROD.\nWatch for the result notification.</i>';
 
+    case 'sync':
+      // ADR-119 §4 (D9): the hourly results sync, now. With a code: that one event,
+      // in its window or not, its pause lifted first; without one: every event in window.
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'results-sync.yml', { event_code: arg || '' });
+      return '<b>Results Sync Triggered</b>\n'
+        + '<pre>' + (arg || 'every event in window') + '</pre>\n'
+        + '<i>A change is ingested on CERT and promoted to PROD; a failure pauses the event.\nWatch for the cycle line.</i>';
+
     // --- Review ---
     case 'results':
       var resData = callRpc('fn_event_results_summary', { p_prefix: arg });
@@ -312,6 +320,9 @@ function handleCommand(props, command, arg) {
         '',
         '<pre>promote &lt;exact code&gt;</pre>',
         'Replay the verified CERT run on PROD, for an SPWS, PZSz, EVF or FIE event; a prefix gets the matching codes · <code>promote PPW1-2026-2027</code>',
+        '',
+        '<pre>sync [&lt;exact code&gt;]</pre>',
+        'Run the hourly results sync now: ingest on CERT, promote to PROD what changed; a code syncs that event and lifts its pause · <code>sync PEW3ef-2026-2027</code>',
         '',
         '<b><u>Review</u></b>',
         '',

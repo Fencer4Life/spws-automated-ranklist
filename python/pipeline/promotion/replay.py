@@ -762,14 +762,24 @@ def main(argv: Iterable[str] | None = None) -> int:
     ap.add_argument("--prod-target", choices=("prod", "local"), default="prod")
     ap.add_argument("--dry-run", action="store_true", help="plan, compare and dry-apply only")
     ap.add_argument("--resolve", action="store_true", help="print the latest CERT run's commit")
+    ap.add_argument(
+        "--quiet",
+        action="store_true",
+        help="send nothing to Telegram: the results sync reports the cycle in one line "
+        "(ADR-119 §4, R3.2 A); the ledger still records the outcome",
+    )
     args = ap.parse_args(list(argv) if argv is not None else None)
 
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
     if not token:
         print("SUPABASE_ACCESS_TOKEN is required to read CERT", file=sys.stderr)
         return 1
-    notifier = TelegramNotifier(
-        os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    notifier = (
+        None
+        if args.quiet
+        else TelegramNotifier(
+            os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+        )
     )
     label = "PROD" if args.prod_target == "prod" else "LOCAL (rehearsal)"
     try:
@@ -812,12 +822,24 @@ def main(argv: Iterable[str] | None = None) -> int:
             ledger=ledger_for(args.prod_target, dry_run=args.dry_run, token=token),
         )
     except PromoteRefused as e:
-        text = "\n".join([f"Promote of {args.event} to {label} refused: {e}", *e.lines])
-        print(text, file=sys.stderr)
-        notifier.error(text)
+        # D12 (G33): a refusal can name a fencer; Telegram and the ledger get
+        # it whole, the public log only that it was refused.
+        print(
+            f"Promote of {args.event} to {label} refused "
+            "(the reason is in Telegram and on the CERT run's row)",
+            file=sys.stderr,
+        )
+        if notifier is not None:
+            notifier.error(
+                "\n".join([f"Promote of {args.event} to {label} refused: {e}", *e.lines])
+            )
         _output(applied="false")
         return 1
-    _output(applied="true" if outcome.applied else "false", event=outcome.event_code)
+    _output(
+        applied="true" if outcome.applied else "false",
+        event=outcome.event_code,
+        writes=str(outcome.writes),
+    )
     if not outcome.applied:
         print(
             f"Dry run of {outcome.event_code} on {label}: would end on {outcome.fingerprint[:12]}"
@@ -834,9 +856,11 @@ def main(argv: Iterable[str] | None = None) -> int:
             [f"{summary}\nAFTER THE DRAIN {label} DIFFERS FROM CERT:", *outcome.differences]
         )
         print(text, file=sys.stderr)
-        notifier.error(text)
+        if notifier is not None:
+            notifier.error(text)
         return 2
-    notifier.success(summary)
+    if notifier is not None:
+        notifier.success(summary)
     return 0
 
 
