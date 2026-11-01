@@ -26,7 +26,8 @@ outputs, no database and no network:
   SYNC.PAUSE.05  the ☀ line names every event in window, paused or not;
   SYNC.PZSZ.01-02  a start list's hash is part of the compare;
   SYNC.PAUSE.06  RESULTS_SYNC=off ends a scheduled select silently;
-  SYNC.CYCLE.08  the compare reads as the ingest reads (G35 A).
+  SYNC.CYCLE.08  the compare reads as the ingest reads (G35 A);
+  SYNC.CYCLE.09  a dry run says what the cycle would do (G36 A).
 
 The morning cycle is told by the cron line that fired (G28 A), and the select
 sends the ☀ line (G29 A).
@@ -989,6 +990,44 @@ class TestOutcomeCli:
     def test_SYNC_CYCLE_05_a_dry_run_writes_and_sends_nothing(self):
         run = _new_run(status="FAILED", error="ApplyRefused: x")
         assert self._run(run=run, dry_run=True)[1:] == ([], [])
+
+    def test_SYNC_CYCLE_09_a_dry_run_says_what_the_cycle_would_do(self, capsys):
+        """G36 A: a dry run never refreshes, ingests or promotes, so it has no
+        CERT run to judge. Its outcome says what the cycle would do, from the
+        compare alone, and a failed read as a real cycle reports it, since the
+        read is the same. It writes and sends nothing (SYNC.CYCLE.05)."""
+        would = "would refresh CERT, ingest, and promote once the run finishes and its gate passes"
+        two_new = rs.Comparison(True, False, 14, [("Men's Epee V2", 3), ("Women's Foil V1", 5)])
+        cases = [
+            (rs.Comparison(False, False, 14, []), None, "unchanged"),
+            (rs.Comparison(False, True, 14, []), None, "would promote CERT run 14 to PROD"),
+            (two_new, None, f"{would}: 2 new listing(s)"),
+            (CHANGED, None, would),
+            (
+                None,
+                "FtlAuthError: the FTL session was refused",
+                "would fail and pause: read failed: FtlAuthError",
+            ),
+        ]
+        for comparison, error, said in cases:
+            sent: list[str] = []
+            cert = _Sql(runs={14: {"id": 14, "status": "FINISHED", "result_fingerprint": "a" * 64}})
+            code = rs.run_outcome(
+                PPW,
+                cert=cert,
+                prod=_Sql(fingerprints={PPW: "a" * 64}),
+                moment=MOMENT,
+                comparison=comparison,
+                run_id=None,
+                error=error,
+                refresh=None,
+                promote=None,
+                run_url=RUN_URL_77,
+                send=sent.append,
+                dry_run=True,
+            )
+            assert (code, sent, cert.writes) == (0, [], [])
+            assert capsys.readouterr().out.strip() == f"(dry run) {PPW}: {said}"
 
 
 def test_SYNC_CYCLE_05_the_public_error_of_a_failure_that_opened_no_run():
