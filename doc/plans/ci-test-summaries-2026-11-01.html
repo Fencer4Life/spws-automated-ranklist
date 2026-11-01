@@ -303,5 +303,16 @@
     <p><b>Built 1 Nov.</b> The 5 CISUM.08 test functions, plus CISUM.02's glyph change, were written first; 6 failed, each for its own reason. Now they pass. On the two real logs the check passes today's run ("every file ran the tests it planned (124 files)", exit 0). It fails 18 Oct's run, naming "<code>supabase/tests/19_phase3_wizard.sql</code> planned 25 tests but ran 5" (exit 1). In preflight it is the gate "pgTAP plans all ran (CI)", and <code>--fast</code> skips it with <code>supabase test db</code>. The workflow catalog, <code>test-and-traceability.html</code>, both release skills (including their list of every preflight gate) and RTM CISUM.08 say so.</p>
   </section>
 
+  <section>
+    <p class="kicker">Released · 1 Nov</p>
+    <h2>On PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>main</th><th>Runs</th></tr></thead>
+      <tbody><tr><td><code>3060ac49</code>, rebased onto main before the push</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321236369">CI</a> ✓, each job's summary step ran · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321421158">Release</a> ✓, every job</td></tr></tbody>
+    </table></div>
+    <p><b>Checks:</b> V1 open (GitHub shows a run's Summary sections only to a signed-in reader, so they are not yet read for this record). V2 waits for a red run.</p>
+    <p>Recorded by <code>doc/plans/integration-checkout-env-link-and-release-records-2026-11-01.html</code> (E2 A).</p>
+  </section>
+
   <p class="foot">plan · ci-test-summaries · 1 Nov 2026 · read: ci.yml, CI runs 41300329245 and 39112045045 (job logs), Vitest 4.1.12's reporter source, GitHub's "Adding a job summary" · signed 1 Nov 2026</p>
 </div>

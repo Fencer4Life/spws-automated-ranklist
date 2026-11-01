@@ -226,14 +226,25 @@ def seed_worktree(new: Path, graph_sources: list[Path], primary: Path) -> None:
         for name in GRAPH_PORTABLE:
             if (newest / name).is_file():
                 shutil.copy2(newest / name, new / "graphify-out" / name)
+    link_shared(new, primary)
+
+
+def link_shared(target: Path, primary: Path) -> list[str]:
+    """Link each of the primary's SHARED_LINKS that `target` lacks; returns those linked.
+
+    Nothing already there is replaced, a broken link included. A new worker gets the
+    links from seed_worktree; the integration checkout from start(), at every session
+    start, so a preflight there reads the primary's .env too (ENVTOKEN.10-11)."""
+    linked: list[str] = []
     for rel in SHARED_LINKS:
-        src, dst = primary / rel, new / rel
+        src, dst = primary / rel, target / rel
         if src.exists() and dst.parent.is_dir() and not os.path.lexists(dst):
             dst.symlink_to(src)
+            linked.append(rel)
     # Anchored, without a trailing slash, so the SYMLINKS are ignored too: the
     # repository's `.venv/` and `node_modules/` patterns match directories only.
     exclude = (
-        Path(git(new, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
+        Path(git(target, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip())
         / "info"
         / "exclude"
     )
@@ -245,6 +256,7 @@ def seed_worktree(new: Path, graph_sources: list[Path], primary: Path) -> None:
             handle.write(
                 "\n# session_start.py: shared environment symlinks\n" + "\n".join(wanted) + "\n"
             )
+    return linked
 
 
 def baseline(
@@ -464,6 +476,18 @@ def start(payload: dict) -> dict:
     work = new or root
     if real(work) not in shared:  # in use again: an earlier end record no longer applies
         (marks_dir(primary) / "ended" / mark_key(work)).unlink(missing_ok=True)
+    if integration is not None and real(integration) != real(primary):
+        # Preflight runs there before every push; without the primary's .env its token
+        # readers fell back to a stale token in the environment (1 Nov 2026, I1).
+        try:
+            linked = link_shared(integration, primary)
+        except OSError as exc:
+            notes.append(f"Integration checkout: shared links NOT checked ({exc}).")
+        else:
+            if linked:
+                notes.append(
+                    f"Integration checkout: linked {', '.join(sorted(linked))} from the primary."
+                )
 
     branch, ahead, behind, dirty = baseline(work, shared, notes)
     removed, decide = cleanup(primary, shared | {real(root), real(work)}, notes)
