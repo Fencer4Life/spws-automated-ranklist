@@ -1,0 +1,237 @@
+<meta charset="utf-8">
+<title>Integration .env link — plan</title>
+<style>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Credentials · integration checkout · release records · Plan — signed 1 Nov</p>
+  <h1>The integration checkout reads the same .env, and the three releases are recorded</h1>
+  <p class="dek">Your message (1 Nov): <b>"Yes, plan it"</b>, on fixing I1 and recording the three releases as one change. I1 was found while integrating. Every worker gets the primary's <code>.env</code> as a link, but the integration checkout, where preflight runs before every push, has none. Since the token fix, its readers there fall back to the environment's stale token. Separately, the RTM and the three plans still say "Landed (LOCAL)" for work that is now on PROD.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed "All as recommended": E1–E4 A</span>
+    <span class="pill">changes <code>scripts/session_start.py</code> · tests · records</span>
+    <span class="pill">branch to be <code>claude/integration-checkout-links-env</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Four decisions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>E1</b></td><td>How does the integration checkout get the primary's <code>.env</code>?</td><td><b>A</b> At every session start the hook gives the registered integration checkout each shared link it lacks, the same four paths a new worker gets (<code>SHARED_LINKS</code>). It never replaces a file, directory or link that is there. Today that links <code>.env</code> and <code>tools/docs-search/.env</code>; its <code>.venv</code> and <code>frontend/node_modules</code> are real directories and stay. The report says which it linked.<br><b>B</b> The same, but only the root <code>.env</code>.<br><b>C</b> Link it once by hand; no code.</td><td><span class="chip never">A</span> One rule for every checkout a session works in. B leaves the RAG key missing there for the next person who runs the ingest in it. C goes missing again the next time the checkout is re-created, and nothing would say so.</td></tr>
+        <tr><td><b>E2</b></td><td>Are the three releases recorded in this change?</td><td><b>A</b> Yes. The RTM statuses of NFR-16 (its RELNOTES part), NFR-17 and NFR-18 say released, with the commit on <code>main</code>. Each of the three plans gets a "Released · 1 Nov" section with its runs and what has been verified.<br><b>B</b> A separate docs-only change after this one.</td><td><span class="chip never">A</span> You asked for one change. It also closes I1 in the token plan, which points here.</td></tr>
+        <tr><td><b>E3</b></td><td>What happens to <code>held/release-notes-integration-aba6979d</code>?</td><td><b>A</b> Delete it. It holds my first release-notes merge, set aside by the Release 3b session when it pushed first. That content is on <code>main</code> as <code>df992316</code>, and that session asked for it to go once this happened.<br><b>B</b> Keep it.</td><td><span class="chip never">A</span> It can only mislead: an unmerged branch with the same title as a released change. Deleted only on your word.</td></tr>
+        <tr><td><b>E4</b></td><td>Who checks the Summary pages against the plans' checks (§04)?</td><td><b>A</b> I read the four run pages as text in the built-in browser, read-only, and record what each shows. Nothing is shown to you there; the results come back in this page.<br><b>B</b> You open them and tell me what you see.</td><td><span class="chip never">A</span> The pages are public and only read. The two checks that need an event that has not happened yet stay open, named (§04).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What is there today</p>
+    <h2>The hook links shared paths into new workers only</h2>
+    <ul>
+      <li><code>seed_worktree()</code> (<code>scripts/session_start.py:218</code>) links the four <code>SHARED_LINKS</code> (line 65) from the primary into a new worker, when the source exists and nothing is at the target. Only <code>isolate()</code> calls it (line 213), and only for a worktree it has just made.</li>
+      <li>The registered integration checkout, <code>/Users/aleks/coding/SPWSranklist-integration</code>, holds <code>.venv</code> and <code>frontend/node_modules</code> as real directories and has neither <code>.env</code> nor <code>tools/docs-search/.env</code> (checked 1 Nov). Both are git-ignored (<code>.gitignore:1</code>), so a link there leaves the checkout clean, which <code>integrate-agent-branch.sh</code> requires.</li>
+      <li>The three preflights of 1 Nov passed there only because a wrapper sourced <code>scripts/supabase-token.sh</code> from a worker and exported <code>.env</code>'s token first.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · How (E1 A)</p>
+    <h2>One linking step for workers and the integration checkout</h2>
+    <ol class="steps">
+      <li>The linking loop and the <code>info/exclude</code> entries move out of <code>seed_worktree()</code> into <code>link_shared(target, primary)</code>, which returns the paths it linked. <code>seed_worktree()</code> calls it, so a new worker gets exactly what it gets today.</li>
+      <li><code>start()</code> calls it for the registered integration checkout on every session start, when one is registered and it is not the primary. Nothing is replaced: a path that exists, or a link even when broken, is left as it is.</li>
+      <li>When it links something, the report gains a line: "Integration checkout: linked .env, tools/docs-search/.env from the primary." Nothing is said when there was nothing to link.</li>
+      <li>A failure there adds a note and never stops the session, as the rest of the hook does.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Records and checks (E2 A, E4 A)</p>
+    <h2>What "released" will say, and what is still unchecked</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Change</th><th>main</th><th>Runs</th><th>Checks from its plan</th></tr></thead>
+      <tbody>
+        <tr><td>Release notes (NFR-16, RELNOTES.01–13)</td><td><code>df992316</code></td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41320223097">CI</a> · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41320400324">Release</a></td><td>V1 every section, the merge list matching <code>git log --first-parent</code>; V2 no mention or issue link; V3 the gate, notes, Pages and CERT sections visible while deploy-prod waits (Release <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321421158">41321421158</a> waited for you); <b>V4 open</b> until the next docs-only push.</td></tr>
+        <tr><td>CI summaries (NFR-17, CISUM.01–08)</td><td><code>3060ac49</code></td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321236369">CI</a> · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41321421158">Release</a></td><td>V1 all four sections and Vitest's own; <b>V2 open</b> until a red run (the plan offers a throwaway draft pull request only if you want it).</td></tr>
+        <tr><td>Token readers (NFR-18, ENVTOKEN.01–09)</td><td><code>0f866342</code></td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41325374632">CI</a> · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41325525607">Release</a></td><td>CI ran ENVTOKEN.01–09 without a <code>.env</code>; preflight ran <code>test_prod_mirror</code> with <code>.env</code>'s token while the environment held the stale one.</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>RTM</b>: the three statuses become "Covered (released 2026-11-01, main …)". NFR-18 also traces ENVTOKEN.10–11.</li>
+      <li><b>Plans</b>: a "Released · 1 Nov" section in each, with the table row above and the checks as found. The token plan's I1 points here and is closed by this change.</li>
+      <li><b>Handbook</b>: <code>operations/claude-codex-collaboration.html</code>, Seed row: the registered integration checkout gets any of the links it lacks at each session start.</li>
+      <li><b>Memory</b>: the token entry and its index line.</li>
+      <li><b>No ADR</b>: the rule (ADR-036 amendment 2026-11-01, <code>.env</code> first) is unchanged; this makes one more checkout follow it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Tests first, each seen failing</p>
+    <h2>Two new tests in <code>python/tests/test_session_start.py</code></h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>What it proves</th><th>Red before the change because</th></tr></thead>
+      <tbody>
+        <tr><td>ENVTOKEN.10</td><td>A session start links the primary's <code>.env</code> and <code>tools/docs-search/.env</code> into a registered integration checkout that lacks them, says so in the report, and leaves that checkout clean for <code>git status</code>.</td><td>nothing links into the integration checkout</td></tr>
+        <tr><td>ENVTOKEN.11</td><td>A file, directory or link already at one of those paths in the integration checkout stays exactly as it was, and nothing is reported for it.</td><td>written with 10; it guards the "never replace" half, so it may pass before the change (stated in the commit)</td></tr>
+      </tbody>
+    </table></div>
+    <p>The existing SS tests keep a new worker's links unchanged (SS.18, <code>test_new_worktree_links_the_primarys_env</code>).</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Build order, after sign-off</p>
+    <h2>One change, one push, one Release</h2>
+    <ol class="steps">
+      <li>This worktree's branch is contained in <code>main</code>: fast-forward it to <code>origin/main</code>, rename it <code>claude/integration-checkout-links-env</code>, and give it its description.</li>
+      <li>ENVTOKEN.10–11, ENVTOKEN.10 seen red; then <code>link_shared</code>; green.</li>
+      <li>Records (§04) and E4's reading of the run pages.</li>
+      <li><code>scripts/preflight.sh</code>, all gates, then graph refresh and RAG ingest, then one commit as Fencer4Life.</li>
+      <li>The hook run by hand from this worktree (<code>scripts/session_start.py</code>, as <code>doc/claude/session-start.md</code> describes), so the integration checkout gets its links now. That is the live check: it then holds a link to the primary's <code>.env</code>.</li>
+      <li>Rebase onto the latest <code>main</code>, integrate, preflight in the integration checkout <b>without</b> the wrapper (it passes only if the link works), push, and watch CI and Release. The script change makes this a full Release, so deploy-prod waits for your approval although CERT and PROD gain nothing.</li>
+      <li>E3: delete the held branch, if A.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Not in this plan</p>
+    <h2>Still yours</h2>
+    <ul>
+      <li>Where the stale environment token comes from, and the two permission entries in <code>~/.claude/settings.json</code> that contain a token value (token plan §09).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Built · 1 Nov</p>
+    <h2>Built; E4 needs a signed-in reader</h2>
+    <ul>
+      <li><code>link_shared()</code> in <code>scripts/session_start.py</code>, called by <code>seed_worktree()</code> and by <code>start()</code> for the integration checkout. ENVTOKEN.10 was red first (nothing linked there); ENVTOKEN.11 passed before the change, as §05 said; all 21 session-start tests pass.</li>
+      <li>Records (§04): RTM NFR-16, NFR-17 and NFR-18; the three plans' "Released · 1 Nov" sections; the handbook's Seed row.</li>
+      <li><b>E4:</b> GitHub shows a run's Summary sections only to a signed-in reader. The built-in browser is not signed in, so the run page there lists the jobs and none of the sections. The checks are recorded as open until they are read.</li>
+    </ul>
+  </section>
+
+  <p class="foot">doc/plans/integration-checkout-env-link-and-release-records-2026-11-01.html · 1 Nov 2026 · branch to be <code>claude/integration-checkout-links-env</code></p>
+</div>

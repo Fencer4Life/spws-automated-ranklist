@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="1cca0b54705e23a78797abab0a79d9a9b943f82c72ead4bd61b9fa0f75902edb">
+<meta name="doc-source-sha256" content="8e97de90a30051128855a89826619755e58e31d1fa6a55b2908dbd832952f6d5">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1126,21 +1126,21 @@
 <td>Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); <code>scripts/branch_description.py check</code> fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on <code>main</code> is the description with a <code>Branch:</code> line, and the CI and Release runs carry its title; each Release run's Summary page lists what it carries: the gate's verdict, every commit since PROD last deployed with its explanation, and what Pages, CERT and PROD deployed</td>
 <td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A; <a href="plans/release-notes-on-every-release-run-2026-11-01.html">plan</a> R1–R4 A</td>
 <td>NAMING.01–07, RELNOTES.01–13</td>
-<td>Covered (released 2026-10-31: NAMING.01–05 main 05caf9f0, NAMING.06–07 main be5c8136); RELNOTES.01–13 Landed (2026-11-01, LOCAL)</td>
+<td>Covered (released 2026-10-31: NAMING.01–05 main 05caf9f0, NAMING.06–07 main be5c8136); RELNOTES.01–13 Covered (released 2026-11-01, main df992316)</td>
 </tr>
 <tr>
 <td>NFR-17</td>
 <td>A CI run's Summary page shows each job's results and names what failed: every check the job ran as a pass or fail line, the test counts and time, and each failing test with its first error line, so a failure is found without opening a log; a pgTAP file that ran fewer assertions than it planned fails CI and preflight, although pg_prove calls it ok; the CI token stays read-only</td>
 <td>User directive 2026-11-01; <a href="plans/ci-test-summaries-2026-11-01.html">plan</a> C1–C4 A, F1 A</td>
 <td>CISUM.01–08</td>
-<td>CISUM.01–07 Landed (2026-11-01, LOCAL); CISUM.08 Landed (2026-11-01, LOCAL)</td>
+<td>Covered (released 2026-11-01, main 3060ac49)</td>
 </tr>
 <tr>
 <td>NFR-18</td>
-<td>One rule for the Supabase Management API token: every reader (pipeline, scrapers, tools, tests and shell scripts) reads <code>SUPABASE_ACCESS_TOKEN</code> through <code>python/supabase_token.py</code> or <code>scripts/supabase-token.sh</code>, which take the checkout's <code>.env</code> before the process environment (<code>CLOUD_SQL_TOKEN_FROM_ENV=1</code> inverts it; CI ships no <code>.env</code>); no test is handed the real token; preflight fails on a reader that goes round the helpers; the SessionStart hook names both in every session's context</td>
-<td>User directive 2026-11-01; <a href="plans/supabase-token-read-from-env-first-2026-11-01.html">plan</a> T1 A, T2 A; <a href="adr/036-prod-export-local-mirror.html">ADR-036</a> amendment 2026-11-01</td>
-<td>ENVTOKEN.01–09, MIRROR.TOKEN.01</td>
-<td>Landed (2026-11-01, LOCAL)</td>
+<td>One rule for the Supabase Management API token: every reader (pipeline, scrapers, tools, tests and shell scripts) reads <code>SUPABASE_ACCESS_TOKEN</code> through <code>python/supabase_token.py</code> or <code>scripts/supabase-token.sh</code>, which take the checkout's <code>.env</code> before the process environment (<code>CLOUD_SQL_TOKEN_FROM_ENV=1</code> inverts it; CI ships no <code>.env</code>); no test is handed the real token; preflight fails on a reader that goes round the helpers; the SessionStart hook names both in every session's context and links the primary's <code>.env</code> into the registered integration checkout, where preflight runs before a push, when it lacks one</td>
+<td>User directive 2026-11-01; <a href="plans/supabase-token-read-from-env-first-2026-11-01.html">plan</a> T1 A, T2 A; <a href="plans/integration-checkout-env-link-and-release-records-2026-11-01.html">plan</a> E1 A; <a href="adr/036-prod-export-local-mirror.html">ADR-036</a> amendment 2026-11-01</td>
+<td>ENVTOKEN.01–11, MIRROR.TOKEN.01</td>
+<td>Covered (released 2026-11-01, main 0f866342); ENVTOKEN.10–11 Landed (2026-11-01, LOCAL)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4462,5 +4462,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>1cca0b54705e23a78797abab0a79d9a9b943f82c72ead4bd61b9fa0f75902edb</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8e97de90a30051128855a89826619755e58e31d1fa6a55b2908dbd832952f6d5</code></footer>
 </div></body></html>

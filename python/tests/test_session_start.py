@@ -406,3 +406,43 @@ def test_every_session_is_told_the_token_reader(
     for text in (normal, failed):
         assert "python/supabase_token.py" in text
         assert "scripts/supabase-token.sh" in text
+
+
+def test_the_integration_checkout_gets_the_primarys_env(setup: Setup):
+    """ENVTOKEN.10 — a session start links the primary's .env files into the registered
+    integration checkout when it lacks them, as a new worker gets them, so a preflight
+    there reads .env's token and not a stale one in the environment; the checkout stays
+    clean for the integrate script (doc/plans/integration-checkout-env-link-and-release-
+    records-2026-11-01.html, E1 A)."""
+    (setup.primary / ".env").write_text("PLACEHOLDER=1\n")
+    (setup.primary / "tools" / "docs-search").mkdir(parents=True)
+    (setup.primary / "tools" / "docs-search" / ".env").write_text("PLACEHOLDER=2\n")
+    (setup.integration / "tools" / "docs-search").mkdir(parents=True)
+    out = run(setup, setup.worker("linking"))
+    for rel in (".env", "tools/docs-search/.env"):
+        assert (setup.integration / rel).is_symlink(), rel
+        assert (setup.integration / rel).resolve() == (setup.primary / rel).resolve()
+    assert git("status", "--porcelain", cwd=setup.integration) == ""
+    assert "Integration checkout: linked .env, tools/docs-search/.env from the primary." in context(
+        out
+    )
+
+
+def test_the_integration_checkouts_own_files_are_kept(setup: Setup):
+    """ENVTOKEN.11 — a file, directory or link already at a shared path in the
+    integration checkout stays exactly as it was, a broken link included, and nothing
+    is reported for it."""
+    (setup.primary / ".env").write_text("PRIMARY=1\n")
+    (setup.primary / ".venv").mkdir()
+    (setup.primary / "frontend" / "node_modules").mkdir(parents=True)
+    (setup.integration / ".env").write_text("OWN=1\n")
+    (setup.integration / ".venv").mkdir()
+    (setup.integration / "frontend").mkdir()
+    gone = setup.tmp / "gone"
+    (setup.integration / "frontend" / "node_modules").symlink_to(gone)
+    out = run(setup, setup.worker("keeping"))
+    assert not (setup.integration / ".env").is_symlink()
+    assert (setup.integration / ".env").read_text() == "OWN=1\n"
+    assert not (setup.integration / ".venv").is_symlink()
+    assert (setup.integration / "frontend" / "node_modules").readlink() == gone
+    assert "Integration checkout:" not in context(out)
