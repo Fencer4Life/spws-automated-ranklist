@@ -90,6 +90,22 @@ class StorageMdHandler:
         )
         return path
 
+    def upload_refresh(self, event_code: str, md_bytes: bytes, timestamp: str) -> str:
+        """Upload {event_code}/refresh/{timestamp}.md (append-only): the PROD→CERT
+        refresh report of an ingest, whose lines name fencers and birth years.
+        It lives beside the event's staging report, never in a public log
+        (ADR-119 D12, G48 A)."""
+        self._validate_event_code(event_code)
+        if not re.match(r"^\d{8}-\d{6}Z$", timestamp):
+            raise ValueError(f"invalid timestamp {timestamp!r}: expected yyyyMMdd-HHmmssZ")
+        path = f"{event_code}/refresh/{timestamp}.md"
+        self._bucket().upload(
+            path,
+            md_bytes,
+            file_options={"content-type": "text/markdown", "upsert": "false"},
+        )
+        return path
+
     # --- download -----------------------------------------------------------
 
     def download_full(self, event_code: str) -> bytes | None:

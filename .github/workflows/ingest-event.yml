@@ -100,6 +100,8 @@ jobs:
       gate: ${{ steps.ingest.outputs.gate }}
       refresh_status: ${{ steps.refresh_report.outputs.status }}
       refresh_counts: ${{ steps.refresh_report.outputs.counts }}
+      refresh_report: ${{ steps.refresh_report.outputs.report }}
+      refresh_reason: ${{ steps.refresh_report.outputs.reason }}
     env:
       EVENT_CODE: ${{ inputs.event_code }}
       SEASON_END_YEAR: ${{ inputs.season_end_year }}
@@ -166,6 +168,9 @@ jobs:
       # promote replays was resolved against the roster PROD holds. --auto
       # applies only a refresh that renumbers nobody and leaves nobody
       # unpaired; anything else stops here with the report (ADR-108 §2).
+      # G48 A: the log gets the report's head only; the lines, which name
+      # fencers and birth years, go to the report file and CERT's private
+      # staging-reports bucket (--report-storage).
       - name: Refresh CERT master data from PROD
         if: inputs.mode != 'sync' || (steps.compare.outputs.changed == 'true' && !inputs.dry_run)
         env:
@@ -176,10 +181,11 @@ jobs:
           python -m python.pipeline.promotion.refresh --target cert --mode apply \
             --event "$EVENT_CODE" --auto \
             --snapshot "$RUNNER_TEMP/refresh-$EVENT_CODE-$GITHUB_RUN_ID.json" \
-            --report "$RUNNER_TEMP/refresh-report.md"
+            --report "$RUNNER_TEMP/refresh-report.md" --report-storage
 
       # The outcome job runs on another runner and cannot open the report file:
-      # its status and counts, which name no one, are handed on (S7).
+      # its status, its counts or a refusal's kind, and where it is stored,
+      # which name no one, are handed on (S7, G48 A).
       - name: The refresh's status for the outcome
         id: refresh_report
         if: always() && inputs.mode == 'sync'
@@ -188,6 +194,8 @@ jobs:
           if [[ -f "$REPORT" ]]; then
             echo "status=$(sed -n 's/^status: //p' "$REPORT" | head -1)" >> "$GITHUB_OUTPUT"
             echo "counts=$(sed -n 's/^counts: //p' "$REPORT" | head -1)" >> "$GITHUB_OUTPUT"
+            echo "report=$(sed -n 's/^stored: \(staging-reports\/.*\)$/\1/p' "$REPORT" | head -1)" >> "$GITHUB_OUTPUT"
+            echo "reason=$(sed -n 's/^reason: //p' "$REPORT" | head -1)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Re-ingest event from URL (keep-rule + source overrides)
@@ -236,10 +244,17 @@ jobs:
         run: |
           MSG="❌ ingest-event.yml failed for ${EVENT_CODE} (${TARGET_ENV}). Check: ${RUN_URL}"
           REFRESH="$RUNNER_TEMP/refresh-report.md"
-          if [[ -f "$REFRESH" ]] && grep -q '^status: stopped_' "$REFRESH"; then
+          # G48 A: the refresh's named lines are in its report file, never in
+          # the public log: a stopped or refused refresh sends them here, with
+          # where the report is stored. MSG is never echoed into the log.
+          if [[ -f "$REFRESH" ]] && grep -Eq '^status: (stopped_|refused)' "$REFRESH"; then
             STATUS=$(grep -m1 '^status:' "$REFRESH")
-            COUNTS=$(grep -m1 '^counts:' "$REFRESH")
-            MSG="⏸ ingest ${EVENT_CODE} stopped before ingesting: the PROD→CERT refresh needs the administrator (${STATUS}; ${COUNTS}). Nothing was written. Report: ${RUN_URL}"
+            COUNTS=$(grep -m1 -E '^(counts|reason):' "$REFRESH")
+            STORED=$(grep -m1 '^stored:' "$REFRESH" || echo "stored: only in this run's report file")
+            DETAIL=$(awk 'seen && /^$/ {go=1; next} /^status: / {seen=1} go' "$REFRESH" | head -c 3000)
+            MSG="⏸ ingest ${EVENT_CODE} stopped before ingesting: the PROD→CERT refresh needs the administrator (${STATUS}; ${COUNTS}). Nothing was written.
+          ${DETAIL}
+          Report ${STORED}. Run: ${RUN_URL}"
           fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
@@ -299,6 +314,8 @@ jobs:
           SYNC_RUN_ID: ${{ needs.ingest-event.outputs.run_id }}
           SYNC_REFRESH_STATUS: ${{ needs.ingest-event.outputs.refresh_status }}
           SYNC_REFRESH_COUNTS: ${{ needs.ingest-event.outputs.refresh_counts }}
+          SYNC_REFRESH_REPORT: ${{ needs.ingest-event.outputs.refresh_report }}
+          SYNC_REFRESH_REASON: ${{ needs.ingest-event.outputs.refresh_reason }}
           SYNC_PROMOTE_RESULT: ${{ needs.promote.result }}
           SYNC_PROMOTE_WRITES: ${{ needs.promote.outputs.writes }}
         run: |

@@ -615,6 +615,88 @@ class TestCycleLine:
             ("refresh: stopped_renumbering", RUN_URL),
         )
 
+    def test_LOG_PRIV_06_the_stopped_line_names_the_stored_report(self):
+        """G48 A: the refresh's named lines are in CERT's staging-reports
+        bucket, and the ⏸ line says where."""
+        report = (
+            "status: stopped_renumbering\n"
+            'counts: {"renumbered": 2}\n'
+            f"stored: staging-reports/{PPS}/refresh/20261114-091300Z.md\n"
+        )
+        cycle = _cycle(code=PPS, comparison=CHANGED, refresh=report)
+        assert _lines(cycle)[1] == (
+            "   the PROD→CERT refresh needs the administrator (stopped_renumbering; 2 renumbered);"
+            f" its report: staging-reports/{PPS}/refresh/20261114-091300Z.md"
+        )
+
+    def test_LOG_PRIV_06_the_outcome_hands_the_stored_report_to_the_line(self):
+        """The outcome job reads the stored place from SYNC_REFRESH_REPORT."""
+        sent: list[str] = []
+        cert, prod = MagicMock(), MagicMock()
+        cert.run.return_value = None
+        rs.run_outcome(
+            PPS,
+            cert=cert,
+            prod=prod,
+            moment=MOMENT,
+            comparison=CHANGED,
+            run_id=None,
+            error=None,
+            refresh={
+                "status": "stopped_renumbering",
+                "counts": '{"renumbered": 2}',
+                "stored": f"staging-reports/{PPS}/refresh/20261114-091300Z.md",
+            },
+            promote={},
+            run_url=RUN_URL,
+            send=sent.append,
+        )
+        assert f"its report: staging-reports/{PPS}/refresh/20261114-091300Z.md" in sent[0]
+
+    def test_LOG_PRIV_06_a_refused_refresh_names_its_kind_and_stored_report(self):
+        """A refusal (the align function's ALIGN_VCAT names a fencer) is said by
+        its kind, with the place of its stored report, not as a cycle that
+        ended before a CERT run."""
+        report = (
+            "status: refused\n"
+            "reason: ALIGN_VCAT\n"
+            f"stored: staging-reports/{PPS}/refresh/20261114-091300Z.md\n"
+        )
+        cycle = _cycle(code=PPS, comparison=CHANGED, refresh=report)
+        assert _lines(cycle) == [
+            f"❌ {PPS} · cycle 14:13 · nothing written, CERT and PROD unchanged",
+            "   the PROD→CERT refresh refused (ALIGN_VCAT);"
+            f" its report: staging-reports/{PPS}/refresh/20261114-091300Z.md",
+            f"   PAUSED. Fix it, then send: sync {PPS}",
+        ]
+        assert rs.verdict(cycle) == "failed"
+        assert rs.pause_for(cycle) == ("refresh refused: ALIGN_VCAT", RUN_URL)
+
+    def test_LOG_PRIV_06_the_outcome_hands_a_refusal_to_the_line(self):
+        """The outcome job reads the refusal's kind from SYNC_REFRESH_REASON."""
+        sent: list[str] = []
+        cert = MagicMock()
+        cert.run.return_value = None
+        rs.run_outcome(
+            PPS,
+            cert=cert,
+            prod=MagicMock(),
+            moment=MOMENT,
+            comparison=CHANGED,
+            run_id=None,
+            error=None,
+            refresh={
+                "status": "refused",
+                "counts": "",
+                "reason": "ALIGN_VCAT",
+                "stored": f"staging-reports/{PPS}/refresh/20261114-091300Z.md",
+            },
+            promote={},
+            run_url=RUN_URL,
+            send=sent.append,
+        )
+        assert "the PROD→CERT refresh refused (ALIGN_VCAT); its report: staging-reports/" in sent[0]
+
     def test_SYNC_CYCLE_05_a_read_that_failed_before_a_run_opened(self):
         cycle = _cycle(comparison=None, error="FtlAuthError: the FTL session was refused")
         assert _lines(cycle) == [
