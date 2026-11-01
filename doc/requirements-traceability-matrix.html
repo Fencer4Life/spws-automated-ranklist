@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="b323b54056227ba30c3ffd8a92e03867630a56cc2a72a3a4b81af99cf18d3e6e">
+<meta name="doc-source-sha256" content="86bedfd0bb6eb77314bfeb1103e3390faf31cd54f6b488aa2e7a6dfa28998f32">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>782 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>802 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1123,10 +1123,10 @@
 </tr>
 <tr>
 <td>NFR-16</td>
-<td>Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); <code>scripts/branch_description.py check</code> fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on <code>main</code> is the description with a <code>Branch:</code> line, and the CI and Release runs carry its title</td>
-<td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A</td>
-<td>NAMING.01–07</td>
-<td>Covered (released 2026-10-31: NAMING.01–05 main 05caf9f0, NAMING.06–07 main be5c8136)</td>
+<td>Every branch, merge and release says what it changes: a worker branch is named after the change and carries a branch description (a title of up to 72 characters and at least two sentences); <code>scripts/branch_description.py check</code> fails preflight and the integrate script on a missing or weak description or a session, date or two-word name; the merge on <code>main</code> is the description with a <code>Branch:</code> line, and the CI and Release runs carry its title; each Release run's Summary page lists what it carries: the gate's verdict, every commit since PROD last deployed with its explanation, and what Pages, CERT and PROD deployed</td>
+<td>User directive 2026-10-31; <a href="plans/branch-names-and-merge-messages-2026-10-31.html">plan</a> B1–B3 A; <a href="plans/release-notes-on-every-release-run-2026-11-01.html">plan</a> R1–R4 A</td>
+<td>NAMING.01–07, RELNOTES.01–13</td>
+<td>Covered (released 2026-10-31: NAMING.01–05 main 05caf9f0, NAMING.06–07 main be5c8136); RELNOTES.01–13 Landed (2026-11-01, LOCAL)</td>
 </tr>
 </tbody>
 </table></div>
@@ -3775,6 +3775,113 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</h2>
+<p>Acceptance IDs for NFR-16 and <a href="plans/release-notes-on-every-release-run-2026-11-01.html">doc/plans/release-notes-on-every-release-run-2026-11-01.html</a> (signed 1 Nov 2026, R1–R4 A, F1 A). The script tests run in throwaway repositories; the workflow tests read <code>release.yml</code>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RELNOTES.01</td>
+<td>A range with several merges lists them oldest first, each with its title, explanation, <code>Branch:</code> line and linked short commit; <code>Co-Authored-By:</code> and other trailers are left out.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.02</td>
+<td>The workflows' own commits are counted on one line by kind; a commit pushed straight to main is listed with its subject and body.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.03</td>
+<td>An explanation holding <code>@types/node</code>, <code>W2 #4</code>, <code>[&lt;code&gt;]</code> and <code>&amp;</code> comes out with no mention, no issue link and no lost text.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.04</td>
+<td>A merge with no <code>Branch:</code> line shows the branch named in &quot;Merge branch '…'&quot; and that branch's own commit subjects.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.05</td>
+<td>When build's commit is newer than the gate's head, the later merges are listed and marked as reaching main after this run's CI.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.06</td>
+<td>A manual start names who started it and lists the range; with nothing new, the notes say PROD already runs that commit and this run deploys it again.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.07</td>
+<td>A docs-only range says nothing is deployed and that its commits stay in the range until a release deploys.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.08</td>
+<td>300 merges with 5 KB explanations stay under GitHub's 1 MiB per step: titles only beyond the budget, and every commit stays named or counted.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.09</td>
+<td><code>release.yml</code>'s <code>notes</code> job needs <code>gate</code> and <code>build</code>, runs only when the gate ran, holds <code>contents: read</code> only, checks out full history and ends in a Telegram alert; no other job needs it.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.10</td>
+<td>Every value reaches the notes steps through <code>env:</code>; no expression sits inside their <code>run:</code> text.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.11</td>
+<td><code>deploy-pages</code>, <code>deploy-cert</code> and <code>deploy-prod</code> each write their section in an <code>if: always()</code> step; in the two deploy jobs it comes just before the Telegram alert, which stays last; the section names the commit, the migrations applied or none, the fingerprint check and the first failed step.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_notes.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.12</td>
+<td>The gate outputs <code>base</code> and <code>head</code> for a CI-triggered run and for a manual start, and decides every existing case as before.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_docs_only_gate.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RELNOTES.13</td>
+<td>With <code>GITHUB_STEP_SUMMARY</code> set, the gate appends its verdict and the changed paths; without it, it writes nothing there.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_docs_only_gate.py</code></td>
+<td><strong>Landed</strong> (2026-11-01, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.<em>, ENGINE.</em>, ROUTE.ORG.<em>, RUNNAME.</em>)</h2>
 <p>Acceptance IDs for <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> release 1 and <a href="plans/partial-ingest-promote-results-sync-2026-10-31.html">doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</a> (signed 31 Oct 2026, D1–D14 A). FR-162. FINAL.05 is the pgTAP file of the sightings store.</p>
 <div class="tablewrap"><table>
@@ -4269,5 +4376,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b323b54056227ba30c3ffd8a92e03867630a56cc2a72a3a4b81af99cf18d3e6e</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>86bedfd0bb6eb77314bfeb1103e3390faf31cd54f6b488aa2e7a6dfa28998f32</code></footer>
 </div></body></html>

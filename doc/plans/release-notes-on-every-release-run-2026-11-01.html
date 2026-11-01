@@ -1,0 +1,388 @@
+<meta charset="utf-8">
+<title>Release notes on every Release run — plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+
+  /* A Release run's Summary page, as this plan would write it */
+  .runtitle{font-family:var(--mono);font-size:15px;color:var(--muted);margin:26px 0 6px;font-weight:700}
+  .gh{border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);margin:12px 0;overflow:hidden}
+  .gh .bar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);background:var(--surface-2);padding:9px 16px;border-bottom:1px solid var(--line)}
+  .gh .in{padding:14px 18px 4px;font-size:17px;line-height:1.55}
+  .gh .in h4{font-size:19px;font-weight:800;margin:2px 0 8px}
+  .gh .in h5{font-size:17px;font-weight:800;margin:16px 0 6px}
+  .gh .in p{max-width:none;margin:0 0 12px}
+  .gh .in .sub{color:var(--faint);font-family:var(--mono);font-size:14px}
+  .gh .in details{margin:0 0 12px}
+  .gh .in summary{cursor:pointer;color:var(--accent)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Release workflow · GitHub UI · Plan — signed and built 1 Nov</p>
+  <h1>Every Release run shows what it carries</h1>
+  <p class="dek">Your request (31 Oct): <b>"display release notes somewhere in the GH UI for the given release"</b>. The title half is released (main <code>05caf9f0</code>): each Release run is now named after its merge, and the merge commit holds the explanation. But GitHub shows only that first line. Open a Release run today and you see five job boxes, nothing else; a docs-only run's reason is buried in the gate's log. This plan writes the notes onto each Release run's own Summary page. <b>Signed 1 Nov 2026 and built test-first on LOCAL (§11); not pushed.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed 1 Nov: R1 A, R2 A, R3 A, R4 A, F1 A ("All as recommended"); R5 does not apply</span>
+    <span class="pill">branch <code>claude/release-notes-in-github-plan</code></span>
+    <span class="pill"><code>release.yml</code> · <code>scripts/release-gate.sh</code> · new <code>scripts/release_notes.py</code></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Five decisions and one finding</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>R1</b></td><td>Where do the notes appear?</td><td><b>A</b> On the Release run itself, in its Summary page (GitHub's <em>job summary</em>). It holds the gate's verdict, every merge since PROD last deployed (title, explanation, <code>Branch:</code> line), then one section each for Pages, CERT and PROD: the commit, the migrations applied (or none) and the schema fingerprint. Every run gets one: deploying, docs-only, waiting for PROD, started by hand.<br><b>B</b> A GitHub Release (a tag plus notes) for each finished PROD deploy, listed on the repository's Releases page (§05).<br><b>C</b> Both, written by one script.</td><td><span class="chip never">A</span> It is on the run you open from the list you asked to make readable, and it covers every case in §04. B covers only runs that reached PROD. It adds a tag and a public, notified object per deploy, plus a new write after PROD. B's one gain is that a Release lasts. Git already gives that: one command rebuilds the notes for any past range from the merges (§03, step 6).</td></tr>
+        <tr><td><b>R2</b></td><td>Where does the range come from?</td><td><b>A</b> From the gate. <code>scripts/release-gate.sh</code> also outputs the base (the commit PROD last deployed) and the head it measured, for a manual start too, and writes its verdict and the changed paths onto the run's Summary page. Its decision rule does not change. ADR-094 gets a dated amendment saying so.<br><b>B</b> The notes script reads <code>deployed_migrations.json</code> itself.</td><td><span class="chip never">A</span> The range is read in one place. Under B, two readers of one rule could disagree.</td></tr>
+        <tr><td><b>R3</b></td><td>What does the list hold?</td><td><b>A</b> Every commit on main's first-parent line in the range: each merge in full; a commit pushed straight to main (allowed when working alone) with its subject and body; and the workflows' own <code>[skip ci]</code> commits counted on one line by kind (tracking, reconcile log, seed).<br><b>B</b> Merges only.</td><td><span class="chip never">A</span> Under B, a direct push would deploy without appearing in its own notes.</td></tr>
+        <tr><td><b>R4</b></td><td>What happens when writing the notes fails?</td><td><b>A</b> The notes run in their own job, and no deploy job waits for it, so a failure never stops or delays a deploy. That job turns red, so the run is red, and its last step sends a Telegram message: "Release notes failed; CERT, Pages and PROD are unaffected", with the run's link.<br><b>B</b> The same job, marked <code>continue-on-error</code>: the run stays green and the failure shows only as an annotation.</td><td><span class="chip never">A</span> A red run with an exact Telegram line tells the truth. B would hide a broken notes script until someone opens a run.</td></tr>
+        <tr><td><b>R5</b></td><td>Only if R1 is B or C: the tag, and what a GitHub Release says</td><td><b>A</b> Tag <code>prod-&lt;date&gt;-r&lt;Release run number&gt;</code>, e.g. <code>prod-2026-11-01-r549</code> (unique, sorts by date). The body has each merge's title and <code>Branch:</code> line and a link to the run's full notes, without the explanations.<br><b>B</b> The same tag; the body has the full explanations.<br><b>C</b> <code>v&lt;version&gt;</code>. Not usable: <code>pyproject.toml</code> says <code>0.1.0</code> and has never been bumped per release.</td><td><span class="chip never">A</span> A GitHub Release goes to watchers' notifications and to the public Atom feed. Commit messages on main do sometimes name a fencer: the title of branch commit <code>c908b0ef</code> does, and so does the message of <code>1496d5ff</code>. A merge explanation can too. Today such text is seen only by someone reading the git history.</td></tr>
+        <tr><td><b>F1</b></td><td>Found on the way: a Release whose commit PROD already runs deploys again</td><td><code>release-gate.sh</code> treats base = head as "no diff evidence" and deploys (fail open). Since the base became PROD's last commit, base = head means PROD already runs that exact commit. That happens when a merge lands in the ~10 s between one Release's gate and its build. That build deploys the newer merge; the newer merge's own Release then deploys it again and asks for your PROD approval for nothing. Checked against the last 200 Release runs (since 8 Aug): <b>it has not happened</b>.<br><b>A</b> Leave the gate as it is. That run's notes say "PROD already runs <code>&lt;sha&gt;</code>; this run deploys it again (ADR-094 fails open)".<br><b>B</b> Skip it: an ADR-094 amendment, and <code>test_empty_diff_fails_open</code> reversed for this case.</td><td><span class="chip never">A</span> Not seen in 200 runs, harmless when it happens, and now explained on its own page. Changing a fail-open rule for a case never seen adds risk and gains nothing anyone has seen.</td></tr>
+      </tbody>
+    </table></div>
+    <p><span class="pill"><span class="dot"></span>Signed 1 Nov 2026: "All as recommended"</span> That is R1 A (the job summary on every Release run; no GitHub Release, no tag), R2 A, R3 A, R4 A and F1 A. R5 applies only to B or C, so it falls away, and so do RELNOTES.B1–B2.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What is there today</p>
+    <h2>Read from the workflow, the scripts and the runs</h2>
+    <ul>
+      <li><b>Nothing writes a job summary.</b> No file under <code>.github/</code>, <code>scripts/</code>, <code>python/</code> or <code>tools/</code> writes <code>$GITHUB_STEP_SUMMARY</code>. Step outputs go to <code>$GITHUB_OUTPUT</code> only: the gate's <code>deploy</code>, build's <code>sha</code> and <code>fingerprint</code>, and the migration scripts' lists.</li>
+      <li><b>How the commit travels.</b> The gate checks out <code>main</code> with full history and gets the CI run's commit as <code>RELEASE_GATE_HEAD_SHA</code> from <code>github.event.workflow_run.head_sha</code>, through <code>env:</code>. It measures from <code>.prod.last_sha</code> in <code>deployed_migrations.json</code> (ADR-094, amendment of 24 Oct). <code>build</code> checks out <code>main</code> again and outputs that commit as <code>sha</code>. <code>deploy-cert</code> and <code>deploy-prod</code> check out exactly that <code>sha</code> (ADR-011, amendment of 25 Oct). So the deployed commit can be newer than the CI run's commit if main moved in between.</li>
+      <li><b>A docs-only run</b> (Release #542, <code>82b6ba78</code>): gate green, the other four jobs grey "skipped". The reason, "every changed path is documentation-only", and the 16 paths are lines in the gate's log.</li>
+      <li><b>No GitHub Releases and no tags</b> on GitHub. The only tag anywhere is a local <code>pre-reset-backup</code> in the primary checkout, never pushed. Nothing in the repository reads tags (<code>git describe</code>, <code>refs/tags</code>), and no workflow is triggered by a tag or a release.</li>
+      <li><b>Retention.</b> Run logs are kept 90 days, the most a public repository allows (repository setting read through the API). GitHub does not document whether a job summary outlives its run's logs, so this plan treats the Summary page as a 90-day view. What lasts is the merges in git.</li>
+      <li><b>GitHub's limits.</b> One step's summary may be up to 1 MiB, and a job shows at most 20 step summaries. Secrets are masked in summaries as in logs (GitHub's workflow-commands reference).</li>
+      <li><b>Alerts.</b> WFALERT.01 (<code>python/tests/test_workflow_alerts.py</code>) requires the Telegram alert to be the <b>last</b> step of <code>deploy-cert</code> and <code>deploy-prod</code>. Any new step in those jobs goes before it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · How (R1 A, R2 A, R3 A, R4 A)</p>
+    <h2>One new job, one new script, short sections in three jobs</h2>
+    <ol class="steps">
+      <li><b>Gate.</b> <code>scripts/release-gate.sh</code> also outputs <code>base</code> and <code>head</code>: on a CI-triggered run, <code>.prod.last_sha</code> and the CI run's commit; on a manual start, <code>.prod.last_sha</code> and <code>main</code> as the gate sees it. When <code>$GITHUB_STEP_SUMMARY</code> is set, it appends its verdict, its reason and the changed paths (collapsed). Run locally, it writes nothing there. Every decision stays as it is.</li>
+      <li><b>Notes job</b> <code>notes</code> ("Release notes"), new. It needs <code>gate</code> and <code>build</code> and runs when the gate ran: <code>if: always() &amp;&amp; needs.gate.result == 'success'</code>. Its permission is <code>contents: read</code> only. It checks out <code>main</code> with full history and runs <code>python3 scripts/release_notes.py</code> (standard library only, like <code>scripts/branch_description.py</code>). It covers the range from <code>base</code> to build's <code>sha</code> when build ran, or to the gate's <code>head</code> when it did not. Every value reaches it through <code>env:</code>. The section is "What this release carries", plus a compare link <code>…/compare/&lt;base&gt;...&lt;head&gt;</code>. No deploy job needs this job (R4 A).</li>
+      <li><b>How a merge is written.</b> Oldest first, as they reached main. The title is a heading with the short commit linked, then the explanation, then <code>Branch:</code>; other trailers (<code>Co-Authored-By:</code>) are left out. A merge from before 31 Oct, with no <code>Branch:</code> line, shows the branch named in "Merge branch '…'" and that branch's own commit subjects. Text is written so that GitHub reads it as plain text: <code>&lt;</code>, <code>&gt;</code>, <code>&amp;</code> escaped; <code>@</code> as <code>&amp;#64;</code> (no mention); <code>#</code> before a digit as <code>&amp;#35;</code> (no issue link). Beyond 900 KB the list shows titles only, then "and N more" with the compare link.</li>
+      <li><b>Pages, CERT, PROD.</b> <code>deploy-pages</code> gets a last step, <code>if: always()</code>: "GitHub Pages published &lt;URL&gt;; WordPress pages load the new bundle within 10 minutes, before the PROD approval", or the failure. <code>deploy-cert</code> and <code>deploy-prod</code> each get one step, <code>if: always()</code>, just before their Telegram alert, which stays last. It is plain <code>printf</code> of values passed in <code>env:</code>: the deployed commit, the migrations applied (from <code>check-new-migrations.sh</code>) or "no new migration", the fingerprint check, the Edge Function, the security posture and the record on main. If a step failed, the section names it. CERT's section ends: "PROD waits for approval in the production environment; its section appears when deploy-prod has run."</li>
+      <li><b>Telegram.</b> The notes job ends with its own alert (R4 A). The deploy jobs' alerts and their wording do not change.</li>
+      <li><b>Any past range, locally.</b> <code>python3 scripts/release_notes.py --base &lt;sha&gt; --head &lt;sha&gt;</code> prints the same Markdown. Every past PROD base is in the history of <code>deployed_migrations.json</code>. This is the lasting record once a run's 90 days are over.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">Why the escaping matters, from main's own history</p>
+      <p>Release 3b's explanation (<code>e7f8a3a3</code>) contains <code>Telegram's sync [&lt;code&gt;] runs it</code>. Written into Markdown as it stands, GitHub would read <code>&lt;code&gt;</code> as an HTML tag and print the rest of the paragraph in code type. Merges also mention <code>W2 #4</code>, which would link to issue 4, and a bare <code>@word</code> would link someone's GitHub account. In a GitHub Release (R1 B) it would also list that account as a contributor; one public project hit exactly this and fixed it with <code>&amp;#64;</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · What you would see</p>
+    <h2>Two real runs, as they would have looked</h2>
+
+    <p class="runtitle">Release #549 · Release · Sync each event's results hourly from CERT to PROD (release 3b)</p>
+    <div class="gh">
+      <div class="bar"><span>gate summary</span><span>deploys</span></div>
+      <div class="in">
+        <h4>Release gate: deploys</h4>
+        <p>45 paths changed since PROD last deployed <code>bfdc158b</code>; 22 of them are not documentation or tracking files, so the run builds and deploys (ADR-094).</p>
+        <details><summary>The 22 deployable paths</summary><p class="sub">.github/workflows/ingest-event.yml · .github/workflows/promote.yml · .github/workflows/results-sync.yml · python/pipeline/core/contract.py · … </p></details>
+      </div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>release notes summary</span><span>notes</span></div>
+      <div class="in">
+        <h4>What this release carries</h4>
+        <p>PROD last deployed <code>bfdc158b</code> on 1 Nov, 09:00 UTC. Since then main has 1 merge, plus 2 commits the workflows pushed (CERT tracking, PROD tracking). <a href="#">Compare bfdc158b…e7f8a3a3</a></p>
+        <h5>Sync each event's results hourly from CERT to PROD (release 3b) · <a href="#">e7f8a3a3</a></h5>
+        <p>ADR-119 release 3b, the hourly results sync. results-sync.yml takes every active-season event with a results link from its first day to the day after its end date and calls ingest-event.yml in a new sync mode, one event at a time: a compare against the latest finished CERT run that writes no result, then the refresh, a quiet recorded ingest and the called promote.yml only when something changed. An outcome job records each cycle's verdict in tbl_results_sync_event, pauses the event on any failure and sends one Telegram line, and the morning cycle lists every event in window. Telegram's sync [&lt;code&gt;] runs it at once and lifts a pause, the repository variable RESULTS_SYNC=off stops the schedule, and no log line names a fencer: a recorded refusal is logged by its kind and listing, and promote's refusal by where its reason is. Each run is titled by what started it.</p>
+        <p class="sub">Branch: claude/results-sync-hourly-cycle</p>
+      </div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>deploy-pages summary</span><span>published</span></div>
+      <div class="in"><p>GitHub Pages published <code>fencer4life.github.io/spws-automated-ranklist/</code>. WordPress pages load the new bundle within 10 minutes, before the PROD approval.</p></div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>deploy-cert summary</span><span>deployed</span></div>
+      <div class="in"><p><b>CERT</b> runs <code>e7f8a3a3</code>. No new migration; schema fingerprint <code>17bf0b35…</code> matches the build. Edge Function <code>dispatch-workflow</code> deployed. Security posture verified. Recorded on main.</p><p class="sub">PROD waits for approval in the production environment; its section appears when deploy-prod has run.</p></div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>deploy-prod summary</span><span>deployed</span></div>
+      <div class="in"><p><b>PROD</b> runs <code>e7f8a3a3</code>. No new migration; schema fingerprint <code>17bf0b35…</code> matches the build. Edge Function <code>dispatch-workflow</code> deployed. Security posture verified. Recorded on main.</p></div>
+    </div>
+
+    <p class="runtitle">Release #542 · Release · ADR-079, ADR-084 and ADR-105 accepted: each one runs on PROD</p>
+    <div class="gh">
+      <div class="bar"><span>gate summary</span><span>skips</span></div>
+      <div class="in">
+        <h4>Release gate: nothing to deploy</h4>
+        <p>Every one of the 16 paths changed since PROD last deployed <code>be5c8136</code> is documentation or a tracking file (ADR-094). Nothing is built or deployed; CERT, PROD and Pages stay at <code>be5c8136</code>. These merges stay in the range until a release deploys.</p>
+        <details><summary>The 16 paths</summary><p class="sub">deployed_migrations.json · doc/Project Specification. SPWS Automated Ranklist System.md · doc/adr/094-release-docs-only-skip.md · … · release-manifest.json</p></details>
+      </div>
+    </div>
+    <div class="gh">
+      <div class="bar"><span>release notes summary</span><span>notes</span></div>
+      <div class="in">
+        <h4>What this release carries</h4>
+        <p>PROD last deployed <code>be5c8136</code> on 31 Oct. Since then main has 2 merges, plus 2 commits the workflows pushed (CERT tracking, PROD tracking). Nothing is deployed by this run. <a href="#">Compare be5c8136…82b6ba78</a></p>
+        <h5>ADR-094 accepted; NAMING.06–07 recorded as released · <a href="#">ea8e2593</a></h5>
+        <p>ADR-094 still read "Draft, awaiting sign-off" in the ADR and in Appendix C, although its release gate has decided every Release since 13 Sep 2026 and been amended three times; it is now Accepted, signed off 31 Oct (N3 A). The RTM's NAMING.06–07 and NFR-16 said built on LOCAL; they went out as main be5c8136 (Release 41211825448). The naming plan's §10 records both and lists three more ADRs that still say Draft (079, 084, 105), unchanged. Documentation only: the Release's gate skips every deploy.</p>
+        <p class="sub">Branch: claude/adr094-accepted-naming-tests-released</p>
+        <h5>ADR-079, ADR-084 and ADR-105 accepted: each one runs on PROD · <a href="#">82b6ba78</a></h5>
+        <p>All three still read Draft or Proposed, although checked against the code each one runs on PROD: ADR-079's registration (15 migrations, its form and 8 pgTAP files), ADR-084's calendar barrel and card (released 6 Oct), and ADR-105's international results (released and repaired 3 Oct). Each is now Accepted, signed off 31 Oct: ADR-079 keeps Phases 4/5, the optional magic-link email, as deferred; ADR-084 keeps open items 1, 2 and D4 open; ADR-105 has nothing open. Appendix C's rows match, and ADR-079's no longer says Draft where the ADR said Proposed. Documentation only: the Release's gate skips every deploy.</p>
+        <p class="sub">Branch: claude/three-adrs-in-force-accepted</p>
+      </div>
+    </div>
+    <p>The texts above are the real merge messages and the real counts for those two ranges. Only the layout is a mock: GitHub draws the boxes, one per job, below the run's job graph.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · The options compared</p>
+    <h2>A, B and C side by side</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>A · job summary</th><th>B · GitHub Release + tag</th><th>C · both</th></tr></thead>
+      <tbody>
+        <tr><td><b>Where you see it</b></td><td>The Release run you click in Actions, under its job graph</td><td>The repository's Releases page and its "Latest" box on the home page; not on the run</td><td>Both places</td></tr>
+        <tr><td><b>Which runs</b></td><td>Every run whose gate ran: deploying, docs-only, waiting for PROD, manual</td><td>Only a finished PROD deploy. A docs-only, CERT-only or failed run has none.</td><td>All runs on the run page; PROD deploys on the Releases page as well</td></tr>
+        <tr><td><b>How long</b></td><td>The run's 90 days (§02); any range again from git with one command</td><td>Until someone deletes it</td><td>Both</td></tr>
+        <tr><td><b>New things on GitHub</b></td><td>None; no new permission (the notes job reads only)</td><td>A tag per PROD deploy (a new ref every clone fetches) and a public Release, sent to watchers and to <code>/releases.atom</code>, with a source zip attached</td><td>Both</td></tr>
+        <tr><td><b>The notes text</b></td><td>Written by <code>scripts/release_notes.py</code></td><td>Still written by the script. GitHub's "Generate release notes" lists merged pull requests; this repository merges without them, so it would produce only a "Full Changelog" link.</td><td>One script, two outputs</td></tr>
+        <tr><td><b>New failure point</b></td><td>The notes job, which no deploy waits for</td><td>A step in <code>deploy-prod</code> after PROD has deployed. Its alert must say "PROD is deployed; only its Release page failed", or a red PROD job would read as a failed deploy.</td><td>Both</td></tr>
+        <tr><td><b>What tags add</b></td><td>—</td><td><code>git checkout prod-2026-11-01-r549</code> and <code>git diff</code> between two PROD deploys; GitHub's compare page between two releases; "watch → Releases" notifications. A tag created with the workflow's own token starts no workflow, and none listens for tags.</td><td>As B</td></tr>
+        <tr><td><b>Work</b></td><td>The script, one job, three short steps, the gate's outputs</td><td>The script, one step, the tag rule, the alert split</td><td>The sum</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Every case, walked through</p>
+    <h2>What the run page says in each situation</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Case</th><th>What happens</th><th>What the Summary page shows (A)</th></tr></thead>
+      <tbody>
+        <tr><td><b>One merge, deploys</b></td><td>CI green → gate deploys → build → Pages and CERT → your approval → PROD</td><td>As Release #549 above: gate, notes with the one merge, Pages, CERT, PROD.</td></tr>
+        <tr><td><b>Several merges in one range</b></td><td>An earlier run's PROD approval was not given, or a waiting run was replaced by a newer one in the <code>release</code> lane. <code>.prod.last_sha</code> did not move, so the next run's range starts at the older base.</td><td>Every merge since PROD last deployed, oldest first, as Release #542 shows two. A replaced run never started, so it has no page; its merges appear on the run that replaced it.</td></tr>
+        <tr><td><b>Docs-only, skipped</b></td><td>Gate: deploy=false; build and the three deploys are skipped</td><td>The gate's "nothing to deploy" with its paths, and the notes with the merges, as Release #542. No Pages, CERT or PROD section, because those jobs did not run.</td></tr>
+        <tr><td><b>CERT done, PROD waiting for approval</b></td><td><code>deploy-prod</code> has not started; GitHub shows "Review deployments"</td><td>Gate, notes, Pages and CERT already there; CERT's section says PROD waits; PROD's section appears once you approve and it has run. That GitHub shows finished jobs' summaries while a later job waits is checked on the first such run (V3), because GitHub's documentation says only that a job's summary is assembled when the job finishes.</td></tr>
+        <tr><td><b>Manual start</b> ("Run workflow")</td><td>The gate deploys without judging paths (ADR-094)</td><td>The gate says it was started by hand by <code>&lt;who&gt;</code>, a GitHub login, and deploys whatever main holds. The notes list the merges since PROD last deployed. If there are none: "PROD already runs <code>&lt;sha&gt;</code>; this run deploys it again."</td></tr>
+        <tr><td><b>main moved between gate and build</b></td><td>build deploys a newer commit than the CI run's</td><td>The notes cover base → build's commit and mark the later merges "reached main after this run's CI". That merge's own Release then finds PROD already running it (F1).</td></tr>
+        <tr><td><b>CI red</b></td><td>The gate's condition is false; every job is skipped</td><td>Unchanged: no notes. A notes job running here would turn today's grey "skipped" run green after a red CI, which would mislead. The run's title already names the merge, and its merges appear on the next run that deploys.</td></tr>
+        <tr><td><b>Build, CERT or PROD fails</b></td><td>The failing job's Telegram alert, as today</td><td>The failed job's section names the failed step. CERT failing means no PROD section, and CERT's section says PROD was not deployed.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Tests first, each seen failing</p>
+    <h2>New <code>python/tests/test_release_notes.py</code>, and two in the gate's tests</h2>
+    <p>Script tests run in throwaway git repositories, built as <code>python/tests/test_release_docs_only_gate.py</code> builds them. Workflow tests read <code>.github/workflows/release.yml</code> with <code>yaml.safe_load</code>, as <code>python/tests/test_github_workflows_page.py</code> does.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>What it proves</th></tr></thead>
+      <tbody>
+        <tr><td><b>RELNOTES.01</b></td><td>A range with three merges lists them oldest first, each with its title, explanation and <code>Branch:</code> line and the short commit linked; <code>Co-Authored-By:</code> and other trailers are left out.</td></tr>
+        <tr><td><b>RELNOTES.02</b></td><td>The workflows' <code>[skip ci]</code> commits are counted on one line by kind; a commit pushed straight to main is listed with its subject and body (R3 A).</td></tr>
+        <tr><td><b>RELNOTES.03</b></td><td>A body holding <code>@types/node</code>, <code>W2 #4</code>, <code>[&lt;code&gt;]</code> and <code>&amp;</code> comes out with no mention, no issue link and no lost text.</td></tr>
+        <tr><td><b>RELNOTES.04</b></td><td>A merge with no <code>Branch:</code> line shows the branch from "Merge branch '…'" and that branch's own commit subjects.</td></tr>
+        <tr><td><b>RELNOTES.05</b></td><td>When build's commit is newer than the gate's head, the later merges are listed and marked as reaching main after this run's CI.</td></tr>
+        <tr><td><b>RELNOTES.06</b></td><td>A manual start names who started it, says the gate did not judge the paths and lists the range; with nothing new, it says PROD already runs that commit.</td></tr>
+        <tr><td><b>RELNOTES.07</b></td><td>A docs-only range says nothing was built or deployed, that CERT, PROD and Pages stay at the base, and that the merges stay in the range.</td></tr>
+        <tr><td><b>RELNOTES.08</b></td><td>300 merges with 5 KB explanations stay under GitHub's 1 MiB per step: titles only beyond 900 KB, then "and N more" with the compare link.</td></tr>
+        <tr><td><b>RELNOTES.09</b></td><td><code>release.yml</code> has a <code>notes</code> job that needs <code>gate</code> and <code>build</code>, runs only when the gate ran, holds <code>contents: read</code> only, checks out full history and ends in a Telegram alert; no other job needs it (R4 A).</td></tr>
+        <tr><td><b>RELNOTES.10</b></td><td>Every value reaches the notes steps through <code>env:</code>: no <code>${{ }}</code> inside their <code>run:</code> text. This is WFINJ.01's rule, applied here to event fields such as the CI run's title.</td></tr>
+        <tr><td><b>RELNOTES.11</b></td><td><code>deploy-pages</code>, <code>deploy-cert</code> and <code>deploy-prod</code> each write their section in an <code>if: always()</code> step. In the two deploy jobs it comes just before the Telegram alert, which stays last, so WFALERT.01 passes unchanged.</td></tr>
+        <tr><td><b>RELNOTES.12</b></td><td>In <code>test_release_docs_only_gate.py</code>: the gate outputs <code>base</code> and <code>head</code> for a CI-triggered run and for a manual start. Every existing test stays as it is, proving no decision changed (R2 A).</td></tr>
+        <tr><td><b>RELNOTES.13</b></td><td>In <code>test_release_docs_only_gate.py</code>: with <code>GITHUB_STEP_SUMMARY</code> set, the gate appends its verdict and paths; without it, it writes nothing there.</td></tr>
+      </tbody>
+    </table></div>
+    <p>If R1 is B or C, two more: <b>RELNOTES.B1</b> <code>deploy-prod</code> creates the Release (tag and body per R5) on build's commit, after "Record the deploy on main" and before the alert, and the alert says "PROD is deployed; only its Release page failed" when only that step failed; <b>RELNOTES.B2</b> a skipped, CERT-only or failed run creates none.</p>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Records</p>
+    <h2>Documentation, in the same change</h2>
+    <ul>
+      <li><b>Handbook</b> <code>doc/handbook/reference/workflow-catalog.html</code>, the Release block: the <code>notes</code> job, and where the notes are. The sentence "The rest of the description is on the merge commit's page" becomes "the run's Summary page lists every merge it carries". <code>doc/handbook/operations/environments-and-release.html</code>, Release flow: read the run's Summary before approving PROD.</li>
+      <li><b>ADR-011</b> amendment (dated): each Release run's Summary page is the readable record of what it carries and deployed, beside the tracking files. <b>ADR-094</b> amendment (R2 A): the gate outputs the range it measured and writes its verdict to the run summary, and its decision rule is unchanged. Appendix C rows and the generated twins follow, through the <code>new-adr</code> audit.</li>
+      <li><b>RTM</b>: NFR-16 ("every branch, merge and release says what it changes") gains "and each Release run lists what it carries", with a RELNOTES.* section, status Planned before any code.</li>
+      <li><b>Both release skills</b> (<code>.claude/skills/release/SKILL.md</code>, <code>.agents/skills/release/SKILL.md</code>, kept identical by NAMING.06): after the push, check that the Release run's Summary lists this merge.</li>
+      <li><b>Memory</b>: where a release's notes are, and the local command for a past range.</li>
+    </ul>
+    <div class="note">
+      <p class="lede"><span class="tick">☐</span> Documentation coherence gate complete</p>
+      <p><b>Impact:</b> architecture | operations | reference<br>
+      <b>Canonical docs affected:</b> <code>doc/handbook/reference/workflow-catalog.html</code>; <code>doc/handbook/operations/environments-and-release.html</code>; <code>doc/adr/011-artifact-release-pipeline.md</code> + twin; <code>doc/adr/094-release-docs-only-skip.md</code> + twin; specification Appendix C + twin; <code>doc/requirements-traceability-matrix.md</code> + twin<br>
+      <b>ADR impact:</b> amend (ADR-011, ADR-094)<br>
+      <b>Operational impact:</b> <code>workflow-catalog.html</code>, <code>environments-and-release.html</code>, both release skills<br>
+      <b>Source-map / last-verified updated:</b> yes<br>
+      <b>Validation:</b> <code>python scripts/check_docs.py --changed-from origin/main</code> [see §11]<br>
+      <b>Superseded prose archived rather than appended:</b> not applicable (the catalog's sentence is rewritten in the present tense)</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Build order, and when it is done</p>
+    <h2>From your sign-off to a verified run page</h2>
+    <ol class="steps">
+      <li>Rename this branch to <code>claude/release-notes-on-every-release-run</code> and describe it (title and at least two sentences).</li>
+      <li>RTM rows (Planned); RELNOTES.01–13 written and run: RED, each for the reason it names.</li>
+      <li>GREEN in this order: the gate's outputs and summary (12–13); <code>scripts/release_notes.py</code> (01–08); <code>release.yml</code> (09–11). Ruff, BasedPyright and the workflow tests with them.</li>
+      <li>Records (§08); generated twins with <code>scripts/render_adrs.py</code> and <code>scripts/render_docs.py</code>.</li>
+      <li><code>scripts/preflight.sh</code> exits 0; <code>scripts/refresh-graph.sh</code>; <code>python3 tools/docs-search/ingest.py</code>; one commit as Fencer4Life, explicit paths only.</li>
+      <li>On your go: integrate, push <code>integration/main:main</code>, and watch CI and the Release in the foreground. This change touches <code>release.yml</code> and <code>scripts/</code>, so its Release deploys and asks for your PROD approval. Its own run is the first to carry notes, because a <code>workflow_run</code> Release runs main's new workflow file.</li>
+      <li>Verify on that run: <b>V1</b> every section is there, and its merge list matches <code>git log --first-parent</code> over the same range. <b>V2</b> no mention, contributor or issue link appears; if <code>&amp;#64;</code> does not hold, the test changes first and a word joiner after the sign is used instead. <b>V3</b> while <code>deploy-prod</code> waits for you, the gate, notes, Pages and CERT sections are already visible. <b>V4</b> the next docs-only push shows the skip with its merges.</li>
+      <li>The release record goes into this plan, in its own docs-only change.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Not in this plan</p>
+    <h2>What stays as it is</h2>
+    <ul>
+      <li>Past Release runs get no notes. A past range can be printed locally (§03, step 6).</li>
+      <li>CI runs, their titles and every other workflow are unchanged.</li>
+      <li>The gate decides exactly as today (F1 A). Only its outputs and its summary are new.</li>
+      <li>No pull requests are introduced; merges stay as the integrate script writes them.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">11 · Built · 1 Nov</p>
+    <h2>What landed on the branch, test-first</h2>
+    <p>Branch <code>claude/release-notes-on-every-release-run</code>, described; the naming check prints "Release · Every Release run's Summary page lists what it carries and deployed". Not pushed.</p>
+    <ul>
+      <li><b>RED first.</b> All 13 RELNOTES tests were written before any code and run: 21 test functions failed, each for its own reason (no script, no <code>notes</code> job, no <code>base</code> output, no summary, no section step). The one that passed, "without a summary file the gate writes none", is the guard it is meant to be, true before and after. All 21 existing gate tests stayed green throughout.</li>
+      <li><b><code>scripts/release-gate.sh</code></b> outputs <code>base</code> and <code>head</code> and writes its verdict, why, and the paths onto the Summary page; every decision is unchanged (RELNOTES.12–13, 27 gate tests pass).</li>
+      <li><b><code>scripts/release_notes.py</code></b> (standard library only): RELNOTES.01–08. Run over the two real ranges of §04 it prints exactly the merges, counts and escaping shown there, e.g. <code>sync [&amp;lt;code&amp;gt;]</code>.</li>
+      <li><b><code>release.yml</code></b>: the <code>notes</code> job, the Pages section step, and step ids (<code>verify</code>, <code>functions</code>, <code>record</code>) so each CERT and PROD section can name the step where it stopped (RELNOTES.09–11). The 117 release and workflow tests pass, among them WFALERT.01–03, WFINJ.01, WFPERM.01, WFEXPR.01 and GHWF.01–06.</li>
+      <li><b>Records:</b> ADR-011 and ADR-094 amendments (1 Nov) and their Appendix C rows, twins regenerated; the workflow catalog's Release block and the environments-and-release page; RTM NFR-16 and RELNOTES.01–13, Landed on LOCAL; both release skills, still identical (NAMING.06).</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Two changes from the wording above, both on the safe side</p>
+      <p><b>The CERT and PROD sections are a small script</b>, <code>scripts/release-section.sh</code>, not <code>printf</code> written into the workflow twice. It is still only <code>printf</code> of values passed in <code>env:</code>, it always exits 0 so the alert after it never names the wrong cause, and a script can be tested; RELNOTES.11 now runs it for a clean CERT deploy, a PROD deploy with two migrations and a failed migration. The Pages section stays inline, because <code>deploy-pages</code> checks out no code.</p>
+      <p><b>The escape carries the word joiner from the start.</b> §03 planned <code>&amp;#64;</code> alone, with a word joiner only if V2 failed. GitHub finds mentions in the rendered text, where <code>&amp;#64;</code> is already a plain <code>@</code> again, so the code writes <code>&amp;#64;</code> followed by a word joiner (<code>&amp;#8288;</code>), and the same after a <code>#</code> before a digit. It looks the same and nothing can link it. V2 still checks it on the first run.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Found and fixed on the way</p>
+      <p>The gate tests ran <code>scripts/release-gate.sh</code> with the whole process environment. In CI, pytest runs inside GitHub Actions, where <code>GITHUB_STEP_SUMMARY</code> is set, so once the gate writes summaries, every gate test would have written into the CI run's own page. The test helper now points it at a file of each test's own, or unsets it.</p>
+    </div>
+  </section>
+
+  <p class="foot">plan · release-notes-on-every-release-run · 1 Nov 2026 · read: release.yml, release-gate.sh, branch_description.py, commit-tracking.sh, update-tracking.sh, generate-manifest.sh, deployed_migrations.json, ADR-011, ADR-094, the handbook's workflow catalog and environments-and-release pages, the naming plan, 200 Release runs, runs #542 and #549 · signed 1 Nov 2026</p>
+</div>

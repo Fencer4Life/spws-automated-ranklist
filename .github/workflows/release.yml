@@ -35,6 +35,9 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       deploy: ${{ steps.gate.outputs.deploy }}
+      # The range it measured, for the notes job (ADR-094 amendment 2026-11-01).
+      base: ${{ steps.gate.outputs.base }}
+      head: ${{ steps.gate.outputs.head }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -250,6 +253,54 @@ jobs:
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=Release build FAILED: nothing was deployed. Check: ${RUN_URL}" > /dev/null
 
+  # ─── Release notes ────────────────────────────────────────────────
+  # The run's Summary page lists every commit on main since PROD last deployed:
+  # each merge's title, explanation and Branch: line (scripts/release_notes.py).
+  # It runs whenever the gate ran, a docs-only skip included, but not after a red
+  # CI, where every job is skipped and the run stays grey. Nothing waits for it,
+  # so a failure here never stops or delays a deploy; it reads only. Plan
+  # doc/plans/release-notes-on-every-release-run-2026-11-01.html (R1–R4 A).
+  notes:
+    name: Release notes
+    needs: [gate, build]
+    if: ${{ always() && needs.gate.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # The range is the gate's, up to the commit build fingerprinted when build
+      # ran (main may have moved after CI), else up to the gate's head.
+      - name: Write what this release carries
+        env:
+          NOTES_BASE: ${{ needs.gate.outputs.base }}
+          NOTES_HEAD: ${{ needs.build.outputs.sha || needs.gate.outputs.head }}
+          NOTES_GATE_HEAD: ${{ needs.gate.outputs.head }}
+          NOTES_DEPLOYED: ${{ needs.gate.outputs.deploy }}
+          NOTES_EVENT: ${{ github.event_name }}
+          NOTES_ACTOR: ${{ github.actor }}
+        run: |
+          python3 scripts/release_notes.py \
+            --base "$NOTES_BASE" --head "$NOTES_HEAD" --gate-head "$NOTES_GATE_HEAD" \
+            --deployed "$NOTES_DEPLOYED" --event "$NOTES_EVENT" --actor "$NOTES_ACTOR" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      # The last step, so it sees every step before it (WFALERT.01).
+      - name: Notify notes failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=Release notes FAILED; CERT, Pages and PROD are unaffected. Check: ${RUN_URL}" > /dev/null
+
   # ─── Deploy Pages ─────────────────────────────────────────────────
   deploy-pages:
     needs: build
@@ -261,6 +312,21 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      # Its section of the release notes; a failed deploy leaves the previous build live.
+      - name: Write the Pages section of the release notes
+        if: always()
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          OUTCOME: ${{ steps.deployment.outcome }}
+        run: |
+          if [ "$OUTCOME" = success ]; then
+            printf '### GitHub Pages\n\n<p>Published <a href="%s">%s</a>. WordPress pages load the new bundle within 10 minutes, before the PROD approval.</p>\n\n' \
+              "$PAGE_URL" "$PAGE_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '### GitHub Pages\n\n<p>The Pages deploy did not finish (%s): Pages and the WordPress bundle keep the previous build, and PROD is not deployed.</p>\n\n' \
+              "$OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   # ─── Deploy CERT ──────────────────────────────────────────────────
   deploy-cert:
@@ -288,6 +354,7 @@ jobs:
 
       - name: Verify CERT fingerprint (no new migrations)
         if: steps.check.outputs.has_new_migrations != 'true'
+        id: verify
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_REF: ${{ secrets.SUPABASE_CERT_REF }}
@@ -310,6 +377,7 @@ jobs:
           # rate-limited GitHub API lookup per job. Keep all three in step.
           version: 2.116.0
       - name: Deploy Edge Functions to CERT
+        id: functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
@@ -352,11 +420,29 @@ jobs:
       # fetches main and writes it again: update-tracking.sh re-derives the file
       # from what is there, so two close releases never merge two diffs.
       - name: Record the deploy on main
+        id: record
         run: |
           bash scripts/commit-tracking.sh cert \
             "${{ needs.build.outputs.sha }}" \
             "${{ needs.build.outputs.schema_fingerprint }}" \
             '${{ steps.check.outputs.new_migrations }}'
+
+      # CERT's section of the release notes, a failed deploy included. Before the
+      # alert, which stays last; the script never fails the job (RELNOTES.11).
+      - name: Write the CERT section of the release notes
+        if: always()
+        env:
+          DEPLOYED_SHA: ${{ needs.build.outputs.sha }}
+          FINGERPRINT: ${{ needs.build.outputs.schema_fingerprint }}
+          HAS_NEW_MIGRATIONS: ${{ steps.check.outputs.has_new_migrations }}
+          NEW_MIGRATIONS: ${{ steps.check.outputs.new_migrations }}
+          OUTCOME_CHECK: ${{ steps.check.outcome }}
+          OUTCOME_APPLY: ${{ steps.apply.outcome }}
+          OUTCOME_VERIFY: ${{ steps.verify.outcome }}
+          OUTCOME_FUNCTIONS: ${{ steps.functions.outcome }}
+          OUTCOME_POSTURE: ${{ steps.posture.outcome }}
+          OUTCOME_RECORD: ${{ steps.record.outcome }}
+        run: bash scripts/release-section.sh cert
 
       # Every failure but the posture check's, which has its own message above:
       # migrations, fingerprint, Edge Function or the tracking push (WFALERT.01).
@@ -399,6 +485,7 @@ jobs:
 
       - name: Verify PROD fingerprint (no new migrations)
         if: steps.check.outputs.has_new_migrations != 'true'
+        id: verify
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_REF: ${{ secrets.SUPABASE_PROD_REF }}
@@ -420,6 +507,7 @@ jobs:
           # rate-limited GitHub API lookup per job. Keep all three in step.
           version: 2.116.0
       - name: Deploy Edge Functions to PROD
+        id: functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
@@ -452,11 +540,29 @@ jobs:
       # fetches main and writes it again: update-tracking.sh re-derives the file
       # from what is there, so two close releases never merge two diffs.
       - name: Record the deploy on main
+        id: record
         run: |
           bash scripts/commit-tracking.sh prod \
             "${{ needs.build.outputs.sha }}" \
             "${{ needs.build.outputs.schema_fingerprint }}" \
             '${{ steps.check.outputs.new_migrations }}'
+
+      # PROD's section of the release notes, a failed deploy included. Before the
+      # alert, which stays last; the script never fails the job (RELNOTES.11).
+      - name: Write the PROD section of the release notes
+        if: always()
+        env:
+          DEPLOYED_SHA: ${{ needs.build.outputs.sha }}
+          FINGERPRINT: ${{ needs.build.outputs.schema_fingerprint }}
+          HAS_NEW_MIGRATIONS: ${{ steps.check.outputs.has_new_migrations }}
+          NEW_MIGRATIONS: ${{ steps.check.outputs.new_migrations }}
+          OUTCOME_CHECK: ${{ steps.check.outcome }}
+          OUTCOME_APPLY: ${{ steps.apply.outcome }}
+          OUTCOME_VERIFY: ${{ steps.verify.outcome }}
+          OUTCOME_FUNCTIONS: ${{ steps.functions.outcome }}
+          OUTCOME_POSTURE: ${{ steps.posture.outcome }}
+          OUTCOME_RECORD: ${{ steps.record.outcome }}
+        run: bash scripts/release-section.sh prod
 
       # Every failure but the posture check's, which has its own message above:
       # migrations, fingerprint, Edge Function or the tracking push (WFALERT.01).

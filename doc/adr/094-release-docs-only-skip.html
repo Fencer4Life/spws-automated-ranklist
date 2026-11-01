@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="ea28fe0c34308b7537c448e53b70d27b6d4e157a29ee9e4c311fa057b205f162">
+<meta name="adr-source-sha256" content="6adbdfb85d8a6cf0c3fe55dd8969ce860d52e8b4ed057f8f338ab2d43a872d92">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-09-13 and in force since; signed off 2026-10-31, N3 A in <code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code> §10)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">259 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-09-13 and in force since; signed off 2026-10-31, N3 A in <code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code> §10)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">284 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (drafted 2026-09-13 and in force since; signed off 2026-10-31, N3 A in <code>doc/plans/branch-names-and-merge-messages-2026-10-31.html</code> §10)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#amendment-2026-10-24-the-range-starts-at-the-commit-prod-last-deployed">Amendment (2026-10-24) — the range starts at the commit PROD last deployed</a></li><li class="depth-2"><a href="#amendment-2026-10-31-agent-tooling-is-not-deployable">Amendment (2026-10-31) — agent tooling is not deployable</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#amendment-2026-10-24-the-range-starts-at-the-commit-prod-last-deployed">Amendment (2026-10-24) — the range starts at the commit PROD last deployed</a></li><li class="depth-2"><a href="#amendment-2026-10-31-agent-tooling-is-not-deployable">Amendment (2026-10-31) — agent tooling is not deployable</a></li><li class="depth-2"><a href="#amendment-2026-11-01-the-gate-hands-on-its-range-and-writes-its-verdict-on-the-run-s-page">Amendment (2026-11-01) — the gate hands on its range and writes its verdict on the run&#x27;s page</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>release.yml</code> runs on every completed <code>CI</code> run on <code>main</code> (<code>workflow_run</code>), and
 <code>build</code> had <code>if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'</code> — i.e. it ran whenever CI
@@ -243,6 +243,28 @@ first) and <code>test_root_files_named_like_agent_tooling_still_deploy</code>. T
 that landed this rule touched <code>scripts/release-gate.sh</code> and tests, so it deployed
 as it should.</p>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-01-the-gate-hands-on-its-range-and-writes-its-verdict-on-the-run-s-page">Amendment (2026-11-01) — the gate hands on its range and writes its verdict on the run's page</h2>
+<p>The gate's verdict was a line in its log, and the notes each Release run now
+carries (<a href="011-artifact-release-pipeline.html">ADR-011</a> amendment 2026-11-01) need
+the range the gate measured, read in one place.</p>
+<p><strong>Decision</strong> (signed 1 Nov 2026, R2 A and F1 A in
+<code>doc/plans/release-notes-on-every-release-run-2026-11-01.html</code>):
+<code>scripts/release-gate.sh</code> also outputs <code>base</code> and <code>head</code>, the range it measured.
+For a manual start, whose run carries no CI commit, <code>head</code> is main as the gate
+checked it out, and <code>base</code> is still <code>.prod.last_sha</code>. When <code>GITHUB_STEP_SUMMARY</code>
+is set, it appends its verdict, a sentence saying why, and the changed paths (all
+of them on a skip, the deployable ones on a deploy) to the run's Summary page;
+unset, as on a laptop, it writes nothing there.</p>
+<p><strong>No decision changes.</strong> Every case in §3 and in the amendments above decides as
+before, and every existing test in <code>python/tests/test_release_docs_only_gate.py</code>
+stays as it was. One case was found while planning (F1): with the base now PROD's
+last commit, base = head means PROD already runs that commit, which happens when a
+merge lands between one Release's gate and its build and that build deploys it.
+The gate still fails open there and deploys it again. It was not seen in the 200
+Release runs since 8 Aug 2026, and the run's page now says what happened. Tests:
+RELNOTES.12–13 in the same file. Each test sends the summary to a file of its own,
+because pytest runs inside GitHub Actions in CI, where the variable is set.</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ul>
 <li>Whether the same gate should also suppress <code>evf-sync.yml</code>/<code>pzsz-sync.yml</code>'s
@@ -254,5 +276,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>ea28fe0c34308b7537c448e53b70d27b6d4e157a29ee9e4c311fa057b205f162</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>6adbdfb85d8a6cf0c3fe55dd8969ce860d52e8b4ed057f8f338ab2d43a872d92</code></footer>
 </div></body></html>

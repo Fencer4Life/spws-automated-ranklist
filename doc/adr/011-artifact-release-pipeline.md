@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2025-03-22 (M7)
-**Amended by:** [ADR-094](094-release-docs-only-skip.md) (2026-09-13) — `release.yml`'s trigger below is no longer "CI success" alone; a `gate` job now decides whether `build` runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit `build` fingerprinted, and `scripts/commit-tracking.sh` records each deploy on main.
+**Amended by:** [ADR-094](094-release-docs-only-skip.md) (2026-09-13) — `release.yml`'s trigger below is no longer "CI success" alone; a `gate` job now decides whether `build` runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit `build` fingerprinted, and `scripts/commit-tracking.sh` records each deploy on main. Amended 2026-11-01 (below): each Release run's Summary page lists what it carries and what each environment deployed.
 
 ## Context
 
@@ -64,3 +64,41 @@ Tests: `python/tests/test_release_tracking_commit.py` RELTRACK.01 (the wiring) a
 RELTRACK.02–05 (the script against a temporary origin whose main moved: the record
 lands on top, the CERT manifest counts the deployed tree, a rejected push is
 written again once, and the last failed attempt ends red).
+
+## Amendment (2026-11-01) — each Release run's Summary page says what it carries and deployed
+
+Since 31 October 2026 each Release run is titled by the merge it releases (RTM
+NFR-16), but GitHub shows only a merge commit's first line: a Release run's page
+held its job boxes and nothing else, and a documentation-only run's reason sat in
+the gate's log.
+
+**Decision** (signed 1 Nov 2026, R1, R3 and R4 A in
+`doc/plans/release-notes-on-every-release-run-2026-11-01.html`): every Release run
+whose gate ran writes its notes onto its own Summary page, GitHub's job summary.
+
+- A `notes` job (`needs: [gate, build]`, it runs whenever the gate ran, with
+  `contents: read` only) runs `scripts/release_notes.py` over the gate's range
+  (ADR-094 amendment 2026-11-01) up to the commit `build` fingerprinted. It lists
+  every first-parent commit since PROD last deployed: each merge with its title,
+  explanation and `Branch:` line, a commit pushed straight to main with its subject
+  and body, and the workflows' own `[skip ci]` commits counted by kind, with a
+  compare link. Text is escaped so that GitHub makes no tag, mention or issue link
+  of it; past 900 KB the list gives titles only, since GitHub takes at most 1 MiB
+  per step. No deploy job needs it, so its failure never stops a deploy: it turns
+  its own job red and sends a Telegram line.
+- `deploy-pages`, `deploy-cert` and `deploy-prod` each write their own section:
+  the Pages URL; for CERT and PROD (`scripts/release-section.sh`, the step just
+  before the Telegram alert, which stays last) the deployed commit, the migrations
+  applied or none, the fingerprint check, the Edge Function, the posture check
+  (ADR-083) and the record on main, or the first step that failed.
+- After a red CI every job stays skipped, as before: a notes job there would turn
+  a grey run green.
+- No GitHub Release object or tag is created (R1 B, rejected): it would cover only
+  finished PROD deploys and add a public, notified object per deploy.
+
+This does not revisit Alternative 2. The Summary page lives as long as the run's
+logs, 90 days, the most a public repository allows, so it is a view and not the
+audit trail. The record that lasts stays `deployed_migrations.json`,
+`release-manifest.json` and the merges in git, from which
+`python3 scripts/release_notes.py --base <sha> --head <sha>` prints the same notes
+for any past range. Tests: `python/tests/test_release_notes.py` RELNOTES.01–11.

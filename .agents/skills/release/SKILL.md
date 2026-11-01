@@ -129,6 +129,11 @@ pass"; quote its summary rather than asserting it.
 - Check each run's title against what preflight printed: the CI run reads the merge title and
   the Release run "Release · <merge title>". A run titled "Merge branch …" or a bare "Release"
   means the merge did not come from the integrate script.
+- Read the Release run's Summary page before approving PROD: the gate's verdict, "What this
+  release carries" (every commit since PROD last deployed, from `scripts/release_notes.py`;
+  this merge must be in it), and the Pages and CERT sections (`scripts/release-section.sh`).
+  A red `notes` job alone means only the notes failed; the deploys are unaffected. For a past
+  range, `python3 scripts/release_notes.py --base <sha> --head <sha>` prints the same notes.
 - For failures, fetch failing job logs and return to diagnosis.
 - Never bypass required checks, force-push, rewrite history, or mutate CERT/PROD without explicit
   authorization for that exact action.

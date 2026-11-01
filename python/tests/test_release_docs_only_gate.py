@@ -58,16 +58,27 @@ def repo(tmp_path: Path) -> Path:
     return work
 
 
-def _run_gate(repo: Path, tmp_path: Path, **env_overrides: str) -> tuple[str, str]:
-    """Run the gate in `repo`; return (deploy output value, combined log)."""
+def _run_gate_outputs(
+    repo: Path, tmp_path: Path, env_overrides: dict[str, str], *, summary: bool = True
+) -> tuple[dict[str, str], str, str | None]:
+    """Run the gate in `repo`; return (its outputs, combined log, its run-summary text).
+
+    The summary always goes to a file of the test's own: pytest runs inside GitHub
+    Actions in CI, where GITHUB_STEP_SUMMARY is set, and the gate would otherwise write
+    into the CI run's page. With summary=False the variable is unset, as on a laptop."""
     output_file = tmp_path / "github_output"
     output_file.write_text("")
+    summary_file = tmp_path / "step_summary"
+    summary_file.unlink(missing_ok=True)
     env = {
         **os.environ,
         "GITHUB_OUTPUT": str(output_file),
         "RELEASE_GATE_EVENT": "workflow_run",
         **env_overrides,
     }
+    env.pop("GITHUB_STEP_SUMMARY", None)
+    if summary:
+        env["GITHUB_STEP_SUMMARY"] = str(summary_file)
     completed = subprocess.run(
         ["bash", str(GATE)],
         cwd=repo,
@@ -81,6 +92,13 @@ def _run_gate(repo: Path, tmp_path: Path, **env_overrides: str) -> tuple[str, st
     values = dict(
         line.split("=", 1) for line in output_file.read_text().splitlines() if "=" in line
     )
+    written = summary_file.read_text() if summary_file.exists() else None
+    return values, log, written
+
+
+def _run_gate(repo: Path, tmp_path: Path, **env_overrides: str) -> tuple[str, str]:
+    """Run the gate in `repo`; return (deploy output value, combined log)."""
+    values, log, _ = _run_gate_outputs(repo, tmp_path, env_overrides)
     return values.get("deploy", ""), log
 
 
@@ -290,6 +308,79 @@ def test_docs_only_change_after_the_last_deploy_skips(repo: Path, tmp_path: Path
     head = _commit(repo, ["doc/handbook/index.html"], "docs only")
     deploy, log = _run_gate(repo, tmp_path, RELEASE_GATE_HEAD_SHA=head)
     assert deploy == "false", log
+
+
+# ─── The range and the verdict on the run's page (RELNOTES.12–13) ──────────
+#
+# Plan doc/plans/release-notes-on-every-release-run-2026-11-01.html (R2 A): the gate
+# hands the notes job the range it measured and writes its verdict onto the Release
+# run's Summary page. Every decision above stays as it is.
+
+
+def test_RELNOTES_12_the_gate_outputs_the_range_it_measured(repo: Path, tmp_path: Path) -> None:
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    head = _commit(repo, ["python/app.py"], "code")
+    values, log, _ = _run_gate_outputs(repo, tmp_path, {"RELEASE_GATE_HEAD_SHA": head})
+    assert (values["deploy"], values["base"], values["head"]) == ("true", deployed, head), log
+
+
+def test_RELNOTES_12_a_manual_start_measures_up_to_main(repo: Path, tmp_path: Path) -> None:
+    """A manual start has no CI run, so the head is main as the gate checked it out."""
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    head = _commit(repo, ["doc/handbook/index.html"], "docs only")
+    values, log, _ = _run_gate_outputs(
+        repo, tmp_path, {"RELEASE_GATE_EVENT": "workflow_dispatch", "RELEASE_GATE_HEAD_SHA": ""}
+    )
+    assert (values["deploy"], values["base"], values["head"]) == ("true", deployed, head), log
+
+
+def test_RELNOTES_13_a_docs_only_verdict_is_written_with_its_paths(
+    repo: Path, tmp_path: Path
+) -> None:
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    head = _commit(repo, ["doc/handbook/index.html", "doc/adr/index.html"], "docs only")
+    values, log, written = _run_gate_outputs(repo, tmp_path, {"RELEASE_GATE_HEAD_SHA": head})
+    assert values["deploy"] == "false", log
+    assert written is not None, "the gate wrote no summary"
+    assert "Release gate: nothing to deploy" in written
+    assert deployed[:8] in written
+    for path in ("doc/handbook/index.html", "doc/adr/index.html", "deployed_migrations.json"):
+        assert path in written, path
+
+
+def test_RELNOTES_13_a_deploying_verdict_names_the_deployable_paths(
+    repo: Path, tmp_path: Path
+) -> None:
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    head = _commit(repo, ["doc/handbook/index.html", "python/app.py"], "docs plus code")
+    values, log, written = _run_gate_outputs(repo, tmp_path, {"RELEASE_GATE_HEAD_SHA": head})
+    assert values["deploy"] == "true", log
+    assert written is not None and "Release gate: deploys" in written
+    assert "python/app.py" in written
+    assert "doc/handbook/index.html" not in written
+
+
+def test_RELNOTES_13_a_manual_start_says_so(repo: Path, tmp_path: Path) -> None:
+    _, log, written = _run_gate_outputs(
+        repo, tmp_path, {"RELEASE_GATE_EVENT": "workflow_dispatch", "RELEASE_GATE_HEAD_SHA": ""}
+    )
+    assert written is not None and "Release gate: deploys" in written, log
+    assert "Started by hand" in written
+
+
+def test_RELNOTES_13_without_a_summary_file_the_gate_writes_none(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Run on a laptop, GITHUB_STEP_SUMMARY is unset: the gate still decides."""
+    base = _git(repo, "rev-parse", "HEAD")
+    head = _commit(repo, ["doc/handbook/index.html"], "docs only")
+    values, log, written = _run_gate_outputs(repo, tmp_path, _range_env(base, head), summary=False)
+    assert values["deploy"] == "false", log
+    assert written is None
 
 
 # ─── Workflow wiring contract ────────────────────────────────────────
