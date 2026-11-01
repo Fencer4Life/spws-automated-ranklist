@@ -183,10 +183,25 @@ def _validate_fencer_key(key: Any, scraped_name: str, idx: int, path: Path) -> d
     return out
 
 
+def roster_matches(key: dict, fencer_db: list[dict]) -> list[int]:
+    """The roster fencers a `fencer` key names: surname and first name compared
+    case-insensitively, the birth year, when given, telling namesakes apart.
+    One rule for the ingest (resolve_fencer_keys) and the override-drift gate
+    (override_drift, G43)."""
+    sur, first = str(key["surname"]).casefold(), str(key["first_name"]).casefold()
+    by = key.get("birth_year")
+    return [
+        f["id_fencer"]
+        for f in fencer_db
+        if (f.get("txt_surname") or "").casefold() == sur
+        and (f.get("txt_first_name") or "").casefold() == first
+        and (by is None or f.get("int_birth_year") == by)
+    ]
+
+
 def resolve_fencer_keys(overrides: Overrides, fencer_db: list[dict]) -> Overrides:
     """P3.OV20: give each identity entry that names its fencer the id of the
-    one roster fencer it names, in the roster the run reads (names compared
-    case-insensitively; the birth year, when given, tells namesakes apart).
+    one roster fencer it names, in the roster the run reads (roster_matches).
     No fencer, or more than one, is refused."""
     from dataclasses import replace
 
@@ -197,15 +212,7 @@ def resolve_fencer_keys(overrides: Overrides, fencer_db: list[dict]) -> Override
         if e.fencer is None:
             resolved.append(e)
             continue
-        sur, first = e.fencer["surname"].casefold(), e.fencer["first_name"].casefold()
-        by = e.fencer.get("birth_year")
-        hits = [
-            f["id_fencer"]
-            for f in fencer_db
-            if (f.get("txt_surname") or "").casefold() == sur
-            and (f.get("txt_first_name") or "").casefold() == first
-            and (by is None or f.get("int_birth_year") == by)
-        ]
+        hits = roster_matches(e.fencer, fencer_db)
         if len(hits) != 1:
             raise OverrideValidationError(
                 f"identity {e.scraped_name!r}: fencer {e.fencer} matches "

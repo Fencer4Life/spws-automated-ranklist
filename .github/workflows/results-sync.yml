@@ -1,7 +1,8 @@
 name: Results sync
 # G32 A: the title is fixed before the select counts anything, so it says what
-# started the run; the count is the select job's log and the cycle jobs.
-run-name: Results sync · ${{ github.event_name == 'schedule' && 'scheduled' || inputs.event_code || 'manual' }}${{ inputs.dry_run && ' · dry run' || '' }}
+# started the run; the count is the select job's log and the cycle jobs. A
+# cycle the Telegram bot starts (G47 A) is a scheduled one.
+run-name: Results sync · ${{ (github.event_name == 'schedule' || inputs.scheduled) && 'scheduled' || inputs.event_code || 'manual' }}${{ inputs.dry_run && ' · dry run' || '' }}
 
 # ADR-119 §4: every hour, each event in its window is read, compared with its
 # latest finished CERT run, refreshed, ingested on CERT and promoted to PROD
@@ -17,6 +18,13 @@ run-name: Results sync · ${{ github.event_name == 'schedule' && 'scheduled' || 
 #
 # The repository variable RESULTS_SYNC=off ends every scheduled cycle at the
 # select, with one log line and no message; a manual run ignores it (S6).
+#
+# G47 A: GitHub starts this repository's crons hours late or not at all, so
+# the Telegram bot's hourly trigger (scripts/gas_telegram_bot.js) dispatches
+# this workflow with `scheduled`: a scheduled cycle whose slot is the UTC hour
+# it runs in. The two cron lines stay as a backstop. Each scheduled select
+# records its start on CERT first (fn_results_sync_begin): within 20 minutes
+# of the last start the cycle ends there, and the day's ☀ line is sent once.
 # No log line names a fencer or a birth year (D12).
 
 on:
@@ -33,6 +41,10 @@ on:
         default: ''
       dry_run:
         description: 'Select and compare only; no result written, nothing sent'
+        type: boolean
+        default: false
+      scheduled:
+        description: 'Sent by the Telegram bot''s hourly trigger (G47 A): a scheduled cycle, which obeys RESULTS_SYNC and sends the morning line. Leave it off by hand.'
         type: boolean
         default: false
 
@@ -61,9 +73,14 @@ jobs:
       - name: Validate input
         env:
           EVENT_CODE: ${{ inputs.event_code }}
+          SCHEDULED: ${{ inputs.scheduled }}
         run: |
           if [[ -n "$EVENT_CODE" && ! "$EVENT_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
             echo "::error::invalid event_code (must match [A-Za-z0-9_-]+)"
+            exit 1
+          fi
+          if [[ "$SCHEDULED" == "true" && -n "$EVENT_CODE" ]]; then
+            echo "::error::a scheduled cycle takes no event code"
             exit 1
           fi
 
@@ -80,8 +97,12 @@ jobs:
           CRON: ${{ github.event.schedule }}
           EVENT_CODE: ${{ inputs.event_code }}
           DRY_RUN: ${{ inputs.dry_run }}
+          SCHEDULED: ${{ inputs.scheduled }}
         run: |
           ARGS=(select --cron "$CRON")
+          if [[ "$SCHEDULED" == "true" ]]; then
+            ARGS+=(--scheduled)
+          fi
           if [[ -n "$EVENT_CODE" ]]; then
             ARGS+=(--code "$EVENT_CODE")
           fi

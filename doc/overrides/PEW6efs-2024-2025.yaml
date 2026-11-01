@@ -4,7 +4,7 @@
 # PEW6efs-2024-2025 P2: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
 # PEW6efs-2024-2025 P3: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
 # PEW6efs-2024-2025 R1: B — KAZIK Tomas
-# PEW6efs-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976
+# PEW6efs-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976; 1969 since 2026-11-01, the roster's year (G46)
 identity:
 - scraped_name: KAMINSKA Grabriela
   fencer:
@@ -20,4 +20,4 @@ identity:
   fencer:
     surname: LEAHEY
     first_name: John
-    birth_year: 1976
+    birth_year: 1969

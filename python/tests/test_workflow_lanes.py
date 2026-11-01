@@ -88,7 +88,7 @@ def test_WFLANE_02_the_sync_and_the_two_workflows_it_calls():
     assert _lane(promote["jobs"]["promote"]) == "prod-write"
     on = _on(sync)
     assert [s["cron"] for s in on["schedule"]] == [rs.MORNING, rs.HOURLY]
-    assert set(on["workflow_dispatch"]["inputs"]) == {"event_code", "dry_run"}
+    assert set(on["workflow_dispatch"]["inputs"]) == {"event_code", "dry_run", "scheduled"}
     # The sync itself holds no lane; the cycles take the called workflows' lanes.
     assert sync.get("concurrency") is None
     assert all(_lane(job) is None for job in sync["jobs"].values())
@@ -114,6 +114,25 @@ def test_SYNC_CYCLE_07_the_select_reads_the_switch_and_the_line_that_fired():
     assert env["CRON"] == "${{ github.event.schedule }}"
     last = select["steps"][-1]
     assert "failure()" in last["if"] and "steps.select.outputs.reported != 'true'" in last["if"]
+
+
+def test_SYNC_BOT_04_the_bot_dispatches_a_scheduled_cycle():
+    """G47 A: the Telegram bot's hourly trigger dispatches the sync with
+    `scheduled`; the select then runs it as a scheduled cycle (RESULTS_SYNC,
+    the ☀ line, one cycle at a time), never with an event code."""
+    sync = _spec("results-sync.yml")
+    scheduled = _on(sync)["workflow_dispatch"]["inputs"]["scheduled"]
+    assert scheduled["type"] == "boolean" and scheduled["default"] is False
+    assert (
+        "(github.event_name == 'schedule' || inputs.scheduled) && 'scheduled'" in sync["run-name"]
+    )
+    select = sync["jobs"]["select"]
+    step = _step(select, "select")
+    assert step["env"]["SCHEDULED"] == "${{ inputs.scheduled }}"
+    assert 'if [[ "$SCHEDULED" == "true" ]]; then\n  ARGS+=(--scheduled)' in step["run"]
+    (validate,) = [s for s in select["steps"] if s.get("name") == "Validate input"]
+    assert validate["env"]["SCHEDULED"] == "${{ inputs.scheduled }}"
+    assert "a scheduled cycle takes no event code" in validate["run"]
 
 
 def test_SYNC_CYCLE_07_in_sync_mode_the_ingest_compares_first_and_is_quiet():

@@ -4,7 +4,7 @@
 # PEW2efs-2024-2025 P2: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
 # PEW2efs-2024-2025 P3: B — KARATHANASIS Athanasios
 # PEW2efs-2024-2025 R1: A — KARMAN Iren → KARMAN Irene 1970
-# PEW2efs-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976
+# PEW2efs-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976; 1969 since 2026-11-01, the roster's year (G46)
 identity:
 - scraped_name: KORONA-TRZEBSKI Przemysåaw
   fencer:
@@ -25,7 +25,7 @@ identity:
   fencer:
     surname: LEAHEY
     first_name: John
-    birth_year: 1976
+    birth_year: 1969
 match_method:
 - scraped_name: KARATHANASIS Athanasios
   force_method: EXCLUDED

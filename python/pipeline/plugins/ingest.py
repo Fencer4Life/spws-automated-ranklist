@@ -376,8 +376,10 @@ class Commit(BasePlugin):
     effects = frozenset({"live"})
 
     # StageMatchResult.method (new provenance vocabulary) -> the legacy
-    # enum_match_status string fn_ingest_tournament_results casts. Anything not
-    # listed (e.g. PENDING) passes through; the RPC defaults unknowns to AUTO_MATCH.
+    # enum_match_status string fn_ingest_tournament_results casts. These are
+    # the rows a rule or a person linked, and the only rows written: PENDING
+    # waits for a person, and EXCLUDED, which may carry a fuzzy candidate's id,
+    # is no status the RPC can store (G50 A).
     _METHOD_TO_STATUS = {
         "AUTO_MATCHED": "AUTO_MATCHED",
         "AUTO_CREATED": "NEW_FENCER",
@@ -475,7 +477,7 @@ class Commit(BasePlugin):
                 m
                 for m in members
                 if getattr(m, "id_fencer", None) is not None
-                and getattr(m, "method", None) != "PENDING"
+                and getattr(m, "method", None) in self._METHOD_TO_STATUS
             ]
             if not kept:
                 continue

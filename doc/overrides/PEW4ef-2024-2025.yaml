@@ -3,7 +3,7 @@
 # PEW4ef-2024-2025 P1: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
 # PEW4ef-2024-2025 P2: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
 # PEW4ef-2024-2025 R1: B — KAZIK Tomas
-# PEW4ef-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976
+# PEW4ef-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976; 1969 since 2026-11-01, the roster's year (G46)
 # PEW4ef-2024-2025 R3: A — LYNCH Patrick → LYNCH Pat 1930
 identity:
 - scraped_name: KORONA-TRZEBSKI Przemyslaw
@@ -15,7 +15,7 @@ identity:
   fencer:
     surname: LEAHEY
     first_name: John
-    birth_year: 1976
+    birth_year: 1969
 - scraped_name: LYNCH Patrick
   fencer:
     surname: LYNCH

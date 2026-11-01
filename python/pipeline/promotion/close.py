@@ -86,7 +86,7 @@ def check(
     prod: Env,
     read_schedule: Callable[[str], Schedule],
     today: dt.date,
-    read_sources: Callable[[list[str]], Schedule] | None = None,
+    read_sources: Callable[..., Schedule] | None = None,  # (urls, *, event)
 ) -> list[str]:
     """Why the event cannot be closed today; empty when it can. An
     international run is checked against the result slots it read
@@ -112,7 +112,9 @@ def check(
             from python.pipeline.international_sources import read_schedule as _read_sources
 
             read_sources = _read_sources
-        kept, skipped = read_sources([s["url"] for s in listings["sources"]])
+        # The event's weapons too, so the re-read classifies as the run's read (G52 A).
+        event_row = {"txt_code": code, "arr_weapons": cert_event.get("arr_weapons")}
+        kept, skipped = read_sources([s["url"] for s in listings["sources"]], event=event_row)
     else:
         kept, skipped = read_schedule(run["url_event"])
     kept, not_final = lifecycle.split_final(kept)
@@ -193,7 +195,7 @@ def close_events(
     notifier: Notifier | None,
     today: dt.date,
     write: bool = True,
-    read_sources: Callable[[list[str]], Schedule] | None = None,
+    read_sources: Callable[..., Schedule] | None = None,  # (urls, *, event)
 ) -> list[Outcome]:
     """Close every event that can be closed; report the others."""
     codes = sorted({*cert.events_to_close(today), *prod.events_to_close(today)})
@@ -275,7 +277,7 @@ class SqlEnv:
     def event(self, code: str) -> dict | None:
         return self.transport.fetch_json(
             "SELECT jsonb_build_object('code', txt_code, 'status', enum_status, "
-            "'dt_end', dt_end, 'url_event', url_event) AS j "
+            "'dt_end', dt_end, 'url_event', url_event, 'arr_weapons', arr_weapons) AS j "
             f"FROM tbl_event WHERE txt_code = '{_code(code)}'"
         )
 

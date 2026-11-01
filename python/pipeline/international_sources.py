@@ -32,6 +32,13 @@ Team brackets are skipped (ADR-105 §5.5). A bracket without one V0–V4
 category, or two sources for one bracket, refuses the event before anything is
 written (ADR-105 §5.3, §5.4).
 
+**The event's weapons (G52 A).** A PEW code names its weapons (ADR-046:
+PEW7es-2024-2025 is épée and sabre). A bracket of another weapon is skipped
+before it is fetched, refused or asked whether it is final, with the reason
+`OTHER_WEAPON`: it never holds the event open and is never stored. Jabłonna
+2025 is two EVF events on one FTL schedule (PEW7es and PEW8f). A code without
+letters names no weapon, and every weapon is the event's.
+
 Ingest on CERT, promote's plan on PROD and the daily close all read the event
 through here, source by source in the same order, so a schedule hashes the
 same in all three.
@@ -54,7 +61,28 @@ FTL_DATA = "https://www.fencingtimelive.com/events/results/data/"
 FTL_RESULTS = "https://www.fencingtimelive.com/events/results/"
 EVF_SOURCE = "evf:"
 UNPARSEABLE = "unparseable name"
+OTHER_WEAPON = "not a weapon of this event"
 SETTLE_MINUTES = 60
+
+
+def weapons_of(event: Mapping[str, Any] | None) -> frozenset[str] | None:
+    """The event's weapons by the rule the Phase 5 runner keeps (INTL.WPN.01,
+    decision F A, 2 Oct 2026): `arr_weapons`, else a PEW code's letters
+    (ADR-046: PEW7es-2024-2025 is épée and sabre). None when neither names a
+    weapon (MSW-2026-2027, IMEW-2023-2024, a legacy PEW3-2024-2025): then every
+    weapon is the event's (G52 A)."""
+    from python.pipeline.source_identity import event_weapons
+
+    return frozenset(event_weapons(dict(event or {}))) or None
+
+
+def _foreign(weapons: frozenset[str] | None, weapon: Any) -> bool:
+    """A bracket of a weapon the event does not hold."""
+    return weapons is not None and weapon is not None and str(weapon).upper() not in weapons
+
+
+def _other_weapon(uuid: Any, name: Any, url: Any, weapon: Any) -> dict:
+    return {"uuid": uuid, "name": name, "url": url, "weapon": weapon, "reason": OTHER_WEAPON}
 
 
 # --------------------------------------------------------------------------
@@ -216,7 +244,8 @@ def read_brackets(
 
     The schedule entries are what the run record hashes as the event's
     schedule; the skipped entries are listed in the staging report. A source
-    without a finished signal needs `finality`."""
+    without a finished signal needs `finality`. Only the event's weapons are
+    read (`weapons_of`, G52 A)."""
     recs: list[dict] = []
     kept: list[dict] = []
     skipped: list[dict] = []
@@ -225,14 +254,15 @@ def read_brackets(
             f"Event {event.get('txt_code')!r} has no result URL and no EVF event to read "
             "EVF's results from. Set the organiser's results URL on the event (Admin)."
         )
+    weapons = weapons_of(event)
     for url in urls:
         if url.startswith(EVF_SOURCE):
-            r, s = _evf_brackets(int(url[len(EVF_SOURCE) :]), evf_scrape, finality)
+            r, s = _evf_brackets(int(url[len(EVF_SOURCE) :]), evf_scrape, finality, weapons)
             k = [{"uuid": x["uuid"], "name": x["name"], "finished": True} for x in r]
         elif _is_ftl_schedule(url):
-            r, k, s = _ftl_schedule(url)
+            r, k, s = _ftl_schedule(url, weapons)
         else:
-            r, k, s = _other_source(url, fetcher, finality)
+            r, k, s = _other_source(url, fetcher, finality, weapons)
         recs += r
         kept += k
         skipped += s
@@ -246,16 +276,19 @@ def read_schedule(
     fetcher: Any = None,
     evf_scrape: Callable[[int], list[dict]] | None = None,
     finality: Finality = SETTLED,
+    event: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """What the daily close re-reads for an international run (ADR-108 §7,
     ADR-113): each source classified as `read_brackets` classifies it, in the
-    same order, so the pair hashes as the run recorded it. The close runs
-    after the end date, so by default every published bracket is settled."""
+    same order and for the same weapons (the `event` row's), so the pair hashes
+    as the run recorded it. The close runs after the end date, so by default
+    every published bracket is settled."""
     kept: list[dict] = []
     skipped: list[dict] = []
+    weapons = weapons_of(event)
     for url in urls:
         if url.startswith(EVF_SOURCE):
-            recs, s = _evf_brackets(int(url[len(EVF_SOURCE) :]), evf_scrape, finality)
+            recs, s = _evf_brackets(int(url[len(EVF_SOURCE) :]), evf_scrape, finality, weapons)
             kept += [{"uuid": r["uuid"], "name": r["name"], "finished": True} for r in recs]
             skipped += s
         elif _is_ftl_schedule(url):
@@ -266,11 +299,12 @@ def read_schedule(
                 sched = client.get(normalize_ftl_url(url))
                 sched.raise_for_status()
                 listed, skips = parse_event_schedule(sched.text, with_skips=True)
+            listed, others = _split_weapons(listed, weapons)
             final, not_final = lifecycle.split_final(listed)
             kept += final
-            skipped += [*skips, *not_final]
+            skipped += [*skips, *others, *not_final]
         else:
-            _recs, k, s = _other_source(url, fetcher, finality)
+            _recs, k, s = _other_source(url, fetcher, finality, weapons)
             kept += k
             skipped += s
     return kept, skipped
@@ -338,7 +372,29 @@ def _day(value: Any) -> date | None:
         return None
 
 
-def _ftl_schedule(url: str) -> tuple[list[dict], list[dict], list[dict]]:
+def _split_weapons(
+    listed: list[dict], weapons: frozenset[str] | None
+) -> tuple[list[dict], list[dict]]:
+    """An FTL schedule's listings of the event's weapons, and the skips of the
+    others, in schedule order; a name not understood stays (it is skipped as
+    unparseable later, as before)."""
+    from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+    ours: list[dict] = []
+    others: list[dict] = []
+    for b in listed:
+        pn = parse_tournament_name(b["name"])
+        weapon = None if pn is None else (pn[0][0] if isinstance(pn, list) else pn[0])
+        if _foreign(weapons, weapon):
+            others.append(_other_weapon(b["uuid"], b["name"], f"{FTL_RESULTS}{b['uuid']}", weapon))
+        else:
+            ours.append(b)
+    return ours, others
+
+
+def _ftl_schedule(
+    url: str, weapons: frozenset[str] | None = None
+) -> tuple[list[dict], list[dict], list[dict]]:
     from python.scrapers import ftl
     from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
     from python.tools.scrape_ftl_event_urls import parse_event_schedule, parse_tournament_name
@@ -348,6 +404,8 @@ def _ftl_schedule(url: str) -> tuple[list[dict], list[dict], list[dict]]:
         sched = client.get(normalize_ftl_url(url))
         sched.raise_for_status()
         listed, skipped = parse_event_schedule(sched.text, with_skips=True)
+        listed, others = _split_weapons(listed, weapons)
+        skipped = [*skipped, *others]
         final, not_final = lifecycle.split_final(listed)
         named = []
         for b in final:
@@ -380,7 +438,7 @@ def _ftl_schedule(url: str) -> tuple[list[dict], list[dict], list[dict]]:
 
 
 def _other_source(
-    url: str, fetcher: Any, finality: Finality | None
+    url: str, fetcher: Any, finality: Finality | None, weapons: frozenset[str] | None = None
 ) -> tuple[list[dict], list[dict], list[dict]]:
     if fetcher is None:
         from python.pipeline.review_cli import Fetcher
@@ -390,7 +448,10 @@ def _other_source(
     parsed_list, reader_skips = fetcher.fetch_event_url_with_skips(url)
     skipped: list[dict] = []
     for s in reader_skips:
-        if s.get("finished") is False:
+        if _foreign(weapons, s.get("weapon")):
+            # Another weapon's competition, running or not, holds nothing (G52 A).
+            s = _other_weapon(s.get("uuid"), s.get("name"), s.get("url"), s.get("weapon"))
+        elif s.get("finished") is False:
             # The engine shows the bracket unfinished (Engarde's state).
             s = {**s, "reason": lifecycle.not_final_at(ENGINES[engine].label, s.get("state"))}
         skipped.append(s)
@@ -398,6 +459,11 @@ def _other_source(
     for parsed in parsed_list:
         category = getattr(parsed, "category_hint", None)
         name = parsed.tournament_name or f"{parsed.weapon} {parsed.gender} {category}"
+        if _foreign(weapons, parsed.weapon):
+            skipped.append(
+                _other_weapon(parsed.source_url or name, name, parsed.source_url, parsed.weapon)
+            )
+            continue
         _refuse_uncategorised(name, parsed.source_url, category)
         rec = _listing(parsed, name=name, uuid=parsed.source_url or name)
         if not ENGINES[engine].signal and not _settled(rec, engine, finality):
@@ -412,6 +478,7 @@ def _evf_brackets(
     id_evf_event: int,
     evf_scrape: Callable[[int], list[dict]] | None,
     finality: Finality | None,
+    weapons: frozenset[str] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     if evf_scrape is None:
         from python.scrapers.evf_results import scrape_event_results
@@ -426,6 +493,9 @@ def _evf_brackets(
     for (weapon, gender, category), rows in groups.items():
         name = f"EVF {weapon} {gender} {category}"
         uuid = f"evf:{id_evf_event}:{weapon}:{gender}:{category}"
+        if _foreign(weapons, weapon):
+            skipped.append(_other_weapon(uuid, name, None, weapon))
+            continue
         _refuse_uncategorised(name, uuid, category)
         parsed = ParsedTournament(
             source_kind=SourceKind.EVF_API,

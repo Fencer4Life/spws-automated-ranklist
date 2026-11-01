@@ -172,7 +172,7 @@ def test_FINAL_03_the_daily_close_keeps_an_event_with_a_running_engarde_final_op
         env,
         read_schedule=MagicMock(side_effect=AssertionError("the FTL-only reader")),
         today=END + dt.timedelta(days=1),
-        read_sources=lambda urls: src.read_schedule(urls, fetcher=fetcher),
+        read_sources=lambda urls, event=None: src.read_schedule(urls, fetcher=fetcher, event=event),
     )
     assert any(r.startswith("not final yet") and "EPEE MALE 2" in r for r in reasons), reasons
     assert not any("schedule changed" in r for r in reasons), reasons
@@ -298,7 +298,7 @@ def test_STUCK_04_the_daily_close_completes_it_and_names_what_it_left_out():
         read_schedule=MagicMock(side_effect=AssertionError("the FTL-only reader")),
         notifier=notifier,
         today=END + dt.timedelta(days=2),
-        read_sources=lambda urls: src.read_schedule(urls, fetcher=fetcher),
+        read_sources=lambda urls, event=None: src.read_schedule(urls, fetcher=fetcher, event=event),
     )
     assert outcome.closed
     (message,) = notifier.success.call_args.args
@@ -344,7 +344,7 @@ def test_FINAL_04_a_bracket_without_a_signal_waits_60_minutes_unless_the_event_i
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import listing_sha256
 
-    event = {"txt_code": "PEW4fs-2026-2027"}
+    event = {"txt_code": "PEW4efs-2026-2027"}
     parsed = _parsed(url="https://o/1")
     sha = listing_sha256("EPEE M V1", "https://o/1", True, parsed.results)
 
@@ -427,12 +427,12 @@ def test_FINAL_04c_the_promote_plan_takes_exactly_what_the_cert_run_took():
     sha = listing_sha256("EPEE M V1", "https://o/1", True, parsed.results)
     taken = src.TakenByRun([{"uuid": "https://o/1", "sha256": sha, "status": "committed"}])
     recs, _, _ = src.read_brackets(
-        {"txt_code": "PEW4fs-2026-2027"}, [OPHARDT], fetcher=_fetcher([parsed]), finality=taken
+        {"txt_code": "PEW4efs-2026-2027"}, [OPHARDT], fetcher=_fetcher([parsed]), finality=taken
     )
     assert [r["uuid"] for r in recs] == ["https://o/1"]
     changed = src.TakenByRun([{"uuid": "https://o/1", "sha256": "0" * 64, "status": "committed"}])
     recs, _, skipped = src.read_brackets(
-        {"txt_code": "PEW4fs-2026-2027"}, [OPHARDT], fetcher=_fetcher([parsed]), finality=changed
+        {"txt_code": "PEW4efs-2026-2027"}, [OPHARDT], fetcher=_fetcher([parsed]), finality=changed
     )
     assert recs == [] and [s["uuid"] for s in skipped] == ["https://o/1"]
 
@@ -445,14 +445,14 @@ def test_FINAL_04d_the_live_ingest_records_sightings_on_its_own_database():
     db = MagicMock()
     db.record_listing_sighting.return_value = NOW
     finality = src.sightings_for(
-        db, {"txt_code": "PEW4fs-2026-2027", "dt_end": "2026-11-01"}, now=NOW
+        db, {"txt_code": "PEW4efs-2026-2027", "dt_end": "2026-11-01"}, now=NOW
     )
     assert finality.ended is False
     assert finality.settled("k", "s" * 64) is False
-    db.record_listing_sighting.assert_called_once_with("PEW4fs-2026-2027", "k", "s" * 64)
+    db.record_listing_sighting.assert_called_once_with("PEW4efs-2026-2027", "k", "s" * 64)
     after = src.sightings_for(
         db,
-        {"txt_code": "PEW4fs-2026-2027", "dt_end": "2026-11-01"},
+        {"txt_code": "PEW4efs-2026-2027", "dt_end": "2026-11-01"},
         now=dt.datetime(2026, 11, 1, 23, 30, tzinfo=dt.UTC),  # 2 Nov 00:30 in Warsaw
     )
     assert after.ended is True
@@ -588,7 +588,7 @@ def test_ENGINE_02_an_engine_without_a_signal_is_never_read_without_the_rule():
 
     with pytest.raises(ValueError, match="no finished signal"):
         src.read_brackets(
-            {"txt_code": "PEW4fs-2026-2027"}, [OPHARDT], fetcher=_fetcher([_parsed()])
+            {"txt_code": "PEW4efs-2026-2027"}, [OPHARDT], fetcher=_fetcher([_parsed()])
         )
 
 
