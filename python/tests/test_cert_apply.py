@@ -713,7 +713,10 @@ class TestSyncMode:
         log = capsys.readouterr()
         text = log.out + log.err
         assert code == 1
-        assert "ListingRefused [identity] Szabla Mężczyzn kat. 2" in text
+        assert (
+            "ListingRefused [identity] Szabla Mężczyzn kat. 2: a row fits no single roster fencer"
+            in text
+        )  # REFUSAL.SAY (G60 A)
         for leak in ("NOWAK", "ZIELIŃSKI", "KOWALSKI", "1970", "1968", "Traceback"):
             assert leak not in text, leak
         (call,) = notifier.notify_pipeline_failure.call_args_list
@@ -732,13 +735,16 @@ class TestSyncMode:
         log = capsys.readouterr()
         text = log.out + log.err
         assert code == 1
-        assert "ListingRefused [identity] Szabla Mężczyzn kat. 2" in text
+        summary = "1 row(s) fit no single roster fencer (no identity match: 1)"
+        assert f"ListingRefused [identity] Szabla Mężczyzn kat. 2: {summary}" in text
+        assert f"failed: ListingRefused [identity] Szabla Mężczyzn kat. 2: {summary}" in text
         for leak in ("PRZYKŁADOWA", "Traceback"):
             assert leak not in text, leak
         assert "PRZYKŁADOWA Anna" in notifier.notify_pipeline_failure.call_args.args[0]
         assert "PRZYKŁADOWA Anna" in _run(db)["error"]
         refusal = _run(db)["listings"]["refusal"]
         assert (refusal["kind"], refusal["listing"]) == ("identity", "Szabla Mężczyzn kat. 2")
+        assert refusal["public"] == summary  # REFUSAL.SAY (G60 A): the sync pauses with it
         assert values["error"] == "ListingRefused"
 
     def test_LOG_PRIV_05_any_other_error_logs_its_type_and_frames(

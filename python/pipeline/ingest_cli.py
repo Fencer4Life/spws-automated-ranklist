@@ -1439,9 +1439,16 @@ def _is_recorded_refusal(e: BaseException) -> bool:
 
 
 def _refusal_head(e: BaseException) -> str:
-    """A refusal as the public log shows it: its kind and its listing (D12)."""
+    """A refusal as the public log shows it: its kind, its listing (D12) and
+    what it means, without a name (G60 A)."""
     kind, listing = getattr(e, "kind", None), getattr(e, "listing", None)
-    return type(e).__name__ + (f" [{kind}]" if kind else "") + (f" {listing}" if listing else "")
+    summary = getattr(e, "summary", None)
+    return (
+        type(e).__name__
+        + (f" [{kind}]" if kind else "")
+        + (f" {listing}" if listing else "")
+        + (f": {summary}" if summary else "")
+    )
 
 
 def source_exception_notes(parsed_list: Iterable[Any]) -> list[dict]:
@@ -1767,7 +1774,10 @@ def main() -> None:
             # D12 (S9): a recorded run's refusal names fencers; its message is
             # on the run row and in Telegram, the log gets its kind and listing.
             if args.record_run and _is_recorded_refusal(e):
-                print(f"{_refusal_head(e)}: the reason is on the CERT run's row", file=sys.stderr)
+                print(
+                    f"{_refusal_head(e)} (the rows are named on the CERT run's row)",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             # G38 A: any other error of a recorded run logs where it was
             # raised, never its message, which can name a fencer.

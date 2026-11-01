@@ -17,7 +17,8 @@ days, and the workflow dry-reads those with a results link through
 results-sync.yml (G42 A (2)). The log names codes, kinds and counts only; the
 named detail goes to CERT's staging-reports bucket (D12).
 
-Tests: python/tests/test_source_regression.py (SRC.REGR.01–08).
+Tests: python/tests/test_source_regression.py (SRC.REGR.01–09) and
+python/tests/test_refusals_explained.py (REFUSAL.SAY.08–10).
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import argparse
 import datetime as dt
 import json
 import re
+from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -57,7 +59,8 @@ _CODE = re.compile(r"^[A-Za-z0-9-]+$")
 @dataclass
 class EventCheck:
     """One event's verdict. `public` names no fencer; `named` and
-    `exceptions` go to the stored report only."""
+    `exceptions` go to the stored report only. `read_from` names the engines
+    whose pages were read (G60 A)."""
 
     code: str
     status: str
@@ -66,6 +69,7 @@ class EventCheck:
     exceptions: list[str] = field(default_factory=list)
     disagreements: int = 0
     known: str | None = None
+    read_from: tuple[str, ...] = ()
 
 
 # ------------------------------------------------------------ which and when
@@ -193,22 +197,42 @@ def verdict(
     return check
 
 
-def refusal(code: str, reason: str, *, named: str | None = None) -> EventCheck:
+def refusal(
+    code: str, reason: str, *, named: str | None = None, read_from: tuple[str, ...] = ()
+) -> EventCheck:
     """An event the read or the plan refused; `reason` names no one."""
     if code in KNOWN_REFUSALS:
         return EventCheck(
-            code, KNOWN, [reason], [named] if named else [], known=KNOWN_REFUSALS[code]
+            code,
+            KNOWN,
+            [reason],
+            [named] if named else [],
+            known=KNOWN_REFUSALS[code],
+            read_from=read_from,
         )
-    return EventCheck(code, REFUSED, [reason], [named] if named else [])
+    return EventCheck(code, REFUSED, [reason], [named] if named else [], read_from=read_from)
 
 
 def public_reason(e: BaseException) -> str:
-    """A refusal as the log may print it: the sync's rule (D12), with the
-    refusal's kind where it has one."""
+    """A refusal as the log may print it, never a name (D12), saying what it
+    means (G60 A): a listing refused after its source was read, a source
+    refused before anything was written, or a failure as the sync says it."""
+    from python.pipeline.core.contract import ListingRefused, SourceRefused
     from python.pipeline.promotion.results_sync import public_error
 
-    kind = getattr(e, "kind", None)
-    return f"{type(e).__name__} ({kind})" if isinstance(kind, str) else public_error(e)
+    if isinstance(e, ListingRefused):
+        where = f" from {', '.join(e.read_from)}" if e.read_from else ""
+        return f"read{where}, then refused ({e.kind}): {e.summary}"
+    if isinstance(e, SourceRefused):
+        return f"refused before anything was written: {e.summary}"
+    return f"failed: {public_error(e)}"
+
+
+def engines_read(sources: Iterable[Mapping[str, Any]] | None) -> tuple[str, ...]:
+    """The engines a read's result URLs were read with, by their labels."""
+    from python.pipeline.international_sources import ENGINES, engine_of
+
+    return tuple(sorted({ENGINES[engine_of(s["url"])].label for s in sources or []}))
 
 
 # ------------------------------------------------------------ what it says
@@ -231,6 +255,9 @@ def line(checks: list[EventCheck], soon: list[dict], *, roster_alike: bool = Tru
                 f"source disagreements: {sum(c.disagreements for c in noted)} in "
                 + ", ".join(c.code for c in noted)
             )
+        read = Counter(label for c in checks for label in c.read_from)
+        if read:  # G60 A: a refusal is not a sign-in failure when the source was read
+            parts.append("sources read: " + ", ".join(f"{k} {n}" for k, n in sorted(read.items())))
         head = "; ".join(parts)
     else:
         head = "no event re-read today"
@@ -334,6 +361,7 @@ def check_event(code: str, *, cert_db: Any, cert: Any, prod: Any) -> EventCheck:
     The code goes into SQL, so it is checked first."""
     _sql(FINGERPRINT_SQL, code)
     from python.pipeline import ingest_cli
+    from python.pipeline.core.contract import ListingRefused
     from python.pipeline.international_sources import SETTLED
     from python.pipeline.promotion.plan import plan_event
     from python.pipeline.promotion.results_sync import season_end_year
@@ -344,14 +372,19 @@ def check_event(code: str, *, cert_db: Any, cert: Any, prod: Any) -> EventCheck:
         raise ValueError(f"{code} is not on CERT")
     link = (event.get("url_event") or "").strip() or None
     read = ingest_cli.read_event(event, code, year, link, None, db=cert_db, finality=SETTLED)
-    plan = plan_event(
-        code, year, cert_db, url_event=link or "", created=[], read=read, target="CERT"
-    )
+    read_from = engines_read(read.sources)
+    try:
+        plan = plan_event(
+            code, year, cert_db, url_event=link or "", created=[], read=read, target="CERT"
+        )
+    except ListingRefused as e:
+        e.read_from = read_from  # the source was read; the plan refused a listing (G60 A)
+        raise
     public, named = compare_rows(
         planned_rows(plan.ops), stored_rows(cert.fetch_json(_sql(STORED_SQL, code)))
     )
     listings = list(read.listings or [])
-    return verdict(
+    check = verdict(
         code,
         public,
         cert.fetch_json(_sql(FINGERPRINT_SQL, code)),
@@ -364,6 +397,8 @@ def check_event(code: str, *, cert_db: Any, cert: Any, prod: Any) -> EventCheck:
             for e in r["_base"].source_exceptions or []
         ],
     )
+    check.read_from = read_from
+    return check
 
 
 def run(
@@ -391,7 +426,12 @@ def run(
             try:
                 result = check(code)
             except Exception as e:  # the event's refusal, never the run's
-                result = refusal(code, public_reason(e), named=f"{type(e).__name__}: {e}")
+                result = refusal(
+                    code,
+                    public_reason(e),
+                    named=f"{type(e).__name__}: {e}",
+                    read_from=tuple(getattr(e, "read_from", ())),
+                )
             for text in log_lines(result):
                 print(text)
             checks.append(result)
@@ -399,7 +439,9 @@ def run(
     else:
         print("no full re-read today: it runs on demand, on Mondays and the day before an event")
     if checks or soon:
-        send(line(checks, soon, roster_alike=roster_alike))
+        said = line(checks, soon, roster_alike=roster_alike)
+        print(f"summary: {said}")  # G60 A: the log ends with what Telegram is told
+        send(said)
     return 0
 
 

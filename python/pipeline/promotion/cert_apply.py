@@ -224,9 +224,10 @@ def ingest_recorded(
         )
     except BaseException as e:
         kind = e.kind if isinstance(e, ListingRefused) else None
+        public = e.summary if isinstance(e, ListingRefused) else None
         if isinstance(e, ListingRefused):
             e.listing = run.current  # the CLI's log names the listing, never the fencer (D12)
-        run.fail(f"{type(e).__name__}: {e}", kind=kind, message=str(e))
+        run.fail(f"{type(e).__name__}: {e}", kind=kind, message=str(e), public=public)
         ingest_cli._github_output(finished="false", gate="")
         raise
 
