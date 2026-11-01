@@ -113,7 +113,9 @@ if [ -f "$RTM" ]; then
   #   organizer registry; ADR-119 release 1).
   # 162 since 2026-10-31: +FR-163 (one apply on both sides and the promote
   #   ledger; ADR-119 release 2).
-  EXPECTED=162
+  # 163 since 2026-11-01: +FR-164 (the hourly results sync; ADR-119 release
+  #   3, registered with 3a, the pause store, before the sync's code).
+  EXPECTED=163
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

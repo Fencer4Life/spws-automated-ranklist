@@ -20,6 +20,7 @@ IN_PROGRESS on CERT, on PROD and in the daily close.
   FINAL.07  the daily close's re-read of several sources hashes as the run did;
   FINAL.08  the sightings never enter the PROD seed (a pin: the export names
             every table it writes, and none of them is the sightings table);
+  SYNC.SEED.01  the results sync's pauses never enter it either (release 3);
   ENGINE.01 every engine is classified and answers the question;
   ENGINE.02 an engine without a signal cannot be read without the rule;
   ENGINE.03 the handbook's engine table lists exactly the engines the code has.
@@ -483,3 +484,26 @@ def test_FINAL_08_the_sightings_never_enter_the_prod_seed():
         dump = export_seed.export_monolithic("ref", "token")
     assert "tbl_season" in dump
     assert "listing_sighting" not in dump
+
+
+def test_SYNC_SEED_01_the_results_sync_pauses_never_enter_the_prod_seed():
+    """ADR-119 §4 (D8): the pause table is CERT's, as the sightings are; the
+    export never names it, and an export carries no trace of it."""
+    from unittest.mock import patch
+
+    from python.pipeline import export_seed
+
+    source = (ROOT / "python/pipeline/export_seed.py").read_text(encoding="utf-8")
+    assert "results_sync" not in source
+
+    def empty(_ref: str, _token: str, sql: str) -> list[dict]:
+        if sql == export_seed.ROSTER_SQL:
+            return [{"j": "[]"}]
+        if sql == export_seed.SEQUENCE_SQL:
+            return [{"j": "1"}]
+        return []
+
+    with patch.object(export_seed, "mgmt_query", side_effect=empty):
+        dump = export_seed.export_monolithic("ref", "token")
+    assert "tbl_season" in dump
+    assert "results_sync" not in dump
