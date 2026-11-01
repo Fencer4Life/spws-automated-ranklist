@@ -673,8 +673,9 @@ def run_select(
 
 
 def run_compare(code: str, *, read: Callable[[], Any], cert: Any, prod: Any, output: Output) -> int:
-    """The compare step (R3.3 A): read-only, it decides whether the cycle
-    refreshes and ingests (`changed`) or only promotes (`promote_only`)."""
+    """The compare step (R3.3 A): it decides whether the cycle refreshes and
+    ingests (`changed`) or only promotes (`promote_only`). It writes no
+    result; its read stores only what the ingest's read stores (G35 A)."""
     try:
         got = compare(read(), cert.latest_finished_run(code), prod.result_fingerprint(code))
     except Exception as e:
@@ -760,7 +761,11 @@ def _github_output(**values: Any) -> None:
 
 
 def _read_for(code: str, season_end_year: int) -> Callable[[], Any]:
-    """The compare's read: the event as the recorded ingest reads it."""
+    """The compare's read: the event as the recorded ingest reads it, through
+    the step's CERT connector, so it stores what that read stores: the first
+    sighting of a bracket from an engine without a finished signal, which the
+    60-minute rule counts from, and a PZSz start list it captured (G35 A,
+    SYNC.CYCLE.08)."""
 
     def read() -> Any:
         from python.pipeline import ingest_cli
@@ -792,7 +797,11 @@ def main(argv: Iterable[str] | None = None) -> int:
     ap.add_argument("--season-end-year", type=int, default=None)
     ap.add_argument("--cron", default="", help="the cron line that fired; empty for a manual run")
     ap.add_argument("--moment", default="", help="the cycle's due moment (the select's output)")
-    ap.add_argument("--dry-run", action="store_true", help="read only: write and send nothing")
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="select and compare only: no result, verdict or pause written, nothing sent",
+    )
     args = ap.parse_args(list(argv) if argv is not None else None)
 
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")

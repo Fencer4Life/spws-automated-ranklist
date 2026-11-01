@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="113-ingest-and-promote-carry-every-organizer.md">
-<meta name="adr-source-sha256" content="6793eedfb24de4d6abb5b7b4c0e7a64b1554758e439076fe65a2c786ae4ad48c">
+<meta name="adr-source-sha256" content="1c03c12077fb749f26608854cbcdf3ee55648243e2017461e61164fa79471afe">
 <title>ADR-113 · Ingest and Promote Carry Every Organizer&#x27;s Event</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -163,9 +163,9 @@
 <p>Tests: ROUTE.ORG.01–13, FINAL.01–08, ENGINE.01–03.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-01-adr-119-119-partial-ingest-promote-and-organizer-registry-md-4-the-sync-refreshes-only-when-something-changed">Amendment (2026-11-01, <a href="119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §4) — the sync refreshes only when something changed</h2>
-<p>§7's refresh of CERT from PROD before an ingest holds for a manual ingest as before. In the results sync's mode the compare step reads first and writes nothing; the refresh and the ingest run only when it found a change, so a quiet cycle reads and writes none of CERT's master data (R3.3 A). A refresh that stops (<code>stopped_renumbering</code>, <code>stopped_unpaired</code>) pauses the event until a person applies it and sends <code>sync &lt;code&gt;</code>.</p>
+<p>§7's refresh of CERT from PROD before an ingest holds for a manual ingest as before. In the results sync's mode the compare step reads first and writes no result; the refresh and the ingest run only when it found a change, so a quiet cycle reads and writes none of CERT's master data (R3.3 A). A refresh that stops (<code>stopped_renumbering</code>, <code>stopped_unpaired</code>) pauses the event until a person applies it and sends <code>sync &lt;code&gt;</code>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="112-pzsz-start-lists-are-stored-inputs.html">← ADR-112: PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="114-ranklist-whole-points-close-call-decimals.html">→ ADR-114: The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</a></nav>
-<footer class="foot">Generated from <code>113-ingest-and-promote-carry-every-organizer.md</code> · source SHA-256 <code>6793eedfb24de4d6abb5b7b4c0e7a64b1554758e439076fe65a2c786ae4ad48c</code></footer>
+<footer class="foot">Generated from <code>113-ingest-and-promote-carry-every-organizer.md</code> · source SHA-256 <code>1c03c12077fb749f26608854cbcdf3ee55648243e2017461e61164fa79471afe</code></footer>
 </div></body></html>

@@ -13,7 +13,7 @@ run-name: Ingest · ${{ inputs.event_code }}
 #     straight to GitHub; no admin screen starts it
 #   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=cert
 #   * results-sync.yml, as a called workflow in mode `sync` (ADR-119 §4): the
-#     compare step reads first and writes nothing; the refresh and the ingest run
+#     compare step reads first and writes no result; the refresh and the ingest run
 #     only when something changed; the ingest is quiet; promote.yml follows a
 #     finished run whose gate passed (or PROD behind, `promote_only`); the outcome
 #     job records the cycle, pauses the event on any failure and sends one line.
@@ -67,7 +67,7 @@ on:
         type: string
         default: ''
       dry_run:
-        description: 'sync mode: compare only; write and send nothing'
+        description: 'sync mode: compare only; no result written, nothing sent'
         type: boolean
         default: false
 
@@ -146,7 +146,9 @@ jobs:
 
       # ADR-119 §4 (R3.3 A): the sync reads the schedule and every final listing
       # and compares them with the latest finished CERT run and PROD's
-      # fingerprint. It writes nothing of the event; a quiet cycle ends here.
+      # fingerprint. It writes no result: like the ingest's read, it stores only
+      # the first sighting of a bracket from an engine without a finished signal
+      # and a PZSz start list it captured (G35 A). A quiet cycle ends here.
       - name: Compare with the latest finished CERT run
         id: compare
         if: inputs.mode == 'sync'

@@ -146,4 +146,4 @@ Tests: ROUTE.ORG.01–13, FINAL.01–08, ENGINE.01–03.
 
 ## Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §4) — the sync refreshes only when something changed
 
-§7's refresh of CERT from PROD before an ingest holds for a manual ingest as before. In the results sync's mode the compare step reads first and writes nothing; the refresh and the ingest run only when it found a change, so a quiet cycle reads and writes none of CERT's master data (R3.3 A). A refresh that stops (`stopped_renumbering`, `stopped_unpaired`) pauses the event until a person applies it and sends `sync <code>`.
+§7's refresh of CERT from PROD before an ingest holds for a manual ingest as before. In the results sync's mode the compare step reads first and writes no result; the refresh and the ingest run only when it found a change, so a quiet cycle reads and writes none of CERT's master data (R3.3 A). A refresh that stops (`stopped_renumbering`, `stopped_unpaired`) pauses the event until a person applies it and sends `sync <code>`.

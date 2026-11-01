@@ -32,7 +32,7 @@ on:
         required: false
         default: ''
       dry_run:
-        description: 'Select and compare only; write and send nothing'
+        description: 'Select and compare only; no result written, nothing sent'
         type: boolean
         default: false
 

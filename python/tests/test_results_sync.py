@@ -4,7 +4,8 @@ doc/plans/partial-ingest-promote-results-sync-2026-10-31.html, release 3 (§03e)
 
 Every hour an event in its window is read, compared with the latest finished
 CERT run, ingested on CERT when its listings changed and promoted to PROD. These
-are the pure parts of a cycle, with no database and no network:
+are the parts of a cycle and the command line's three steps, with fake SQL and
+outputs, no database and no network:
 
   SYNC.SEL.01  the window by the due moment: first day to the day after the
                end date, in Warsaw, in both DST states;
@@ -23,10 +24,12 @@ are the pure parts of a cycle, with no database and no network:
   SYNC.PAUSE.01  every failure pauses the event, with a reason free of names,
                and the database takes exactly the cycle's verdicts;
   SYNC.PAUSE.05  the ☀ line names every event in window, paused or not;
-  SYNC.PZSZ.01-02  a start list's hash is part of the compare.
+  SYNC.PZSZ.01-02  a start list's hash is part of the compare;
+  SYNC.PAUSE.06  RESULTS_SYNC=off ends a scheduled select silently;
+  SYNC.CYCLE.08  the compare reads as the ingest reads (G35 A).
 
-How the morning cycle is told and which job sends the ☀ line wait for G28 and
-G29; the workflows, the CLI and the pause writes are release 3b.
+The morning cycle is told by the cron line that fired (G28 A), and the select
+sends the ☀ line (G29 A).
 """
 
 from __future__ import annotations
@@ -878,6 +881,30 @@ class TestCompareCli:
         assert (code, out["error"]) == (1, "FtlAuthError: the FTL session was refused")
         code, out, _ = self._run(leaking)
         assert (code, out["error"]) == (1, "ValueError")
+
+    def test_SYNC_CYCLE_08_the_compare_reads_as_the_ingest_reads(self, monkeypatch):
+        """G35 A: the compare's read is the recorded ingest's own read, through
+        the step's CERT connector and with none of promote's plan inputs
+        (`sources`, `finality`, stored start lists). So it stores what that read
+        stores, and only that: the first sighting of a bracket from an engine
+        without a finished signal, which the 60-minute rule counts from, and a
+        PZSz start list it captured. It writes no result."""
+        from types import SimpleNamespace
+
+        from python.pipeline import db_connector, ingest_cli
+
+        link = "https://www.fencingtimelive.com/tournaments/eventSchedule/" + "a" * 32
+        event = {"txt_code": PPW, "url_event": link}
+        db = SimpleNamespace(find_event_by_code=lambda code: dict(event) if code == PPW else None)
+        calls = []
+        monkeypatch.setattr(db_connector, "create_db_connector", lambda: db)
+        monkeypatch.setattr(
+            ingest_cli, "read_event", lambda *a, **kw: calls.append((a, kw)) or "the read"
+        )
+        assert rs._read_for(PPW, 2027)() == "the read"
+        [(args, kwargs)] = calls
+        assert args == (event, PPW, 2027, link, None)
+        assert kwargs == {"db": db}
 
 
 class TestOutcomeCli:
