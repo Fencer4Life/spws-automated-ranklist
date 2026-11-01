@@ -90,6 +90,20 @@ class StorageMdHandler:
         )
         return path
 
+    def upload_regression(self, md_bytes: bytes, timestamp: str) -> str:
+        """Upload regression/{timestamp}.md (append-only): the re-read of every
+        international source, whose detail names fencers by id and as their
+        source printed them, never in a public log (ADR-119 G45 A, D12)."""
+        if not re.match(r"^\d{8}-\d{6}Z$", timestamp):
+            raise ValueError(f"invalid timestamp {timestamp!r}: expected yyyyMMdd-HHmmssZ")
+        path = f"regression/{timestamp}.md"
+        self._bucket().upload(
+            path,
+            md_bytes,
+            file_options={"content-type": "text/markdown", "upsert": "false"},
+        )
+        return path
+
     def upload_refresh(self, event_code: str, md_bytes: bytes, timestamp: str) -> str:
         """Upload {event_code}/refresh/{timestamp}.md (append-only): the PROD→CERT
         refresh report of an ingest, whose lines name fencers and birth years.

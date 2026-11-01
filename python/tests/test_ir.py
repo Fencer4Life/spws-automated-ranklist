@@ -109,6 +109,8 @@ def test_parsed_tournament_fields():
         "weapon_note",
         # NAME.CELLS (G41 A, 2026-11-01): rows whose two name cells repeat each other.
         "source_exceptions",
+        # SRC.CONS (G42 A, 2026-11-01): what the source states twice and disagrees on.
+        "source_disagreements",
         # Orchestrator-injected:
         "season_end_year",
         "organizer_hint",

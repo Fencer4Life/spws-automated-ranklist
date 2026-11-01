@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="9ceabe211dd9f009a71ad6ff74e4673aeaa3318231913ef19a9c3c84537760a3">
+<meta name="doc-source-sha256" content="aa7dd6bf2d987ea2f8141d085c709ad653c36245ccae369e6feb78f93be14700">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>850 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>873 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -91,8 +91,8 @@
 <td>FR-09</td>
 <td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created. At an FIE event (MSW, PSW, the IMSW code) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a user-confirmed, unrevoked alias counts as identity (ADR-106 amendment of 2026-10-17, D9 A).</td>
 <td>§8.5, ADR-106</td>
-<td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–12, INTL.POL.01–06, NAME.CELLS.01–07, OVR.DRIFT.01–07, EXCLUDED.01–04</td>
-<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d)</td>
+<td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–12, INTL.POL.01–06, NAME.CELLS.01–07, OVR.DRIFT.01–07, EXCLUDED.01–04, SRC.CONS.01–10, SRC.REGR.01–09, RUNNAME.04</td>
+<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 built in push 2b, SRC.CONS.07 waits for G58)</td>
 </tr>
 <tr>
 <td>FR-10</td>
@@ -4636,6 +4636,134 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.<em>, SRC.REGR.</em>)</h2>
+<p>Acceptance IDs for the third amendment of 2026-11-01 to <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> (G42 A, G45 A; the plan's push 2b build sheet, 2b.1–2b.12).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SRC.CONS.01</td>
+<td>The placed rows of a whole bracket run 1..N with ties; a gap or a wrong tie is reported; unplaced and excluded rows are aside; EVF's API rows (Poles only) are never checked.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.02</td>
+<td>On the international route a bracket in which no row has a country is reported (the Budapest Cup's club page); SPWS and PZSz brackets are not; the reader computes the list once onto the bracket.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.03</td>
+<td>Engarde: the count a classification prints against the rows it lists, placed or not; N is unchanged.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.04</td>
+<td>Engarde: a final's gender (<code>sexe</code> against the title) and category (the slug against the title), on the Budapest 2025 and Madrid 2024 fixtures; the title still wins.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.05</td>
+<td>d'Artagnan: the declared line's gender against the title's; the line names which value was taken.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.06</td>
+<td>FencingTime XML: <code>Sexe</code> against <code>AltName</code>'s gender word; <code>AltName</code> still wins.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.07</td>
+<td>EVF's results API: a row's <code>weapon_abbr</code> against its competition's weapon.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Waits for G58</td>
+</tr>
+<tr>
+<td>SRC.CONS.08</td>
+<td>The fetcher carries a competition's disagreements onto its bracket.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.09</td>
+<td>The international, SPWS and PZSz reads print one <code>disagree</code> line per item, naming no fencer; the staging report's gaps and the run record list them.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.CONS.10</td>
+<td>A disagreement is not part of a listing's hash.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_consistency.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.REGR.01–03</td>
+<td>The events re-read (international, started in the last 30 months, not cancelled), the upcoming ones (within 14 days, with their link), and when the full re-read is due (on demand, Mondays, the day before an international event starts).</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.REGR.04–05</td>
+<td>Each tournament's planned rows and N against CERT's, public by count and named by id; an event's verdict, with CERT's result fingerprint against PROD's, and the known cases (G51, G53, G54).</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.REGR.06–07</td>
+<td>One Telegram line of codes; the named report stored in CERT's <code>staging-reports</code> bucket as <code>regression/&lt;stamp&gt;.md</code>; the log names no one.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.REGR.08</td>
+<td>A day's run: the upcoming events every day, the full re-read when due, a refusal kept to its event; the plan and the store read alike; a code is checked before it reaches SQL. Written after the code, never seen failing.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>SRC.REGR.09</td>
+<td><code>source-regression.yml</code>: daily cron and on demand, a manual run always re-reads, CERT's connector, each linked upcoming event dry-read by <code>results-sync.yml</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+<tr>
+<td>RUNNAME.04</td>
+<td>A source re-read run says what started it: &quot;daily&quot; or &quot;manual&quot;.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_run_names.py</code></td>
+<td>Covered (2026-11-01, built in push 2b; not yet released)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -4646,5 +4774,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>9ceabe211dd9f009a71ad6ff74e4673aeaa3318231913ef19a9c3c84537760a3</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>aa7dd6bf2d987ea2f8141d085c709ad653c36245ccae369e6feb78f93be14700</code></footer>
 </div></body></html>

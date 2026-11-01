@@ -517,6 +517,11 @@ def _fire_staging_report(
         ctx.data["_weapon_notes"] = weapon_notes
     if exceptions := source_exception_notes([parsed for parsed, _ in pairs]):
         ctx.data["_source_exceptions"] = exceptions
+    from python.pipeline import source_consistency
+
+    # SRC.CONS (G42 A): every bracket's disagreements with its own source.
+    if disagreements := source_consistency.notes([parsed for parsed, _ in pairs]):
+        ctx.data["_source_disagreements"] = disagreements
     if schedule_skips:
         ctx.data["_schedule_skips"] = schedule_skips
     if source_decisions:
@@ -870,7 +875,7 @@ def _read_domestic(event, event_code, season_end_year, url_event) -> EventRead:
     categories it owns."""
     from datetime import date as _date
 
-    from python.pipeline import organizers
+    from python.pipeline import organizers, source_consistency
     from python.pipeline.ir import ParsedTournament, SourceKind
     from python.pipeline.overrides import load_for_event
     from python.pipeline.promotion.lifecycle import split_final
@@ -917,7 +922,13 @@ def _read_domestic(event, event_code, season_end_year, url_event) -> EventRead:
             has_de = _ftl_has_direct_elimination(client, b["uuid"])  # Rule 1 (pools-only drop)
             resp = client.get(f"{_FTL_DATA}{b['uuid']}")
             resp.raise_for_status()
-            base = ftl.parse_json(resp.json(), source_url=url)
+            # SRC.CONS (G42 A): the bracket is whole, so its places are checked;
+            # SPWS admits every participant, so its countries are not.
+            base = source_consistency.checked(
+                ftl.parse_json(resp.json(), source_url=url), international=False
+            )
+            for line in source_consistency.lines(b["name"], base):
+                print(line)
             round_recs.append(
                 dict(
                     name=b["name"],
@@ -952,6 +963,7 @@ def _read_domestic(event, event_code, season_end_year, url_event) -> EventRead:
                 source_url=r["url"],
                 organizer_hint="SPWS",
                 tournament_name=r["name"],
+                source_disagreements=r["_base"].source_disagreements,  # SRC.CONS
             ),
             "label": f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]",
             "commit_cats": set(d["commit_cats"]),
@@ -1135,10 +1147,16 @@ def _read_international(
     print(f"discovered {len(recs)} bracket(s), {len(skipped)} skipped")
     for s in [*skipped, *unparseable]:
         print(f"  skip {s['name']!r}: {s.get('reason', international_sources.UNPARSEABLE)}")
+    from python.pipeline import source_consistency
+
     for r in recs:
+        # SRC.CONS (G42 A): every disagreement, computed once onto the bracket.
+        r["_base"] = source_consistency.checked(r["_base"])
         if note := getattr(r["_base"], "weapon_note", None):
             print(f"  weapon {r['name']!r}: {note}")
         for line in exception_lines(r["name"], r["_base"]):
+            print(line)
+        for line in source_consistency.lines(r["name"], r["_base"]):  # SRC.CONS (G42 A)
             print(line)
 
     organizer = organizers.organizer_of(event_code)
@@ -1260,7 +1278,7 @@ def _read_pzsz(
     Everything is read before anything is written."""
     from datetime import date as _date
 
-    from python.pipeline import organizers
+    from python.pipeline import organizers, source_consistency
     from python.pipeline.engine.flows import Flow
     from python.pipeline.ir import ParsedTournament, SourceKind
     from python.pipeline.overrides import load_for_event
@@ -1318,7 +1336,12 @@ def _read_pzsz(
             has_de = _ftl_has_direct_elimination(client, b["uuid"])
             resp = client.get(f"{_FTL_DATA}{b['uuid']}")
             resp.raise_for_status()
-            base = ftl.parse_json(resp.json(), source_url=url)
+            # SRC.CONS (G42 A): a whole senior bracket; its places are checked.
+            base = source_consistency.checked(
+                ftl.parse_json(resp.json(), source_url=url), international=False
+            )
+            for line in source_consistency.lines(b["name"], base):
+                print(line)
             starters = start_lists[(weapon, gender)].starters
             round_recs.append(
                 dict(
@@ -1351,6 +1374,7 @@ def _read_pzsz(
                 source_url=r["url"],
                 organizer_hint="PZSz",
                 tournament_name=r["name"],
+                source_disagreements=r["_base"].source_disagreements,  # SRC.CONS
             ),
             "label": f"{r['name']} [{r['weapon']}/{r['gender']}, PZSz senior field]",
             "commit_cats": None,

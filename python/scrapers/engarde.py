@@ -217,8 +217,38 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
         }
         if weapon_note:
             final["weapon_note"] = weapon_note
+        if disagreements := _label_disagreements(slug, title, comp.get("sexe", ""), final):
+            final["disagreements"] = disagreements
         kept.append(final)
     return kept, skipped
+
+
+def _label_disagreements(slug: str, title: str, sexe: str, final: dict) -> list[dict]:
+    """SRC.CONS (ADR-119 G42 A): a final's gender as ``sexe`` declares it
+    against the title's word, and its category as the slug names it against
+    the title. The choice made above is unchanged; each disagreement is
+    reported."""
+    from python.pipeline import source_consistency as sc
+
+    titled = parse_engarde_category("", title)
+    slugged = parse_engarde_category(slug, "")
+    found = [
+        sc.label(
+            sc.GENDER,
+            title,
+            parse_engarde_gender("", title),
+            ENGARDE_GENDER_MAP.get(sexe),
+            final["gender"],
+        ),
+        sc.label(
+            sc.CATEGORY,
+            title,
+            titled[0] if len(titled) == 1 else None,
+            slugged[0] if len(slugged) == 1 else None,
+            final["category"],
+        ),
+    ]
+    return [d for d in found if d is not None]
 
 
 def _fold(text: str) -> str:
@@ -338,10 +368,12 @@ def parse_html(
     if table is None:
         raise ValueError("No table with class='liste' found in Engarde HTML")
 
+    from python.pipeline import source_consistency as sc
     from python.scrapers.name_cells import NameCellCheck
 
     parsed_results: list[ParsedResult] = []
     row_index = 0
+    listed = 0
     nationality = _nationality_column(table)
     names = NameCellCheck()
 
@@ -351,6 +383,8 @@ def parse_html(
         cells = row.find_all("td")
         if len(cells) < 4:
             continue
+        if cells[1].get_text(strip=True) or cells[2].get_text(strip=True):
+            listed += 1  # placed or not, as the printed count counts (SRC.CONS.03)
 
         place_text = cells[0].get_text(strip=True)
         if not place_text or not place_text[0].isdigit():
@@ -385,11 +419,22 @@ def parse_html(
     # N counts the placed fencers only. The header ("Classement général (33
     # tireurs)") also counts a fencer listed without a place, DNS (did not
     # start), DNF (did not finish) or DNQ (did not qualify); such a fencer is
-    # not in N (ENG.EVT.05).
+    # not in N (ENG.EVT.05). The printed count is compared with every listed
+    # row instead (SRC.CONS.03).
+    count = sc.printed_count(_printed_count(table), listed)
     return ParsedTournament(
         source_kind=SourceKind.ENGARDE,
         results=parsed_results,
         raw_pool_size=len(parsed_results),
         source_url=source_url,
         source_exceptions=names.checked(len(parsed_results), source_url),
+        source_disagreements=[count] if count else [],
     )
+
+
+def _printed_count(table) -> int | None:
+    """The count a classification prints in its table's summary, in the
+    organiser's language: "Overall ranking (57 fencers)", "Clasificación
+    general final (33 tiradores)"."""
+    m = re.search(r"\((\d+)\D*\)\s*$", str(table.get("summary") or ""))
+    return int(m.group(1)) if m else None

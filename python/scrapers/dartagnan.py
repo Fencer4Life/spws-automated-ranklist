@@ -105,9 +105,8 @@ def list_dartagnan_competitions(html: str, base_url: str) -> tuple[list[dict], l
         # weapon is stated twice, typed in the title and declared on the line
         # under it, and the title wins (WPN.TITLE).
         descriptor = box.get_text(" ", strip=True)
-        weapon, weapon_note = _weapon(
-            " ".join(s for s in box.stripped_strings if s != title), title
-        )
+        declared = " ".join(s for s in box.stripped_strings if s != title)
+        weapon, weapon_note = _weapon(declared, title)
         gender = _extract_gender(descriptor) or _extract_gender(title)
 
         # Category must be a single V0-V4; combined "V1/V2 Runde" → skip.
@@ -135,6 +134,14 @@ def list_dartagnan_competitions(html: str, base_url: str) -> tuple[list[dict], l
         }
         if weapon_note:
             competition["weapon_note"] = weapon_note
+        # SRC.CONS (ADR-119 G42 A): the gender the line under the title declares
+        # against the title's; the choice above is unchanged and reported.
+        from python.pipeline import source_consistency as sc
+
+        if said := sc.label(
+            sc.GENDER, title, _extract_gender(title), _extract_gender(declared), gender
+        ):
+            competition["disagreements"] = [said]
         competitions.append(competition)
 
     return competitions, skipped

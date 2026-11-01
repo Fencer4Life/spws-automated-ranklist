@@ -225,6 +225,10 @@ class ListingLog:
             entry["weapon_note"] = weapon_note  # WPN.TITLE: the title's weapon won
         if exceptions := getattr(rec["_base"], "source_exceptions", None):
             entry["source_exceptions"] = list(exceptions)  # NAME.CELLS (G41 A)
+        from python.pipeline import source_consistency
+
+        if disagreements := source_consistency.recorded(rec["_base"]):
+            entry["source_disagreements"] = disagreements  # SRC.CONS (G42 A); not hashed
         if ctx is not None:
             entry["outcome"] = _outcome(ctx)
             entry["identity"] = _identity(ctx)
