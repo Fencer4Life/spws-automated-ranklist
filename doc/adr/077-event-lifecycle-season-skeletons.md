@@ -325,3 +325,7 @@ The 2026-08-28 boundary stands: the calendar mirror never writes the results hal
 ## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §1) — final per engine
 
 The 2026-10-03 amendment's "every scheduled individual listing is final (its schedule row says Finished)" now reads: every listing is final by its results engine's answer. FTL's schedule row still decides for FTL; Engarde's competition state decides for Engarde; for an engine that says nothing, the rule of ADR-119 §1 decides. A listing that is not final keeps the event IN_PROGRESS, as before.
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3) — the CERT status is set by the ingest's one apply
+
+§1's "promote sets the status inside its apply transaction" now holds on CERT too: the CERT ingest writes the event, its results and its status in one `fn_promote_event_apply`, so a refused ingest leaves the status as it was. A run in which no listing is final writes nothing, the status included. It closes FINISHED while the event holds no result, and FAILED while it does, with nothing deleted (R2.1 C). Until then the workflow's `--replace` emptied such an event, left its status and finished green. The validator and the daily close are unchanged.

@@ -78,7 +78,11 @@ Skip the refresh only for pure-formatting / no-op commits (or pass
   `handleWizardCommit` returned nothing and read as "does not exist".
   `scripts/graphify_svelte_extract.py` cuts each script body out, extracts that,
   and reattributes the result to the component with the line numbers offset.
-  Deterministic, zero tokens, wired into the same refresh. If a frontend query
+  It recognises graphify's nodes by graphify's own path rule (a `source_file`
+  relative to the resolved cache root), so the result does not depend on the
+  temporary folder's path; matching the raw string worked only behind macOS's
+  symlinked temporary folder (ADR-119 G26). Preflight checks the premise against
+  the real extractor. Deterministic, zero tokens, wired into the same refresh. If a frontend query
   comes back empty, that is now evidence rather than a known blind spot.
 - **Images and papers still need the LLM.** They are reported and skipped rather
   than blocking; run `/graphify . --update` only when their semantic layer
@@ -91,5 +95,6 @@ Skip the refresh only for pure-formatting / no-op commits (or pass
   silently skipped them would give a false sense of freshness. This stays an
   agent-run command.
 - Interpreter is graphify's isolated env, pinned in
-  `graphify-out/.graphify_python` (never the project `.venv`); the wrapper
-  resolves it.
+  `graphify-out/.graphify_python` (never the project `.venv`);
+  `scripts/graphify-python.sh` resolves it for both the refresh and preflight's
+  `.svelte` premise check (`scripts/graphify_svelte_extract.py --check-premise`).

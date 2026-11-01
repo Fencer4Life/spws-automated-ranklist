@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="067-structural-pool-only-skip-unified-xml-ingest.md">
-<meta name="adr-source-sha256" content="e34d4e45d6bd1c9603a0c1cdf4e71ad4a8f8f6337c44d6b118ca410d151c5aef">
+<meta name="adr-source-sha256" content="862fdac763ce5869ac9a119853f9b6c0a74c7f2f703a36917e30e808ead94702">
 <title>ADR-067 · Structural pool-only skip + unified XML ingest pipeline</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 067</p><h1>Structural pool-only skip + unified XML ingest pipeline</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-05-27</dd></div><div><dt>Source</dt><dd class=""><code>067-structural-pool-only-skip-unified-xml-ingest.md</code></dd></div><div><dt>Length</dt><dd class="">55 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented</dd></div><div><dt>Date</dt><dd class="">2026-05-27</dd></div><div><dt>Source</dt><dd class=""><code>067-structural-pool-only-skip-unified-xml-ingest.md</code></dd></div><div><dt>Length</dt><dd class="">61 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Implemented
 <strong>Date:</strong> 2026-05-27
 <strong>Source:</strong> User bug report 2026-05-27 (PPW4-V1-M-EPEE-2025-2026 / PPW5-V1-M-EPEE-2025-2026 showing 35 / 36 phantom participant counts)
@@ -19,7 +19,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#amendment-2026-11-01-adr-119-119-partial-ingest-promote-and-organizer-registry-md-3-g23-the-dry-run-writes-nothing">Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3, G23) — the dry run writes nothing</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The SPWS ingest pipeline had two parallel XML-ingestion paths that diverged in behaviour:</p>
 <ol>
@@ -75,8 +75,12 @@
 <li>Tests: <code>python/tests/test_ingest_cli_unified.py</code> (4 assertions), <code>python/tests/test_pool_only_skip.py</code> (8 assertions), updated <code>python/tests/test_ir.py</code> (contract).</li>
 <li>LOCAL re-ingest verified: PPW4 24 tournaments / 87 results, PPW5 22 tournaments / 81 results. CERT/PROD promotion is operator-driven and out of scope for this ADR.</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-01-adr-119-119-partial-ingest-promote-and-organizer-registry-md-3-g23-the-dry-run-writes-nothing">Amendment (2026-11-01, <a href="119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §3, G23) — the dry run writes nothing</h2>
+<p><code>ingest_cli --dry-run</code> promised &quot;Parse without writing&quot;, and <code>ingest_xml_unified</code>'s dry run skipped the drafts, but it ran <code>run_pipeline</code> against the real connector. Stage 0 (<code>stages.s0_reconcile_roster</code>, <a href="056-vcat-from-birthyear.html">ADR-056</a>) therefore created every new participant and moved matched fencers' birth years, a confirmed one included, before any later stage could halt: on 31 Oct 2026 a run halted at S2 had already written three fencers to LOCAL.</p>
+<p>The dry run now runs <code>run_pipeline</code> against plan mode's recording connector (<code>promotion/plan.py</code> <code>RecordingConnector</code>, <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §6) with <code>reserve=False</code>: reads go to the database, Stage 0's two writes (<code>insert_fencer</code>, <code>update_fencer_birth_year</code>) are recorded and answered back to the later stages and to the next file, and a new fencer takes a placeholder id below zero, so not even the fencer sequence moves. One recorder serves every file of the run, as one database serves a live run. After each file the dry run prints what a live run would write: <code>[dry-run] would create &lt;name&gt; (born &lt;year&gt;, estimated)</code> and <code>[dry-run] would set the birth year of fencer #&lt;id&gt; to &lt;year&gt; (estimated)</code>. Signed A by the user on 2026-11-01. Tests DRYRUN.01 (<code>test_ingest_cli_unified.py</code>) and DRYRUN.02 (<code>test_pipeline_integration.py</code>, against LOCAL through S7: the fencer table and its sequence unchanged).</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="066-min-participants-ingestion-gate.html">← ADR-066: Min-participants threshold gates ingestion, not scoring</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="068-ftl-www-host-and-session-cache.html">→ ADR-068: FTL www-host normalization + cached non-rolling session</a></nav>
-<footer class="foot">Generated from <code>067-structural-pool-only-skip-unified-xml-ingest.md</code> · source SHA-256 <code>e34d4e45d6bd1c9603a0c1cdf4e71ad4a8f8f6337c44d6b118ca410d151c5aef</code></footer>
+<footer class="foot">Generated from <code>067-structural-pool-only-skip-unified-xml-ingest.md</code> · source SHA-256 <code>862fdac763ce5869ac9a119853f9b6c0a74c7f2f703a36917e30e808ead94702</code></footer>
 </div></body></html>

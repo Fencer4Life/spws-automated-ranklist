@@ -84,3 +84,7 @@ forwards name+kind · N11.3 every plugin emits its fragment during a real flow �
 `StagingFormatter.applies` gates on `_bracket_reports` · N11.5 renders the `.md` template in order +
 schedule skips surface · N11.6 writes the `.diff.md` via `three_way_diff` · N11.7 the CLI fires exactly
 one event-scoped POST_COMMIT seeded with all bracket reports; timestamped filenames share a stem.
+
+## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §3, G19) — the diff file follows `md_target`
+
+The `.diff.md` names fencers, and `StagingFormatter` wrote it to the repository's `doc/staging` whatever `md_target` said, while the full `.md` went through `md_writer.write_for_event`. A LOCAL rehearsal run with `md_target="none"` left ten such files, with scraped names, untracked in the public repository's tree. They were deleted and none was committed. The diff file is now written only where a local file is wanted, `md_target` `local` or `both`. `none` and `storage` write no diff file, and the rendered diff still reaches Telegram from the context (`_rendered_diff`), as before. Signed B by the user in chat (plan `doc/plans/partial-ingest-promote-results-sync-2026-10-31.html` §03d). Test: N11.8 (`test_staging_report.py`), one case per target.
