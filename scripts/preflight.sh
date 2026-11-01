@@ -96,8 +96,16 @@ gate "LOCAL stack = CI's (CLI pin, extensions)" python scripts/check_supabase_cl
 gate "postgrestools (CI)"             bash scripts/check-postgrestools.sh
 if [[ $FAST -eq 1 ]]; then
   RESULTS+=("SKIP  supabase test db (CI) — --fast")
+  RESULTS+=("SKIP  pgTAP plans all ran (CI) — --fast")
 else
-  gate "supabase test db (CI)"        supabase test db
+  # Its output is kept for the plan check below, as CI's pgTAP job keeps pgtap.out.
+  PGTAP_OUT="$(mktemp)"
+  gate "supabase test db (CI)"        bash -c 'set -o pipefail; supabase test db 2>&1 | tee "$1"' _ "$PGTAP_OUT"
+  # pg_prove calls a file ok that ran a different number of assertions than it
+  # planned; this fails it, as CI does (CISUM.08, plan
+  # doc/plans/ci-test-summaries-2026-11-01.html F1 A).
+  gate "pgTAP plans all ran (CI)"     python scripts/check_pgtap_plans.py "$PGTAP_OUT"
+  rm -f "$PGTAP_OUT"
 fi
 # CI's pytest job has no database, so it skips the pipeline's LOCAL-database
 # tests (P3.INT); a skip hid them while they failed (ADR-119 G20). This runs

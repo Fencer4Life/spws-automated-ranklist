@@ -106,6 +106,9 @@ def _notes(repo: Path, *args: str) -> str:
 
 
 def _module() -> ModuleType:
+    # The script imports its sibling scripts/github_text.py, as it does when run.
+    if str(NOTES.parent) not in sys.path:
+        sys.path.insert(0, str(NOTES.parent))
     spec = importlib.util.spec_from_file_location("release_notes", NOTES)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

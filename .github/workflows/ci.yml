@@ -55,10 +55,30 @@ jobs:
       # pgTAP and plpgsql_check come from supabase/seed_dev_tooling.sql,
       # loaded by `supabase start`.
       - name: postgrestools (hard gate)
+        id: postgrestools
         run: bash scripts/check-postgrestools.sh
 
+      # Kept with tee for the run's Summary page; shell: bash adds pipefail, so a
+      # failing test still fails the step (WFPIPE.01).
       - name: Run pgTAP tests
-        run: supabase test db
+        shell: bash
+        run: supabase test db 2>&1 | tee pgtap.out
+
+      # pg_prove calls a file ok that ran a different number of assertions than it
+      # planned; this fails it (CISUM.08, plan F1 A). Preflight runs the same check.
+      - name: Every pgTAP file ran its plan
+        id: pgtap_plans
+        run: python3 scripts/check_pgtap_plans.py pgtap.out
+
+      # The job's section of the run's Summary page: each check, the counts, and
+      # each failing file with its failed tests (NFR-17, CISUM.06). Plan
+      # doc/plans/ci-test-summaries-2026-11-01.html.
+      - name: Write the pgTAP section of the run summary
+        if: always()
+        env:
+          POSTGRESTOOLS: ${{ steps.postgrestools.outcome }}
+          PGTAP_PLANS: ${{ steps.pgtap_plans.outcome }}
+        run: python3 scripts/ci_summary.py --title "pgTAP (database)" --check "postgrestools=$POSTGRESTOOLS" --check "Every file ran its plan=$PGTAP_PLANS" --tap pgtap.out >> "$GITHUB_STEP_SUMMARY"
 
   test-python:
     name: pytest (Python)
@@ -78,31 +98,58 @@ jobs:
 
       # Ruff baseline is clean (lint + format) — these steps now ENFORCE (block CI).
       - name: Ruff lint
+        id: ruff
         run: ruff check python/ scripts/ tools/
 
       - name: Ruff format check
+        id: ruff_format
         run: ruff format --check python/ scripts/ tools/
 
       # basedpyright baseline is clean — enforces (blocks CI), same as ruff above.
       - name: basedpyright type-check
+        id: basedpyright
         run: basedpyright python/ scripts/ tools/
 
       - name: Validate generated ADR HTML
+        id: adr_pages
         run: python scripts/render_adrs.py --check
 
       - name: Validate generated Docs HTML
+        id: doc_pages
         run: python scripts/render_docs.py --check
 
       - name: Validate generated handbook page frame
+        id: handbook_frame
         run: python scripts/render_handbook_frame.py --check
 
       - name: Validate current documentation
+        id: check_docs
         env:
           DOC_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python scripts/check_docs.py --changed-from "$DOC_BASE"
 
+      # The JUnit file is what the run's Summary page reads (NFR-17).
       - name: Run pytest
-        run: pytest
+        run: pytest --junitxml=pytest.xml
+
+      # The job's section of the run's Summary page: each check as a pass or fail
+      # line, the counts, and each failing test with its first error line (CISUM.06).
+      - name: Write the pytest section of the run summary
+        if: always()
+        env:
+          RUFF: ${{ steps.ruff.outcome }}
+          RUFF_FORMAT: ${{ steps.ruff_format.outcome }}
+          BASEDPYRIGHT: ${{ steps.basedpyright.outcome }}
+          ADR_PAGES: ${{ steps.adr_pages.outcome }}
+          DOC_PAGES: ${{ steps.doc_pages.outcome }}
+          HANDBOOK_FRAME: ${{ steps.handbook_frame.outcome }}
+          CHECK_DOCS: ${{ steps.check_docs.outcome }}
+        run: |
+          python3 scripts/ci_summary.py --title "pytest (Python)" \
+            --check "Ruff=$RUFF" --check "Ruff format=$RUFF_FORMAT" --check "BasedPyright=$BASEDPYRIGHT" \
+            --check "ADR pages=$ADR_PAGES" --check "Rendered docs=$DOC_PAGES" \
+            --check "Handbook frame=$HANDBOOK_FRAME" --check "check_docs=$CHECK_DOCS" \
+            --junit pytest.xml >> "$GITHUB_STEP_SUMMARY"
 
   test-frontend:
     name: Vitest (frontend)
@@ -124,12 +171,24 @@ jobs:
       # Same gate as scripts/preflight.sh (GATE.06): svelte-check exits 0 on
       # warnings unless told otherwise.
       - name: svelte-check (warnings fail)
+        id: svelte_check
         working-directory: frontend
         run: npm run check -- --fail-on-warnings
 
+      # Vitest writes its own section of the run's Summary page: its github-actions
+      # reporter, pinned in frontend/vite.config.ts (CISUM.07).
       - name: Run Vitest
+        id: vitest
         working-directory: frontend
         run: npm test
+
+      # The job's own lines beside Vitest's summary (CISUM.06).
+      - name: Write the frontend section of the run summary
+        if: always()
+        env:
+          SVELTE_CHECK: ${{ steps.svelte_check.outcome }}
+          VITEST: ${{ steps.vitest.outcome }}
+        run: python3 scripts/ci_summary.py --title "Vitest (frontend)" --check "svelte-check=$SVELTE_CHECK" --check "Vitest=$VITEST" >> "$GITHUB_STEP_SUMMARY"
 
   coherence:
     name: Coherence Checks
@@ -145,4 +204,11 @@ jobs:
           # push to main, origin/main is the pushed commit itself, so without it the
           # gate compared a commit with itself (test_coherence_migration_gate.py).
           COHERENCE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: bash scripts/check-coherence.sh
+        # Kept with tee for the run's Summary page; shell: bash adds pipefail (WFPIPE.01).
+        shell: bash
+        run: bash scripts/check-coherence.sh 2>&1 | tee coherence.out
+
+      # Each gate's PASS or FAIL line, as the script printed it (CISUM.06).
+      - name: Write the coherence section of the run summary
+        if: always()
+        run: python3 scripts/ci_summary.py --title "Coherence Checks" --gates coherence.out >> "$GITHUB_STEP_SUMMARY"

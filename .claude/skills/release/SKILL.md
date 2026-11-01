@@ -83,7 +83,8 @@ What preflight covers: ruff (lint + format), basedpyright, `render_adrs.py
 --check`, `render_docs.py --check`, `render_handbook_frame.py --check`,
 `check_docs.py`, pytest, Vitest, `check-coherence.sh`, the LOCAL stack matching
 CI's (CLI pin, extensions), the postgrestools hard gate
-(`scripts/check-postgrestools.sh`), `supabase test db`, the pipeline's LOCAL-database
+(`scripts/check-postgrestools.sh`), `supabase test db` and its plan check (every file ran the
+assertions it planned, `scripts/check_pgtap_plans.py`), the pipeline's LOCAL-database
 tests (`scripts/run_local_integration.py`, which fails on a skip),
 `check-spec-sync.sh`, the anon allowlist, `svelte-check`, the published scoring pages matching `scoring.ts`,
 the graph's `.svelte` premise under graphify's own interpreter
@@ -134,7 +135,10 @@ pass"; quote its summary rather than asserting it.
   this merge must be in it), and the Pages and CERT sections (`scripts/release-section.sh`).
   A red `notes` job alone means only the notes failed; the deploys are unaffected. For a past
   range, `python3 scripts/release_notes.py --base <sha> --head <sha>` prints the same notes.
-- For failures, fetch failing job logs and return to diagnosis.
+- For failures, read the run's Summary page first: each CI job names its failing check or
+  test there (`scripts/ci_summary.py`; Vitest's own reporter). A pgTAP file that ran a
+  different number of assertions than it planned fails CI and preflight
+  (`scripts/check_pgtap_plans.py`). Then fetch the failing job's log and return to diagnosis.
 - Never bypass required checks, force-push, rewrite history, or mutate CERT/PROD without explicit
   authorization for that exact action.
 

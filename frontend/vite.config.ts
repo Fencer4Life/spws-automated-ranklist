@@ -2,6 +2,7 @@
 // The reference adds Vitest's `test` block to Vite's config type (TS2769 without it).
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import type { TestUserConfig } from 'vitest/config'
 
 // Node has its own Web Storage (on by default from Node 25), and reading its
 // localStorage with no --localstorage-file prints a warning in every test
@@ -10,6 +11,16 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 const nodeWebStorageOff = process.allowedNodeEnvironmentFlags.has('--no-experimental-webstorage')
   ? ['--no-experimental-webstorage']
   : []
+
+// On GitHub Actions, Vitest's results go onto the CI run's Summary page through its
+// github-actions reporter (NFR-17, CISUM.07, plan doc/plans/ci-test-summaries-2026-11-01.html
+// C3 A). Vitest adds that reporter by itself only while no reporter is set, so it is
+// named here, and a reporter added later cannot drop it silently. Elsewhere Vitest
+// keeps its own choice of reporter.
+const ciReporters: Pick<TestUserConfig, 'reporters'> =
+  process.env.GITHUB_ACTIONS === 'true'
+    ? { reporters: ['default', ['github-actions', { jobSummary: { enabled: true } }]] }
+    : {}
 
 export default defineConfig({
   plugins: [
@@ -51,5 +62,6 @@ export default defineConfig({
     globals: true,
     exclude: ['e2e/**', 'node_modules/**'],
     execArgv: nodeWebStorageOff,
+    ...ciReporters,
   },
 })
