@@ -1,13 +1,11 @@
 {
   "version": "0.1.0",
-  "sha": "af30c76d00f5cbf09eeb8440df52bbfec3be037e",
-  "created": "2026-11-01T18:10:44Z",
+  "sha": "9fc4cbc121fe0728ccbade352c88377c27a8efb7",
+  "created": "2026-11-01T19:38:13Z",
   "schema_fingerprint": "4c7e34f7995aa9020f30f3cf4432b50e",
   "migrations": {
     "total": 233,
-    "new_since_last": [
-      "20261101000002_results_sync_cycle.sql"
-    ]
+    "new_since_last": []
   },
   "tests": {
     "pgtap": {
@@ -15,7 +13,7 @@
       "assertions": 1632
     },
     "pytest": {
-      "files": 171
+      "files": 173
     },
     "vitest": {
       "files": 73
@@ -23,8 +21,8 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-01T18:10:45Z",
-      "sha": "af30c76d00f5cbf09eeb8440df52bbfec3be037e",
+      "at": "2026-11-01T19:38:15Z",
+      "sha": "9fc4cbc121fe0728ccbade352c88377c27a8efb7",
       "schema_fingerprint": "4c7e34f7995aa9020f30f3cf4432b50e"
     },
     "prod": {
