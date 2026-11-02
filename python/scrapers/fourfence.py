@@ -132,17 +132,22 @@ def resolve_classification(html: str, tab4_html: str | None = None) -> tuple[lis
 
     The second bronze (a semi-final loser without a place) is 3rd; any other
     fencer without a place is left out of N, and places close up below him.
-    Without the tableau, a single 3rd and a skipped 4th still count one bronze
-    in N, though his row cannot be named.
+    The loser is found by surname, since the tableau's seed is the pool rank
+    only when the pools hold one category; the seed only tells two unplaced
+    namesakes apart, and when it cannot, the row stays out (G66 A,
+    FOURFENCE.BRONZE.03–05). Without the tableau, a single 3rd and a skipped
+    4th still count one bronze in N, though his row cannot be named.
     """
     rows = _classification_rows(html)
     losers = semifinal_losers(tab4_html) if tab4_html else []
-    for row in rows:
-        if row["place"] is None and any(
-            seed == row["pool"] and _fold(row["surname"]).startswith(surname)
-            for seed, surname in losers
-        ):
-            row["place"] = 3
+    for seed, surname in losers:
+        unplaced = [
+            r for r in rows if r["place"] is None and _fold(r["surname"]).startswith(surname)
+        ]
+        if len(unplaced) > 1:
+            unplaced = [r for r in unplaced if r["pool"] == seed]
+        if len(unplaced) == 1:
+            unplaced[0]["place"] = 3
     placed = [r for r in rows if r["place"] is not None]
     printed = [r["place"] for r in placed]
     unnamed_bronze = int(printed.count(3) == 1 and 4 not in printed and len(printed) > 3)

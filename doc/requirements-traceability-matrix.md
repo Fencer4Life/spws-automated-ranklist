@@ -890,6 +890,17 @@ Acceptance IDs for the fifth amendment of 2026-11-02 to [ADR-119](adr/119-partia
 | PLAN.LINE.03–04 | An international bracket without a fencer of ours prints "no fencer of ours (N in the source)", in a plan and in a write, with the size the parser recorded for the whole bracket when the listing is shorter, and no name. | pytest | `python/tests/test_plan_lines_say_planned.py` | Covered (2026-11-02, built for the next push) |
 | PLAN.LINE.05 | Every other skip, a domestic bracket below the minimum or a pool round, keeps its "SKIPPED (dropped …)" line. | pytest | `python/tests/test_plan_lines_say_planned.py` | Covered (2026-11-02, built for the next push) |
 
+## A past season's open event, 4fence's second bronze, every known combined bracket (PROMO.LIFE.18, FOURFENCE.BRONZE.03–05, SRC.REGR.05)
+
+Acceptance IDs for the sixth amendment of 2026-11-02 to [ADR-119](adr/119-partial-ingest-promote-and-organizer-registry.md) (G64 A, G66 A, G68 B) and the amendment of the same day to [ADR-105](adr/105-international-results-keep-source-bracket.md).
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| PROMO.LIFE.18 | Each morning, before closing anything, the daily close names every event of the route whose season has ended and which is still IN_PROGRESS, with the environments it is in, in the log and on Telegram; a dry run sends nothing; nothing is written. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (2026-11-02, built for the next push) |
+| FOURFENCE.BRONZE.03 | When the pools mix the categories, the second bronze is the unplaced row whose surname begins with a semi-final loser's, whatever its pool rank (Napoli 2026, V4 women's épée: 3rd beside the other bronze, N 10). | pytest | `python/tests/test_fourfence_classification.py` | Covered (2026-11-02, built for the next push) |
+| FOURFENCE.BRONZE.04–05 | Two unplaced namesakes of a semi-final loser: the one whose pool rank is the seed is 3rd; when neither is, both stay out and N still counts the bronze. | pytest | `python/tests/test_fourfence_classification.py` | Covered (2026-11-02, built for the next push) |
+| SRC.REGR.05 (G68) | Every FTL combined bracket the re-read found is known, with G51's reason: `PEW4ef-2024-2025`, `PEW6efs-2025-2026`, `PEW62efs-2025-2026`, `PEW9efs-2025-2026`. | pytest | `python/tests/test_source_regression.py` | Covered (2026-11-02, built for the next push) |
+
 ## Cross-references
 
 - ADR registry: Project Specification Appendix C — Architecture Decisions

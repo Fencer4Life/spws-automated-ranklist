@@ -145,6 +145,17 @@ def test_SRC_REGR_05_known_cases_say_why():
     assert noted.status == sr.EQUAL and "G54" in (noted.known or "")
 
 
+@pytest.mark.parametrize(
+    "code",
+    ["PEW4ef-2024-2025", "PEW6efs-2025-2026", "PEW62efs-2025-2026", "PEW9efs-2025-2026"],
+)
+def test_SRC_REGR_05_every_ftl_combined_bracket_is_known(code):
+    """G68 A: the full re-read found two more FTL combined brackets than G51 A
+    listed; all four say why, with G51's reason."""
+    check = sr.refusal(code, "a combined bracket (no single category): 'X V3, V4'")
+    assert check.status == sr.KNOWN and "G51" in (check.known or "")
+
+
 def test_SRC_REGR_05_a_known_case_that_reads_equal_says_so():
     """A known difference that went away (G53 done) is reported as equal."""
     check = sr.verdict("PEW7es-2024-2025", [], "a", "a", disagreements=0)

@@ -1,0 +1,214 @@
+<meta charset="utf-8">
+<title>Reading an international bracket that joins two categories</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · international route · ADR-105 amendment · Plan (draft)</p>
+  <h1>Reading an international bracket that joins two categories</h1>
+  <p class="dek">An FTL bracket that joins two veteran categories refuses its <b>whole event</b> today. Four EVF circuit events of the last 30 months had one. <b>EVF itself publishes each such bracket as separate categories</b>, each with its own places and N. This plan proposes how our reader takes them, before an open event has one.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Draft — C1&ndash;C5 yours to decide</span>
+    <span class="pill">from ADR-119 plan G68 B, 2 Nov 2026</span>
+    <span class="pill danger"><span class="dot"></span>no code until signed</span>
+    <span class="pill warn"><span class="dot"></span>FTL unreadable until G63 is solved</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Why</p>
+    <h2>One joined bracket stops an event</h2>
+    <p>The international reader files every result under its bracket&rsquo;s own category and derives none from birth years (<a href="../adr/105-international-results-keep-source-bracket.html">ADR-105</a>). A bracket without exactly one V0&ndash;V4 category is a <code>SourceRefused</code> of kind <code>combined</code> (<code>international_sources._refuse_uncategorised</code>). Every bracket is checked before anything is written, so <b>the whole event is refused</b>: at an open event, not one of its brackets would reach CERT or PROD while the joined one is listed.</p>
+
+    <div class="note warn">
+      <p class="lede">The four cases, read only on 2 Nov 2026</p>
+      <p>What PROD holds is read from LOCAL, PROD&rsquo;s mirror. EVF&rsquo;s numbers come from its public results API (<code>api.veteransfencing.eu</code>, the same client as <code>evf_results.EvfApiClient</code>). &ldquo;POL&rdquo; counts EVF&rsquo;s country column. No fencer is named here.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Event</th><th>FTL bracket</th><th>PROD holds</th><th>EVF publishes</th><th>POL at EVF</th></tr></thead>
+        <tbody>
+          <tr><td><code>PEW4ef-2024-2025</code><br>Guildford, 4 Jan 2025</td><td>&ldquo;Women's Foil Category 1 and 2 Combined&rdquo;</td><td>no women&rsquo;s foil</td><td>Cat 1, N 6; Cat 2, N 17</td><td>0, 0</td></tr>
+          <tr><td><code>PEW62efs-2025-2026</code><br>Guildford, 10 Jan 2026</td><td>&ldquo;Women's Epee Category 3 and 4 (Combined)&rdquo;</td><td>no women&rsquo;s &eacute;p&eacute;e V3 or V4</td><td>Cat 3, N 22; Cat 4, N 11</td><td>0, 0</td></tr>
+          <tr><td><code>PEW6efs-2025-2026</code><br>Jab&#322;onna, 28 Mar 2026</td><td>&ldquo;Szpada Kobiet V3, V4&rdquo;</td><td>women&rsquo;s &eacute;p&eacute;e V3, N 9, and V4, N 6, read from their own result pages by an earlier reader</td><td>Cat 3, N 9; Cat 4, N 6 (equal to PROD)</td><td>0, 2</td></tr>
+          <tr><td><code>PEW9efs-2025-2026</code><br>Dublin, 30 May 2026</td><td>&ldquo;Women's Foil (V3/V4) - Direct Elimination&rdquo;</td><td>no women&rsquo;s foil</td><td>Cat 3, N 7; <b>no Cat 4 competition</b></td><td>0</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="note">
+      <p class="lede">What the reading shows</p>
+      <ul>
+        <li><b>EVF ranks a joined bracket per category.</b> Every one of these categories has its own N and its own places, 1, 2, 3, 3, 5&hellip;: two bronzes per category, so EVF&rsquo;s places are not a slice of the joined bracket&rsquo;s.</li>
+        <li><b>By EVF&rsquo;s country column, no result of ours is missing</b> from the three brackets PROD lacks. Identity can admit a fencer of ours entered under another country (<a href="../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>), so the proof below plans them against our roster.</li>
+        <li><b>The reader already reads EVF&rsquo;s API.</b> An event with no results link reads <code>evf:&lt;EVF event id&gt;</code> (<code>event_sources</code>, ADR-119 Q3 A). But <b>no EVF event in PROD&rsquo;s mirror has <code>id_evf_event</code> set: 0 of 67</b> across 2023/24&ndash;2026/27.</li>
+        <li><b>Unknown until G63 is solved:</b> what the FTL bracket itself holds &mdash; one direct-elimination table for both categories, or joined pools and a table per category. FTL needs the pipeline account&rsquo;s sign-in, which FTL refuses today.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Five decisions, each with a recommendation</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>C1</b></td><td>How is a bracket that joins two categories read, at an EVF event?</td><td><b>A</b> From EVF&rsquo;s results API: each joined category is taken from EVF&rsquo;s competition of the same event, weapon, gender and category, with EVF&rsquo;s places and N. The FTL bracket stays in the schedule only to say whether it is final.<br><b>B</b> Split the FTL bracket by each of our fencers&rsquo; category (birth year), each keeping their place in the joined bracket and its N, as a domestic joint pool is (<a href="../adr/049-joint-pool-split-flag.html">ADR-049</a>).<br><b>C</b> Keep refusing; such an event is ingested by hand.</td><td><b>A</b>: EVF&rsquo;s per-category places and N are what EVF ranks, and what the EVF parity check (EVF.PTS.01) compares. B would disagree with EVF on every such bracket.</td></tr>
+        <tr><td><b>C2</b></td><td>Where does the EVF event id come from? None is stored.</td><td><b>A</b> The reader finds the EVF event in EVF&rsquo;s API by the event&rsquo;s start date (&plusmn;1 day) and city, as <code>discover_season_events</code> scans, and records it as the run&rsquo;s source <code>evf:&lt;id&gt;</code>. No match, or two, refuses the bracket as today, saying which.<br><b>B</b> The EVF calendar sync stores <code>id_evf_event</code> on every EVF event (a calendar change, under <a href="../adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>&rsquo;s contract).<br><b>C</b> You set it in Admin when an event has a joined bracket.</td><td><b>A</b> now, nothing written to the calendar; B is worth its own decision later, since the <code>evf:</code> source needs the id too.</td></tr>
+        <tr><td><b>C3</b></td><td>A live event: EVF publishes after the event, not during it.</td><td><b>A</b> The joined categories are &ldquo;not final (EVF has not published them)&rdquo; until EVF does. Under ADR-119 &sect;1 that keeps the event IN_PROGRESS; from the second day after the end date the daily close completes it without them and names them (G44), and an ingest takes them once EVF has published.<br><b>B</b> Take the FTL bracket&rsquo;s places for the joined categories until EVF publishes (C1 B for a while).</td><td><b>A</b>: one source of a category&rsquo;s places, never two in turn.</td></tr>
+        <tr><td><b>C4</b></td><td>An EVF category the joined bracket names but EVF does not publish (Dublin: no women&rsquo;s foil Cat 4).</td><td><b>A</b> That category holds nothing; the staging report says &ldquo;EVF publishes no &lt;category&gt;&rdquo;, and a fencer of ours in the FTL bracket of that category is named in the report for you to decide.<br><b>B</b> Refuse the event.</td><td><b>A</b>: EVF&rsquo;s ranking has no such category to score.</td></tr>
+        <tr><td><b>C5</b></td><td>The four past events, in closed seasons.</td><td><b>A</b> Leave them; they stay on the re-read&rsquo;s known list until the reader takes them, then the re-read compares them like any event.<br><b>B</b> Re-ingest them on your order after the build.</td><td><b>A</b>: by EVF&rsquo;s country column no result of ours is missing; the proof confirms it against the roster before anything else is decided.</td></tr>
+      </tbody>
+    </table></div>
+    <p>An FIE event (MSW, PSW) has no category authority like EVF&rsquo;s API. A joined bracket there stays refused, as today; none was seen in 30 months.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Once C1&ndash;C5 are signed</p>
+    <h2>What it changes</h2>
+    <ol class="steps">
+      <li><b>Read the four FTL brackets, read only</b>, once G63 is solved: what each holds, and whether its schedule row says Finished. If FTL&rsquo;s bracket turns out to hold a table per category, this plan is revised before any code.</li>
+      <li><b>Tests first, red before green</b> (<code>python/tests/test_combined_brackets.py</code>, COMBINED.*):
+        <ul>
+          <li>a joined FTL bracket at an EVF event reads EVF&rsquo;s two competitions, with EVF&rsquo;s places and N;</li>
+          <li>EVF not yet published: the joined categories are skipped as not final, and the event stays IN_PROGRESS;</li>
+          <li>no EVF event found, or two: refused as today, with the reason;</li>
+          <li>a category EVF does not publish holds nothing and is reported;</li>
+          <li>an FIE event&rsquo;s joined bracket is refused as today;</li>
+          <li>recorded EVF responses for the four events as fixtures, with no name in a log line.</li>
+        </ul></li>
+      <li><b>The reader:</b> <code>international_sources</code> replaces a joined bracket at an EVF event by EVF&rsquo;s competitions for its categories, recorded in the run as an <code>evf:&lt;id&gt;</code> source, so promote&rsquo;s plan and the daily close read the same thing (ADR-119 &sect;1). Its listing hash covers EVF&rsquo;s rows.</li>
+      <li><b>The re-read:</b> each of the four leaves <code>KNOWN_REFUSALS</code> as soon as the reader takes it.</li>
+      <li><b>Proof, read only against LOCAL:</b> Jab&#322;onna 2026 reads equal to PROD. The other three plan foreign fencers only (&ldquo;no fencer of ours&rdquo;), or name for you the result PROD lacks.</li>
+      <li><b>Documents:</b> an ADR-105 amendment, the RTM, Appendix C, the ingestion and organizers-and-engines handbook pages.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries</p>
+    <h2>What this plan does not touch</h2>
+    <ul>
+      <li>Domestic combined pools and joint pools (<a href="../adr/049-joint-pool-split-flag.html">ADR-049</a>, <a href="../adr/056-vcat-from-birthyear.html">ADR-056</a>): split by birth year, unchanged.</li>
+      <li>Engarde, 4fence, Ophardt and d&rsquo;Artagnan: no joined bracket seen; their readers are unchanged.</li>
+      <li>The identity rule and every stored result: nothing is re-ingested without your order (C5).</li>
+    </ul>
+  </section>
+
+  <p class="foot">Draft 2 Nov 2026 · source: ADR-119 plan G51, G61, G68 B (<code>doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</code>) · EVF API read only, FTL not read (G63)</p>
+</div>

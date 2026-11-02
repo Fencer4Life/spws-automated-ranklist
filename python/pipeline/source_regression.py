@@ -45,6 +45,8 @@ KNOWN = "known"
 KNOWN_REFUSALS = {
     "PEW4ef-2024-2025": "an FTL combined bracket the reader refuses (G51 A)",
     "PEW6efs-2025-2026": "an FTL combined bracket the reader refuses (G51 A)",
+    "PEW62efs-2025-2026": "an FTL combined bracket the reader refuses (G51 A)",
+    "PEW9efs-2025-2026": "an FTL combined bracket the reader refuses (G51 A)",
 }
 KNOWN_DIFFERENCES = {
     "PEW7es-2024-2025": "a men's épée V2 result waits for G53's re-ingest, after G56",

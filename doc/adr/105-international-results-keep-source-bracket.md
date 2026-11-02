@@ -168,3 +168,9 @@ FTL states the weapon once (the bracket name) and the EVF results API has no tit
 ## Amendment (2026-10-31, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §2) — §5.2 reads the organizer registry
 
 `stages._is_international_intake` asks whether the event's organizer is on the international route of `python/pipeline/organizers.py`, and `_organizer_for_event` returns the registry's organizer: IMEW is EVF's and IMSW the FIE's, no longer UNKNOWN. The international events are the same: PEW, MEW, IMEW, MSW, IMSW and PSW. Tests: ROUTE.ORG.01.
+
+## Amendment (2026-11-02, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) plan G66 A) — 4fence's second bronze is found by surname
+
+Signed by the user in chat on 2026-11-02 ("All as recommended", G63–G70 of `doc/plans/partial-ingest-promote-results-sync-2026-10-31.html`). The repair path's 4fence rule (amendment of 2026-10-02, FOURFENCE.BRONZE.01) named the semi-final loser without a place by the tableau's seed equal to his pool rank and his surname. When the pools mix the categories, the pool rank ("Cla Gir") is the whole pool round's and the seed the category's, so they differ, and the bronze's row was left out while N counted it: 10 brackets each at Napoli 2026 and Terni 2025, all foreign fencers.
+
+**The rule, restated:** an unplaced row is the second bronze when its surname begins with a semi-final loser's (the tableau cuts long surnames short); the seed only tells two unplaced namesakes apart, and when it cannot, the row stays out, N still counting it. Tests: FOURFENCE.BRONZE.03–05 (`python/tests/test_fourfence_classification.py`).

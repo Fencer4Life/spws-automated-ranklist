@@ -17,6 +17,10 @@ and promote again, promote, or correct the event's dates. It is idempotent: an
 environment already COMPLETED is not written again, so a close that stopped
 after CERT is finished by the next run, and a failure raises (the workflow
 alerts).
+
+Before closing anything it names each event of a past season still IN_PROGRESS
+(ADR-119 G64 A, PROMO.LIFE.18): the close reads only the active season, so such
+an event is completed by hand, and until then it is named every morning.
 """
 
 from __future__ import annotations
@@ -245,6 +249,39 @@ def close_events(
     return outcomes
 
 
+class PastSeasons(Protocol):
+    name: str
+
+    def past_season_in_progress(self, today: dt.date) -> list[str]: ...
+
+
+def name_past_season_events(
+    cert: PastSeasons,
+    prod: PastSeasons,
+    *,
+    notifier: Notifier | None,
+    today: dt.date,
+    write: bool = True,
+) -> dict[str, list[str]]:
+    """Name each event of a past season still IN_PROGRESS, with where (G64 A).
+    The close never reads it, so it is said every morning until completed by
+    hand; nothing is written."""
+    named: dict[str, list[str]] = {}
+    for env in (cert, prod):
+        for code in env.past_season_in_progress(today):
+            named.setdefault(code, []).append(env.name)
+    for code in sorted(named):
+        where = " and ".join(name.upper() for name in named[code])
+        message = (
+            f"Daily close: {code} of a past season is still IN_PROGRESS on {where}. "
+            "The close reads only the active season: complete it by hand once its results are right."
+        )
+        print(message)
+        if notifier is not None and write:
+            notifier.warning(message)
+    return named
+
+
 # ---------------------------------------------------------------------------
 # The environments over SQL (the gate's transports)
 # ---------------------------------------------------------------------------
@@ -270,6 +307,17 @@ class SqlEnv:
                 "FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season "
                 f"WHERE s.bool_active AND e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{route_code_regex()}' "
                 f"AND e.dt_end < DATE '{today.isoformat()}'"
+            )
+            or []
+        )
+
+    def past_season_in_progress(self, today: dt.date) -> list[str]:
+        return (
+            self.transport.fetch_json(
+                "SELECT coalesce(jsonb_agg(e.txt_code ORDER BY e.txt_code), '[]'::jsonb) AS j "
+                "FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season "
+                f"WHERE e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{route_code_regex()}' "
+                f"AND s.dt_end < DATE '{today.isoformat()}'"
             )
             or []
         )
@@ -337,6 +385,9 @@ def main(argv: Iterable[str] | None = None) -> int:
         os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     )
     today = dt.date.fromisoformat(args.today) if args.today else lifecycle.warsaw_today()
+    past = name_past_season_events(
+        cert, prod, notifier=notifier, today=today, write=not args.dry_run
+    )
     try:
         outcomes = close_events(
             cert,
@@ -349,7 +400,10 @@ def main(argv: Iterable[str] | None = None) -> int:
     except CloseFailed:
         return 1
     closed = sum(o.closed for o in outcomes)
-    print(f"daily close {today.isoformat()}: {closed} closed, {len(outcomes) - closed} left open")
+    print(
+        f"daily close {today.isoformat()}: {closed} closed, {len(outcomes) - closed} left open, "
+        f"{len(past)} of a past season still IN_PROGRESS"
+    )
     return 0
 
 
