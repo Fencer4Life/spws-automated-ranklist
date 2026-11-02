@@ -24,6 +24,14 @@ from collections.abc import Iterable
 from typing import Any
 
 
+def source_n(parsed: Any) -> int:
+    """The bracket's source N: the size the parser recorded for the whole
+    bracket, else its listed places (ADR-105)."""
+    from python.pipeline.joined_brackets import BracketField
+
+    return BracketField.source([r.place for r in parsed.results], parsed.raw_pool_size).size
+
+
 def section_lines(event_code: str, brackets: Iterable[tuple[Any, Any]]) -> list[str]:
     """The section for `brackets`, each a (parsed, context with `matches` and
     `rejected`) pair. Empty for a domestic event."""
@@ -33,7 +41,6 @@ def section_lines(event_code: str, brackets: Iterable[tuple[Any, Any]]) -> list[
         fold_federation,
         is_fie_type,
     )
-    from python.pipeline.joined_brackets import BracketField
     from python.pipeline.stages import _is_international_intake
 
     if not _is_international_intake({"txt_code": event_code}):
@@ -51,7 +58,7 @@ def section_lines(event_code: str, brackets: Iterable[tuple[Any, Any]]) -> list[
         if parsed is None or ctx is None:
             continue
         places = [r.place for r in parsed.results]
-        n = BracketField.source(places, parsed.raw_pool_size).size
+        n = source_n(parsed)
         stored = [m for m in ctx.matches if m.method not in ("EXCLUDED", "PENDING")]
         held = [m for m in ctx.matches if m.method == "PENDING"]
         printed_pol = sum(1 for r in parsed.results if r.fencer_country == "POL")

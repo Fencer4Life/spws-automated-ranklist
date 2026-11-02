@@ -880,6 +880,16 @@ Acceptance IDs for the fourth amendment of 2026-11-01 to [ADR-119](adr/119-parti
 | REFUSAL.SAY.07 | The sync's pause reason gives the kind, the listing and what the refusal means; a run recorded before G60 falls back to its kind's meaning. | pytest | `python/tests/test_refusals_explained.py` | Covered (released 2026-11-01, main b65deadb) |
 | REFUSAL.SAY.08–10 | The re-read says whether an event was read and then refused, refused before anything was written, or failed; it records the engines read, a refused read included; the summary line and the log end with the sources read. | pytest | `python/tests/test_refusals_explained.py` | Covered (released 2026-11-01, main b65deadb) |
 
+## A run that writes nothing says so (PLAN.LINE.*)
+
+Acceptance IDs for the fifth amendment of 2026-11-02 to [ADR-119](adr/119-partial-ingest-promote-and-organizer-registry.md) (G62 A).
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| PLAN.LINE.01–02 | A bracket a plan only records prints "planned N bracket(s)", never "committed"; a run that writes still prints "committed". | pytest | `python/tests/test_plan_lines_say_planned.py` | Covered (2026-11-02, built for the next push) |
+| PLAN.LINE.03–04 | An international bracket without a fencer of ours prints "no fencer of ours (N in the source)", in a plan and in a write, with the size the parser recorded for the whole bracket when the listing is shorter, and no name. | pytest | `python/tests/test_plan_lines_say_planned.py` | Covered (2026-11-02, built for the next push) |
+| PLAN.LINE.05 | Every other skip, a domestic bracket below the minimum or a pool round, keeps its "SKIPPED (dropped …)" line. | pytest | `python/tests/test_plan_lines_say_planned.py` | Covered (2026-11-02, built for the next push) |
+
 ## Cross-references
 
 - ADR registry: Project Specification Appendix C — Architecture Decisions
