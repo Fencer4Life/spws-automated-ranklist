@@ -31,3 +31,13 @@ def the_checkouts_token_stays_out_of_the_test(
     check) reads the real one (ENVTOKEN.07)."""
     if request.node.get_closest_marker("real_dotenv") is None:
         monkeypatch.setenv("SUPABASE_TOKEN_ENV_FILE", str(tmp_path / "no-such.env"))
+
+
+@pytest.fixture(autouse=True)
+def each_test_signs_in_to_ftl_afresh() -> None:
+    """ADR-119 G71: a refused FTL sign-in is remembered for the rest of the
+    process, so one test's refusal would answer the next test's sign-in. Each
+    test starts with no session and no refusal (FTL.REFUSED.*)."""
+    from python.scrapers.ftl_auth import reset_session_cache
+
+    reset_session_cache()

@@ -134,15 +134,53 @@ def test_SRC_REGR_05_prod_holding_another_fingerprint_differs():
     assert check.public == ["CERT's result fingerprint fp1 is not PROD's fp2"]
 
 
+COMBINED = (
+    "refused before anything was written: a combined bracket (no single category): "
+    '"Women\'s Foil Category 1 and 2 Combined"'
+)
+
+
 def test_SRC_REGR_05_known_cases_say_why():
     known = sr.verdict("PEW7es-2024-2025", ["tournament 1: …"], "a", "a", disagreements=0)
     assert known.status == sr.KNOWN and "G53" in (known.known or "")
-    refused = sr.refusal("PEW4ef-2024-2025", "the source has no single category")
+    refused = sr.refusal("PEW4ef-2024-2025", COMBINED)
     assert refused.status == sr.KNOWN and "G51" in (refused.known or "")
     other = sr.refusal("PEW9ef-2025-2026", "the source has no single category")
     assert other.status == sr.REFUSED and other.public == ["the source has no single category"]
     noted = sr.verdict("IMEW-2023-2024", [], "a", "a", disagreements=0)
     assert noted.status == sr.EQUAL and "G54" in (noted.known or "")
+
+
+@pytest.mark.parametrize(
+    "code",
+    ["PEW4ef-2024-2025", "PEW6efs-2025-2026", "PEW62efs-2025-2026", "PEW9efs-2025-2026"],
+)
+def test_SRC_REGR_05_every_ftl_combined_bracket_is_known(code):
+    """G68 A: the full re-read found two more FTL combined brackets than G51 A
+    listed; all four say why, with G51's reason."""
+    check = sr.refusal(code, "a combined bracket (no single category): 'X V3, V4'")
+    assert check.status == sr.KNOWN and "G51" in (check.known or "")
+
+
+def test_SRC_REGR_05_a_known_refusal_holds_only_for_its_own_cause():
+    """G72 A: on 2 Nov 2026 two known events printed "known (an FTL combined
+    bracket …)" although their read had failed at FTL's sign-in. A known
+    refusal stands for one refusal; any other prints refused, with its reason."""
+    failed = (
+        "failed: FtlAuthError: POST https://www.fencingtimelive.com/login returned 400: "
+        "An error occurred when trying to log you in."
+    )
+    for code in ("PEW4ef-2024-2025", "PEW9efs-2025-2026"):
+        check = sr.refusal(code, failed)
+        assert (check.status, check.public, check.known) == (sr.REFUSED, [failed], None)
+        assert sr.refusal(code, COMBINED).status == sr.KNOWN
+
+
+def test_SRC_REGR_05_a_known_refusal_names_the_readers_own_words():
+    """The cause a known refusal stands for is the reader's own meaning of it."""
+    from python.pipeline.core.contract import REFUSAL_MEANING
+
+    assert {cause for cause, _why in sr.KNOWN_REFUSALS.values()} == {REFUSAL_MEANING["combined"]}
 
 
 def test_SRC_REGR_05_a_known_case_that_reads_equal_says_so():

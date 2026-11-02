@@ -487,6 +487,73 @@ class TestDailyClose:
         assert _run()["listings"]["schedule"]["sha256"] == schedule_sha256(KEPT, [])
 
 
+class _PastSeasonEnv:
+    """An environment whose past seasons still hold IN_PROGRESS events."""
+
+    def __init__(self, name, codes):
+        self.name = name
+        self.codes = codes
+        self.asked: list[dt.date] = []
+
+    def past_season_in_progress(self, today):
+        self.asked.append(today)
+        return self.codes
+
+
+class TestPastSeasonInProgress:
+    """PROMO.LIFE.18 — G64 A: the close reads only the active season, so an
+    event of a past season left IN_PROGRESS is named every morning, on Telegram
+    and in the log, until someone completes it; nothing is written."""
+
+    def test_each_event_is_named_with_where_it_is_in_progress(self, capsys):
+        cert = _PastSeasonEnv("cert", ["IMSW-2025-2026"])
+        prod = _PastSeasonEnv("prod", ["IMSW-2025-2026", "PEW9f-2024-2025"])
+        notifier = FakeNotifier()
+        named = close.name_past_season_events(cert, prod, notifier=notifier, today=CLOSE_TODAY)
+        assert named == {"IMSW-2025-2026": ["cert", "prod"], "PEW9f-2024-2025": ["prod"]}
+        assert cert.asked == [CLOSE_TODAY] and prod.asked == [CLOSE_TODAY]
+        out = capsys.readouterr().out
+        for line in (
+            "Daily close: IMSW-2025-2026 of a past season is still IN_PROGRESS on CERT and PROD",
+            "Daily close: PEW9f-2024-2025 of a past season is still IN_PROGRESS on PROD",
+        ):
+            assert line in out
+            assert any(kind == "warning" and line in m for kind, m in notifier.messages)
+
+    def test_a_dry_run_prints_and_sends_nothing(self, capsys):
+        cert, prod = _PastSeasonEnv("cert", ["IMSW-2025-2026"]), _PastSeasonEnv("prod", [])
+        notifier = FakeNotifier()
+        close.name_past_season_events(cert, prod, notifier=notifier, today=CLOSE_TODAY, write=False)
+        assert "IMSW-2025-2026 of a past season" in capsys.readouterr().out
+        assert notifier.messages == []
+
+    def test_none_says_nothing(self, capsys):
+        notifier = FakeNotifier()
+        named = close.name_past_season_events(
+            _PastSeasonEnv("cert", []),
+            _PastSeasonEnv("prod", []),
+            notifier=notifier,
+            today=CLOSE_TODAY,
+        )
+        assert named == {} and notifier.messages == [] and capsys.readouterr().out == ""
+
+    def test_the_sql_reads_past_seasons_of_the_route(self):
+        seen: list[str] = []
+
+        class _Transport:
+            def fetch_json(self, sql):
+                seen.append(sql)
+                return ["IMSW-2025-2026"]
+
+        env = close.SqlEnv("prod", _Transport())
+        assert env.past_season_in_progress(CLOSE_TODAY) == ["IMSW-2025-2026"]
+        (sql,) = seen
+        assert "e.enum_status = 'IN_PROGRESS'" in sql
+        assert "s.dt_end < DATE '2026-09-29'" in sql
+        assert "bool_active" not in sql
+        assert close.route_code_regex() in sql
+
+
 class TestWorkflow:
     def test_the_daily_close_runs_in_prod_write_every_morning(self):
         """PROMO.LIFE.17 — serialised with promote; a manual run is a dry run by default."""

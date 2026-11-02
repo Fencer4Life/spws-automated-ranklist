@@ -398,9 +398,15 @@ def _run_parsed_through_flow(
     branch). `commit_cats` (the keep-rule's owned set, N13.3) restricts which
     categories `Commit` may write — None ⇒ write all; unused by the PZSz flow,
     which never splits by category. `flow` defaults to INGEST_DOMESTIC.
-    `start_list` is the PZSz start list the PZSz admission reads (ADR-111)."""
+    `start_list` is the PZSz start list the PZSz admission reads (ADR-111).
+
+    The line says what happened, without a name (ADR-119 G62): a plan's
+    recording connector writes nothing, so its brackets are "planned"; an
+    international bracket with no fencer of ours says so, with its source N."""
     from python.pipeline.core.contract import Services
     from python.pipeline.engine.flows import Flow, FlowParams
+    from python.pipeline.international_report import source_n
+    from python.pipeline.promotion.plan import RecordingConnector
     from python.pipeline.run import run_flow
 
     flow = flow or Flow.INGEST_DOMESTIC
@@ -418,12 +424,15 @@ def _run_parsed_through_flow(
     ctx = run_flow(FlowParams(flow), svc=svc)
     committed = ctx.get("committed") or {}
     faults = [f.kind.value for f in ctx.faults]
-    if committed.get("skipped"):
+    if flow == Flow.INGEST_INTERNATIONAL and _no_fencer_of_ours(ctx):
+        print(f"  {label}: {NO_FENCER_OF_OURS} ({source_n(parsed)} in the source)")
+    elif committed.get("skipped"):
         print(f"  {label}: SKIPPED (dropped {committed.get('dropped')}) faults={faults}")
     else:
+        verb = "planned" if isinstance(db, RecordingConnector) else "committed"
         tournaments = committed.get("tournaments") or []
         summary = ", ".join(f"{t['vcat']}→t{t['id_tournament']}(n={t['n']})" for t in tournaments)
-        print(f"  {label}: committed {len(tournaments)} bracket(s): {summary} faults={faults}")
+        print(f"  {label}: {verb} {len(tournaments)} bracket(s): {summary} faults={faults}")
     return ctx
 
 

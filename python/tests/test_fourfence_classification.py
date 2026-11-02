@@ -97,6 +97,132 @@ def test_FOURFENCE_BRONZE_02_a_tableau_without_clickable_names_still_names_the_b
     assert len(foil.results) == 14
 
 
+def test_FOURFENCE_BRONZE_03_the_second_bronze_is_found_by_surname_when_pools_mix_categories():
+    """G66 A: Napoli 2026, V4 women's épée. The pools mix the categories, so
+    the second bronze's pool rank (37) is not her last-four seed (7), and the
+    tableau cuts her surname short. Her surname is a semi-final loser's, so she
+    is 3rd beside KOLCZONAY, and in N (10)."""
+    from python.scrapers.fourfence import parse_html
+
+    epee = parse_html(_page("napoli_spf9_clafinale.html"), tab4_html=_page("napoli_spf9_tab4.html"))
+    places = {r.fencer_name.split()[0]: r.place for r in epee.results}
+    assert places["HENDRICKS-SEBES"] == 3
+    assert places["KOLCZONAY"] == 3
+    assert epee.raw_pool_size == 10
+    assert len(epee.results) == 10
+    assert sorted(places.values()) == [1, 2, 3, 3, 5, 6, 7, 8, 9, 10]
+
+
+def _classification(rows: list[tuple[str, int, int | None]]) -> str:
+    """A final classification page: (surname, pool rank, CLASS or None)."""
+    trs = "".join(
+        f'<tr class="null767"><td></td><td></td><td>{pool}</td><td>{place or ""}</td>'
+        f"<td>{surname}</td><td>Anna</td><td></td><td>Club</td><td></td></tr>"
+        '<tr class="nullmax"><td></td><td></td><td></td><td></td><td>EEPOL</td></tr>'
+        for surname, pool, place in rows
+    )
+    return f"<html><body><table>{trs}</table></body></html>"
+
+
+def _tab4(bouts: list[tuple[int, str, int]]) -> str:
+    """A last-four tableau: (seed, surname, score), two rows per semi-final."""
+    trs = "".join(
+        f'<tr><td>{seed}</td><td><span onclick="x()">{surname}</span></td><td>POL</td>'
+        f"<td>{score}</td></tr>"
+        for seed, surname, score in bouts
+    )
+    return f"<html><body><table>{trs}</table></body></html>"
+
+
+SEMIS = [(1, "ADAMSKA", 15), (4, "NOWAK", 9), (2, "BORSKA", 15), (3, "CEGLARSKA", 11)]
+
+
+def test_FOURFENCE_BRONZE_04_the_seed_tells_two_unplaced_namesakes_apart():
+    """Two unplaced fencers share the semi-final loser's surname: the one whose
+    pool rank is the tableau's seed is 3rd; the other left the elimination."""
+    from python.scrapers.fourfence import resolve_classification
+
+    page = _classification(
+        [
+            ("ADAMSKA", 1, 1),
+            ("BORSKA", 2, 2),
+            ("CEGLARSKA", 3, 3),
+            ("NOWAK", 4, None),
+            ("DUDEK", 5, 5),
+            ("NOWAK", 9, None),
+            ("EMSKA", 6, 6),
+        ]
+    )
+    placed, n = resolve_classification(page, _tab4(SEMIS))
+    assert [(r["surname"], r["pool"], r["place"]) for r in placed if r["surname"] == "NOWAK"] == [
+        ("NOWAK", 4, 3)
+    ]
+    assert n == 6
+
+
+def test_FOURFENCE_BRONZE_05_namesakes_the_seed_cannot_tell_apart_stay_out():
+    """When neither namesake's pool rank is the seed, the row stays out as
+    without a tableau: N still counts the second bronze."""
+    from python.scrapers.fourfence import resolve_classification
+
+    page = _classification(
+        [
+            ("ADAMSKA", 1, 1),
+            ("BORSKA", 2, 2),
+            ("CEGLARSKA", 3, 3),
+            ("NOWAK", 7, None),
+            ("DUDEK", 5, 5),
+            ("NOWAK", 9, None),
+            ("EMSKA", 6, 6),
+        ]
+    )
+    placed, n = resolve_classification(page, _tab4(SEMIS))
+    assert "NOWAK" not in {r["surname"] for r in placed}
+    assert n == 6
+
+
+def test_FOURFENCE_BRONZE_06_a_semi_final_lost_by_withdrawal_names_its_loser():
+    """G73 A: Napoli 2026, V2 women's foil. The second semi-final's loser
+    withdrew: the tableau prints "R" as her score and nothing as the winner's.
+    The semi-finals are the first four seeded rows, whatever their score, and
+    "R" lost, so she is 3rd beside ROUSSELOT, and in N (17)."""
+    from python.scrapers.fourfence import parse_html, semifinal_losers
+
+    tab4 = _page("napoli_ff7_tab4.html")
+    assert [name for _seed, name in semifinal_losers(tab4)] == ["ROUSSELOT", "GANASSIN"]
+    foil = parse_html(_page("napoli_ff7_clafinale.html"), tab4_html=tab4)
+    places = {r.fencer_name.split()[0]: r.place for r in foil.results}
+    assert places["GANASSIN"] == 3 and places["ROUSSELOT"] == 3
+    assert foil.raw_pool_size == 17 and len(foil.results) == 17
+    assert sorted(places.values())[:5] == [1, 2, 3, 3, 5]
+
+
+def test_FOURFENCE_BRONZE_07_a_bout_without_a_score_or_withdrawal_names_no_loser():
+    """A semi-final whose two rows print neither a number nor "R" names no
+    loser: the bronze stays unnamed, and N still counts it."""
+    from python.scrapers.fourfence import resolve_classification, semifinal_losers
+
+    tab4 = _tab4([(1, "ADAMSKA", 15), (4, "NOWAK", 9)]).replace(
+        "</table>",
+        '<tr><td>2</td><td><span onclick="x()">BORSKA</span></td><td>POL</td><td></td></tr>'
+        '<tr><td>3</td><td><span onclick="x()">CEGLARSKA</span></td><td>POL</td><td></td></tr>'
+        "</table>",
+    )
+    assert semifinal_losers(tab4) == [(4, "NOWAK")]
+    page = _classification(
+        [
+            ("ADAMSKA", 1, 1),
+            ("BORSKA", 2, 2),
+            ("NOWAK", 4, 3),
+            ("CEGLARSKA", 3, None),
+            ("DUDEK", 5, 5),
+        ]
+    )
+    placed, n = resolve_classification(page, tab4)
+    assert "CEGLARSKA" not in {r["surname"] for r in placed}
+    assert n == 5
+
+
 def test_FOURFENCE_CLOSE_01_a_fencer_who_left_is_not_in_N_and_places_close_up():
     """V2 men's foil lists 23 fencers: 21 placed, the second bronze, and
     MULLER Ferenc, who left during the direct elimination (number 21 skipped).

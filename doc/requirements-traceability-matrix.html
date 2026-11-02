@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a9b34e6361330afc9210bbbaecf1094a381116935a40ba2c63e85621f2ba2866">
+<meta name="doc-source-sha256" content="ccc862b91ca7f2a41f5a9e220e1ccf733ce75a99ad3b92fee26d7fba7111a677">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>888 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>912 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -92,7 +92,7 @@
 <td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created. At an FIE event (MSW, PSW, the IMSW code) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a user-confirmed, unrevoked alias counts as identity (ADR-106 amendment of 2026-10-17, D9 A).</td>
 <td>§8.5, ADR-106</td>
 <td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–12, INTL.POL.01–06, NAME.CELLS.01–07, OVR.DRIFT.01–07, EXCLUDED.01–04, SRC.CONS.01–10, SRC.REGR.01–09, RUNNAME.04, IDENTITY.ONCE.01–04</td>
-<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 released main 9fc4cbc1; a fencer found twice counted once, IDENTITY.ONCE, built in push 3, 2026-11-01)</td>
+<td>Covered (amended 2026-10-17, ADR-106; a name the source repeats in both name cells read as an exception, NAME.CELLS, amended 2026-11-01, released main d5947612; OVR.DRIFT and EXCLUDED released main af30c76d; SRC.CONS, SRC.REGR and RUNNAME.04 released main 9fc4cbc1; a fencer found twice counted once, IDENTITY.ONCE, released main b65deadb)</td>
 </tr>
 <tr>
 <td>FR-10</td>
@@ -4782,56 +4782,158 @@
 <td>At an FIE event a row that identity and a confirmed alias both find (SĘKOWSKI, KORONA, KORNAŚ) is one fit and is stored, with or without an SPWS start.</td>
 <td>pytest</td>
 <td><code>python/tests/test_identity_counted_once.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>IDENTITY.ONCE.03</td>
 <td>A reading that names the same fencer as the printed name is one fit, at an FIE and an EVF event.</td>
 <td>pytest</td>
 <td><code>python/tests/test_identity_counted_once.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>IDENTITY.ONCE.04</td>
 <td>Two fencers who both fit are still two: PENDING, &quot;two roster fencers fit&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_identity_counted_once.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.01–02</td>
 <td>An international PENDING refusal's summary counts its rows and the admission's reasons; another reason is counted, never printed.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.03–04</td>
 <td>A joined-bracket refusal names its places; a refusal without its own summary says what its kind means.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.05–06</td>
 <td>No results link, a combined bracket and two sources for one bracket are a <code>SourceRefused</code> (a <code>ValueError</code>) with its kind; the public error passes it with its meaning.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.07</td>
 <td>The sync's pause reason gives the kind, the listing and what the refusal means; a run recorded before G60 falls back to its kind's meaning.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
 </tr>
 <tr>
 <td>REFUSAL.SAY.08–10</td>
 <td>The re-read says whether an event was read and then refused, refused before anything was written, or failed; it records the engines read, a refused read included; the summary line and the log end with the sources read.</td>
 <td>pytest</td>
 <td><code>python/tests/test_refusals_explained.py</code></td>
-<td>Covered (2026-11-01, built in push 3)</td>
+<td>Covered (released 2026-11-01, main b65deadb)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card detail"><h2 id="a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</h2>
+<p>Acceptance IDs for the fifth amendment of 2026-11-02 to <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> (G62 A).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PLAN.LINE.01–02</td>
+<td>A bracket a plan only records prints &quot;planned N bracket(s)&quot;, never &quot;committed&quot;; a run that writes still prints &quot;committed&quot;.</td>
+<td>pytest</td>
+<td><code>python/tests/test_plan_lines_say_planned.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>PLAN.LINE.03–04</td>
+<td>An international bracket without a fencer of ours prints &quot;no fencer of ours (N in the source)&quot;, in a plan and in a write, with the size the parser recorded for the whole bracket when the listing is shorter, and no name.</td>
+<td>pytest</td>
+<td><code>python/tests/test_plan_lines_say_planned.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>PLAN.LINE.05</td>
+<td>Every other skip, a domestic bracket below the minimum or a pool round, keeps its &quot;SKIPPED (dropped …)&quot; line.</td>
+<td>pytest</td>
+<td><code>python/tests/test_plan_lines_say_planned.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card detail"><h2 id="a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season's open event, 4fence's second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</h2>
+<p>Acceptance IDs for the sixth amendment of 2026-11-02 to <a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> (G64 A, G66 A, G68 B), the seventh (G71 A, G72 A, G73 A), and the amendment of the same day to <a href="adr/105-international-results-keep-source-bracket.html">ADR-105</a>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PROMO.LIFE.18</td>
+<td>Each morning, before closing anything, the daily close names every event of the route whose season has ended and which is still IN_PROGRESS, with the environments it is in, in the log and on Telegram; a dry run sends nothing; nothing is written.</td>
+<td>pytest</td>
+<td><code>python/tests/test_promotion_lifecycle.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>FOURFENCE.BRONZE.03</td>
+<td>When the pools mix the categories, the second bronze is the unplaced row whose surname begins with a semi-final loser's, whatever its pool rank (Napoli 2026, V4 women's épée: 3rd beside the other bronze, N 10).</td>
+<td>pytest</td>
+<td><code>python/tests/test_fourfence_classification.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>FOURFENCE.BRONZE.04–05</td>
+<td>Two unplaced namesakes of a semi-final loser: the one whose pool rank is the seed is 3rd; when neither is, both stay out and N still counts the bronze.</td>
+<td>pytest</td>
+<td><code>python/tests/test_fourfence_classification.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>FTL.REFUSED.01–04</td>
+<td>A sign-in FTL refuses is tried once per process: later FTL reads, a forced login included, fail with the same message and no request; the next process tries once; a login page that fails to load is not a refusal (G71 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>SRC.REGR.05 (G72)</td>
+<td>A known refusal holds only for the refusal it stands for, in the reader's own words; the same event refused for another reason, an FTL sign-in for one, is reported as refused with its reason.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>FOURFENCE.BRONZE.06–07</td>
+<td>A semi-final lost by withdrawal (&quot;R&quot;) names its loser, who is 3rd and in N (Napoli 2026, V2 women's foil, N 17); a bout with neither a score nor &quot;R&quot; names no loser and N still counts the bronze (G73 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_fourfence_classification.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
+</tr>
+<tr>
+<td>SRC.REGR.05 (G68)</td>
+<td>Every FTL combined bracket the re-read found is known, with G51's reason: <code>PEW4ef-2024-2025</code>, <code>PEW6efs-2025-2026</code>, <code>PEW62efs-2025-2026</code>, <code>PEW9efs-2025-2026</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (2026-11-02, built for the next push)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4846,5 +4948,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a9b34e6361330afc9210bbbaecf1094a381116935a40ba2c63e85621f2ba2866</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ccc862b91ca7f2a41f5a9e220e1ccf733ce75a99ad3b92fee26d7fba7111a677</code></footer>
 </div></body></html>
