@@ -181,6 +181,48 @@ def test_FOURFENCE_BRONZE_05_namesakes_the_seed_cannot_tell_apart_stay_out():
     assert n == 6
 
 
+def test_FOURFENCE_BRONZE_06_a_semi_final_lost_by_withdrawal_names_its_loser():
+    """G73 A: Napoli 2026, V2 women's foil. The second semi-final's loser
+    withdrew: the tableau prints "R" as her score and nothing as the winner's.
+    The semi-finals are the first four seeded rows, whatever their score, and
+    "R" lost, so she is 3rd beside ROUSSELOT, and in N (17)."""
+    from python.scrapers.fourfence import parse_html, semifinal_losers
+
+    tab4 = _page("napoli_ff7_tab4.html")
+    assert [name for _seed, name in semifinal_losers(tab4)] == ["ROUSSELOT", "GANASSIN"]
+    foil = parse_html(_page("napoli_ff7_clafinale.html"), tab4_html=tab4)
+    places = {r.fencer_name.split()[0]: r.place for r in foil.results}
+    assert places["GANASSIN"] == 3 and places["ROUSSELOT"] == 3
+    assert foil.raw_pool_size == 17 and len(foil.results) == 17
+    assert sorted(places.values())[:5] == [1, 2, 3, 3, 5]
+
+
+def test_FOURFENCE_BRONZE_07_a_bout_without_a_score_or_withdrawal_names_no_loser():
+    """A semi-final whose two rows print neither a number nor "R" names no
+    loser: the bronze stays unnamed, and N still counts it."""
+    from python.scrapers.fourfence import resolve_classification, semifinal_losers
+
+    tab4 = _tab4([(1, "ADAMSKA", 15), (4, "NOWAK", 9)]).replace(
+        "</table>",
+        '<tr><td>2</td><td><span onclick="x()">BORSKA</span></td><td>POL</td><td></td></tr>'
+        '<tr><td>3</td><td><span onclick="x()">CEGLARSKA</span></td><td>POL</td><td></td></tr>'
+        "</table>",
+    )
+    assert semifinal_losers(tab4) == [(4, "NOWAK")]
+    page = _classification(
+        [
+            ("ADAMSKA", 1, 1),
+            ("BORSKA", 2, 2),
+            ("NOWAK", 4, 3),
+            ("CEGLARSKA", 3, None),
+            ("DUDEK", 5, 5),
+        ]
+    )
+    placed, n = resolve_classification(page, tab4)
+    assert "CEGLARSKA" not in {r["surname"] for r in placed}
+    assert n == 5
+
+
 def test_FOURFENCE_CLOSE_01_a_fencer_who_left_is_not_in_N_and_places_close_up():
     """V2 men's foil lists 23 fencers: 21 placed, the second bronze, and
     MULLER Ferenc, who left during the direct elimination (number 21 skipped).

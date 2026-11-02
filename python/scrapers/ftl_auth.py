@@ -59,17 +59,28 @@ _LOGIN_FLOW_PATHS = ("/account/login", "/login", "/logout")
 _cached_cookies: httpx.Cookies | None = None
 _cached_expiry: dt.datetime | None = None
 
+# A sign-in FTL refused, remembered for the rest of the process (ADR-119 G71 A):
+# every later call fails with the same message and makes no new attempt, so a
+# run that reads ten FTL events posts the login once, not ten times.
+_refused: str | None = None
+
 
 class FtlAuthError(RuntimeError):
     """Raised when the FTL login flow fails for any reason."""
 
 
+class _SignInRefused(FtlAuthError):
+    """FTL answered the sign-in itself with a refusal (not a page that failed
+    to load); the process does not try again."""
+
+
 def reset_session_cache() -> None:
-    """Drop any cached session (forces the next call to log in). Used by tests
-    and available to callers that want to force a fresh login."""
-    global _cached_cookies, _cached_expiry
+    """Drop any cached session and any remembered refusal (the next call logs
+    in). Used by tests; a new process starts this way."""
+    global _cached_cookies, _cached_expiry, _refused
     _cached_cookies = None
     _cached_expiry = None
+    _refused = None
 
 
 def normalize_ftl_url(url: str) -> str:
@@ -138,14 +149,14 @@ def _perform_login(client: httpx.Client, username: str, password: str) -> None:
         headers={"x-csrf-token": csrf},
     )
     if login_resp.status_code != 200:
-        raise FtlAuthError(
+        raise _SignInRefused(
             f"POST {FTL_LOGIN_POST} returned {login_resp.status_code}: {login_resp.text[:200]}"
         )
     # A successful login redirects away from /account/login. If the final URL
     # after following redirects is /account/login, the credentials were rejected
     # (wrong password, account locked, or account suspended by FTL).
     if "/account/login" in str(login_resp.url).lower():
-        raise FtlAuthError(
+        raise _SignInRefused(
             "FTL credentials rejected — wrong password, account locked, or "
             "account suspended. Update FTL_USERNAME / FTL_PASSWORD in .env "
             "and in GitHub repository secrets."
@@ -167,9 +178,14 @@ def get_authed_ftl_client(
     * rewrites apex → www on every request (so the host-only cookie applies), and
     * raises ``FtlAuthError`` if any resource fetch is redirected to the login
       page (so an expired session fails loudly rather than silently).
-    """
-    global _cached_cookies, _cached_expiry
 
+    A sign-in FTL refused is remembered for the rest of the process: later
+    calls, ``force_login`` included, raise the same message without a request.
+    """
+    global _cached_cookies, _cached_expiry, _refused
+
+    if _refused is not None:
+        raise FtlAuthError(_refused)
     username = os.environ.get("FTL_USERNAME")
     password = os.environ.get("FTL_PASSWORD")
     if not username or not password:
@@ -198,7 +214,11 @@ def get_authed_ftl_client(
         if cache_valid:
             client.cookies.update(_cached_cookies)
         else:
-            _perform_login(client, username, password)
+            try:
+                _perform_login(client, username, password)
+            except _SignInRefused as e:
+                _refused = str(e)
+                raise FtlAuthError(_refused) from None
             # Cache a copy of the jar + the session's hard expiry. If the server
             # didn't advertise an expiry, don't cache (treat as login-only).
             expiry = _connect_sid_expiry(client)

@@ -86,21 +86,33 @@ def _classification_rows(html: str) -> list[dict]:
     return rows
 
 
+def _bout_loser(a: tuple[int, str, str], b: tuple[int, str, str]) -> tuple[int, str, str] | None:
+    """The loser of a bout of two (seed, surname, score) rows: the one marked
+    "R" (withdrew), else the lower score; None when neither row has either."""
+    if (a[2] == "R") != (b[2] == "R"):
+        return a if a[2] == "R" else b
+    if a[2].isdigit() and b[2].isdigit():
+        return a if int(a[2]) < int(b[2]) else b
+    return None
+
+
 def semifinal_losers(tab4_html: str) -> list[tuple[int | None, str]]:
     """(pool seed, folded surname) of both semi-final losers on a last-four
     tableau. A bout is two rows (seed, name, club code, score); the first four
-    scored rows are the two semi-finals, and the lower score lost. The name is
-    a clickable span holding the surname (Napoli 2026), or cell text
-    "SURNAME Firstname" whose capitalised words are the surname (Terni 2025,
-    FOURFENCE.BRONZE.02)."""
+    seeded rows are the two semi-finals, whatever their score. The lower score
+    lost, or the row marked "R", which withdrew (Napoli 2026, the winner's
+    score then blank; G73 A, FOURFENCE.BRONZE.06); a bout with neither names
+    no loser. The name is a clickable span holding the surname (Napoli 2026),
+    or cell text "SURNAME Firstname" whose capitalised words are the surname
+    (Terni 2025, FOURFENCE.BRONZE.02)."""
     soup = BeautifulSoup(tab4_html, "html.parser")
-    entries: list[tuple[int | None, str, int]] = []
+    entries: list[tuple[int, str, str]] = []
     for tr in soup.find_all("tr"):
         cells = tr.find_all("td", recursive=False)
         if len(cells) != 4:
             continue
-        score = _clean_text(cells[3].get_text(strip=True))
-        if not score.isdigit():
+        seed = _clean_text(cells[0].get_text(strip=True))
+        if not seed.isdigit():
             continue
         span = cells[1].find("span", onclick=True)
         if span is not None:
@@ -115,14 +127,13 @@ def semifinal_losers(tab4_html: str) -> list[tuple[int | None, str]]:
             surname = " ".join(caps)
         if not surname:
             continue
-        seed = _clean_text(cells[0].get_text(strip=True))
-        entries.append((int(seed) if seed.isdigit() else None, _fold(surname), int(score)))
+        score = _clean_text(cells[3].get_text(strip=True)).upper()
+        entries.append((int(seed), _fold(surname), score))
         if len(entries) == 4:
             break
-    losers = []
+    losers: list[tuple[int | None, str]] = []
     for a, b in ((0, 1), (2, 3)):
-        if b < len(entries):
-            loser = entries[a] if entries[a][2] < entries[b][2] else entries[b]
+        if b < len(entries) and (loser := _bout_loser(entries[a], entries[b])):
             losers.append((loser[0], loser[1]))
     return losers
 

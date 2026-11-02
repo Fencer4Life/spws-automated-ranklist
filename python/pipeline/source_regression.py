@@ -41,12 +41,16 @@ REFUSED = "refused"
 KNOWN = "known"
 
 # Cases the plan has decided to leave as they are, each with its reason. They
-# never name a fencer: the reason reaches the log.
-KNOWN_REFUSALS = {
-    "PEW4ef-2024-2025": "an FTL combined bracket the reader refuses (G51 A)",
-    "PEW6efs-2025-2026": "an FTL combined bracket the reader refuses (G51 A)",
-    "PEW62efs-2025-2026": "an FTL combined bracket the reader refuses (G51 A)",
-    "PEW9efs-2025-2026": "an FTL combined bracket the reader refuses (G51 A)",
+# never name a fencer: the reason reaches the log. A known refusal stands for
+# one refusal, which its reason must contain; any other refusal of the event
+# is reported as refused (G72 A).
+_COMBINED = "a combined bracket (no single category)"  # REFUSAL_MEANING["combined"]
+_G51 = (_COMBINED, "an FTL combined bracket the reader refuses (G51 A)")
+KNOWN_REFUSALS: dict[str, tuple[str, str]] = {
+    "PEW4ef-2024-2025": _G51,
+    "PEW6efs-2025-2026": _G51,
+    "PEW62efs-2025-2026": _G51,
+    "PEW9efs-2025-2026": _G51,
 }
 KNOWN_DIFFERENCES = {
     "PEW7es-2024-2025": "a men's épée V2 result waits for G53's re-ingest, after G56",
@@ -203,13 +207,14 @@ def refusal(
     code: str, reason: str, *, named: str | None = None, read_from: tuple[str, ...] = ()
 ) -> EventCheck:
     """An event the read or the plan refused; `reason` names no one."""
-    if code in KNOWN_REFUSALS:
+    cause, why = KNOWN_REFUSALS.get(code, (None, None))
+    if cause is not None and cause in reason:
         return EventCheck(
             code,
             KNOWN,
             [reason],
             [named] if named else [],
-            known=KNOWN_REFUSALS[code],
+            known=why,
             read_from=read_from,
         )
     return EventCheck(code, REFUSED, [reason], [named] if named else [], read_from=read_from)

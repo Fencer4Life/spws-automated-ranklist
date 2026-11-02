@@ -195,3 +195,85 @@ def test_raises_when_redirected_back_to_login(ftl_creds):
     with pytest.raises(FtlAuthError, match="credentials rejected"):
         with get_authed_ftl_client():
             pass
+
+
+# ===========================================================================
+# FTL.REFUSED — a refused sign-in is tried once per process (ADR-119 G71 A)
+#
+# On 2 Nov 2026 FTL refused the pipeline account's sign-in, and the source
+# re-read posted the login once for each of its ten FTL events in five
+# minutes: the session is cached only after a sign-in succeeds. A refusal is
+# now remembered for the rest of the process: every later FTL read fails at
+# once with the same message and no new attempt; the next run tries once.
+# ===========================================================================
+_REFUSED = (
+    "An error occurred when trying to log you in. Please contact customer support to resolve this."
+)
+
+
+def _refusing_ftl():
+    page = respx.get("https://www.fencingtimelive.com/account/login").mock(
+        return_value=httpx.Response(200, html=_LOGIN_HTML)
+    )
+    login = respx.post("https://www.fencingtimelive.com/login").mock(
+        return_value=httpx.Response(400, text=_REFUSED)
+    )
+    return page, login
+
+
+@respx.mock
+def test_FTL_REFUSED_01_a_refused_sign_in_is_not_tried_again_in_the_process(ftl_creds):
+    from python.scrapers.ftl_auth import FtlAuthError, get_authed_ftl_client
+
+    page, login = _refusing_ftl()
+    messages = []
+    for _ in range(3):
+        with pytest.raises(FtlAuthError) as refused:
+            with get_authed_ftl_client():
+                pass
+        messages.append(str(refused.value))
+    assert login.call_count == 1 and page.call_count == 1
+    assert len(set(messages)) == 1 and "contact customer support" in messages[0]
+
+
+@respx.mock
+def test_FTL_REFUSED_02_forcing_a_login_makes_no_new_attempt_either(ftl_creds):
+    from python.scrapers.ftl_auth import FtlAuthError, get_authed_ftl_client
+
+    _page, login = _refusing_ftl()
+    for force in (False, True):
+        with pytest.raises(FtlAuthError, match="contact customer support"):
+            with get_authed_ftl_client(force_login=force):
+                pass
+    assert login.call_count == 1
+
+
+@respx.mock
+def test_FTL_REFUSED_03_a_new_process_tries_once_again(ftl_creds):
+    """reset_session_cache stands for the next run's new process."""
+    from python.scrapers.ftl_auth import FtlAuthError, get_authed_ftl_client, reset_session_cache
+
+    _page, login = _refusing_ftl()
+    with pytest.raises(FtlAuthError):
+        with get_authed_ftl_client():
+            pass
+    reset_session_cache()
+    with pytest.raises(FtlAuthError):
+        with get_authed_ftl_client():
+            pass
+    assert login.call_count == 2
+
+
+@respx.mock
+def test_FTL_REFUSED_04_a_login_page_that_fails_to_load_is_not_a_refusal(ftl_creds):
+    """FTL down is not the account refused: the next read tries again."""
+    from python.scrapers.ftl_auth import FtlAuthError, get_authed_ftl_client
+
+    page = respx.get("https://www.fencingtimelive.com/account/login").mock(
+        return_value=httpx.Response(503, text="Service Unavailable")
+    )
+    for _ in range(2):
+        with pytest.raises(FtlAuthError, match="503"):
+            with get_authed_ftl_client():
+                pass
+    assert page.call_count == 2
