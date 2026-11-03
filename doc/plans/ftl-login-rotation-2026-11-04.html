@@ -1,0 +1,196 @@
+<meta charset="utf-8">
+<title>Rotating the FencingTimeLive login</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">G63 follow-up · FencingTimeLive login · Brainstorm (draft)</p>
+  <h1>Rotating the FencingTimeLive login</h1>
+  <p class="dek">Since 2 Nov FencingTimeLive refuses the pipeline&rsquo;s login (&ldquo;please contact customer support&rdquo;), and you think it hit a usage limit. Below: <b>how you record a new login</b> (you type it; I never see it), and <b>what to decide so the new login does not hit the same wall</b>.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Draft 4 Nov 2026 — L1, L2, L4, L5 yours to decide</span>
+    <span class="pill good"><span class="dot"></span>L3 answered 4 Nov: a Gmail &ldquo;+&rdquo; alias</span>
+    <span class="pill danger"><span class="dot"></span>credentials never in chat, the repository or a log</span>
+    <span class="pill">ADR-068 · ADR-119 G63, G71</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The guide · about five minutes · you do it</p>
+    <h2>How to record the next login</h2>
+    <p>One piece of code reads the login, <code>python/scrapers/ftl_auth.py</code>, from two names: <code>FTL_USERNAME</code> (the account&rsquo;s e-mail) and <code>FTL_PASSWORD</code>. They live in two places, and both must change.</p>
+    <ol class="steps">
+      <li><b>Create the login, then check it in your own browser.</b> Your choice (L3, 4 Nov): an account at fencingtimelive.com under a &ldquo;+&rdquo; alias of the association&rsquo;s Gmail, for example <code>mailbox+ftl@gmail.com</code>. FTL treats it as a new address; its confirmation mail arrives in the same inbox. You create the account: I cannot create one for you. Then sign in once with it. If it is refused there, stop: no file needs changing yet.</li>
+      <li><b>LOCAL: your <code>.env</code>.</b> Open <code>/Users/aleks/coding/SPWSranklist/.env</code> in your editor (every worktree links to this one file). Change the two lines, keeping their names:
+        <pre class="trace"><code>FTL_USERNAME='the-account@e-mail'
+FTL_PASSWORD='the password'</code></pre>
+        No spaces around <code>=</code>. Keep the single quotes when the password holds a space, <code>$</code>, <code>#</code> or a quote mark. Save.</li>
+      <li><b>CI: the two repository secrets.</b> In a terminal in the repository, run each line on its own; each asks for the value and hides what you paste:
+        <pre class="trace"><code>gh secret set FTL_USERNAME
+gh secret set FTL_PASSWORD</code></pre>
+        Never pass the value on the command line (<code>--body</code>): it would stay in your shell&rsquo;s history. The same works on github.com: Settings &rarr; Secrets and variables &rarr; Actions &rarr; Repository secrets &rarr; the pencil beside each name. Eight workflows read these two names (<code>ingest-event</code>, <code>promote</code>, <code>event-close</code>, <code>source-regression</code>, <code>evf-sync</code>, <code>populate-urls</code>, <code>scrape-tournament</code>, <code>phase5-event-runner</code>); the hourly results sync reaches FTL through <code>ingest-event</code>. Nothing else changes.</li>
+      <li><b>Keep the old login out of both places</b>, in your password manager only, until FTL&rsquo;s support has answered (L4).</li>
+      <li><b>Tell me &ldquo;login rotated&rdquo;.</b> I then make <b>one</b> read-only check on LOCAL: a re-read of one FTL event (<code>IMSW-2025-2026</code>) against LOCAL, nothing written, the result in one line. If FTL refuses, the run stops at that one attempt (G71) and I tell you. CI&rsquo;s next FTL read proves the secrets.</li>
+    </ol>
+    <div class="note">
+      <p class="lede">What I never do</p>
+      <p>See, print, store or log the values; open <code>.env</code>; ask you to paste them in chat. Documentation and memory name the two variables and where they live, never their values (handbook, Environments and Release).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Why the next login could fail the same way</p>
+    <h2>What we know about the limit</h2>
+    <ul>
+      <li><b>FTL&rsquo;s session lasts 10 days</b> from sign-in and is not extended by use (<a href="../adr/068-ftl-www-host-and-session-cache.html">ADR-068</a>). Our code keeps it only inside one process, so <b>every run signs in again</b>. ADR-068 deferred keeping it across runs.</li>
+      <li><b>1 Nov:</b> about twelve sign-ins (CI&rsquo;s two source re-reads, about ten of my read-only runs), all accepted. <b>2 Nov, 07:00 UTC onward:</b> refused on this machine and on GitHub&rsquo;s alike, with nothing of ours signing in during the hours it changed (G63).</li>
+      <li><b>What is coming.</b> Since 1 Nov the hourly results sync runs by itself. An FTL event in progress costs two or three sign-ins per hourly cycle (its read and ingest on CERT, then promote): <b>roughly 50 to 70 a day</b>, against twelve on 1 Nov. All but one sign-in in ten days could be avoided.</li>
+      <li><b>Not known:</b> FTL&rsquo;s rule. I have not read FTL&rsquo;s terms, and the refusal names no limit. If FTL limits an account on purpose, a second account used to get past that limit may break its terms and lose that account too; only FTL can say (L4).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Five decisions, each with a recommendation</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>L1</b></td><td>How is the login rotated?</td><td><b>A</b> Replaced in place: the guide above, two secrets and <code>.env</code>; no code changes.<br><b>B</b> Two logins kept side by side (<code>FTL_USERNAME_2</code>, <code>FTL_PASSWORD_2</code>) and a repository variable choosing which one runs; a change in <code>ftl_auth</code> and the eight workflows, test-first.<br><b>C</b> The pipeline switches to the second login by itself when the first is refused.</td><td><b>A</b>: one active login, changed by you. C would spend the second login the same way within hours, and to FTL it looks like getting round its limit.<br><b>4 Nov, your proposal:</b> four &ldquo;+&rdquo; aliases of the association&rsquo;s Gmail with one password, used in turn. I will not build that rotation: four accounts on one mailbox, signing in from the same machines, taken in turn because each is cut off, is a way round FTL&rsquo;s limit rather than within it, and FTL can link them and block all of them, the first login included. One shared password would also lose all four at once if it leaked. What I will help with: one alias as the replacement login (A), L2 so it lasts, and L4.</td></tr>
+        <tr><td><b>L2</b></td><td>Sign in less often.</td><td><b>A</b> Keep the 10-day session across runs (ADR-068&rsquo;s deferred follow-up): one sign-in per ~10 days. CI keeps it in a CERT database row only the pipeline&rsquo;s service role reads (deny-by-default, ADR-083); LOCAL in a file in your user&rsquo;s cache folder, readable by you only. Never GitHub&rsquo;s Actions cache: in a public repository a pull request&rsquo;s workflow can restore it. Its own build sheet, test-first.<br><b>B</b> Keep one sign-in per run (as now, with G71).</td><td><b>A</b>: without it the hourly sync signs in some 50 times a day during an FTL event, whichever login it uses.</td></tr>
+        <tr><td><b>L3</b></td><td>Whose login?</td><td><b>A</b> An account in the association&rsquo;s name (its own mailbox), kept in its password manager, so it outlives any one person.<br><b>B</b> A person&rsquo;s own account.</td><td><b>A</b>. <b>Your answer, 4 Nov:</b> a &ldquo;+&rdquo; alias of the association&rsquo;s Gmail, kept in its password manager. An alias is one more account on the same mailbox, which FTL can link to the first: use it as the one replacement login (L1 A), not as a pool to move through each time one is refused (L1 C), which FTL would most likely treat as getting round its limit.</td></tr>
+        <tr><td><b>L4</b></td><td>FTL&rsquo;s answer.</td><td><b>A</b> You write to FTL&rsquo;s support, as their message asks: what limit applies, whether an association reading its members&rsquo; results automatically is acceptable, and whether the first login can be restored. You rotate meanwhile, to a login the association may use for this. I record their answer under G63.<br><b>B</b> Rotate without asking.</td><td><b>A</b>: if FTL objects to automated reading, rotating does not solve it, and the plan changes.</td></tr>
+        <tr><td><b>L5</b></td><td>What resumes after the check.</td><td><b>A</b> G65, G67 and G70 read FTL read-only, one event per run, after the one check; then G64&rsquo;s correction, with your go.<br><b>B</b> They wait until L2 is built.</td><td><b>A</b>: a handful of sign-ins, one per run, now G71 stops a refused run at its first attempt.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries</p>
+    <h2>What this does not touch</h2>
+    <ul>
+      <li>The guide needs no code: the names stay <code>FTL_USERNAME</code> and <code>FTL_PASSWORD</code>. Code changes only with L1 B or L2 A, each test-first after your sign-off.</li>
+      <li>The FTL export organizer link (<code>tbl_ftl_export_token</code>, ADR-095) is a different thing and is not rotated here.</li>
+      <li>No other secret, and no other provider&rsquo;s login.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Draft 4 Nov 2026 · sources: ADR-068, ADR-119 plan G63 and G71, the handbook&rsquo;s Environments and Release page, <code>python/scrapers/ftl_auth.py</code> and the workflows that name the two secrets · no credential was read</p>
+</div>

@@ -1163,6 +1163,7 @@
         <li><b>Yesterday it worked.</b> On 1 Nov the CI re-read (run 41354506817, 21:56 UTC) signed in and read 6 FTL events, and so did my LOCAL re-reads. Today&rsquo;s Monday re-read (cron 05:17 UTC) has not started yet, since GitHub starts this repository&rsquo;s crons late (G47). Its log will show whether CI&rsquo;s sign-in works.</li>
         <li><b>What it stops.</b> Every FTL read: an FTL event&rsquo;s ingest, the results sync&rsquo;s compare and the source re-read print &ldquo;failed: FtlAuthError: &hellip;&rdquo; (G60 makes it visible). Engarde, 4fence, Ophardt, d&rsquo;Artagnan and EVF are not affected. Nothing is written by a failed read.</li>
         <li><b>A possible cause, not yet measured.</b> Each process signs in afresh (the session is cached per process only), so every CI run that reads an FTL event signs in once, and 1 Nov had many such runs. I have not counted them.</li>
+        <li><b>4 Nov, your next step: rotate the login.</b> You think the account hit a usage limit and want another login. How to record it (you type it; I never see it) and five questions, L1&ndash;L5, are in <a href="ftl-login-rotation-2026-11-04.html"><code>ftl-login-rotation-2026-11-04.html</code></a>.</li>
       </ul>
       <div class="tablewrap"><table>
         <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
