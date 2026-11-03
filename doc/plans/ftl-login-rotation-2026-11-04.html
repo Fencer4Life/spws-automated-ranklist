@@ -121,11 +121,11 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">G63 follow-up · FencingTimeLive login · Brainstorm rev 2</p>
+  <p class="eyebrow">G63 follow-up · FencingTimeLive login · Brainstorm rev 3</p>
   <h1>The FencingTimeLive login: ask FTL first</h1>
-  <p class="dek">On 4 Nov FTL would not register the &ldquo;+&rdquo; alias. Reading FTL&rsquo;s Terms of Use (updated 10 Mar 2026) explains more than the alias. The terms allow automated reading of the site only under a <b>written agreement with Fencing Time</b>, and they forbid working round its limits or blocks. That is the most likely reason the pipeline&rsquo;s login was refused on 2 Nov. So rev 2 <b>withdraws the rotation</b>: a new login used the same way would break the same terms. The way forward is to ask FTL (L4); a draft letter is below.</p>
+  <p class="dek">On 4 Nov FTL would not register the &ldquo;+&rdquo; alias. Reading FTL&rsquo;s Terms of Use (updated 10 Mar 2026) explains more than the alias. The terms allow automated reading of the site only under a <b>written agreement with Fencing Time</b>, and they forbid working round its limits or blocks. That is the most likely reason the pipeline&rsquo;s login was refused on 2 Nov. So this page <b>withdraws the rotation</b>: a new login used the same way would break the same terms. The way forward is to ask FTL (L4); a draft letter is below.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>rev 2, 4 Nov 2026 — L4 first; L1, L2, L5, L6 yours to decide</span>
+    <span class="pill warn"><span class="dot"></span>rev 3, 4 Nov 2026 — L4 first; L1, L2, L5, L6 yours to decide</span>
     <span class="pill danger"><span class="dot"></span>no new login for the pipeline until FTL answers</span>
     <span class="pill danger"><span class="dot"></span>credentials never in chat, the repository or a log</span>
     <span class="pill">ADR-068 · ADR-119 G63, G71, G74</span>
@@ -153,6 +153,19 @@
       <li><b>FT watches and acts.</b> It uses rate limiting, IP blocking and account checks to detect prohibited use, and it may suspend or end an account. An account must hold accurate information.</li>
       <li><b>When.</b> These terms date from 10 Mar 2026. By 31 May 2026 FTL already required a sign-in for results pages (<a href="../adr/068-ftl-www-host-and-session-cache.html">ADR-068</a> found it then and taught our client to sign in).</li>
     </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Source: <a href="https://www.fencingtimelive.com/privacy">fencingtimelive.com/privacy</a>, last updated 10 March 2026 · read 4 Nov · paraphrased</p>
+    <h2>What FTL&rsquo;s privacy policy adds</h2>
+    <p>The privacy policy sets out what Fencing Time does with the data it holds. It grants no permission and adds no restriction on top of the terms. Four points matter here:</p>
+    <ul>
+      <li><b>FT logs who reads.</b> For reliability and security it records each visitor&rsquo;s IP address, browser and device type, the pages visited and general usage patterns. Its login session is a cookie (our client&rsquo;s <code>connect.sid</code>). So FT sees which machines sign in as which account and how they read: GitHub&rsquo;s runners and this computer, signing in at each run, page after page. That is how a second account from the same machines can be linked to the first, which is one more reason for L1 A.</li>
+      <li><b>The results come from organisers.</b> Placements, rankings, clubs and federation identifiers are supplied by tournament organisers, registration systems and governing bodies. The organiser&rsquo;s own file is the same data at its source, which supports the &ldquo;organiser&rsquo;s own file&rdquo; route below.</li>
+      <li><b>Nothing about third parties&rsquo; use.</b> The policy says results are there so athletes, coaches, organisers and spectators can follow competitions. It says nothing on automated reading, APIs, account limits or reuse by others. Those are in the terms alone, so the terms decide G74.</li>
+      <li><b>One address for everything:</b> <code>support@fencingtime.com</code>, for privacy questions and for deleting an account. It is the same address as the L4 letter.</li>
+    </ul>
+    <p>Our own use of fencers&rsquo; data (names, birth years, places) is governed by the association&rsquo;s own obligations, not by FT&rsquo;s policy. This page does not change it.</p>
   </section>
 
   <section>
@@ -256,5 +269,5 @@ gh secret set FTL_PASSWORD</code></pre>
     </ul>
   </section>
 
-  <p class="foot">Rev 2, 4 Nov 2026 · sources: FTL&rsquo;s public Terms of Use (10 Mar 2026), sign-up page and script, read without signing in; ADR-068; ADR-119 plan G63 and G71; <code>python/scrapers/ftl_auth.py</code> (the missing-login check runs before any request); <code>python/pipeline/ir.py</code> (<code>FENCINGTIME_XML</code>); the workflows that name the two secrets · no credential was read · rev 1 (same day) gave the rotation guide and L1&ndash;L5</p>
+  <p class="foot">Rev 3, 4 Nov 2026 · sources: FTL&rsquo;s public Terms of Use and Privacy Policy (both 10 Mar 2026), sign-up page and script, read without signing in; ADR-068; ADR-119 plan G63 and G71; <code>python/scrapers/ftl_auth.py</code> (the missing-login check runs before any request); <code>python/pipeline/ir.py</code> (<code>FENCINGTIME_XML</code>); the workflows that name the two secrets · no credential was read · rev 1 (same day) gave the rotation guide and L1&ndash;L5; rev 2 read the terms and withdrew the rotation; rev 3 adds the privacy policy</p>
 </div>
