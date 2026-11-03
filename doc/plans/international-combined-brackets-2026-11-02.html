@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Reading an international bracket that joins two categories</title>
+<title>Reading an international listing that names two categories</title>
 <style>
   :root{
     --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
@@ -121,12 +121,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">Ingestion · international route · ADR-105 amendment · Plan (draft)</p>
-  <h1>Reading an international bracket that joins two categories</h1>
-  <p class="dek">An FTL bracket that joins two veteran categories refuses its <b>whole event</b> today. Four EVF circuit events of the last 30 months had one. <b>EVF itself publishes each such bracket as separate categories</b>, each with its own places and N. This plan proposes how our reader takes them, before an open event has one.</p>
+  <p class="eyebrow">Ingestion · international route · ADR-105 amendment · Plan (draft, rev 2)</p>
+  <h1>Reading an international listing that names two categories</h1>
+  <p class="dek">EVF fences <b>direct elimination in each category</b>; only its pools are joined, and a category of fewer than two fencers joins the nearer younger category&rsquo;s DE. So an FTL listing named for two categories at an EVF event is <b>a joint pool round</b>, whose categories have their own DE, or <b>a younger category&rsquo;s DE that a lone older fencer joined</b>. Our international reader refuses the whole event on either. This plan proposes reading both as EVF fences them.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>Draft — C1&ndash;C5 yours to decide</span>
-    <span class="pill">from ADR-119 plan G68 B, 2 Nov 2026</span>
+    <span class="pill warn"><span class="dot"></span>Rev 2, 3 Nov 2026 — C1, C3, C5 yours to decide</span>
+    <span class="pill good"><span class="dot"></span>C2 signed B, 3 Nov</span>
+    <span class="pill">from ADR-119 plan G68 B</span>
     <span class="pill danger"><span class="dot"></span>no code until signed</span>
     <span class="pill warn"><span class="dot"></span>FTL unreadable until G63 is solved</span>
   </div>
@@ -134,69 +135,64 @@
   <hr class="rule">
 
   <section>
+    <p class="kicker">What changed since rev 1</p>
+    <h2>The premise was wrong</h2>
+    <div class="note danger">
+      <p class="lede">Rev 1 read these listings as brackets that join two categories</p>
+      <p>Rev 1 (2 Nov) saw that EVF&rsquo;s results API publishes each such pair as two categories, each with its own places and N, and proposed taking those categories from EVF&rsquo;s API. You pointed out (3 Nov) that EVF has no mixed-category direct elimination: under the <a href="https://www.veteransfencing.eu/wp-content/uploads/2026/08/EVF-Circuit-Handbook-v6.3-August-2026.pdf">EVF Circuit Handbook v6.3 (August 2026)</a>, after the poules each fencer fences DE in their own category when it has at least two fencers; a category with fewer joins the nearer younger category for the DE; and both semi-final losers are third. The categories were fenced apart all along, so their results are in FTL already. Rev 1&rsquo;s C1 (read EVF&rsquo;s API), C3 and C4 are withdrawn. <b>C2 stands, signed B.</b></p>
+    </div>
+  </section>
+
+  <section>
     <p class="kicker">Why</p>
-    <h2>One joined bracket stops an event</h2>
-    <p>The international reader files every result under its bracket&rsquo;s own category and derives none from birth years (<a href="../adr/105-international-results-keep-source-bracket.html">ADR-105</a>). A bracket without exactly one V0&ndash;V4 category is a <code>SourceRefused</code> of kind <code>combined</code> (<code>international_sources._refuse_uncategorised</code>). Every bracket is checked before anything is written, so <b>the whole event is refused</b>: at an open event, not one of its brackets would reach CERT or PROD while the joined one is listed.</p>
+    <h2>What the four listings are</h2>
+    <p>Read only on 3 Nov 2026, without FTL (G63): the staging reports an earlier reader stored on 2 Oct 2026 (<code>doc/staging/&lt;code&gt;.md</code>, which list every schedule entry and why it was skipped), EVF&rsquo;s public results API, and LOCAL, PROD&rsquo;s mirror. No fencer is named here.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>The listing refused</th><th>What the schedule holds beside it</th><th>EVF publishes</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td><code>PEW62efs-2025-2026</code><br>Guildford, 10 Jan 2026</td><td>&ldquo;Women's Epee Category 3 and 4 (Combined)&rdquo;</td><td>DE sub-events &ldquo;Women's Cat 3 DE&rdquo; and &ldquo;Women's Cat 4 DE&rdquo;, which our schedule reader skips as &ldquo;DE sub-event (the parent bracket is the result)&rdquo;. Every other women&rsquo;s weapon there has the same shape (&ldquo;Women's Foil Cat 1 DE&rdquo; &hellip; &ldquo;Cat 4 DE&rdquo;).</td><td>Cat 3, N 22; Cat 4, N 11</td><td>The parent holds the joint pools; each sub-event is a category&rsquo;s DE.</td></tr>
+        <tr><td><code>PEW4ef-2024-2025</code><br>Guildford, 4 Jan 2025</td><td>&ldquo;Women's Foil Category 1 and 2 Combined&rdquo;</td><td>No stored report; same organiser and naming as 2026.</td><td>Cat 1, N 6; Cat 2, N 17</td><td>Most likely the same shape; to read at FTL after G63.</td></tr>
+        <tr><td><code>PEW6efs-2025-2026</code><br>Jab&#322;onna, 28 Mar 2026</td><td>&ldquo;Szpada Kobiet V3, V4&rdquo;</td><td>PROD holds women&rsquo;s &eacute;p&eacute;e V3, N 9, and V4, N 6, read by an earlier reader from their own result pages.</td><td>Cat 3, N 9; Cat 4, N 6 (equal to PROD)</td><td>The joint pool round, its categories&rsquo; DEs listed apart. Its name does not say &ldquo;pool&rdquo;, so the joint-pool drop (<code>_drop_covered_pool_rounds</code>) keeps it.</td></tr>
+        <tr><td><code>PEW9efs-2025-2026</code><br>Dublin, 30 May 2026</td><td>&ldquo;Women's Foil (V3/V4) - Direct Elimination&rdquo;</td><td>&ldquo;Women's Foil (V1/V2/V3/V4) - Poules&rdquo;, already skipped as a pool round whose categories have their own brackets.</td><td>Cat 3, N 7; <b>no Cat 4</b></td><td>EVF&rsquo;s second rule: V4 had fewer than two fencers and joined V3&rsquo;s DE, which EVF ranks as Cat 3.</td></tr>
+      </tbody>
+    </table></div>
 
     <div class="note warn">
-      <p class="lede">The four cases, read only on 2 Nov 2026</p>
-      <p>What PROD holds is read from LOCAL, PROD&rsquo;s mirror. EVF&rsquo;s numbers come from its public results API (<code>api.veteransfencing.eu</code>, the same client as <code>evf_results.EvfApiClient</code>). &ldquo;POL&rdquo; counts EVF&rsquo;s country column. No fencer is named here.</p>
-      <div class="tablewrap"><table>
-        <thead><tr><th>Event</th><th>FTL bracket</th><th>PROD holds</th><th>EVF publishes</th><th>POL at EVF</th></tr></thead>
-        <tbody>
-          <tr><td><code>PEW4ef-2024-2025</code><br>Guildford, 4 Jan 2025</td><td>&ldquo;Women's Foil Category 1 and 2 Combined&rdquo;</td><td>no women&rsquo;s foil</td><td>Cat 1, N 6; Cat 2, N 17</td><td>0, 0</td></tr>
-          <tr><td><code>PEW62efs-2025-2026</code><br>Guildford, 10 Jan 2026</td><td>&ldquo;Women's Epee Category 3 and 4 (Combined)&rdquo;</td><td>no women&rsquo;s &eacute;p&eacute;e V3 or V4</td><td>Cat 3, N 22; Cat 4, N 11</td><td>0, 0</td></tr>
-          <tr><td><code>PEW6efs-2025-2026</code><br>Jab&#322;onna, 28 Mar 2026</td><td>&ldquo;Szpada Kobiet V3, V4&rdquo;</td><td>women&rsquo;s &eacute;p&eacute;e V3, N 9, and V4, N 6, read from their own result pages by an earlier reader</td><td>Cat 3, N 9; Cat 4, N 6 (equal to PROD)</td><td>0, 2</td></tr>
-          <tr><td><code>PEW9efs-2025-2026</code><br>Dublin, 30 May 2026</td><td>&ldquo;Women's Foil (V3/V4) - Direct Elimination&rdquo;</td><td>no women&rsquo;s foil</td><td>Cat 3, N 7; <b>no Cat 4 competition</b></td><td>0</td></tr>
-        </tbody>
-      </table></div>
-    </div>
-
-    <div class="note">
-      <p class="lede">What the reading shows</p>
+      <p class="lede">Why our reader refuses them</p>
       <ul>
-        <li><b>EVF ranks a joined bracket per category.</b> Every one of these categories has its own N and its own places, 1, 2, 3, 3, 5&hellip;: two bronzes per category, so EVF&rsquo;s places are not a slice of the joined bracket&rsquo;s.</li>
-        <li><b>By EVF&rsquo;s country column, no result of ours is missing</b> from the three brackets PROD lacks. Identity can admit a fencer of ours entered under another country (<a href="../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>), so the proof below plans them against our roster.</li>
-        <li><b>The reader already reads EVF&rsquo;s API.</b> An event with no results link reads <code>evf:&lt;EVF event id&gt;</code> (<code>event_sources</code>, ADR-119 Q3 A). But <b>no EVF event in PROD&rsquo;s mirror has <code>id_evf_event</code> set: 0 of 67</b> across 2023/24&ndash;2026/27.</li>
-        <li><b>Unknown until G63 is solved:</b> what the FTL bracket itself holds &mdash; one direct-elimination table for both categories, or joined pools and a table per category. FTL needs the pipeline account&rsquo;s sign-in, which FTL refuses today.</li>
+        <li><b>By name, before reading.</b> <code>international_sources._ftl_schedule</code> refuses a listing whose name parses to two categories (<code>_refuse_uncategorised</code>) before fetching its data, so it never learns whether the listing is a pool round. One such listing refuses the whole event (ADR-119 G60&rsquo;s <code>SourceRefused</code>).</li>
+        <li><b>The DE sub-event rule is a domestic one.</b> <code>scrape_ftl_event_urls._skip_reason</code> skips &ldquo;Cat 3 DE&rdquo; as a sub-event whose parent is the result. At an SPWS event the parent of a joint pool is the result, split by birth year (<a href="../adr/049-joint-pool-split-flag.html">ADR-049</a>, <a href="../adr/076-pool-round-discard-and-listing-keep-rule.html">ADR-076</a>). At an EVF event the sub-events are the results.</li>
+        <li><b>Pool rounds are dropped by name only on this route.</b> The domestic FTL path also drops a round whose results page has no tableau (ADR-076 rule 1, ADR-067&rsquo;s structural rule); the international path does not.</li>
+        <li><b>What it costs.</b> 4 of the 29 international events of 30 months have such a listing, and an open event with one is refused whole. By EVF&rsquo;s country column, none of the three categories PROD lacks had a Polish entrant.</li>
       </ul>
     </div>
   </section>
 
   <section>
     <p class="kicker">Decide this first</p>
-    <h2>Five decisions, each with a recommendation</h2>
+    <h2>Decisions, each with a recommendation</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
       <tbody>
-        <tr><td><b>C1</b></td><td>How is a bracket that joins two categories read, at an EVF event?</td><td><b>A</b> From EVF&rsquo;s results API: each joined category is taken from EVF&rsquo;s competition of the same event, weapon, gender and category, with EVF&rsquo;s places and N. The FTL bracket stays in the schedule only to say whether it is final.<br><b>B</b> Split the FTL bracket by each of our fencers&rsquo; category (birth year), each keeping their place in the joined bracket and its N, as a domestic joint pool is (<a href="../adr/049-joint-pool-split-flag.html">ADR-049</a>).<br><b>C</b> Keep refusing; such an event is ingested by hand.</td><td><b>A</b>: EVF&rsquo;s per-category places and N are what EVF ranks, and what the EVF parity check (EVF.PTS.01) compares. B would disagree with EVF on every such bracket.</td></tr>
-        <tr><td><b>C2</b></td><td>Where does the EVF event id come from? None is stored.</td><td><b>A</b> The reader finds the EVF event in EVF&rsquo;s API by the event&rsquo;s start date (&plusmn;1 day) and city, as <code>discover_season_events</code> scans, and records it as the run&rsquo;s source <code>evf:&lt;id&gt;</code>. No match, or two, refuses the bracket as today, saying which.<br><b>B</b> The EVF calendar sync stores <code>id_evf_event</code> on every EVF event (a calendar change, under <a href="../adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>&rsquo;s contract).<br><b>C</b> You set it in Admin when an event has a joined bracket.</td><td><b>A</b> now, nothing written to the calendar; B is worth its own decision later, since the <code>evf:</code> source needs the id too.</td></tr>
-        <tr><td><b>C3</b></td><td>A live event: EVF publishes after the event, not during it.</td><td><b>A</b> The joined categories are &ldquo;not final (EVF has not published them)&rdquo; until EVF does. Under ADR-119 &sect;1 that keeps the event IN_PROGRESS; from the second day after the end date the daily close completes it without them and names them (G44), and an ingest takes them once EVF has published.<br><b>B</b> Take the FTL bracket&rsquo;s places for the joined categories until EVF publishes (C1 B for a while).</td><td><b>A</b>: one source of a category&rsquo;s places, never two in turn.</td></tr>
-        <tr><td><b>C4</b></td><td>An EVF category the joined bracket names but EVF does not publish (Dublin: no women&rsquo;s foil Cat 4).</td><td><b>A</b> That category holds nothing; the staging report says &ldquo;EVF publishes no &lt;category&gt;&rdquo;, and a fencer of ours in the FTL bracket of that category is named in the report for you to decide.<br><b>B</b> Refuse the event.</td><td><b>A</b>: EVF&rsquo;s ranking has no such category to score.</td></tr>
-        <tr><td><b>C5</b></td><td>The four past events, in closed seasons.</td><td><b>A</b> Leave them; they stay on the re-read&rsquo;s known list until the reader takes them, then the re-read compares them like any event.<br><b>B</b> Re-ingest them on your order after the build.</td><td><b>A</b>: by EVF&rsquo;s country column no result of ours is missing; the proof confirms it against the roster before anything else is decided.</td></tr>
+        <tr><td><b>C1</b></td><td>How does the international reader take an event that lists joint pools?</td><td><b>A</b> As EVF fences it, on the international route only: (1) a DE sub-event of a listing named for two categories is that category&rsquo;s bracket, its category from its own name (&ldquo;Cat 3 DE&rdquo;), its weapon and gender from the parent; (2) that parent, and any listing named for two categories whose results page holds no tableau, is the joint pool round and is skipped with that reason; (3) one that holds a tableau and has no sub-events is C3&rsquo;s case. The domestic reading (ADR-049, ADR-076) is unchanged.<br><b>B</b> Keep refusing; such an event is ingested by hand.</td><td><b>A</b>: it reads each category&rsquo;s own DE, the bracket EVF ranks, with its own N and places.</td></tr>
+        <tr><td><b>C2</b><br><span class="tick">✓</span> B, 3 Nov</td><td>Where does an EVF event&rsquo;s EVF id come from? None of 67 EVF events in PROD&rsquo;s mirror has <code>id_evf_event</code>.</td><td><b>Signed B:</b> the EVF calendar sync stores <code>id_evf_event</code> on every EVF event, under <a href="../adr/118-event-details-cert-to-prod-scraper-contract.html">ADR-118</a>&rsquo;s contract.</td><td>With rev 2 it no longer reads joint categories. It serves the reader&rsquo;s <code>evf:&lt;id&gt;</code> source for an event without a results link, and the EVF parity check. It gets its own build sheet below before any code.</td></tr>
+        <tr><td><b>C3</b></td><td>A DE a lone older fencer joined (Dublin: &ldquo;Women's Foil (V3/V4) - Direct Elimination&rdquo;).</td><td><b>A</b> The bracket of the younger category its name gives (V3), with its source N and places, as EVF ranks it. A fencer of ours from the older category is stored in it under the bracket&rsquo;s category, which <code>fn_assert_result_vcat</code> accepts (<a href="../adr/105-international-results-keep-source-bracket.html">ADR-105</a> &sect;3, <a href="../adr/056-vcat-from-birthyear.html">ADR-056</a>), and the staging report names such a guest for you.<br><b>B</b> Each fencer under their own category, the guest alone in a bracket of one.<br><b>C</b> Refuse, as today.</td><td><b>A</b>: EVF publishes no Cat 4 there; B would invent a bracket EVF does not have.</td></tr>
+        <tr><td><b>C5</b></td><td>The four past events, in closed seasons.</td><td><b>A</b> Leave them; each stays on the re-read&rsquo;s known list until the reader takes it, then the re-read compares it like any event.<br><b>B</b> Re-ingest them on your order after the build.</td><td><b>A</b>: by EVF&rsquo;s country column no result of ours is missing; the re-read confirms it against the roster.</td></tr>
       </tbody>
     </table></div>
-    <p>An FIE event (MSW, PSW) has no category authority like EVF&rsquo;s API. A joined bracket there stays refused, as today; none was seen in 30 months.</p>
   </section>
 
   <section>
-    <p class="kicker">Once C1&ndash;C5 are signed</p>
+    <p class="kicker">Once C1, C3 and C5 are signed</p>
     <h2>What it changes</h2>
     <ol class="steps">
-      <li><b>Read the four FTL brackets, read only</b>, once G63 is solved: what each holds, and whether its schedule row says Finished. If FTL&rsquo;s bracket turns out to hold a table per category, this plan is revised before any code.</li>
-      <li><b>Tests first, red before green</b> (<code>python/tests/test_combined_brackets.py</code>, COMBINED.*):
-        <ul>
-          <li>a joined FTL bracket at an EVF event reads EVF&rsquo;s two competitions, with EVF&rsquo;s places and N;</li>
-          <li>EVF not yet published: the joined categories are skipped as not final, and the event stays IN_PROGRESS;</li>
-          <li>no EVF event found, or two: refused as today, with the reason;</li>
-          <li>a category EVF does not publish holds nothing and is reported;</li>
-          <li>an FIE event&rsquo;s joined bracket is refused as today;</li>
-          <li>recorded EVF responses for the four events as fixtures, with no name in a log line.</li>
-        </ul></li>
-      <li><b>The reader:</b> <code>international_sources</code> replaces a joined bracket at an EVF event by EVF&rsquo;s competitions for its categories, recorded in the run as an <code>evf:&lt;id&gt;</code> source, so promote&rsquo;s plan and the daily close read the same thing (ADR-119 &sect;1). Its listing hash covers EVF&rsquo;s rows.</li>
-      <li><b>The re-read:</b> each of the four leaves <code>KNOWN_REFUSALS</code> as soon as the reader takes it.</li>
-      <li><b>Proof, read only against LOCAL:</b> Jab&#322;onna 2026 reads equal to PROD. The other three plan foreign fencers only (&ldquo;no fencer of ours&rdquo;), or name for you the result PROD lacks.</li>
-      <li><b>Documents:</b> an ADR-105 amendment, the RTM, Appendix C, the ingestion and organizers-and-engines handbook pages.</li>
+      <li><b>Read the four FTL schedules, read only</b>, once G63 is solved: each joint listing&rsquo;s sub-events, whether its results page holds a tableau, and Guildford 2025&rsquo;s and Jab&#322;onna&rsquo;s shape. If one differs from the table above, this plan is revised before any code.</li>
+      <li><b>Tests first, red before green</b> (<code>python/tests/test_joint_pool_listings.py</code>, JOINT.*): Guildford 2026&rsquo;s schedule reads two &eacute;p&eacute;e brackets, V3 and V4, from its sub-events and skips the parent as the joint pools; a joint listing without a tableau is skipped; Dublin&rsquo;s joined DE is V3&rsquo;s bracket with its N; the domestic reading of a parent with DE sub-events is unchanged; no fencer is named in a log line.</li>
+      <li><b>The reader:</b> <code>international_sources._ftl_schedule</code> and the schedule reader&rsquo;s sub-event rule for the international route; the listing hash and the run record cover the sub-events, so promote&rsquo;s plan and the daily close read the same thing (ADR-119 &sect;1).</li>
+      <li><b>The re-read:</b> each event leaves <code>KNOWN_REFUSALS</code> as the reader takes it.</li>
+      <li><b>Proof, read only against LOCAL:</b> Jab&#322;onna 2026 reads equal to PROD; Guildford 2025, Guildford 2026 and Dublin plan foreign fencers only (&ldquo;no fencer of ours&rdquo;), or name for you a result PROD lacks.</li>
+      <li><b>C2&rsquo;s build sheet</b>, its own questions in this plan before code: where the EVF calendar sync finds an event&rsquo;s EVF id, whether the CERT&rarr;PROD mirror carries it, and how an id already set by a person is kept.</li>
+      <li><b>Documents:</b> an ADR-105 amendment, ADR-076 (relates), the RTM, Appendix C, the ingestion and organizers-and-engines handbook pages.</li>
     </ol>
   </section>
 
@@ -204,11 +200,11 @@
     <p class="kicker">Boundaries</p>
     <h2>What this plan does not touch</h2>
     <ul>
-      <li>Domestic combined pools and joint pools (<a href="../adr/049-joint-pool-split-flag.html">ADR-049</a>, <a href="../adr/056-vcat-from-birthyear.html">ADR-056</a>): split by birth year, unchanged.</li>
-      <li>Engarde, 4fence, Ophardt and d&rsquo;Artagnan: no joined bracket seen; their readers are unchanged.</li>
-      <li>The identity rule and every stored result: nothing is re-ingested without your order (C5).</li>
+      <li>The domestic reading of joint pools and DE sub-events (ADR-049, ADR-076): split by birth year, unchanged.</li>
+      <li>FIE events (MSW, PSW): no listing named for two categories seen in 30 months; their reading is unchanged.</li>
+      <li>Engarde, 4fence, Ophardt and d&rsquo;Artagnan readers; the identity rule; every stored result (nothing is re-ingested without your order, C5).</li>
     </ul>
   </section>
 
-  <p class="foot">Draft 2 Nov 2026 · source: ADR-119 plan G51, G61, G68 B (<code>doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</code>) · EVF API read only, FTL not read (G63)</p>
+  <p class="foot">Rev 2, 3 Nov 2026 (rev 1, 2 Nov, superseded) · source: ADR-119 plan G51, G61, G68 B (<code>doc/plans/partial-ingest-promote-results-sync-2026-10-31.html</code>) · EVF Circuit Handbook v6.3 · staging reports of 2 Oct 2026, EVF API and LOCAL read only; FTL not read (G63)</p>
 </div>

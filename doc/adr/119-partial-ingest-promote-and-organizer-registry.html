@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="119-partial-ingest-promote-and-organizer-registry.md">
-<meta name="adr-source-sha256" content="7c66c46e7f949d48d1e748f6a8bbf77c0391ca169c7033fd6067502252d6613b">
+<meta name="adr-source-sha256" content="1fd6eb99e05a3085a0f45f05387268f2283b84d7db4cacfa0fc0a74e46ec1ea6">
 <title>ADR-119 · Partial Ingest and Promote — Only Final Brackets, One Organizer Registry, One Engine Contract</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -284,13 +284,13 @@
 <ul>
 <li><strong>G64.</strong> <code>IMSW-2025-2026</code> (12–16 Nov 2025) is IN_PROGRESS on CERT (since 28 June) and PROD (since 13 July). The daily close selects only events of the active season (<code>close.SqlEnv.events_to_close</code>, <code>WHERE s.bool_active</code>), so it never reads this one. The ranking counts it as completed (<code>vw_eligible_event</code> treats both alike); the 2025/26 calendar shows it &quot;in progress&quot;. Nothing said so.</li>
 <li><strong>G66.</strong> 4fence prints the second bronze without a place. <code>fourfence.resolve_classification</code> named that fencer by the last-four tableau's seed equal to the classification's pool rank (&quot;Cla Gir&quot;) and the surname. When the pools mix the categories, the pool rank is the whole pool round's and the seed the category's: at Napoli 2026 (<code>PEW4efs-2025-2026</code>) and Terni 2025 (<code>PEW6efs-2024-2025</code>) they differ in 10 brackets each, and the bronze's row was left out, though N counted her. All 20 were foreign fencers, so no result of ours was lost. They were 20 of the re-read's 29 source disagreements (&quot;after 3 row(s) the next place is 5&quot;).</li>
-<li><strong>G68.</strong> <code>PEW62efs-2025-2026</code> and <code>PEW9efs-2025-2026</code> hold an FTL bracket joining two categories and are refused before anything is written, as G51's two are, but were not on the re-read's known list.</li>
+<li><strong>G68.</strong> <code>PEW62efs-2025-2026</code> and <code>PEW9efs-2025-2026</code> hold an FTL listing named for two categories and are refused before anything is written, as G51's two are, but were not on the re-read's known list.</li>
 </ul>
 <h3 id="decision-7">Decision</h3>
 <ol>
 <li><strong>The close names every event of a past season still IN_PROGRESS (G64 A).</strong> Before closing anything, each morning, <code>close.name_past_season_events</code> asks CERT and PROD for the events of the route (<code>route_code_regex</code>) whose season's end date has passed and which are IN_PROGRESS (<code>SqlEnv.past_season_in_progress</code>), and prints and sends one warning for each: &quot;Daily close: <code> of a past season is still IN_PROGRESS on CERT and PROD. The close reads only the active season: complete it by hand once its results are right.&quot; A dry run prints and sends nothing. It writes nothing, and the run's last line adds &quot;n of a past season still IN_PROGRESS&quot;. The close's own selection is unchanged. <code>IMSW-2025-2026</code> is completed once, by hand and with the user's go, after its dates are read at the source (G70).</li>
 <li><strong>4fence's second bronze is found by surname (G66 A).</strong> An unplaced row is the second bronze when its surname begins with a semi-final loser's (the tableau cuts long surnames short). The seed tells two unplaced namesakes apart, and when it cannot, the row stays out as without a tableau, N still counting it (<a href="105-international-results-keep-source-bracket.html">ADR-105</a>, its amendment of 2026-11-02).</li>
-<li><strong>Every FTL combined bracket found is known (G68 B).</strong> <code>source_regression.KNOWN_REFUSALS</code> lists the four events, each with G51's reason. How an international bracket that joins two categories should be read is drafted as its own plan, an amendment to ADR-105 to come.</li>
+<li><strong>Every FTL combined bracket found is known (G68 B).</strong> <code>source_regression.KNOWN_REFUSALS</code> lists the four events, each with G51's reason. How such a listing should be read is drafted as its own plan, an amendment to ADR-105 to come: under the EVF Circuit Handbook (v6.3) EVF fences direct elimination in each category, so the listing is a joint pool round whose categories have their own DE, or a younger category's DE that a lone older fencer joined (<code>doc/plans/international-combined-brackets-2026-11-02.html</code>, rev 2; its C2 signed B on 2026-11-03: the EVF calendar sync stores <code>id_evf_event</code> on every EVF event).</li>
 </ol>
 <h3 id="consequences-7">Consequences</h3>
 <ul>
@@ -325,5 +325,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="118-event-details-cert-to-prod-scraper-contract.html">← ADR-118: Event Details Written on CERT Reach PROD, and Every Calendar Scraper Writes Them Under One Contract</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>119-partial-ingest-promote-and-organizer-registry.md</code> · source SHA-256 <code>7c66c46e7f949d48d1e748f6a8bbf77c0391ca169c7033fd6067502252d6613b</code></footer>
+<footer class="foot">Generated from <code>119-partial-ingest-promote-and-organizer-registry.md</code> · source SHA-256 <code>1fd6eb99e05a3085a0f45f05387268f2283b84d7db4cacfa0fc0a74e46ec1ea6</code></footer>
 </div></body></html>
