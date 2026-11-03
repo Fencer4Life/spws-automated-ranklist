@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="ccc862b91ca7f2a41f5a9e220e1ccf733ce75a99ad3b92fee26d7fba7111a677">
+<meta name="doc-source-sha256" content="04b03292b0b123349f42038d7bfb6d10404af9541ed48374f3d4758d618b961d">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -4854,21 +4854,21 @@
 <td>A bracket a plan only records prints &quot;planned N bracket(s)&quot;, never &quot;committed&quot;; a run that writes still prints &quot;committed&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_plan_lines_say_planned.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>PLAN.LINE.03–04</td>
 <td>An international bracket without a fencer of ours prints &quot;no fencer of ours (N in the source)&quot;, in a plan and in a write, with the size the parser recorded for the whole bracket when the listing is shorter, and no name.</td>
 <td>pytest</td>
 <td><code>python/tests/test_plan_lines_say_planned.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>PLAN.LINE.05</td>
 <td>Every other skip, a domestic bracket below the minimum or a pool round, keeps its &quot;SKIPPED (dropped …)&quot; line.</td>
 <td>pytest</td>
 <td><code>python/tests/test_plan_lines_say_planned.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4891,49 +4891,49 @@
 <td>Each morning, before closing anything, the daily close names every event of the route whose season has ended and which is still IN_PROGRESS, with the environments it is in, in the log and on Telegram; a dry run sends nothing; nothing is written.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>FOURFENCE.BRONZE.03</td>
 <td>When the pools mix the categories, the second bronze is the unplaced row whose surname begins with a semi-final loser's, whatever its pool rank (Napoli 2026, V4 women's épée: 3rd beside the other bronze, N 10).</td>
 <td>pytest</td>
 <td><code>python/tests/test_fourfence_classification.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>FOURFENCE.BRONZE.04–05</td>
 <td>Two unplaced namesakes of a semi-final loser: the one whose pool rank is the seed is 3rd; when neither is, both stay out and N still counts the bronze.</td>
 <td>pytest</td>
 <td><code>python/tests/test_fourfence_classification.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>FTL.REFUSED.01–04</td>
 <td>A sign-in FTL refuses is tried once per process: later FTL reads, a forced login included, fail with the same message and no request; the next process tries once; a login page that fails to load is not a refusal (G71 A).</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>SRC.REGR.05 (G72)</td>
 <td>A known refusal holds only for the refusal it stands for, in the reader's own words; the same event refused for another reason, an FTL sign-in for one, is reported as refused with its reason.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_regression.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>FOURFENCE.BRONZE.06–07</td>
 <td>A semi-final lost by withdrawal (&quot;R&quot;) names its loser, who is 3rd and in N (Napoli 2026, V2 women's foil, N 17); a bout with neither a score nor &quot;R&quot; names no loser and N still counts the bronze (G73 A).</td>
 <td>pytest</td>
 <td><code>python/tests/test_fourfence_classification.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 <tr>
 <td>SRC.REGR.05 (G68)</td>
 <td>Every FTL combined bracket the re-read found is known, with G51's reason: <code>PEW4ef-2024-2025</code>, <code>PEW6efs-2025-2026</code>, <code>PEW62efs-2025-2026</code>, <code>PEW9efs-2025-2026</code>.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_regression.py</code></td>
-<td>Covered (2026-11-02, built for the next push)</td>
+<td>Covered (released 2026-11-03, main a6856dea)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4948,5 +4948,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ccc862b91ca7f2a41f5a9e220e1ccf733ce75a99ad3b92fee26d7fba7111a677</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>04b03292b0b123349f42038d7bfb6d10404af9541ed48374f3d4758d618b961d</code></footer>
 </div></body></html>
