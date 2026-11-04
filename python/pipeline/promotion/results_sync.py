@@ -31,10 +31,10 @@ import os
 import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
-from python.pipeline.organizers import INTERNATIONAL, route_of
+from python.pipeline.organizers import INTERNATIONAL, ROSTER, route_of
 from python.pipeline.promotion import lifecycle
 from python.supabase_token import supabase_access_token
 
@@ -54,7 +54,14 @@ FAILED = "failed"
 BLOCKED = "blocked"
 REFUSED = "refused"
 STOPPED = "stopped"
-VERDICTS = (UNCHANGED, PROMOTED, NOTHING_FINAL, FAILED, BLOCKED, REFUSED, STOPPED)
+BUDGET = "budget"  # ADR-120: FTL's daily cap reached; nothing read, nothing paused
+VERDICTS = (UNCHANGED, PROMOTED, NOTHING_FINAL, FAILED, BLOCKED, REFUSED, STOPPED, BUDGET)
+
+# ADR-120 §3 (F3 A): the UTC hours whose cycles take an event read only from
+# FencingTimeLive; the other cycles leave it for the next of these.
+FTL_HOURS = (8, 12, 16, 20)
+# ADR-120 §1: from this share of the day's cap, a sent line carries the count.
+FTL_WARN_SHARE = 0.8
 
 
 # ---------------------------------------------------------------- the window
@@ -120,14 +127,40 @@ def has_link(code: str, row: Mapping[str, Any]) -> bool:
     return bool((row.get("url_event") or "").strip())
 
 
+def ftl_only(code: str, row: Mapping[str, Any]) -> bool:
+    """Every source of the event is a FencingTimeLive schedule (ADR-120 §3):
+    its `url_event` on the domestic and roster routes, every result slot on the
+    international route (an EVF results id is not FTL)."""
+    from python.pipeline.ingest_cli import is_ftl_schedule
+
+    if route_of(code) == INTERNATIONAL:
+        from python.pipeline.international_sources import event_sources
+
+        urls = [s["url"] for s in event_sources(row)]
+        return bool(urls) and all(is_ftl_schedule(u) for u in urls)
+    return is_ftl_schedule((row.get("url_event") or "").strip())
+
+
+def schedule_only(code: str, row: Mapping[str, Any]) -> bool:
+    """The compare reads the schedule alone (ADR-120 §3): an FTL-only event,
+    except a PZSz event, whose compare also hashes its start lists (G35 A)."""
+    return route_of(code) != ROSTER and ftl_only(code, row)
+
+
+def _next_ftl_hour(hour: int) -> int:
+    return next((h for h in FTL_HOURS if h > hour), FTL_HOURS[0])
+
+
 @dataclass
 class Selection:
-    """What one cycle takes (`events`, the matrix) and what it does not."""
+    """What one cycle takes (`events`, the matrix) and what it does not;
+    `deferred` are FTL-only events left for the next FTL hour (ADR-120 §3)."""
 
     events: list[str] = field(default_factory=list)
     paused: list[dict] = field(default_factory=list)
     no_link: list[str] = field(default_factory=list)
     resume: list[str] = field(default_factory=list)
+    deferred: list[str] = field(default_factory=list)
     refused: str | None = None
     off: bool = False
 
@@ -160,16 +193,24 @@ def select(
     code: str | None = None,
     scheduled: bool = True,
     switch: str | None = None,
+    hour: int | None = None,
 ) -> Selection:
     """The events of a cycle. `cert_rows` are CERT's active-season events on
     the route, `prod_rows` PROD's link columns by code, `pauses` the pause rows
     by code. A manual code is taken in or out of its window, and its pause is
     lifted first (`resume`); the switch `RESULTS_SYNC=off` ends a scheduled
-    select only."""
+    select only. A scheduled cycle due in another UTC `hour` than FTL_HOURS
+    leaves an FTL-only event for the next of them (`deferred`, ADR-120 §3)."""
     rows = {str(r["txt_code"]): r for r in cert_rows}
 
     def linked(c: str) -> bool:
         return has_link(c, rows[c]) or has_link(c, prod_rows.get(c) or {})
+
+    def waits(c: str) -> bool:
+        if hour is None or hour in FTL_HOURS:
+            return False
+        row = rows[c] if has_link(c, rows[c]) else prod_rows.get(c) or {}
+        return ftl_only(c, row)
 
     def paused(c: str) -> bool:
         return bool((pauses.get(c) or {}).get("paused_at"))
@@ -196,6 +237,8 @@ def select(
             out.no_link.append(c)
         elif paused(c):
             out.paused.append({"code": c, **pauses[c]})
+        elif waits(c):
+            out.deferred.append(c)
         else:
             out.events.append(c)
     return out
@@ -268,6 +311,41 @@ def compare(
         return Comparison(True, False, run_id, new_rounds(now, before))
     current = prod_fingerprint == previous_run.get("result_fingerprint")
     return Comparison(False, not current, run_id, [])
+
+
+def schedule_unchanged(
+    code: str,
+    row: Mapping[str, Any],
+    previous_run: Mapping[str, Any],
+    *,
+    read_ftl: Callable[[str], tuple[list[dict], list[dict]]] | None = None,
+    read_sources: Callable[..., tuple[list[dict], list[dict]]] | None = None,
+) -> bool:
+    """An FTL-only event's schedule is the one the latest finished CERT run
+    read (ADR-120 §3): its links are the run's, and the schedule read now hashes
+    as the run recorded it, exactly as the daily close checks it (`close.check`).
+    One request per FTL schedule; a changed link is a change without a read."""
+    from python.pipeline.promotion.run_record import schedule_sha256
+
+    listings = previous_run.get("listings") or {}
+    if route_of(code) == INTERNATIONAL:
+        from python.pipeline.international_sources import event_sources, read_schedule
+
+        urls = [s["url"] for s in event_sources(row)]
+        if urls != [s["url"] for s in listings.get("sources") or []]:
+            return False
+        event = {"txt_code": code, "arr_weapons": row.get("arr_weapons")}
+        kept, skipped = (read_sources or read_schedule)(urls, event=event)
+    else:
+        url = (row.get("url_event") or "").strip()
+        if url != (previous_run.get("url_event") or "").strip():
+            return False
+        if read_ftl is None:
+            from python.pipeline.promotion.close import read_ftl_schedule as read_ftl
+        kept, skipped = read_ftl(url)
+    kept, not_final = lifecycle.split_final(kept)
+    now = schedule_sha256(kept, [*skipped, *not_final])
+    return now == (listings.get("schedule") or {}).get("sha256")
 
 
 # ---------------------------------------------------------------- the outcome
@@ -383,6 +461,14 @@ def _said(c: Cycle) -> _Said:
                 ]
             ),
             f"refresh: {status}",
+        )
+    if c.error is not None and c.run is None and _error_type(c.error) == "FtlBudgetSpent":
+        # ADR-120 §1: nothing was read or written, and nothing is paused: the
+        # next day's allowance reads the event.
+        detail = c.error.split(":", 1)[1].strip()
+        return _Said(
+            BUDGET,
+            f"⏸ {head} · FTL's daily cap is reached: nothing was read or written\n   {detail}",
         )
     if c.error is not None and c.run is None:
         return _Said(
@@ -671,11 +757,21 @@ class SyncSql:
 
     def latest_finished_run(self, code: str) -> dict | None:
         return self._call(
-            "SELECT jsonb_build_object('id', id_ingest_run, 'listings', jsonb_listings, "
+            "SELECT jsonb_build_object('id', id_ingest_run, 'url_event', url_event, "
+            "'listings', jsonb_listings, "
             "'result_fingerprint', txt_result_fingerprint) AS j FROM tbl_ingest_run, {p} "
             "WHERE txt_event_code = p->>'code' AND txt_environment = 'cert' "
             "AND txt_status = 'FINISHED' ORDER BY id_ingest_run DESC LIMIT 1",
             code=code,
+        )
+
+    def ftl_today(self, day: dt.date) -> dict | None:
+        """The day's FTL count (ADR-120 §1): requests and sign-ins used, or None."""
+        return self._call(
+            "SELECT jsonb_build_object('used_requests', int_requests, "
+            "'used_sign_ins', int_sign_ins) AS j FROM tbl_ftl_read_ledger, {p} "
+            "WHERE dt_day = (p->>'day')::date",
+            day=day.isoformat(),
         )
 
     def run(self, run_id: int) -> dict | None:
@@ -733,6 +829,8 @@ def run_select(
         moment = now.astimezone(lifecycle.WARSAW)
     else:
         moment = due_moment(cron, now)
+    # ADR-120 §3: the UTC hour the cycle was due decides whether it reads FTL.
+    hour = None if cron is None else moment.astimezone(dt.UTC).hour
     selection = select(
         cert.events(),
         prod.links(),
@@ -741,6 +839,7 @@ def run_select(
         code=code,
         scheduled=cron is not None,
         switch=switch,
+        hour=hour,
     )
     morning = is_morning(cron)
     if cron is not None and not selection.off and not dry_run:
@@ -770,6 +869,11 @@ def run_select(
             cert.resume(c)
             print(f"lifted the pause of {c}")
     print(f"{selection.count} event(s) to sync: {', '.join(selection.events) or 'none'}")
+    if selection.deferred and hour is not None:
+        print(
+            f"{len(selection.deferred)} FTL event(s) wait for the "
+            f"{_next_ftl_hour(hour):02d} UTC cycle: {', '.join(selection.deferred)}"
+        )
     if morning:
         line = morning_line(moment, selection)
         print(line)
@@ -778,12 +882,40 @@ def run_select(
     return 0
 
 
-def run_compare(code: str, *, read: Callable[[], Any], cert: Any, prod: Any, output: Output) -> int:
+def run_compare(
+    code: str,
+    *,
+    read: Callable[[], Any],
+    cert: Any,
+    prod: Any,
+    output: Output,
+    event: Callable[[], Mapping[str, Any] | None] | None = None,
+    unchanged: Callable[[str, Mapping[str, Any], Mapping[str, Any]], bool] | None = None,
+) -> int:
     """The compare step (R3.3 A): it decides whether the cycle refreshes and
     ingests (`changed`) or only promotes (`promote_only`). It writes no
-    result; its read stores only what the ingest's read stores (G35 A)."""
+    result; its read stores only what the ingest's read stores (G35 A). An
+    FTL-only event (`event`, its row) is compared by its schedule alone
+    (`schedule_unchanged`, ADR-120 §3): the ingest reads its listings when the
+    schedule changed."""
+    how = ""
     try:
-        got = compare(read(), cert.latest_finished_run(code), prod.result_fingerprint(code))
+        previous = cert.latest_finished_run(code)
+        fingerprint = prod.result_fingerprint(code)
+        row = event() if event is not None else None
+        if row is not None and schedule_only(code, row):
+            how = "FTL schedule only"
+            run_id = None if previous is None else int(previous["id"])
+            same = previous is not None and (unchanged or schedule_unchanged)(code, row, previous)
+            if same:
+                assert previous is not None
+                got = Comparison(
+                    False, fingerprint != previous.get("result_fingerprint"), run_id, []
+                )
+            else:
+                got = Comparison(True, False, run_id, [])
+        else:
+            got = compare(read(), previous, fingerprint)
     except Exception as e:
         error = public_error(e)
         output(changed="", promote_only="", previous_run="", new="[]", error=error)
@@ -798,7 +930,8 @@ def run_compare(code: str, *, read: Callable[[], Any], cert: Any, prod: Any, out
     )
     what = "changed" if got.changed else "promote only" if got.promote_only else "nothing to do"
     rounds = f": new {', '.join(name for name, _ in got.new)}" if got.new else ""
-    print(f"{code}: {what} (against CERT run {got.previous_run or 'none'}){rounds}")
+    against = f"against CERT run {got.previous_run or 'none'}"
+    print(f"{code}: {what} ({', '.join(x for x in (how, against) if x)}){rounds}")
     return 0
 
 
@@ -828,6 +961,13 @@ def run_outcome(
     run = (
         cert.run(run_id) if run_id else previous if comparison and comparison.promote_only else None
     )
+    if comparison is not None and comparison.changed and not comparison.new and run and previous:
+        # An FTL schedule-only compare read no listing (ADR-120 §3): the new
+        # listings are the ones this run holds and the previous one did not.
+        comparison = replace(
+            comparison,
+            new=new_rounds(run.get("listings") or {}, previous.get("listings") or {}),
+        )
     status = (refresh or {}).get("status")
     stored = (refresh or {}).get("stored")  # G48 A: where the named lines are
     reason = (refresh or {}).get("reason")  # a refusal's kind, which names no one
@@ -860,9 +1000,26 @@ def run_outcome(
     if said.pause is not None:
         cert.pause(code, said.pause, run_url)
     if said.line is not None:
-        send(said.line)
+        count = _ftl_count(cert, moment)
+        send(f"{said.line} · {count}" if count else said.line)
     print(told)
     return 0
+
+
+def _ftl_count(cert: Any, moment: dt.datetime) -> str | None:
+    """The day's FTL count once it reaches FTL_WARN_SHARE of the cap (ADR-120 §1),
+    for the cycle's line; None below it, or when it cannot be read."""
+    from python.scrapers.ftl_auth import DAILY_REQUESTS, DAILY_SIGN_INS
+
+    try:
+        got = cert.ftl_today(moment.astimezone(lifecycle.WARSAW).date())
+    except Exception:  # the count is a courtesy; the cycle's line goes out without it
+        return None
+    used = int((got or {}).get("used_requests") or 0)
+    if used < FTL_WARN_SHARE * DAILY_REQUESTS:
+        return None
+    signs = int((got or {}).get("used_sign_ins") or 0)
+    return f"FTL today: {used}/{DAILY_REQUESTS} requests, {signs}/{DAILY_SIGN_INS} sign-ins"
 
 
 def _would(comparison: Comparison | None, error: str | None) -> str:
@@ -910,6 +1067,18 @@ def _read_for(code: str, season_end_year: int) -> Callable[[], Any]:
         return ingest_cli.read_event(event, code, season_end_year, url_event, None, db=db)
 
     return read
+
+
+def _event_for(code: str) -> Callable[[], Mapping[str, Any] | None]:
+    """The event's CERT row, which tells the compare whether it is read from
+    FTL alone and so compared by its schedule (ADR-120 §3)."""
+
+    def event() -> Mapping[str, Any] | None:
+        from python.pipeline.db_connector import create_db_connector
+
+        return create_db_connector().find_event_by_code(code)
+
+    return event
 
 
 def main(argv: Iterable[str] | None = None) -> int:
@@ -973,6 +1142,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             cert=cert,
             prod=prod,
             output=_github_output,
+            event=_event_for(code),
         )
     env = os.environ
     changed = env.get("SYNC_CHANGED", "")

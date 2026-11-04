@@ -20,7 +20,10 @@ fingerprint with PROD's:
   SRC.REGR.05  an event's verdict: equal, different (rows, or CERT against
                PROD), refused, known (G51, G53), noted (G54);
   SRC.REGR.06  the one Telegram line;
-  SRC.REGR.07  the named report, stored as regression/<stamp>.md.
+  SRC.REGR.07  the named report, stored as regression/<stamp>.md;
+  SRC.REGR.10–13  FencingTimeLive read rarely (ADR-120): a completed FTL-only
+               event is left out, an open one still read; an FTL event is
+               dry-read only the day before; one event is re-read by hand.
 """
 
 from __future__ import annotations
@@ -368,6 +371,84 @@ def test_SRC_REGR_09_each_linked_upcoming_event_is_dry_read_by_the_sync():
     assert step["env"]["GH_TOKEN"] == "${{ github.token }}"
     assert "gh workflow run results-sync.yml" in step["run"]
     assert "-f event_code=" in step["run"] and "-f dry_run=true" in step["run"]
+
+
+# --------------------------------------------------------------------------
+# SRC.REGR.10–13 — FencingTimeLive is read rarely (ADR-120 §3, F4 B)
+#
+# A completed event read only from FTL is not re-read automatically: its
+# results are stored and closed. An open one still is, once a week, to catch a
+# listing corrected after its ingest. An FTL-only event is dry-read only the
+# day before it starts. One event, completed or not, is re-read by hand.
+# --------------------------------------------------------------------------
+
+FTL = "https://www.fencingtimelive.com/tournaments/eventSchedule/" + "A" * 32
+FTL_ROWS = [
+    _row("PEW6efs-2025-2026", "2026-03-28", url_event=FTL),  # completed, FTL only
+    _row("IMSW-2025-2026", "2025-11-12", status="IN_PROGRESS", url_event=FTL),  # open
+    _row("PEW7es-2024-2025", "2025-03-29", url_event="https://engarde-service.com/x"),
+    _row("PEW3ef-2026-2027", "2026-11-14", status="PLANNED", url_event=FTL),
+    _row("PEW4ef-2026-2027", "2026-11-03", status="PLANNED", url_event=FTL),  # tomorrow
+]
+
+
+def test_SRC_REGR_10_a_completed_ftl_event_is_not_re_read_automatically():
+    assert sr.past_events(FTL_ROWS, TODAY) == ["IMSW-2025-2026", "PEW7es-2024-2025"]
+    assert sr.completed_ftl(FTL_ROWS, TODAY) == ["PEW6efs-2025-2026"]
+
+
+def test_SRC_REGR_11_an_ftl_event_is_dry_read_only_the_day_before(capsys):
+    out: dict = {}
+    sent: list[str] = []
+    sr.run(
+        FTL_ROWS,
+        TODAY,
+        manual=False,
+        check=lambda code: sr.verdict(code, [], "a", "a", disagreements=0),
+        send=sent.append,
+        store=lambda md, stamp: "x",
+        output=lambda **kw: out.update(kw),
+        stamp="20261102-051700Z",
+    )
+    assert out == {"dry_read": '["PEW4ef-2026-2027"]'}
+    log = capsys.readouterr().out
+    assert "upcoming PEW3ef-2026-2027: in 12 day(s), FTL: dry-read the day before" in log
+    assert "1 completed FTL event(s) not re-read: by hand only" in log
+    assert sent[0].startswith(
+        "🔎 Source re-read: 2 event(s), 2 equal; completed FTL not re-read: 1."
+    )
+    assert "PEW3ef-2026-2027 in 12 days, FTL: dry-read the day before" in sent[0]
+
+
+def test_SRC_REGR_12_one_event_is_re_read_by_hand():
+    read: list[str] = []
+    out: dict = {}
+    sent: list[str] = []
+    sr.run(
+        FTL_ROWS,
+        dt.date(2026, 11, 4),
+        manual=True,
+        code="PEW6efs-2025-2026",
+        check=lambda code: read.append(code) or sr.verdict(code, [], "a", "a", disagreements=0),
+        send=sent.append,
+        store=lambda md, stamp: "x",
+        output=lambda **kw: out.update(kw),
+        stamp="20261104-051700Z",
+    )
+    assert read == ["PEW6efs-2025-2026"]
+    assert out == {"dry_read": "[]"}
+    assert sent == ["🔎 Source re-read: 1 event(s), 1 equal. Upcoming: none"]
+
+
+def test_SRC_REGR_13_the_workflow_takes_one_event_by_hand():
+    wf = _workflow()
+    inputs = wf[True]["workflow_dispatch"]["inputs"]
+    assert inputs["event_code"]["required"] is False
+    (step,) = [s for s in wf["jobs"]["reread"]["steps"] if s.get("id") == "reread"]
+    assert step["env"]["EVENT_CODE"] == "${{ inputs.event_code }}"
+    assert '${EVENT_CODE:+--code "$EVENT_CODE"}' in step["run"]
+    with pytest.raises(SystemExit):
+        sr.main(["--code", "X'; DROP TABLE tbl_event; --"])
 
 
 def test_SRC_REGR_07_the_log_lines_name_no_one():

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="04b03292b0b123349f42038d7bfb6d10404af9541ed48374f3d4758d618b961d">
+<meta name="doc-source-sha256" content="f222e7f444910287525b5884c44874a8f9c3b552d17fd1919ee0be755394041d">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>912 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>940 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -4756,10 +4756,10 @@
 </tr>
 <tr>
 <td>RUNNAME.04</td>
-<td>A source re-read run says what started it: &quot;daily&quot; or &quot;manual&quot;.</td>
+<td>A source re-read run says what started it: &quot;daily&quot;, the code of the one event a run started by hand re-reads (ADR-120), or &quot;manual&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_workflow_run_names.py</code></td>
-<td>Covered (released 2026-11-01, main 9fc4cbc1)</td>
+<td>Covered (released 2026-11-01, main 9fc4cbc1; the event code built 2026-11-04, not released)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4938,6 +4938,169 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</h2>
+<p>Acceptance IDs for <a href="adr/120-ftl-read-cap-and-reused-session.html">ADR-120</a> (signed 2026-11-04: F4 B, every other decision A).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FTL.BUDGET.01</td>
+<td>With no ledger the client sends nothing: &quot;FTL is read only with a ledger&quot;.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.BUDGET.02–03</td>
+<td>Ten requests are drawn before the first request and again when used; requests are drawn before the sign-in.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.BUDGET.04, 07</td>
+<td>At the day's cap of requests, or of sign-ins, the client raises <code>FtlBudgetSpent</code> with the day's count and sends nothing, the login page included.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.BUDGET.05–06</td>
+<td>The requests a client did not use are given back when it closes; a sign-in is drawn on its own.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.BUDGET.08</td>
+<td>The audit tool reads FTL's data through the client, counted, never with a bare request.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.BUDGET.09</td>
+<td>A process can say the day's count: &quot;FTL today: n/120 requests, m/2 sign-ins&quot;.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.SESSION.01–05</td>
+<td>A stored session is used without a sign-in and sent with the requests; one within 12 hours of its end is renewed; a sign-in is stored before any other request, with its expiry; a session that bounces to the login page is dropped and the next read signs in once; a refused sign-in stores nothing and is counted.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.NAME.01</td>
+<td>Every request, the login page and the sign-in included, carries the client's name <code>SPWS-ranklist/…</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.PACE.01</td>
+<td>A request waits until <code>FTL_PACE_SECONDS</code> have passed since the last.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_auth.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.STORE.01–05</td>
+<td>CERT's ledger draws with the Warsaw day and the caps, and gives back; the stored session is read with its expiry; a failed store or drop never repeats the cookie; without the access token there is no ledger.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_ledger.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.WF.01</td>
+<td>Every workflow step that holds the FTL login also holds the access token the ledger needs.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_ledger.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.SEED.01</td>
+<td>The PROD seed export never names the ledger or the session table.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ftl_ledger.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.LEDGER (pgTAP 125)</td>
+<td><code>tbl_ftl_read_ledger</code> is service role only; a draw is granted up to the cap, a sign-in whole or not at all; a give-back never goes below zero; a new day starts at zero; rows older than 90 days are pruned; a negative draw is refused.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/125_ftl_read_ledger.sql</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>FTL.SESSION (pgTAP 126)</td>
+<td><code>tbl_ftl_session</code> is service role only and holds one row; a newer sign-in replaces it; a drop removes only the cookie the caller used; an empty cookie is refused.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/126_ftl_session.sql</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SYNC.BUDGET (pgTAP 127)</td>
+<td>A cycle's verdict <code>budget</code> is recorded; an unknown verdict is still refused.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/127_results_sync_budget_verdict.sql</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SYNC.FTL.01</td>
+<td>An event is read only from FTL when every source is an FTL schedule (its <code>url_event</code>; on the international route every result slot); an EVF results id is not FTL.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SYNC.SEL.06–09</td>
+<td>A scheduled cycle takes an FTL-only event only at 08, 12, 16 and 20 UTC, by the hour it was due, and names the events that wait; other engines are taken every hour; a manual code is always taken.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SYNC.CYCLE.10–13</td>
+<td>An FTL-only event, a PZSz event excepted, is compared by its schedule alone, as the close checks it: unchanged is nothing to do or promote only; changed or no run is changed, with no listing read; a link changed since the run is a change without a read; the run query carries its link.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SYNC.CYCLE.14</td>
+<td>When the compare read no listing, the outcome takes the new listings from the two runs.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SYNC.CYCLE.15–16</td>
+<td>A cycle stopped by FTL's daily cap records <code>budget</code>, says so in one ⏸ line and pauses nothing; from 80% of the cap a sent line carries the day's count.</td>
+<td>pytest</td>
+<td><code>python/tests/test_results_sync.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+<tr>
+<td>SRC.REGR.10–13</td>
+<td>The weekly re-read leaves out a completed FTL-only event and counts it, and still reads an open one; an FTL-only event is dry-read only the day before it starts; one event is re-read by hand with <code>--code</code> (the workflow's <code>event_code</code>), its code checked first.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (built 2026-11-04, not released)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -4948,5 +5111,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>04b03292b0b123349f42038d7bfb6d10404af9541ed48374f3d4758d618b961d</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>f222e7f444910287525b5884c44874a8f9c3b552d17fd1919ee0be755394041d</code></footer>
 </div></body></html>

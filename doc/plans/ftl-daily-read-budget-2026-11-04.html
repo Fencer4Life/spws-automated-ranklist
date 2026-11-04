@@ -1,0 +1,287 @@
+<meta charset="utf-8">
+<title>FencingTimeLive: the bare minimum of reads</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">G63 follow-up · FencingTimeLive · Plan rev 1 · signed 4 Nov 2026</p>
+  <h1>FencingTimeLive: the bare minimum of reads</h1>
+  <p class="dek">FTL blocked the pipeline&rsquo;s account in the night of 1 to 2 November, after one day in which we sent it <b>roughly 700 requests and 13 sign-ins</b>, most of them re-reading events that ended months ago. Nothing counts what the pipeline reads. This plan says when and why, what the ranking actually needs from FTL (<b>nothing on most days; a few dozen requests during an FTL event; one sign-in in ten days</b>), and builds that as a hard rule. The new login works (checked 4 Nov, one sign-in, session until 14 Nov).</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Signed 4 Nov 2026: F4 B, every other decision A (&ldquo;F4 - B, the rest as recommended&rdquo;)</span>
+    <span class="pill warn"><span class="dot"></span>Built test-first 4 Nov on claude/ftl-read-cap-and-reused-login; not pushed</span>
+    <span class="pill good"><span class="dot"></span>new login checked 4 Nov: signed in, IMSW&rsquo;s schedule read (24 listings), 3 requests</span>
+    <span class="pill danger"><span class="dot"></span>no credential seen, stored or logged</span>
+    <span class="pill">ADR-068 · ADR-119 §4, G42, G45, G63, G71</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Estimate · from the Actions logs, this machine&rsquo;s session records and LOCAL, all read only</p>
+    <h2>When we hit the limit</h2>
+    <ul>
+      <li><b>Last accepted sign-ins:</b> the second source re-read in CI (run 41354506817) started <b>1 Nov 21:56 UTC</b> and read its FTL events; my last LOCAL re-read of <code>IMSW-2025-2026</code> at <b>22:05 UTC</b> came back &ldquo;equal&rdquo;.</li>
+      <li><b>First refusal:</b> my LOCAL re-read at <b>2 Nov 06:55 UTC</b>: &ldquo;POST /login returned 400: An error occurred when trying to log you in. Please contact customer support.&rdquo; CI got the same at 13:37 UTC (run 41454343597, every FTL event &ldquo;refused&rdquo;).</li>
+      <li><b>Nothing of ours signed in between 22:08 and 06:54 UTC.</b> FTL did not stop us mid-run; it blocked the account afterwards, on what it had seen that day: a review of the day&rsquo;s volume, or a daily threshold applied overnight, not a rate limiter answering request by request.</li>
+      <li><b>Then a second block, on the client&rsquo;s name (4 Nov).</b> FTL&rsquo;s edge now answers <b>403</b> to any request whose user agent is <code>python-httpx/…</code>, the library default our client sends because it sets none (<code>ftl_auth</code> builds a plain <code>httpx.Client</code>). The same page, with no credentials, answers 200 to a browser, to <code>curl</code> and to <code>SPWS-ranklist/1.0</code>. On 2 Nov 13:37 the login page still answered CI, so this block was added after it. It is the signature of the weekend&rsquo;s traffic that FTL blocked, which is why every run of ours since fails before it reaches the sign-in.</li>
+      <li><b>What that day looked like to FTL:</b> one account, two machines (GitHub&rsquo;s runners and this computer), about 13 sign-ins and about 700 requests between 01:00 and 22:10 UTC, all named <code>python-httpx</code>. The days before: a handful a day.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">What read FTL on 1 November · UTC</p>
+    <h2>Where the 700 came from</h2>
+    <p>One FTL event read = the schedule page (1 request) + one data request per final listing of the event&rsquo;s weapons, ours or not (<code>international_sources._ftl_schedule</code>, <code>ingest_cli._read_domestic</code>). IMSW lists 24 (read today); an EVF circuit event 10 to 25.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Reader</th><th>Runs on 1 Nov</th><th>Requests (estimate)</th><th>Sign-ins</th></tr></thead>
+      <tbody>
+        <tr><td><b>Full source re-read</b> (<code>source-regression</code>, G45): every international event of the last 30 months, 9&ndash;10 of them on FTL, read whole</td><td>2 (20:06, 21:56; both by hand, after push 2b and push 3)</td><td>2 &times; ~150 = <b>~300</b></td><td>2</td></tr>
+        <tr><td><b>My read-only re-reads on LOCAL</b> (the G59&ndash;G61 investigation, the G62 proof): <code>IMSW-2025-2026</code> and <code>MSW-2026-2027</code>, read whole each time</td><td>8&ndash;10 runs of 1&ndash;2 events</td><td><b>~350&ndash;450</b></td><td>8&ndash;10</td></tr>
+        <tr><td><b>Daily close</b> (<code>event-close</code>): the schedule of each open FTL event</td><td>1</td><td>1</td><td>1</td></tr>
+        <tr><td><b>Results sync</b> (7 runs): Madrid only, which is not on FTL</td><td>7</td><td>0</td><td>0</td></tr>
+        <tr><td><b>EVF calendar sync</b>: reads FTL only to repair a future event marked completed</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td><b>Total</b></td><td></td><td><b>~650&ndash;750</b></td><td><b>~11&ndash;13</b></td></tr>
+      </tbody>
+    </table></div>
+    <p>Those re-reads verified stored results of closed events; none of them fed the ranking. A normal week before that: the Monday re-read (~150), the close (1 a day), and from 14 days before each international event one dry read a day of the whole event (G42 A (2)).</p>
+    <div class="note danger">
+      <p class="lede">Issues, each fixed below</p>
+      <ul>
+        <li><b>B1</b> Nothing counts or caps FTL requests or sign-ins. &rarr; S1.</li>
+        <li><b>B2</b> Every run signs in afresh: the 10-day session is cached per process only (ADR-068 deferred keeping it). &rarr; S2.</li>
+        <li><b>B3</b> The sync&rsquo;s compare reads every final listing every hour, 13 &times; (1 + L) a day for an FTL event in progress, to learn that nothing changed. &rarr; S3, S4.</li>
+        <li><b>B4</b> The weekly re-read fetches every FTL event of 30 months, completed ones included. &rarr; S5.</li>
+        <li><b>B5</b> The pre-event dry read fetches the whole event once a day for 14 days. &rarr; S5.</li>
+        <li><b>B6</b> My own LOCAL re-reads were half the day&rsquo;s volume, with no rule on them. &rarr; S7.</li>
+        <li><b>B7</b> Requests go out back to back. &rarr; S6.</li>
+        <li><b>B8</b> The client sends the library&rsquo;s default name, which FTL now blocks at its edge; it never said who it is. &rarr; S8.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The figure you asked for</p>
+    <h2>What the ranking needs from FTL</h2>
+    <p>Per reader: today, the least it needs, and what this plan builds. <i>L</i> = the final listings of an event (10&ndash;30).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Reader</th><th>Today</th><th>Bare minimum</th><th>Built here</th></tr></thead>
+      <tbody>
+        <tr><td><b>Sync compare</b>, an FTL event in progress</td><td>13 &times; (1 + L) a day (~330 for L = 24)</td><td>1 request per check: the schedule says which listings are final and whether anything changed</td><td>4 checks a day, 1 request each (F3)</td></tr>
+        <tr><td><b>Ingest</b>, when a listing became final</td><td>1 + L</td><td>1 + L (the event is written whole, ADR-119 §3)</td><td>1 + L, two to four times per event</td></tr>
+        <tr><td><b>Daily close</b></td><td>1 per open FTL event</td><td>1</td><td>1 (unchanged)</td></tr>
+        <tr><td><b>Weekly re-read</b> of 30 months</td><td>~150 a week</td><td>0: stored results of closed events feed nothing</td><td>0 for completed events; 1 + L a week for an FTL event still open (F4 B); one event by hand, by its code, when you ask</td></tr>
+        <tr><td><b>Pre-event dry read</b></td><td>(1 + L) a day for 14 days</td><td>0</td><td>1, the day before (F4)</td></tr>
+        <tr><td><b>Sign-ins</b></td><td>1 per run</td><td>1 per 10 days (the session&rsquo;s fixed life)</td><td>1 per 10 days at most, the session captured at the sign-in and shared by every run, CI and LOCAL; none at all while nothing reads FTL</td></tr>
+        <tr><td><b>My LOCAL runs</b></td><td>unlimited</td><td>0</td><td>0, except one check of one event on your explicit go (S7)</td></tr>
+        <tr><td><b>Manual tools</b> (populate-urls, scrape-tournament, evf-sync&rsquo;s repair)</td><td>per use</td><td>per use</td><td>per use, inside the day&rsquo;s cap</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede">So, per day</p>
+      <ul>
+        <li><b>No FTL event in progress</b> (most days): <b>0 requests, 0 sign-ins</b>. 1 request the day before an FTL event; 1 a day for an open event waiting to close.</li>
+        <li><b>One FTL event in progress</b> (an EVF weekend, L &asymp; 25): 4 schedule checks + 1 close + two or three ingests of 1 + L: <b>about 40 to 80</b>, and a sign-in on at most one of those days.</li>
+        <li><b>Hard ceiling</b>, whatever runs: <b>120 requests and 2 sign-ins a day</b> (F1); the 121st is refused before it is sent, and Telegram says so. A sixth of the day that got us blocked, and no run, mine included, can exceed it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The strategy · one push, test-first</p>
+    <h2>Eight changes</h2>
+    <ol class="steps">
+      <li><b>S1 · Count and cap (B1, B6).</b> <code>ftl_auth.get_authed_ftl_client</code> takes a <em>ledger</em>: before any request it draws from the day&rsquo;s allowance (Warsaw day), ten requests at a draw, and gives back what the run did not use when the client closes; a sign-in is drawn the same way. Spent: the client raises <code>FtlBudgetSpent</code> (an <code>FtlAuthError</code>) <em>before</em> sending; the run reports it like a refused sign-in and goes on with its other sources; the results sync records the cycle as &ldquo;budget&rdquo; and pauses nothing (the next day reads the event). <b>No ledger, no read:</b> a process without one gets &ldquo;FTL is read only with a ledger&rdquo;. CI&rsquo;s ledger is one CERT row per day (<code>tbl_ftl_read_ledger</code>, <code>fn_ftl_ledger_take</code>, <code>fn_ftl_ledger_give_back</code>, service role only, as <code>tbl_results_sync_cycle</code>), reached through <code>ManagementTransport</code> with the access token every FTL step already holds, and a LOCAL run draws from the same row (F2). The run&rsquo;s last line prints the day&rsquo;s count (&ldquo;FTL today: 31/120 requests, 1/2 sign-ins&rdquo;); the sync&rsquo;s outcome line adds it from 80% up.</li>
+      <li><b>S2 · Capture the session token at every sign-in and reuse it for its whole life (B2).</b> FTL&rsquo;s session is the <code>connect.sid</code> cookie, valid a fixed 10 days from the sign-in and not extended by use (ADR-068), so 10 days is the most one sign-in can give. The client takes a <em>session store</em>: it loads the stored cookie and its expiry, and signs in only when there is none, it ends within 12 hours, or a fetch bounces to the login page; after a sign-in it stores the new cookie at once, before any other request, so no session is ever lost. <b>One store for everyone (F2):</b> one CERT row (<code>tbl_ftl_session</code>, <code>fn_ftl_session_get</code> / <code>_put</code> / <code>_drop</code>, service role only), read and written by CI and by a LOCAL run alike, so a sign-in made anywhere serves every run for ten days. Expected sign-ins: at most three a month, and none in a month with no FTL read. Never GitHub&rsquo;s Actions cache (a pull request&rsquo;s workflow could restore it in this public repository). A refused sign-in is still remembered per process (G71), counted by the ledger, and stores nothing. Today&rsquo;s check threw its session away; capturing one now would cost a sign-in that nothing could use until this ships. ADR-068&rsquo;s deferred follow-up, done.</li>
+      <li><b>S3 · The compare reads the schedule only (B3).</b> For an event whose every source is an FTL schedule (the domestic route by <code>ingest_cli.is_ftl_schedule</code>; the international route when its only slot is FTL), the sync&rsquo;s compare step reads the schedule with <code>close.read_ftl_schedule</code> (1 request) and compares <code>run_record.schedule_sha256</code> with the latest finished CERT run&rsquo;s <code>listings.schedule.sha256</code>, as <code>close.check</code> already does. Equal: nothing changed; the promote-only check runs as today. Different, or no run: changed, and the ingest reads every final listing as today. Events with another engine compare as today.</li>
+      <li><b>S4 · FTL events four times a day (B3).</b> <code>results_sync.select</code> learns the cycle&rsquo;s UTC hour: an FTL-only event is taken in the cycles of the hours <b>08, 12, 16 and 20</b> (F3) and otherwise deferred, named in the select&rsquo;s log. A manual <code>--code</code> run always takes its event. Other organisers stay hourly; the Telegram bot&rsquo;s dispatch does not change.</li>
+      <li><b>S5 · No automatic re-read of a completed FTL event (B4, B5; F4 B).</b> <code>source_regression.past_events</code> leaves out every FTL-only event that is COMPLETED, printing &ldquo;n completed FTL event(s) not re-read: by hand only&rdquo;; the daily line and the stored report say the same. An FTL event still open is re-read weekly as today (1 + L a week), to catch a listing corrected after its ingest before the close. A by-hand re-read of one FTL event stays: <code>source-regression.yml</code> with its code, inside the cap. <code>upcoming</code> marks an FTL-only event for the dry read only the day before it starts, which with S3 costs 1 request.</li>
+      <li><b>S6 · A pause between requests (B7).</b> At least one second between two FTL requests (<code>FTL_PACE_SECONDS</code>, default 1.0; tests pass 0). A 25-listing ingest takes half a minute.</li>
+      <li><b>S7 · My own runs (B6).</b> I do not read FTL on LOCAL. The one exception is a check of one event when you ask for it in so many words, on the LOCAL ledger (F2), reported with its count. No re-read of mine, ever, for an investigation: an investigation reads CERT&rsquo;s stored runs and reports, which hold what FTL gave. Into memory and the operator runbook.</li>
+      <li><b>S8 · The client says who it is (B8).</b> <code>ftl_auth</code> sends <code>User-Agent: SPWS-ranklist/1.0 (Polish Veterans Fencing Association ranking; reads final results)</code> on every request, the name today&rsquo;s check used (F7). The same name goes into your letter to FTL, so they can allow or refuse it by name.</li>
+    </ol>
+    <p><b>Not changed:</b> the daily close, the ingest&rsquo;s read (the event written whole), G71, every other organiser&rsquo;s rhythm, the eight workflows&rsquo; secrets (no new secret; the CERT rows hold a session cookie and a count, never the password).</p>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Seven decisions, each with a recommendation</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>F1</b></td><td>The daily cap.</td><td><b>A</b> 120 requests and 2 sign-ins a day, Telegram from 80% and when spent.<br><b>B</b> 60 and 1.<br><b>C</b> Your numbers.</td><td><b>A</b>: an event day needs 40&ndash;80; two FTL events at once fit; B would refuse the second. Both are a fraction of the ~700 that got us blocked.</td></tr>
+        <tr><td><b>F2</b></td><td>LOCAL&rsquo;s share of the session and the cap.</td><td><b>A</b> One session row and one ledger row on CERT for CI and LOCAL alike: a LOCAL run reuses the session CI captured and draws from the same day&rsquo;s cap, writing those two rows on CERT through their service-role functions and nothing else.<br><b>B</b> LOCAL keeps its own session file and ledger file: a sign-in of its own, a cap of its own (1 event, 1 sign-in a day), no CERT writes.</td><td><b>A</b>: one sign-in serves everything, and the count is the account&rsquo;s true count. B costs a sign-in per LOCAL day.</td></tr>
+        <tr><td><b>F3</b></td><td>How often the sync checks an FTL event.</td><td><b>A</b> Four cycles: 08, 12, 16, 20 UTC.<br><b>B</b> Two: 08 and 20 UTC.<br><b>C</b> Every cycle (13), each 1 request with S3.</td><td><b>A</b>: a result shows within four hours of becoming final, for 4 requests a day.</td></tr>
+        <tr><td><b>F4</b></td><td>Verification reads of FTL.</td><td><b>A</b> None automatic: the weekly re-read skips every FTL event, open or closed; one event by hand when you ask; the dry read the day before only.<br><b>B</b> As A, but an FTL event still open is re-read weekly (1 + L a week), to catch a listing corrected after its ingest before the close.</td><td><b>A</b>: the close and the sync catch every new or renamed listing through the schedule; a corrected place inside a listing already stored is rare, and the by-hand re-read exists for it. <b>Signed 4 Nov: B.</b></td></tr>
+        <tr><td><b>F5</b></td><td>Where the decision is recorded.</td><td><b>A</b> A new ADR-120, &ldquo;FencingTimeLive is read under a daily cap, with one session and a name&rdquo;, amending ADR-068 and ADR-119 §4, G42, G45.<br><b>B</b> An eighth amendment of ADR-119.</td><td><b>A</b>: it changes two ADRs and adds two tables.</td></tr>
+        <tr><td><b>F6</b></td><td>The new login, already in <code>.env</code> and the secrets (4 Nov) and working.</td><td><b>A</b> It stays in. Until the release every CI run that reaches FTL makes one request (the 403 on the login page, no sign-in, no credential sent) and reports it; the other sources run. After the release the first FTL read signs in once and the session serves ten days.<br><b>B</b> Take it out until the release.</td><td><b>A</b>: one refused page request per run costs nothing and sends nothing; B would have you type the values a second time.</td></tr>
+        <tr><td><b>F7</b></td><td>The client&rsquo;s name.</td><td><b>A</b> <code>SPWS-ranklist/1.0 (Polish Veterans Fencing Association ranking; reads final results)</code>, the name today&rsquo;s check used; named in your letter.<br><b>B</b> Keep the library default (blocked) and wait for FTL&rsquo;s answer.</td><td><b>A</b>: it is the opposite of a disguise, and B keeps the ranking without FTL results until FTL writes back.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Build sheet · after your sign-off · red first, every step</p>
+    <h2>Order of work</h2>
+    <ol class="steps">
+      <li><b>Correct two uncommitted lines</b> on the branch (the login page&rsquo;s pill, the ADR-119 plan&rsquo;s G63 bullet) that call your direction a decision: they point here, &ldquo;F1&ndash;F7 to sign&rdquo;, and record today&rsquo;s check and the 403.</li>
+      <li><b>Migrations and pgTAP.</b> <code>supabase/migrations/20261104000001_ftl_read_ledger.sql</code>: <code>tbl_ftl_read_ledger</code> (<code>dt_day</code> primary key, <code>int_requests</code>, <code>int_sign_ins</code>, <code>ts_updated_at</code>), <code>fn_ftl_ledger_take(p_day, p_requests, p_sign_ins, p_cap_requests, p_cap_sign_ins)</code> returning what was granted and the day&rsquo;s totals under an advisory lock, <code>fn_ftl_ledger_give_back(p_day, p_requests)</code>, rows older than 90 days pruned; <code>20261104000002_ftl_session.sql</code>: <code>tbl_ftl_session</code> (one row: <code>txt_cookie</code>, <code>ts_expires_at</code>, <code>ts_signed_in_at</code>), <code>fn_ftl_session_get()</code>, <code>fn_ftl_session_put(p_cookie, p_expires_at)</code>, <code>fn_ftl_session_drop()</code>. Both: RLS on with no policy, every grant revoked, the service role granted only what the functions need; the functions revoked from PUBLIC, anon and authenticated, granted to service_role; CERT and LOCAL only, never in the PROD seed export. pgTAP <code>supabase/tests/125_ftl_read_ledger.sql</code> (FTL.LEDGER: grants, the cap refuses, the give-back, the day boundary, the seed exclusion) and <code>126_ftl_session.sql</code> (FTL.SESSION: grants, put/get/drop, one row). postgrestools zero findings.</li>
+      <li><b>The client</b> (<code>python/scrapers/ftl_auth.py</code>, tests in <code>python/tests/test_ftl_auth.py</code> after FTL.REFUSED.04): protocols <code>Ledger</code> and <code>SessionStore</code>; <code>get_authed_ftl_client(ledger=…, session_store=…, pace=…)</code>; the user agent (S8); <code>FtlBudgetSpent</code>; the request hook draws ten at a time and paces; the close gives back. Tests FTL.BUDGET.01&ndash;07 (no ledger &rarr; no request; a draw before the first request; the 11th request draws again; refused at the cap before sending; give-back on close; a sign-in draws a sign-in; a spent cap refuses with the day&rsquo;s count), FTL.SESSION.01&ndash;05 (a stored session skips the sign-in; a session within 12 h of its end signs in; a sign-in stores the cookie and expiry; a bounce drops the store and signs in once; a refusal stores nothing), FTL.NAME.01 (every request carries the name). In-memory fakes; nothing touches the network.</li>
+      <li><b>The stores</b>: <code>python/scrapers/ftl_ledger.py</code> with <code>CertLedger</code> / <code>CertSessionStore</code> over <code>refresh.ManagementTransport</code> (the SQL shapes of <code>results_sync.SyncSql</code>), used by CI and LOCAL alike (F2 A); <code>ftl_client()</code> builds them from the access token (<code>python/supabase_token.py</code>), so no caller builds its own and a process without the token cannot read FTL. Tests FTL.STORE.01&ndash;04 with a fake transport: the session is stored before the first request after a sign-in, loaded before any sign-in, dropped on a bounce; the ledger&rsquo;s draw and give-back.</li>
+      <li><b>Every FTL caller goes through <code>ftl_client()</code>:</b> <code>international_sources._ftl_schedule</code>, <code>ingest_cli._read_domestic</code> and the <code>--from-url</code> path, <code>close.read_ftl_schedule</code>, <code>evf_sync</code>&rsquo;s repair, <code>scrape_ftl_event_urls</code>, <code>populate_tournament_urls</code>, <code>scrape_tournament</code>, <code>review_cli</code>, <code>url_reachability</code>, <code>set_event_source_urls</code>, <code>scrape_ftl_individual</code>, <code>scrape_team_events</code>, <code>recreate_active_season_2025_2026</code>. A test greps for <code>get_authed_ftl_client(</code> outside <code>ftl_auth</code> and the helper (FTL.BUDGET.08).</li>
+      <li><b>The sync</b> (<code>python/pipeline/promotion/results_sync.py</code>, <code>test_results_sync.py</code>): <code>ftl_only(row)</code>; <code>select(…, hour=)</code> with <code>FTL_HOURS = (8, 12, 16, 20)</code> and the deferred list in the log (SYNC.SEL.06&ndash;08: taken at 12, deferred at 13, a manual code always); the compare step&rsquo;s schedule-only path (SYNC.CYCLE.10&ndash;12: equal &rarr; unchanged and promote-only as today; different &rarr; changed; no run &rarr; changed); the outcome&rsquo;s &ldquo;budget&rdquo; verdict that pauses nothing (SYNC.CYCLE.13); the day&rsquo;s count on the line from 80% (SYNC.CYCLE.14).</li>
+      <li><b>The re-read</b> (<code>python/pipeline/source_regression.py</code>, <code>test_source_regression.py</code>): SRC.REGR.09 (a completed FTL-only event is left out and counted), SRC.REGR.10 (an FTL event still open is still read, F4 B), SRC.REGR.11 (the dry read of an FTL event only the day before), SRC.REGR.12 (<code>--code</code> reads one completed FTL event by hand).</li>
+      <li><b>Workflows:</b> no new secret. <code>results-sync.yml</code>&rsquo;s select passes the cycle&rsquo;s hour it already knows. A step that reads FTL without the access token now prints &ldquo;FTL is read only with a ledger&rdquo; and fails.</li>
+      <li><b>Documents.</b> ADR-120 by the <code>new-adr</code> audit (F5); Appendix C; the RTM rows for the new test IDs; the handbook: <code>subsystems/ingestion.html</code> (how FTL is read), <code>reference/workflow-catalog.html</code> (the sync&rsquo;s FTL hours, the re-read&rsquo;s scope), <code>reference/security-posture.html</code> (the two tables), <code>reference/codebase-map.html</code>, <code>operations/operator-runbooks.html</code> (reading the day&rsquo;s count, raising the cap for a day, re-reading one FTL event by hand), <code>operations/local-development.html</code> (a LOCAL run reads FTL through CERT&rsquo;s session and cap rows); the <code>ftl-scrape</code> skill (the helper, the rule on LOCAL reads); the ADR-119 plan&rsquo;s G63 note and the login page point here. Docs index and graph refreshed before the commit.</li>
+      <li><b>Preflight 23/23</b>, the branch description before it; push from the integration checkout; CI and Release watched in the foreground; CERT and PROD verified: the two tables on CERT, absent from PROD&rsquo;s seed; the next scheduled cycle&rsquo;s log shows the count line, and the first FTL read of CI signs in once and stores the session.</li>
+      <li>Then G65, G67, G70 and G64&rsquo;s correction, one event per CI run, inside the cap, each on your go.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">As built · 4 Nov 2026 · branch claude/ftl-read-cap-and-reused-login</p>
+    <h2>Where the build differs from the sheet, and why</h2>
+    <ul>
+      <li><b>The gate sits inside <code>get_authed_ftl_client</code></b>, not in a new <code>ftl_client()</code> helper. Every FTL reader already opens that one function, and the tests of those readers replace it whole, so the cap, the session, the pace and the name hold for every caller with no caller changed. The client builds CERT&rsquo;s stores on its first read (<code>ftl_ledger.cert_stores</code>); tests install their own with <code>use_stores</code>.</li>
+      <li><b>B9, found during the build:</b> <code>python/tools/audit_results.py</code> fetched FTL&rsquo;s data with a bare <code>httpx.get</code>, uncounted and under the blocked name. It now goes through the client (FTL.BUDGET.08).</li>
+      <li><b>B10, found during the build:</b> three workflow steps held the FTL login but not the access token the ledger needs, so they could not have read FTL at all: <code>phase5-event-runner</code>, <code>populate-urls</code>, <code>scrape-tournament</code>. They now hold it, and FTL.WF.01 checks every workflow.</li>
+      <li><b>Requests are drawn before the sign-in</b>, so a day with no request left spends no sign-in.</li>
+      <li><b>A PZSz event keeps its full compare</b>: its compare also hashes the start lists from pzszerm.pl (ADR-119 G35). It is still taken only at the FTL hours and read under the cap: a bracket or two, about 12 requests a day.</li>
+      <li><b>The verdict <code>budget</code> needed the database&rsquo;s CHECK</b> on <code>txt_last_verdict</code> to take it: a third migration (<code>20261104000003_results_sync_budget_verdict.sql</code>, pgTAP 127); SYNC.PAUSE.01 now reads the latest migration&rsquo;s CHECK.</li>
+      <li><b>A re-read started by hand for one event names it:</b> the <code>source-regression</code> run is titled with the <code>event_code</code> it was given (RUNNAME.04, which pinned the old title, now pins this one).</li>
+      <li><b>Test IDs:</b> SRC.REGR.09 was taken, so the re-read&rsquo;s are SRC.REGR.10–13; the stores&rsquo; are FTL.STORE.01–05 (05: no token, no ledger) and FTL.SEED.01; the sync&rsquo;s SYNC.FTL.01, SYNC.SEL.06–09 and SYNC.CYCLE.10–16; there is no LOCAL file ledger (F2 A).</li>
+      <li><b>The record:</b> <a href="../adr/120-ftl-read-cap-and-reused-session.html">ADR-120</a>, amending ADR-068 and ADR-119; Appendix C; the RTM; the handbook&rsquo;s ingestion, workflow-catalog, security-posture, codebase-map, operator-runbook (&ldquo;Read FencingTimeLive within its daily cap&rdquo;) and local-development pages; the <code>ftl-scrape</code> skill.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries</p>
+    <h2>What this does not do</h2>
+    <ul>
+      <li>One account. No pool of accounts, no switch when one is refused, no browser&rsquo;s name on the client.</li>
+      <li>No credential is seen, printed, stored or logged by me; the session store holds FTL&rsquo;s session cookie, never the password.</li>
+      <li>Engarde, 4fence, Ophardt, d&rsquo;Artagnan, EVF&rsquo;s results and PZSz keep their rhythm; the daily close is unchanged.</li>
+      <li>The letter to FTL (<a href="ftl-login-rotation-2026-11-04.html">the login page</a>, L4) is yours; this plan gives it the rate and the client&rsquo;s name.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Draft 4 Nov 2026 · sources: the Actions logs of runs 41345143021, 41354506817, 41454343597 and 41631931379 and the run lists of the nine workflows that hold the FTL login (30 Oct &ndash; 4 Nov); my session records for the LOCAL runs; LOCAL&rsquo;s FTL events and bracket counts; today&rsquo;s check (one sign-in, three requests) and four credential-free requests of the login page with different client names; <code>python/scrapers/ftl_auth.py</code>; <code>python/pipeline/promotion/results_sync.py</code>; <code>python/pipeline/promotion/close.py</code>; <code>python/pipeline/source_regression.py</code>; <code>python/pipeline/international_sources.py</code>; <code>supabase/migrations/20261101000002_results_sync_cycle.sql</code>; <code>.github/workflows/results-sync.yml</code>, <code>ingest-event.yml</code>; ADR-068; ADR-119 · no credential was read · no fencer is named</p>
+</div>

@@ -286,3 +286,13 @@ The second source re-read (run 41354506817, 2026-11-01) was investigated read on
 - Tests: FTL.REFUSED.01–04 (`python/tests/test_ftl_auth.py`), SRC.REGR.05 (a known refusal holds only for its own cause; its cause is the reader's wording), FOURFENCE.BRONZE.06–07 (fixture `napoli_ff7_*.html`, Napoli 2026 V2 women's foil from 4fence's public pages). FTL.REFUSED.01–02, the G72 test and FOURFENCE.BRONZE.06 failed before the code; FTL.REFUSED.03–04 and FOURFENCE.BRONZE.07 are guards and passed before and after. SRC.REGR.05's earlier input "the source has no single category" became the reader's own refusal text.
 - Proof, read only against LOCAL on 2026-11-02, no FTL sign-in attempted: Napoli 2026 reads with no source disagreement left (its one known difference is G67's), Terni 2025 equal; LOCAL's 3,065 results unchanged.
 - Not changed: what any run writes, the sign-in itself, and the FTL account: G63 is the user's, with FTL's support.
+
+## Amendment (2026-11-04, by ADR-120) — FencingTimeLive read rarely
+
+[ADR-120](120-ftl-read-cap-and-reused-session.md) changes three parts of this record for events read only from FencingTimeLive, after FTL blocked the pipeline's account on the night of 1 to 2 November 2026 (G63):
+
+- §4: the results sync takes such an event only in the cycles of the UTC hours 08, 12, 16 and 20, and compares it by its schedule alone (a PZSz event keeps its full compare); a cycle stopped by FTL's daily cap records the new verdict `budget` and pauses nothing.
+- G42 A (2): such an event is dry-read only the day before it starts.
+- G45 A: the weekly source re-read leaves out such an event once it is COMPLETED (an open one is still re-read), and one event is re-read by hand with `event_code`.
+
+G71 stands: a refused sign-in is still tried once per process.

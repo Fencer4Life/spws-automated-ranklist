@@ -34,7 +34,12 @@ outputs, no database and no network:
                08 UTC hour, and outside the cycles' hours runs none;
   SYNC.DEDUP.01-04  a scheduled cycle that begins within 20 minutes of the
                last ends at its select, the day's ☀ line is sent once, and a
-               manual run or a dry run records no start.
+               manual run or a dry run records no start;
+  SYNC.FTL.01, SYNC.SEL.06-09, SYNC.CYCLE.10-16  an event read only from
+               FencingTimeLive (ADR-120): taken at 08, 12, 16 and 20 UTC,
+               compared by its schedule alone, a cycle stopped by the daily
+               cap records "budget" and pauses nothing, and a sent line
+               carries the day's count from 80% of the cap.
 
 The morning cycle is told by the cron line that fired (G28 A), or by the hour
 the bot runs in (G47 A), and the select sends the ☀ line (G29 A).
@@ -751,18 +756,19 @@ class TestCycleLine:
 
 
 def test_SYNC_PAUSE_01_the_database_takes_exactly_the_cycles_verdicts():
-    """The migration's CHECK on txt_last_verdict lists every verdict a cycle
-    can record, and nothing else."""
+    """The latest migration's CHECK on txt_last_verdict lists every verdict a
+    cycle can record, and nothing else (ADR-120 added "budget")."""
     import re
     from pathlib import Path
 
-    sql = (
-        Path(__file__).resolve().parents[2]
-        / "supabase/migrations/20261101000001_results_sync_event.sql"
-    ).read_text(encoding="utf-8")
-    check = re.search(r"txt_last_verdict IN \(([^)]*)\)", sql)
-    assert check is not None
-    assert tuple(re.findall(r"'([a-z_]+)'", check.group(1))) == rs.VERDICTS
+    migrations = sorted((Path(__file__).resolve().parents[2] / "supabase/migrations").glob("*.sql"))
+    checks = [
+        found
+        for path in migrations
+        if (found := re.search(r"txt_last_verdict IN \(([^)]*)\)", path.read_text("utf-8")))
+    ]
+    assert checks
+    assert tuple(re.findall(r"'([a-z_]+)'", checks[-1].group(1))) == rs.VERDICTS
 
 
 class TestMorningLine:
@@ -808,6 +814,7 @@ class _Sql:
         latest=None,
         fingerprints=None,
         begun=None,
+        ftl=None,
     ):
         self._events = [dict(e) for e in events]
         self._pauses = dict(pauses or {})
@@ -816,7 +823,11 @@ class _Sql:
         self._latest = dict(latest or {})
         self._fps = dict(fingerprints or {})
         self._begun = begun
+        self._ftl = ftl
         self.writes: list[tuple] = []
+
+    def ftl_today(self, _day):
+        return self._ftl
 
     def begin(self, trigger, morning, day):
         self.writes.append(("begin", trigger, morning, day))
@@ -1252,3 +1263,236 @@ def test_SYNC_CYCLE_05_the_public_error_of_a_failure_that_opened_no_run():
     assert rs.public_error(FtlAuthError("refused\nagain")) == "FtlAuthError: refused again"
     assert rs.public_error(GateUnavailable("token")) == "GateUnavailable: token"
     assert rs.public_error(KeyError("KOWALSKA Anna")) == "KeyError"
+
+
+# --------------------------------------------------------------------------
+# SYNC.FTL — FencingTimeLive is read rarely (ADR-120 §3)
+#
+# An event whose every source is an FTL schedule is taken only in the cycles
+# of the UTC hours 08, 12, 16 and 20, and its compare reads the schedule alone
+# (1 request) and compares its hash with the latest finished CERT run's, as the
+# daily close does. A PZSz event keeps its full compare (start lists, G35);
+# every other engine compares as before. FTL's daily cap reached is a cycle of
+# its own ("budget"), which pauses nothing.
+# --------------------------------------------------------------------------
+
+FTL_SCHEDULE = "https://www.fencingtimelive.com/tournaments/eventSchedule/" + "A" * 32
+ENGARDE = "https://engarde-service.com/competition/x/y"
+
+
+class TestFtlOnly:
+    def test_SYNC_FTL_01_an_event_is_ftl_only_when_every_source_is_an_ftl_schedule(self):
+        assert rs.ftl_only(PPW, {"url_event": FTL_SCHEDULE})
+        assert rs.ftl_only(PPS, {"url_event": FTL_SCHEDULE})
+        assert not rs.ftl_only(PPW, {"url_event": ENGARDE})
+        assert not rs.ftl_only(PPW, {})
+        assert rs.ftl_only(PEW, {"url_event": FTL_SCHEDULE, "url_event_2": FTL_SCHEDULE + "B"})
+        assert not rs.ftl_only(PEW, {"url_event": FTL_SCHEDULE, "url_event_2": ENGARDE})
+        assert not rs.ftl_only(PEW, {"id_evf_event": 85})
+
+
+class TestFtlHours:
+    def _rows(self):
+        return [_event(code=PPW, url_event=FTL_SCHEDULE), _event(code=PEW, url_event=ENGARDE)]
+
+    def test_SYNC_SEL_06_an_ftl_event_is_taken_in_the_ftl_hours(self):
+        assert rs.FTL_HOURS == (8, 12, 16, 20)
+        for hour in rs.FTL_HOURS:
+            got = _select(self._rows(), hour=hour)
+            assert (got.events, got.deferred) == ([PEW, PPW], [])
+
+    def test_SYNC_SEL_07_in_another_hour_it_waits_and_other_engines_do_not(self):
+        got = _select(self._rows(), hour=13)
+        assert (got.events, got.deferred) == ([PEW], [PPW])
+
+    def test_SYNC_SEL_08_a_manual_code_is_always_taken(self):
+        got = _select(self._rows(), code=PPW, scheduled=False, hour=13)
+        assert (got.events, got.deferred) == ([PPW], [])
+
+    def test_SYNC_SEL_09_the_select_takes_the_hour_the_cycle_was_due_and_says_who_waits(
+        self, capsys
+    ):
+        code, _, out = _cli_select(_Sql(self._rows()))  # due 13:13 UTC
+        assert (code, out["count"]) == (0, "1")
+        assert f"1 FTL event(s) wait for the 16 UTC cycle: {PPW}" in capsys.readouterr().out
+        late = dt.datetime(2026, 11, 14, 13, 40, tzinfo=UTC)  # the 12:13 cycle, started late
+        assert _cli_select(_Sql(self._rows()), now=late, cron="13 12 * * *")[2]["count"] == "2"
+        bot = dt.datetime(2026, 11, 14, 16, 41, tzinfo=UTC)
+        assert _cli_select(_Sql(self._rows()), now=bot, cron=None, by_bot=True)[2]["count"] == "2"
+        assert _cli_select(_Sql(self._rows()), cron=None)[2]["count"] == "2"  # manual: no hour
+
+
+def _ftl_run(run_id=14, fingerprint="a" * 64, sha="s" * 64, url: str | None = FTL_SCHEDULE):
+    return {
+        "id": run_id,
+        "url_event": url,
+        "listings": {"schedule": {"sha256": sha}, "rounds": []},
+        "result_fingerprint": fingerprint,
+    }
+
+
+class TestScheduleOnlyCompare:
+    def _run(self, latest, prod_fp="a" * 64, same=True):
+        out = _Out()
+        cert = _Sql(latest={PPW: latest} if latest else None)
+        prod = _Sql(fingerprints={PPW: prod_fp})
+
+        def read():
+            raise AssertionError("an FTL-only compare reads the schedule alone")
+
+        code = rs.run_compare(
+            PPW,
+            read=read,
+            cert=cert,
+            prod=prod,
+            output=out,
+            event=lambda: {"txt_code": PPW, "url_event": FTL_SCHEDULE},
+            unchanged=lambda code, row, previous: same,
+        )
+        return code, out.values
+
+    def test_SYNC_CYCLE_10_an_unchanged_schedule_is_nothing_to_do(self, capsys):
+        code, out = self._run(_ftl_run())
+        assert code == 0
+        assert (out["changed"], out["promote_only"], out["previous_run"]) == (
+            "false",
+            "false",
+            "14",
+        )
+        assert "nothing to do (FTL schedule only" in capsys.readouterr().out
+
+    def test_SYNC_CYCLE_10_an_unchanged_schedule_with_prod_behind_promotes_only(self):
+        _, out = self._run(_ftl_run(), prod_fp="b" * 64)
+        assert (out["changed"], out["promote_only"]) == ("false", "true")
+
+    def test_SYNC_CYCLE_11_a_changed_schedule_is_changed_without_reading_the_listings(self):
+        _, out = self._run(_ftl_run(), same=False)
+        assert (out["changed"], out["previous_run"], json.loads(out["new"])) == ("true", "14", [])
+
+    def test_SYNC_CYCLE_12_no_finished_run_is_changed_without_reading(self):
+        _, out = self._run(None)
+        assert (out["changed"], out["previous_run"]) == ("true", "")
+
+    def test_SYNC_CYCLE_12_a_pzsz_event_and_another_engine_read_in_full(self):
+        for code, row in ((PPS, {"url_event": FTL_SCHEDULE}), (PPW, {"url_event": ENGARDE})):
+            read = _read([_rec()])
+            out = _Out()
+            got = rs.run_compare(
+                code,
+                read=lambda read=read: read,
+                cert=_Sql(),
+                prod=_Sql(),
+                output=out,
+                event=lambda row=row: row,
+                unchanged=lambda *a: pytest.fail("not schedule-only"),
+            )
+            assert got == 0 and json.loads(out.values["new"]) == [["Men's Epee V2", 3]]
+
+
+class TestScheduleUnchanged:
+    def test_SYNC_CYCLE_13_the_schedule_hash_decides_as_the_close_does(self):
+        from python.pipeline.promotion.run_record import schedule_sha256
+
+        kept = [{"uuid": "u1", "name": "Men's Epee V2", "finished": True}]
+        sha = schedule_sha256(kept, [])
+        row = {"txt_code": PPW, "url_event": FTL_SCHEDULE}
+
+        def read(_url):
+            return list(kept), []
+
+        assert rs.schedule_unchanged(PPW, row, _ftl_run(sha=sha), read_ftl=read)
+        assert not rs.schedule_unchanged(PPW, row, _ftl_run(sha="x" * 64), read_ftl=read)
+
+    def test_SYNC_CYCLE_13_a_link_changed_since_the_run_is_a_change_without_a_read(self):
+        row = {"txt_code": PPW, "url_event": FTL_SCHEDULE + "B"}
+
+        def read(_url):
+            raise AssertionError("no read")
+
+        assert not rs.schedule_unchanged(PPW, row, _ftl_run(), read_ftl=read)
+
+    def test_SYNC_CYCLE_13_an_international_event_reads_its_sources_schedules(self):
+        from python.pipeline.promotion.run_record import schedule_sha256
+
+        kept = [{"uuid": "u1", "name": "Men's Epee Cat 2", "finished": True}]
+        run = _ftl_run(sha=schedule_sha256(kept, []), url=None)
+        run["listings"]["sources"] = [{"slot": "url_event", "url": FTL_SCHEDULE}]
+        row = {"txt_code": PEW, "url_event": FTL_SCHEDULE, "arr_weapons": ["EPEE"]}
+        seen = []
+
+        def read_sources(urls, *, event):
+            seen.append((urls, event))
+            return list(kept), []
+
+        assert rs.schedule_unchanged(PEW, row, run, read_sources=read_sources)
+        assert seen == [([FTL_SCHEDULE], {"txt_code": PEW, "arr_weapons": ["EPEE"]})]
+        moved = {**row, "url_event_2": FTL_SCHEDULE + "B"}
+        assert not rs.schedule_unchanged(PEW, moved, run, read_sources=read_sources)
+        assert len(seen) == 1
+
+    def test_SYNC_CYCLE_13_the_run_query_carries_its_link(self):
+        transport = MagicMock()
+        transport.fetch_json.return_value = None
+        rs.SyncSql(transport).latest_finished_run(PPW)
+        (sql,), _ = transport.fetch_json.call_args
+        assert "'url_event', url_event" in sql
+
+
+class TestFtlOutcome:
+    def _run(self, *, run=None, comparison: rs.Comparison | None = CHANGED, error=None, ftl=None):
+        sent: list[str] = []
+        previous = {
+            "id": 14,
+            "status": "FINISHED",
+            "result_fingerprint": "a" * 64,
+            "listings": {
+                "rounds": [{"name": "Men's Epee V2", "uuid": "u2", "sha256": "h2", "count": 3}]
+            },
+        }
+        runs = {14: previous, **({run["id"]: run} if run else {})}
+        cert = _Sql(runs=runs, ftl=ftl)
+        rs.run_outcome(
+            PPW,
+            cert=cert,
+            prod=_Sql(fingerprints={PPW: "a" * 64}),
+            moment=MOMENT,
+            comparison=comparison,
+            run_id=run["id"] if run else None,
+            error=error,
+            refresh=None,
+            promote={"result": "success", "writes": "12"} if run else None,
+            run_url=RUN_URL_77,
+            send=sent.append,
+        )
+        return sent, cert.writes
+
+    def _promoted(self):
+        return _new_run(
+            rounds=[
+                {"name": "Men's Epee V2", "uuid": "u2", "sha256": "h2", "count": 3},
+                {"name": "Women's Foil V1", "uuid": "u5", "sha256": "h5", "count": 5},
+            ],
+            gate={"passed": True, "findings": []},
+            promote={"outcome": "applied", "fingerprint": "f" * 64},
+        )
+
+    def test_SYNC_CYCLE_14_the_new_listings_come_from_the_runs_when_the_compare_had_none(self):
+        sent, writes = self._run(run=self._promoted())
+        assert writes == [("cycle", PPW, "promoted")]
+        assert "new: Women's Foil V1 (5)" in sent[0]
+
+    def test_SYNC_CYCLE_15_the_daily_cap_is_a_cycle_of_its_own_and_pauses_nothing(self):
+        error = (
+            "FtlBudgetSpent: FTL daily cap reached: 120/120 requests, 1/2 sign-ins today; "
+            "nothing was sent (ADR-120: the next day reads it)"
+        )
+        sent, writes = self._run(comparison=None, error=error)
+        assert writes == [("cycle", PPW, "budget")]
+        assert sent[0].startswith(f"⏸ {PPW} · cycle 14:13 · FTL's daily cap is reached")
+        assert "120/120 requests" in sent[0] and "PAUSED" not in sent[0]
+
+    def test_SYNC_CYCLE_16_from_80_percent_a_sent_line_carries_the_days_count(self):
+        sent, _ = self._run(run=self._promoted(), ftl={"used_requests": 97, "used_sign_ins": 1})
+        assert sent[0].endswith("· FTL today: 97/120 requests, 1/2 sign-ins")
+        quiet = self._run(run=self._promoted(), ftl={"used_requests": 95, "used_sign_ins": 0})[0]
+        assert "FTL today" not in quiet[0]
