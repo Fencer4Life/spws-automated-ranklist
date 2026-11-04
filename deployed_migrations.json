@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-11-02T17:34:20Z",
-    "last_sha": "a6856dea1edb0035838099ca29f13e420c0ac5b5",
+    "last_updated": "2026-11-04T08:10:11Z",
+    "last_sha": "7f35731a3ad5d61e9d494489485c7ebeb1123c72",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -235,13 +235,16 @@
       "20261031000004_cert_apply_and_promote_ledger.sql",
       "20261031000005_ingest_run_writers.sql",
       "20261101000001_results_sync_event.sql",
-      "20261101000002_results_sync_cycle.sql"
+      "20261101000002_results_sync_cycle.sql",
+      "20261104000001_ftl_read_ledger.sql",
+      "20261104000002_ftl_session.sql",
+      "20261104000003_results_sync_budget_verdict.sql"
     ],
-    "schema_fingerprint": "4c7e34f7995aa9020f30f3cf4432b50e"
+    "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2"
   },
   "prod": {
-    "last_updated": "2026-11-03T22:36:19Z",
-    "last_sha": "a6856dea1edb0035838099ca29f13e420c0ac5b5",
+    "last_updated": "2026-11-04T08:11:53Z",
+    "last_sha": "7f35731a3ad5d61e9d494489485c7ebeb1123c72",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -475,8 +478,11 @@
       "20261031000004_cert_apply_and_promote_ledger.sql",
       "20261031000005_ingest_run_writers.sql",
       "20261101000001_results_sync_event.sql",
-      "20261101000002_results_sync_cycle.sql"
+      "20261101000002_results_sync_cycle.sql",
+      "20261104000001_ftl_read_ledger.sql",
+      "20261104000002_ftl_session.sql",
+      "20261104000003_results_sync_budget_verdict.sql"
     ],
-    "schema_fingerprint": "4c7e34f7995aa9020f30f3cf4432b50e"
+    "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2"
   }
 }
