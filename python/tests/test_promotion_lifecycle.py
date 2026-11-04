@@ -77,9 +77,28 @@ class TestSchedule:
         assert {k["uuid"]: k["finished"] for k in kept} == {"A1": True, "A2": False}
         assert {k["day"] for k in kept} == {"2026-09-26"}
 
-    def test_a_two_day_listing_is_final_only_when_both_rows_say_finished(self):
-        """PROMO.LIFE.03 — one link listed on two days: the later day counts."""
-        html = _page(
+    def test_a_two_day_listing_is_final_when_its_last_day_says_finished(self):
+        """PROMO.LIFE.03 — one link listed on two days is one bracket: the first
+        day holds the pools, the last day the direct elimination (EMW Plovdiv
+        2025, men's épée V1–V3; closing plan rev 5, G65 R1). It is final when
+        the row of its last listed day says Finished, whatever the earlier rows
+        say, and its day is that last day."""
+        pools_then_de = _page(
+            _day(
+                "Saturday September 26, 2026",
+                _row("B1", "SZABLA WETERANI mężczyźni 3 (Day 1)", POOLS),
+            ),
+            _day(
+                "Sunday September 27, 2026",
+                _row("B1", "SZABLA WETERANI mężczyźni 3 (Day 2)", FINISHED),
+            ),
+        )
+        kept, _ = parse_event_schedule(pools_then_de, with_skips=True)
+        assert len(kept) == 1
+        assert kept[0]["finished"] is True
+        assert kept[0]["day"] == "2026-09-27"
+
+        de_not_finished = _page(
             _day(
                 "Saturday September 26, 2026",
                 _row("B1", "SZABLA WETERANI mężczyźni 3 (Day 1)", FINISHED),
@@ -89,7 +108,7 @@ class TestSchedule:
                 _row("B1", "SZABLA WETERANI mężczyźni 3 (Day 2)", POOLS),
             ),
         )
-        kept, _ = parse_event_schedule(html, with_skips=True)
+        kept, _ = parse_event_schedule(de_not_finished, with_skips=True)
         assert len(kept) == 1
         assert kept[0]["finished"] is False
         assert kept[0]["day"] == "2026-09-27"
@@ -488,70 +507,124 @@ class TestDailyClose:
 
 
 class _PastSeasonEnv:
-    """An environment whose past seasons still hold IN_PROGRESS events."""
+    """An environment whose past seasons still hold open events."""
 
-    def __init__(self, name, codes):
+    def __init__(self, name, open_events, fail=False):
         self.name = name
-        self.codes = codes
+        self.open_events = dict(open_events)  # code → status
+        self.fail = fail
         self.asked: list[dt.date] = []
+        self.writes: list[str] = []
 
-    def past_season_in_progress(self, today):
+    def past_season_open(self, today):
         self.asked.append(today)
-        return self.codes
+        return [{"code": c, "status": s} for c, s in self.open_events.items()]
+
+    def event(self, code):
+        return {"code": code, "status": self.open_events.get(code)}
+
+    def set_status(self, code, status):
+        if self.fail:
+            raise RuntimeError("the Management API is down")
+        self.writes.append(f"{code}:{status}")
+        self.open_events[code] = status
 
 
-class TestPastSeasonInProgress:
-    """PROMO.LIFE.18 — G64 A: the close reads only the active season, so an
-    event of a past season left IN_PROGRESS is named every morning, on Telegram
-    and in the log, until someone completes it; nothing is written."""
+class TestPastSeasonsAreClosed:
+    """CLOSE.PAST.01–05 — the user's rule of 4 Nov 2026 (closing plan rev 5,
+    N1): an open event is permitted only in the active season. Each morning,
+    before closing anything, the daily close completes every open event of a
+    past season, on CERT then PROD, through the validator's steps, touching no
+    result, and says so. This replaces ADR-119 G64 A, which only named them."""
 
-    def test_each_event_is_named_with_where_it_is_in_progress(self, capsys):
-        cert = _PastSeasonEnv("cert", ["IMSW-2025-2026"])
-        prod = _PastSeasonEnv("prod", ["IMSW-2025-2026", "PEW9f-2024-2025"])
+    def test_each_open_event_is_completed_on_cert_then_prod(self, capsys):
+        """CLOSE.PAST.01"""
+        cert = _PastSeasonEnv("cert", {"IMSW-2025-2026": "IN_PROGRESS"})
+        prod = _PastSeasonEnv(
+            "prod", {"IMSW-2025-2026": "IN_PROGRESS", "PEW9f-2024-2025": "PLANNED"}
+        )
         notifier = FakeNotifier()
-        named = close.name_past_season_events(cert, prod, notifier=notifier, today=CLOSE_TODAY)
-        assert named == {"IMSW-2025-2026": ["cert", "prod"], "PEW9f-2024-2025": ["prod"]}
+        closed = close.close_past_season_events(cert, prod, notifier=notifier, today=CLOSE_TODAY)
+        assert closed == {
+            "IMSW-2025-2026": ["cert:COMPLETED", "prod:COMPLETED"],
+            "PEW9f-2024-2025": ["prod:IN_PROGRESS", "prod:COMPLETED"],
+        }
         assert cert.asked == [CLOSE_TODAY] and prod.asked == [CLOSE_TODAY]
+        assert cert.writes == ["IMSW-2025-2026:COMPLETED"]
+        assert prod.writes == [
+            "IMSW-2025-2026:COMPLETED",
+            "PEW9f-2024-2025:IN_PROGRESS",
+            "PEW9f-2024-2025:COMPLETED",
+        ]
         out = capsys.readouterr().out
         for line in (
-            "Daily close: IMSW-2025-2026 of a past season is still IN_PROGRESS on CERT and PROD",
-            "Daily close: PEW9f-2024-2025 of a past season is still IN_PROGRESS on PROD",
+            "Daily close: IMSW-2025-2026 of a past season was IN_PROGRESS on CERT and PROD: "
+            "COMPLETED.",
+            "Daily close: PEW9f-2024-2025 of a past season was PLANNED on PROD: COMPLETED.",
         ):
             assert line in out
-            assert any(kind == "warning" and line in m for kind, m in notifier.messages)
+            assert any(kind == "success" and line in m for kind, m in notifier.messages)
 
-    def test_a_dry_run_prints_and_sends_nothing(self, capsys):
-        cert, prod = _PastSeasonEnv("cert", ["IMSW-2025-2026"]), _PastSeasonEnv("prod", [])
+    def test_a_dry_run_names_and_writes_nothing(self, capsys):
+        """CLOSE.PAST.02"""
+        cert = _PastSeasonEnv("cert", {"IMSW-2025-2026": "IN_PROGRESS"})
+        prod = _PastSeasonEnv("prod", {})
         notifier = FakeNotifier()
-        close.name_past_season_events(cert, prod, notifier=notifier, today=CLOSE_TODAY, write=False)
-        assert "IMSW-2025-2026 of a past season" in capsys.readouterr().out
-        assert notifier.messages == []
+        closed = close.close_past_season_events(
+            cert, prod, notifier=notifier, today=CLOSE_TODAY, write=False
+        )
+        assert closed == {"IMSW-2025-2026": ["cert:COMPLETED"]}
+        assert cert.writes == [] and notifier.messages == []
+        assert (
+            "(dry run) Daily close: IMSW-2025-2026 of a past season was IN_PROGRESS on CERT: "
+            "COMPLETED." in capsys.readouterr().out
+        )
 
     def test_none_says_nothing(self, capsys):
+        """CLOSE.PAST.03"""
         notifier = FakeNotifier()
-        named = close.name_past_season_events(
-            _PastSeasonEnv("cert", []),
-            _PastSeasonEnv("prod", []),
+        closed = close.close_past_season_events(
+            _PastSeasonEnv("cert", {}),
+            _PastSeasonEnv("prod", {}),
             notifier=notifier,
             today=CLOSE_TODAY,
         )
-        assert named == {} and notifier.messages == [] and capsys.readouterr().out == ""
+        assert closed == {} and notifier.messages == [] and capsys.readouterr().out == ""
 
-    def test_the_sql_reads_past_seasons_of_the_route(self):
+    def test_a_failed_write_is_reported_and_the_rest_still_runs(self, capsys):
+        """CLOSE.PAST.04 — CERT done, PROD down: the failure is said, the morning's
+        close goes on, and the run ends red."""
+        cert = _PastSeasonEnv("cert", {"IMSW-2025-2026": "IN_PROGRESS"})
+        prod = _PastSeasonEnv("prod", {"IMSW-2025-2026": "IN_PROGRESS"}, fail=True)
+        notifier = FakeNotifier()
+        with pytest.raises(close.CloseFailed):
+            close.close_past_season_events(cert, prod, notifier=notifier, today=CLOSE_TODAY)
+        assert cert.writes == ["IMSW-2025-2026:COMPLETED"] and prod.writes == []
+        assert any(
+            kind == "error" and "IMSW-2025-2026 on prod" in m for kind, m in notifier.messages
+        )
+        assert "IMSW-2025-2026 on prod: RuntimeError" in capsys.readouterr().err
+
+    def test_the_sql_reads_every_open_event_of_a_past_season(self):
+        """CLOSE.PAST.05 — every event, of every organizer and code; closed means
+        COMPLETED, SCORED or CANCELLED; past means the season's end date has
+        passed (N3 A: a future season's PLANNED events stay as they are)."""
         seen: list[str] = []
 
         class _Transport:
             def fetch_json(self, sql):
                 seen.append(sql)
-                return ["IMSW-2025-2026"]
+                return [{"code": "IMSW-2025-2026", "status": "IN_PROGRESS"}]
 
         env = close.SqlEnv("prod", _Transport())
-        assert env.past_season_in_progress(CLOSE_TODAY) == ["IMSW-2025-2026"]
+        assert env.past_season_open(CLOSE_TODAY) == [
+            {"code": "IMSW-2025-2026", "status": "IN_PROGRESS"}
+        ]
         (sql,) = seen
-        assert "e.enum_status = 'IN_PROGRESS'" in sql
+        assert "e.enum_status NOT IN ('COMPLETED', 'SCORED', 'CANCELLED')" in sql
         assert "s.dt_end < DATE '2026-09-29'" in sql
         assert "bool_active" not in sql
-        assert close.route_code_regex() in sql
+        assert close.route_code_regex() not in sql
 
 
 class TestWorkflow:

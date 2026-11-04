@@ -296,3 +296,14 @@ The second source re-read (run 41354506817, 2026-11-01) was investigated read on
 - G45 A: the weekly source re-read leaves out such an event once it is COMPLETED (an open one is still re-read), and one event is re-read by hand with `event_code`.
 
 G71 stands: a refused sign-in is still tried once per process.
+
+## Amendment (2026-11-04, closing plan rev 5, N1 and N3 A) — the daily close completes every open event of a past season
+
+**Status:** Signed by the user in chat on 2026-11-04 ("All A" on `doc/plans/closing-plan-end-all-work-rev4-2026-11-04.html`, rev 5); built test-first on branch `claude/ftl-read-cap-and-reused-login`.
+
+The user's rule: *an event that is not closed is permitted only in the active season.* On 4 November 2026 `IMSW-2025-2026` and `PEW1f-2026-2027` were completed by hand on CERT and PROD, and a read of both environments found no other open event of a past season (PROD: 72 past-season events, all COMPLETED).
+
+- **§1 of the sixth amendment (G64 A) is replaced.** The daily close no longer names an open event of a past season for a hand to complete. Each morning, before closing anything, `close.close_past_season_events` takes every event of a season whose end date has passed that is not COMPLETED, SCORED or CANCELLED (`SqlEnv.past_season_open`: every organizer and code, no route filter), and completes it on CERT then PROD through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, with one line in the log and on Telegram: "Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED." A dry run computes the steps and writes and sends nothing. A failed write is reported ("Daily close failed: <code> on <env>: …"), the other events are still closed, and the run ends red. Closed means COMPLETED, SCORED or CANCELLED; past means the season's end date has passed, so a future season's PLANNED skeletons stay as they are (N3 A).
+- **A database invariant.** pgTAP `supabase/tests/128_no_open_event_outside_active_season.sql` asserts that no event of a past season is open on the PROD seed LOCAL is built from, and that the check counts a planted one; preflight and CI fail on drift (EVENT.PAST, +2 assertions).
+- **Tests.** CLOSE.PAST.01–05 (`python/tests/test_promotion_lifecycle.py`) replace PROMO.LIFE.18: each open event completed CERT then PROD with the steps written; the dry run; none says nothing; a failed write; the SQL reads every open status, no route, no `bool_active`.
+- **Unchanged.** The close's own selection (active season, IN_PROGRESS, end date passed) and its rule; the validator; the Telegram `complete` command.

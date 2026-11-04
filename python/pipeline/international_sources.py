@@ -63,6 +63,7 @@ FTL_RESULTS = "https://www.fencingtimelive.com/events/results/"
 EVF_SOURCE = "evf:"
 UNPARSEABLE = "unparseable name"
 OTHER_WEAPON = "not a weapon of this event"
+POOL_ROUND = "pool round (no direct elimination round on its results page)"
 SETTLE_MINUTES = 60
 
 
@@ -301,10 +302,11 @@ def read_schedule(
                 sched = client.get(normalize_ftl_url(url))
                 sched.raise_for_status()
                 listed, skips = parse_event_schedule(sched.text, with_skips=True)
-            listed, others = _split_weapons(listed, weapons)
-            final, not_final = lifecycle.split_final(listed)
+                listed, others = _split_weapons(listed, weapons)
+                final, not_final = lifecycle.split_final(listed)
+                final, pools = _de_only(client, final)  # the same rule as the ingest
             kept += final
-            skipped += [*skips, *others, *not_final]
+            skipped += [*skips, *others, *pools, *not_final]
         else:
             _recs, k, s = _other_source(url, fetcher, finality, weapons)
             kept += k
@@ -396,6 +398,33 @@ def _split_weapons(
     return ours, others
 
 
+def _de_only(client: Any, final: list[dict]) -> tuple[list[dict], list[dict]]:
+    """G65 R2 (the user's rule of 4 Nov 2026): a pool-only round is known by the
+    content of its results page, never by its name. Each final listing's page is
+    read; one that lists no direct-elimination round holds no result: it is
+    skipped with that reason, its data is never fetched, and the skip never holds
+    the event open. The daily close reads with the same rule."""
+    from python.scrapers import ftl
+
+    kept: list[dict] = []
+    pools: list[dict] = []
+    for b in final:
+        page = client.get(f"{FTL_RESULTS}{b['uuid']}")
+        page.raise_for_status()
+        if ftl.has_direct_elimination(page.text):
+            kept.append(b)
+        else:
+            pools.append(
+                {
+                    "uuid": b["uuid"],
+                    "name": b["name"],
+                    "url": f"{FTL_RESULTS}{b['uuid']}",
+                    "reason": POOL_ROUND,
+                }
+            )
+    return kept, pools
+
+
 def _ftl_schedule(
     url: str, weapons: frozenset[str] | None = None
 ) -> tuple[list[dict], list[dict], list[dict]]:
@@ -411,6 +440,8 @@ def _ftl_schedule(
         listed, others = _split_weapons(listed, weapons)
         skipped = [*skipped, *others]
         final, not_final = lifecycle.split_final(listed)
+        final, pools = _de_only(client, final)
+        skipped = [*skipped, *pools]
         named = []
         for b in final:
             pn = parse_tournament_name(b["name"])

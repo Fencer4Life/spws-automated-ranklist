@@ -65,6 +65,7 @@ jobs:
           # the (login-walled) FTL results pages before halting on a
           # future-COMPLETED row.
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_READS: ${{ vars.FTL_READS }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

@@ -18,9 +18,12 @@ environment already COMPLETED is not written again, so a close that stopped
 after CERT is finished by the next run, and a failure raises (the workflow
 alerts).
 
-Before closing anything it names each event of a past season still IN_PROGRESS
-(ADR-119 G64 A, PROMO.LIFE.18): the close reads only the active season, so such
-an event is completed by hand, and until then it is named every morning.
+Before closing anything it completes every open event of a past season, on CERT
+then PROD, through the validator's steps and touching no result (the user's rule
+of 4 Nov 2026, closing plan rev 5 N1, CLOSE.PAST.01–05): an open event is
+permitted only in the active season. This replaces ADR-119 G64 A, which only
+named such events. A database invariant (pgTAP 128) fails preflight and CI on
+any drift.
 """
 
 from __future__ import annotations
@@ -252,10 +255,12 @@ def close_events(
 class PastSeasons(Protocol):
     name: str
 
-    def past_season_in_progress(self, today: dt.date) -> list[str]: ...
+    def past_season_open(self, today: dt.date) -> list[dict]: ...
+
+    def set_status(self, code: str, status: str) -> None: ...
 
 
-def name_past_season_events(
+def close_past_season_events(
     cert: PastSeasons,
     prod: PastSeasons,
     *,
@@ -263,23 +268,54 @@ def name_past_season_events(
     today: dt.date,
     write: bool = True,
 ) -> dict[str, list[str]]:
-    """Name each event of a past season still IN_PROGRESS, with where (G64 A).
-    The close never reads it, so it is said every morning until completed by
-    hand; nothing is written."""
-    named: dict[str, list[str]] = {}
+    """Complete every open event of a past season, on CERT then PROD (the
+    user's rule of 4 Nov 2026, closing plan rev 5 N1: an open event is permitted
+    only in the active season). Each goes through the validator's steps, no
+    result is touched, and one line says what was done. A dry run computes the
+    steps and writes and sends nothing. Replaces ADR-119 G64 A, which only
+    named such events."""
+    found: dict[str, dict[str, str]] = {}  # code → {env name: status}
     for env in (cert, prod):
-        for code in env.past_season_in_progress(today):
-            named.setdefault(code, []).append(env.name)
-    for code in sorted(named):
-        where = " and ".join(name.upper() for name in named[code])
-        message = (
-            f"Daily close: {code} of a past season is still IN_PROGRESS on {where}. "
-            "The close reads only the active season: complete it by hand once its results are right."
+        for row in env.past_season_open(today):
+            found.setdefault(str(row["code"]), {})[env.name] = str(row["status"])
+    closed: dict[str, list[str]] = {}
+    failures: list[str] = []
+    for code in sorted(found):
+        written: list[str] = []
+        failed = False
+        for env in (cert, prod):  # CERT first, then PROD
+            status = found[code].get(env.name)
+            if status is None:
+                continue
+            try:
+                for step in lifecycle.steps(status, lifecycle.COMPLETED):
+                    if write:
+                        env.set_status(code, step)
+                    written.append(f"{env.name}:{step}")
+            except Exception as e:
+                failures.append(f"{code} on {env.name}: {type(e).__name__}: {e}")
+                failed = True
+                break
+        closed[code] = written
+        if failed:
+            continue
+        by_status: dict[str, list[str]] = {}
+        for name, status in found[code].items():
+            by_status.setdefault(status, []).append(name.upper())
+        where = " and ".join(
+            f"{status} on {' and '.join(names)}" for status, names in by_status.items()
         )
-        print(message)
+        message = f"Daily close: {code} of a past season was {where}: COMPLETED."
+        print(message if write else f"(dry run) {message}")
         if notifier is not None and write:
-            notifier.warning(message)
-    return named
+            notifier.success(message)
+    if failures:
+        message = "Daily close failed:\n" + "\n".join(f"• {f}" for f in failures)
+        print(message, file=sys.stderr)
+        if notifier is not None:
+            notifier.error(message)
+        raise CloseFailed(message)
+    return closed
 
 
 # ---------------------------------------------------------------------------
@@ -311,12 +347,15 @@ class SqlEnv:
             or []
         )
 
-    def past_season_in_progress(self, today: dt.date) -> list[str]:
+    def past_season_open(self, today: dt.date) -> list[dict]:
+        """Every event of a season whose end date has passed that is not closed
+        (COMPLETED, SCORED or CANCELLED), of any organizer or code."""
         return (
             self.transport.fetch_json(
-                "SELECT coalesce(jsonb_agg(e.txt_code ORDER BY e.txt_code), '[]'::jsonb) AS j "
+                "SELECT coalesce(jsonb_agg(jsonb_build_object('code', e.txt_code, "
+                "'status', e.enum_status) ORDER BY e.txt_code), '[]'::jsonb) AS j "
                 "FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season "
-                f"WHERE e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{route_code_regex()}' "
+                "WHERE e.enum_status NOT IN ('COMPLETED', 'SCORED', 'CANCELLED') "
                 f"AND s.dt_end < DATE '{today.isoformat()}'"
             )
             or []
@@ -385,9 +424,12 @@ def main(argv: Iterable[str] | None = None) -> int:
         os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     )
     today = dt.date.fromisoformat(args.today) if args.today else lifecycle.warsaw_today()
-    past = name_past_season_events(
-        cert, prod, notifier=notifier, today=today, write=not args.dry_run
-    )
+    try:
+        past = close_past_season_events(
+            cert, prod, notifier=notifier, today=today, write=not args.dry_run
+        )
+    except CloseFailed:
+        return 1
     try:
         outcomes = close_events(
             cert,
@@ -402,7 +444,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     closed = sum(o.closed for o in outcomes)
     print(
         f"daily close {today.isoformat()}: {closed} closed, {len(outcomes) - closed} left open, "
-        f"{len(past)} of a past season still IN_PROGRESS"
+        f"{len(past)} of a past season completed"
     )
     return 0
 

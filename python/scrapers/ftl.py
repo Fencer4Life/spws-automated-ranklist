@@ -164,6 +164,21 @@ def extract_ftl_uuid(url: str) -> str | None:
     return m.group(1).upper() if m else None
 
 
+_DE_ROUND_LINK = re.compile(r'href="[^"]*/tableaus/scores/', re.IGNORECASE)
+
+
+def has_direct_elimination(html: str) -> bool:
+    """True iff an FTL results page lists a direct-elimination round.
+
+    FTL lists a listing's rounds as links: ``/pools/scores/{uuid}/{round}`` for
+    a pool round and ``/tableaus/scores/{uuid}/{round}`` for a DE round. A page
+    with no tableau round has no DE bouts: it is a pools-only round and never
+    a result, whatever the listing is called (the user's rule of 4 Nov 2026;
+    closing plan rev 5, G65 R2). The word alone, in a note or a title, is not a
+    round. One rule for the domestic and the international route."""
+    return _DE_ROUND_LINK.search(html) is not None
+
+
 def fetch_ftl_event_metadata(url: str, http_client) -> dict | None:
     """Fetch an FTL `/events/results/{UUID}` page and extract:
 

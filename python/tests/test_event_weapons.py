@@ -90,6 +90,9 @@ class _Client:
         self.got.append(url)
         if "eventSchedule" in url:
             return _Resp(text="<schedule/>")
+        if "/events/results/data/" not in url:
+            # The listing's results page (G65 R2): every bracket here has a DE round.
+            return _Resp(text='<a href="/tableaus/scores/X/Y">Table of 16</a>')
         return _Resp(js=self.data[url.rsplit("/", 1)[-1]])
 
 

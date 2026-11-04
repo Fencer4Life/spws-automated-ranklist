@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="076-pool-round-discard-and-listing-keep-rule.md">
-<meta name="adr-source-sha256" content="2c0d8d36100e5d22a78b75b43f097dd0e8ff7660a673e7cf3979f1a54b3ddb7f">
+<meta name="adr-source-sha256" content="c40f3bbc86405eac24552acc7bdc009e8a24d88039724b44ec919a6735333a41">
 <title>ADR-076 · Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 076</p><h1>Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-18, NEW pipeline build). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §from-URL discovery.</dd></div><div><dt>Date</dt><dd class="">2026-06-18 <strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB config precedent); ADR-041 (UI → Edge-Function → GitHub-Actions dispatch); ADR-075 (the staging/automation report that surfaces this).</dd></div><div><dt>Source</dt><dd class=""><code>076-pool-round-discard-and-listing-keep-rule.md</code></dd></div><div><dt>Length</dt><dd class="">107 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-18, NEW pipeline build). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §from-URL discovery.</dd></div><div><dt>Date</dt><dd class="">2026-06-18 <strong>Relates to:</strong> <strong>extends</strong> ADR-067 (pools-only <code>&lt;Poule&gt;</code>-no-<code>&lt;Tableau&gt;</code> skip) to the from-URL JSON path; ADR-014/022 (atomic delete-reimport <code>Commit</code>, the clobber mechanism); ADR-025 (event-centric tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB config precedent); ADR-041 (UI → Edge-Function → GitHub-Actions dispatch); ADR-075 (the staging/automation report that surfaces this).</dd></div><div><dt>Source</dt><dd class=""><code>076-pool-round-discard-and-listing-keep-rule.md</code></dd></div><div><dt>Length</dt><dd class="">113 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-18, NEW pipeline build). Design in
 <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §from-URL discovery.
 <strong>Date:</strong> 2026-06-18
@@ -22,7 +22,7 @@ tournament keyed on event·weapon·gender·age_category); ADR-006 (JSONB-in-DB c
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#domain-logic-the-rules-worked-through-ppw3">Domain logic (the rules, worked through PPW3)</a></li><li class="depth-3"><a href="#mechanism-no-stall-no-scored-data-pollution">Mechanism (no stall, no scored-data pollution)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#domain-logic-the-rules-worked-through-ppw3">Domain logic (the rules, worked through PPW3)</a></li><li class="depth-3"><a href="#mechanism-no-stall-no-scored-data-pollution">Mechanism (no stall, no scored-data pollution)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-2"><a href="#amendment-2026-11-04-closing-plan-rev-5-g65-r2-rule-1-reads-the-page-s-round-links">Amendment (2026-11-04, closing plan rev 5, G65 R2) — Rule 1 reads the page&#x27;s round links</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The from-URL ingest (<code>ingest_event_from_url</code>) committed <strong>wrong result counts</strong>. <code>fn_find_or_create_tournament</code>
 keys a tournament on <code>(id_event, weapon, gender, age_category)</code> and <code>fn_ingest_tournament_results</code> does
@@ -166,8 +166,12 @@ amateur duplicate flagged — and an admin can override + re-ingest if a default
 (N13.5). pgTAP 45.1–45.6 (N13.4): <code>tbl_event</code> JSONB columns + <code>fn_set_event_source_override</code> + <code>vw_calendar</code>
 exposure. vitest: accordion source rows + skip/process toggle (N13.6). Dry-run validated live on
 PPW3 (drop + flag) and PPW4 + PPW5 (clean, no intervention).</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-04-closing-plan-rev-5-g65-r2-rule-1-reads-the-page-s-round-links">Amendment (2026-11-04, closing plan rev 5, G65 R2) — Rule 1 reads the page's round links</h2>
+<p><strong>Status:</strong> Signed by the user in chat on 2026-11-04 (&quot;All A&quot; on <code>doc/plans/closing-plan-end-all-work-rev4-2026-11-04.html</code>, rev 5); built test-first.</p>
+<p>Rule 1's check, <code>ingest_cli._ftl_has_direct_elimination</code>, searched the results page for the word &quot;tableau&quot;. It now calls <code>python/scrapers/ftl.py</code> <code>has_direct_elimination</code>, which reads the page's round links: a <code>/tableaus/scores/…</code> round is a direct elimination; a page with pool rounds only is a pools-only qualifier, whatever the listing is called; the word alone, in a note or a title, is not a round (FTL.DE.03, FTL.DE.05). The same function is the international route's rule (<a href="105-international-results-keep-source-bracket.html">ADR-105</a>, amended the same day), so both routes recognise a pool round by content and never by name. Every stored real results page holds one such link (FTL.DE.04). Nothing else of this ADR changes.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="075-staging-report-fragment-channel.html">← ADR-075: Staging report — a fifth Context channel + per-plugin fragments + terminal formatter</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="077-event-lifecycle-season-skeletons.html">→ ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a></nav>
-<footer class="foot">Generated from <code>076-pool-round-discard-and-listing-keep-rule.md</code> · source SHA-256 <code>2c0d8d36100e5d22a78b75b43f097dd0e8ff7660a673e7cf3979f1a54b3ddb7f</code></footer>
+<footer class="foot">Generated from <code>076-pool-round-discard-and-listing-keep-rule.md</code> · source SHA-256 <code>c40f3bbc86405eac24552acc7bdc009e8a24d88039724b44ec919a6735333a41</code></footer>
 </div></body></html>

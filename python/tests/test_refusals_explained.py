@@ -215,9 +215,11 @@ def test_REFUSAL_SAY_10_the_summary_and_log_say_which_sources_were_read(capsys):
         stamp="x",
     )
     log = capsys.readouterr().out
+    # PEW1f-2026-2027 is completed without results on the user's order (4 Nov
+    # 2026): its missing link is known, not a refusal to act on (SRC.REGR.14).
     assert sent == [
-        "🔎 Source re-read: 3 event(s), 1 equal; refused: IMSW-2025-2026, PEW1f-2026-2027; "
-        "sources read: EVF results 1, FencingTimeLive 1. Upcoming: none"
+        "🔎 Source re-read: 3 event(s), 1 equal; refused: IMSW-2025-2026; "
+        "known: PEW1f-2026-2027; sources read: EVF results 1, FencingTimeLive 1. Upcoming: none"
     ]
     assert "  read from FencingTimeLive, then refused (identity): 1 row(s) fit no single" in log
     assert "  refused before anything was written: no results link" in log

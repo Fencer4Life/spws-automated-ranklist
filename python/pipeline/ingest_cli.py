@@ -608,16 +608,18 @@ _FTL_RESULTS = "https://www.fencingtimelive.com/events/results/"
 
 
 def _ftl_has_direct_elimination(client, uuid: str) -> bool:
-    """True iff the FTL results page for this round has a DE/Tableau bracket (N13.1).
+    """True iff the FTL results page for this round lists a direct-elimination
+    round (N13.1; closing plan rev 5, G65 R2).
 
-    A round with pools but no Tableau is a **pools-only qualifier** (ADR-067) and must
+    A round with pools but no tableau is a **pools-only qualifier** (ADR-067) and must
     never be scored — this is the from-URL analog of the XML `<Poule>`-no-`<Tableau>`
-    check (which only the fencingtime_xml parser had)."""
-    import re
+    check. The page's round links decide (`ftl.has_direct_elimination`), the same
+    rule the international route applies; the listing's name plays no part."""
+    from python.scrapers.ftl import has_direct_elimination
 
     resp = client.get(f"{_FTL_RESULTS}{uuid}")
     resp.raise_for_status()
-    return bool(re.search(r"(?i)tableau", resp.text))
+    return has_direct_elimination(resp.text)
 
 
 def _resolve_sources(rounds, overrides=None):

@@ -123,3 +123,20 @@ def test_FTL_SEED_01_the_ledger_and_the_session_never_enter_the_prod_seed():
     source = (ROOT / "python/pipeline/export_seed.py").read_text(encoding="utf-8")
     assert "ftl_read_ledger" not in source
     assert "ftl_session" not in source
+
+
+def test_FTL_WF_02_every_step_that_holds_the_ftl_login_honours_the_switch():
+    """K2 (closing plan rev 5): FTL_READS comes from the repository variable in
+    every step that can read FTL, so one variable keeps the account idle."""
+    import yaml
+
+    missing = []
+    for path in sorted((ROOT / ".github/workflows").glob("*.yml")):
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job_name, job in (doc.get("jobs") or {}).items():
+            outer = {**(doc.get("env") or {}), **(job.get("env") or {})}
+            for step in job.get("steps") or []:
+                env = {**outer, **(step.get("env") or {})}
+                if "FTL_USERNAME" in env and env.get("FTL_READS") != "${{ vars.FTL_READS }}":
+                    missing.append(f"{path.name} :: {job_name} :: {step.get('name')}")
+    assert missing == []

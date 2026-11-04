@@ -149,19 +149,32 @@ class Fetcher:
 
     def __init__(self, http_client=None) -> None:
         # Lazy import + injectable httpx client for tests
+        self._default = None
         if http_client is None:
             try:
                 import httpx
 
                 http_client = httpx.Client(timeout=30.0, follow_redirects=True)
+                self._default = http_client
             except ImportError:  # pragma: no cover
                 http_client = None
         self._http = http_client
 
     def _get(self, url: str) -> str:
-        """HTTP GET → text body. Raises on non-2xx."""
+        """HTTP GET → text body. Raises on non-2xx.
+
+        B12 (closing plan rev 5): with the default client, a FencingTimeLive
+        URL goes through the one gated client (ADR-120: the day's cap, the
+        stored session, the client's name), never through a plain request."""
         if self._http is None:
             raise RuntimeError("Fetcher: no HTTP client available")
+        if self._http is self._default and "fencingtimelive.com" in url:
+            from python.scrapers.ftl_auth import get_authed_ftl_client
+
+            with get_authed_ftl_client() as authed:
+                resp = authed.get(_normalize_ftl_url(url) or url)
+                resp.raise_for_status()
+                return resp.text
         resp = self._http.get(url)
         resp.raise_for_status()
         return resp.text

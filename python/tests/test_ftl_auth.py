@@ -616,3 +616,72 @@ def test_FTL_PACE_01_a_request_waits_for_the_pause(ftl_creds, monkeypatch):
         clock[0] += 0.25
         client.get(DATA)
     assert slept == [1.0, 0.75]  # the sign-in's POST after its page, then this read
+
+
+# ===========================================================================
+# FTL.OFF — the switch (closing plan rev 5, K2): FTL_READS=off keeps the account
+# idle while FTL deliberates; one repository variable, reversible, no secret
+# touched. FTL.403 — a refusal is recorded (4 Nov 2026: nothing kept the body
+# of the 403 FTL answered the Liège schedule). FTL.BUDGET.10 — B12: the legacy
+# fetcher read FTL with a plain client.
+# ===========================================================================
+@respx.mock
+def test_FTL_OFF_01_with_ftl_reads_off_nothing_is_sent(ftl_creds, ledger, monkeypatch):
+    from python.scrapers.ftl_auth import FtlAuthError, get_authed_ftl_client
+
+    monkeypatch.setenv("FTL_READS", "off")
+    page, login = _signs_in()
+    data = respx.get(DATA).mock(return_value=httpx.Response(200, json=[]))
+    with pytest.raises(FtlAuthError, match="FTL_READS=off"):
+        with get_authed_ftl_client() as client:
+            client.get(DATA)
+    assert not page.called and not login.called and not data.called
+    assert ledger.takes == []
+
+
+@respx.mock
+def test_FTL_OFF_02_any_other_value_reads_as_before(ftl_creds, ledger, monkeypatch):
+    from python.scrapers.ftl_auth import get_authed_ftl_client
+
+    monkeypatch.setenv("FTL_READS", "on")
+    _signs_in()
+    data = respx.get(DATA).mock(return_value=httpx.Response(200, json=[]))
+    with get_authed_ftl_client() as client:
+        client.get(DATA)
+    assert data.called and ledger.takes == [(10, 0), (0, 1)]
+
+
+@respx.mock
+def test_FTL_403_01_a_refusal_is_recorded_without_the_cookie(ftl_creds, ledger, capsys):
+    """The client prints the status, the URL and the body's first 300 characters;
+    the caller's error is unchanged, and the cookie never appears."""
+    from python.scrapers.ftl_auth import get_authed_ftl_client, use_stores
+
+    use_stores(ledger, _Store("STORED-SID", dt.datetime.now(dt.UTC) + dt.timedelta(days=5)))
+    body = "<html>Forbidden: " + "x" * 400
+    respx.get(DATA).mock(return_value=httpx.Response(403, text=body))
+    with get_authed_ftl_client() as client:
+        resp = client.get(DATA)
+    assert resp.status_code == 403
+    out = capsys.readouterr().out
+    assert f"FTL answered 403 to {DATA}: {body[:300]}" in out
+    assert "x" * 301 not in out
+    assert "STORED-SID" not in out
+
+
+@respx.mock
+def test_FTL_BUDGET_10_the_legacy_fetcher_reads_ftl_through_the_gate(ftl_creds, ledger):
+    """B12: review_cli.Fetcher built without a client fetched an FTL results page
+    with a plain httpx client, uncounted and under the library's name."""
+    from python.pipeline.review_cli import Fetcher
+
+    _signs_in()
+    data = respx.get(DATA).mock(
+        return_value=httpx.Response(
+            200, json=[{"id": "f1", "name": "SURNAME Jan", "place": "1", "country": "POL"}]
+        )
+    )
+    Fetcher().fetch_url(DATA)
+    assert data.called
+    assert ledger.takes == [(10, 0), (0, 1)]
+    assert data.calls.last.request.headers["user-agent"].startswith("SPWS-ranklist/")

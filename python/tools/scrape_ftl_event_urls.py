@@ -224,16 +224,19 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
             continue
         twin = next((e for e in kept if e["uuid"] == uuid), None)
         if twin is not None:
-            # A two-day bracket is listed twice, "(Day 1)" and "(Day 2)", with
-            # one link (EMW Plovdiv 2025): one link is one bracket. Not a skip,
-            # so it never counts as a pool round. INTL.SCHED.04. It is final
-            # only when both rows say Finished, and it is listed on its later day.
-            twin["finished"] = twin["finished"] and finished
+            # A bracket fenced over two days is listed twice, "(Day 1)" and
+            # "(Day 2)", with one link (EMW Plovdiv 2025): one link is one
+            # bracket, read once (INTL.SCHED.04). The first day holds the pools
+            # and the last day the direct elimination, so the row of its last
+            # listed day says whether it is final (G65 R1, closing plan rev 5);
+            # it is listed on that day. A row without a readable day counts as
+            # later than the rows before it.
+            later = twin["day"] is None or day is None or day >= twin["day"]
+            if later:
+                twin["finished"] = finished
             twin["day"] = max(filter(None, (twin["day"], day)), default=None)
             continue
         kept.append({"uuid": uuid, "name": name, "finished": finished, "day": day})
-    kept, pools = _drop_covered_pool_rounds(kept)
-    skipped.extend(pools)
     if with_skips:
         return kept, skipped
     return kept
@@ -268,37 +271,9 @@ def _row_day(link) -> str | None:
         return None
 
 
-# A joint pool round ("Szpada Kobiet V3, V4 - runda grupowa") is not a result
-# when the same weapon and gender have their own category brackets on the
-# schedule: those hold each category's final places. Kept otherwise, in case
-# the pool round is the only listing of that weapon and gender.
-_POOL_ROUND_RE = re.compile(r"\b(?:runda\s+grupowa|pool\s+round|poules?)\b", re.IGNORECASE)
-
-
-def _weapon_gender(name: str) -> tuple[str, str] | None:
-    parsed = parse_tournament_name(name)
-    if parsed is None:
-        return None
-    weapon, gender, _ = parsed[0] if isinstance(parsed, list) else parsed
-    return weapon, gender
-
-
-def _drop_covered_pool_rounds(
-    kept: list[dict],
-) -> tuple[list[dict], list[dict]]:
-    covered = {
-        wg
-        for e in kept
-        if not _POOL_ROUND_RE.search(e["name"]) and (wg := _weapon_gender(e["name"]))
-    }
-    out: list[dict] = []
-    pools: list[dict] = []
-    for e in kept:
-        if _POOL_ROUND_RE.search(e["name"]) and _weapon_gender(e["name"]) in covered:
-            pools.append({**e, "reason": "pool round (its categories have their own brackets)"})
-        else:
-            out.append(e)
-    return out, pools
+# A pool round is never recognised by its name: whether a listing is a pool
+# round is decided by the content of its results page, which lists its rounds
+# (`python.scrapers.ftl.has_direct_elimination`; G65 R2, closing plan rev 5).
 
 
 def parse_tournament_name(
