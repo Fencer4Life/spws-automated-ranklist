@@ -1,0 +1,251 @@
+<meta charset="utf-8">
+<title>The plan to end all work, rev 5</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Closing plan · rev 5 · 4 Nov 2026 · replaces rev 4 (E1&ndash;E6 signed; D1 withdrawn)</p>
+  <h1>The plan to end all work, rev 5: the second block, the past-season rule, the sweep</h1>
+  <p class="dek">FTL has blocked the second login. <b>The pipeline sent FTL 31 requests and 2 sign-ins today, in all.</b> No volume limit was hit: the account was refused within about 70 minutes of its first automated session from a GitHub runner, under a name that says what we are. Napoli is on PROD, PEW1f-2026-2027 is completed, no past-season event is open on CERT or PROD. Everything that needs an FTL read now waits for FTL&rsquo;s written answer to your letter; everything else is built without one.</p>
+  <div class="meta">
+    <span class="pill danger"><span class="dot"></span>FTL login blocked again, 4 Nov evening: 31 requests and 2 sign-ins all day</span>
+    <span class="pill danger"><span class="dot"></span>no FTL request of any kind until FTL answers; K1 stops the stored session and the secrets</span>
+    <span class="pill good"><span class="dot"></span>G67 Napoli on PROD (fencer 298 rank 2, 275.27) · PEW1f COMPLETED · past seasons: 0 open</span>
+    <span class="pill warn"><span class="dot"></span>no code until you sign K1&ndash;K3, N3, P1, B12 below</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · The block · your question: &ldquo;assess how many reads did we perform today&rdquo;</p>
+    <h2>31 requests, 2 sign-ins. That is the whole day.</h2>
+    <p>Every FTL request today, from the ledger on CERT, the Actions logs of every run started today, and the record of this morning&rsquo;s check (before the ledger existed):</p>
+    <table>
+      <thead><tr><th>When (UTC)</th><th>Where</th><th>What</th><th>Requests</th><th>Sign-ins</th></tr></thead>
+      <tbody>
+        <tr><td>about 07:00</td><td>this machine</td><td>The check of the new login (login page, sign-in, IMSW&rsquo;s schedule). Not in the ledger: the release came at 08:11.</td><td>3</td><td>1</td></tr>
+        <tr><td>18:56:44&ndash;18:58:04</td><td>GitHub runner</td><td>Source re-read of IMSW-2025-2026 by hand (run 41892095981): sign-in, schedule, 24 listings, one second apart.</td><td>27</td><td>1</td></tr>
+        <tr><td>20:08&ndash;20:09</td><td>GitHub runner</td><td>Li&egrave;ge ingest (run 41903686586): the schedule page with the stored session. Answered 403.</td><td>1</td><td>0</td></tr>
+        <tr><td colspan="3"><b>Total</b> (ledger: 28 requests, 1 sign-in, plus the morning&rsquo;s 3 and 1)</td><td><b>31</b></td><td><b>2</b></td></tr>
+      </tbody>
+    </table>
+    <p>No other run touched FTL: the sync found no event, the close had nothing to close, the daily re-read was not due, the EVF sync had nothing to repair, Napoli is read from 4fence. On 1 Nov, the day of the first block, the count was about 700 requests and 13 sign-ins.</p>
+    <p><b>What this says.</b> A limit of volume was not hit. The account was refused between 18:58, when the first automated session from a GitHub runner ended, and 20:08, when the stored session was answered 403; your sign-in by hand failed after that. The 403 of section 02 is therefore explained: the account was already blocked, so H1&ndash;H3 need no test and D1 is withdrawn. What FTL reacts to is <b>an automated reader</b>, which its terms forbid without a written agreement, not a count: 27 requests one second apart from a datacenter address, under a client name that states it is a ranking reader, were enough. The name was chosen (F7 A) so that FTL could allow or refuse us by name; they refused. I do not know whether a person or a rule did it, and nothing in our records can tell.</p>
+    <p><b>What follows.</b> No FTL request of any kind, from CI or from this machine, until FTL answers your letter. Not a diagnostic, not a &ldquo;light check&rdquo;, not a new account (never pools or a disguise). Today&rsquo;s schedule reads nothing from FTL by itself (no FTL event is open), but the stored session (valid to 14 Nov) and the two secrets would still let a by-hand run or the EVF sync&rsquo;s repair send a request to a blocked account; K1 removes both. The ranking keeps running without FTL: every other engine is untouched, EVF events are read from EVF&rsquo;s own results, and a FencingTime XML file from an organiser is read by the ingest (login page, &ldquo;What keeps the ranking going without FTL&rdquo;).</p>
+  </section>
+
+  <section>
+    <p class="kicker">01 · Where the signed steps stand</p>
+    <h2>Done, failed, waiting</h2>
+    <table>
+      <thead><tr><th>Step</th><th>State, read 4 Nov 20:10&ndash;20:30 UTC</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Docs push</td><td><b>Waiting.</b> 7 commits on the branch (450b8ad4 &hellip; 4c1ab6a9, this page to come). Preflight was started and you stopped it; it is the rule before any push (P1).</td></tr>
+        <tr><td>2 · PEW1f-2026-2027</td><td><b>Done.</b> PLANNED &rarr; IN_PROGRESS &rarr; COMPLETED on CERT, then PROD; <code>vw_calendar</code> shows COMPLETED on both. No results, no link, no prior edition.</td></tr>
+        <tr><td>3 · G67 Napoli</td><td><b>Done.</b> CERT run 12 FINISHED (ingest 41902745987): one new bracket, V0 men&rsquo;s &eacute;p&eacute;e, fencer 298 at 37 of 50, 4.77 points; gate passed; 30 listings, nothing else changed. Promote 41903179249 applied it on PROD. <code>fn_ranking_full('EPEE','M','V0',4,true)</code>: rank 2 unchanged, total 275.27.</td></tr>
+        <tr><td>4 · G67 Li&egrave;ge</td><td><b>Failed.</b> Ingest 41903686586: FTL answered 403 to the first request, the event&rsquo;s schedule page. No run opened, nothing written. Section 02.</td></tr>
+        <tr><td>Your order: close every past-season event</td><td><b>Nothing to write.</b> PROD: 72 past-season events (33 + 18 + 21), all COMPLETED. CERT: none in another status. IMSW was the last, closed earlier today. The standing rule is section 04.</td></tr>
+        <tr><td>5&ndash;7 · G65, checks, records</td><td>Waiting, unchanged from rev 3; the code change grows by sections 02&ndash;04.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The 403 · your questions: &ldquo;did you forget the session token?&rdquo; and &ldquo;what is this 403?&rdquo;</p>
+    <h2>The session was used. FTL refused the request anyway.</h2>
+    <p><b>Evidence that the stored session was used.</b> CERT&rsquo;s ledger for 4 Nov: 28 requests, <b>1 sign-in</b>, the IMSW run&rsquo;s. The Li&egrave;ge run drew 1 request and no sign-in; its last line says &ldquo;FTL today: 28/120 requests, 1/2 sign-ins&rdquo;. The client&rsquo;s code takes the stored session when it holds none (<code>store.get()</code>, then <code>client.cookies.set("connect.sid", &hellip;)</code>, <code>python/scrapers/ftl_auth.py:378&ndash;384</code>), and signs in only when there is none. So the request went out with the cookie the IMSW run stored at 18:57 UTC, under the name <code>SPWS-ranklist/1.0</code>, and FTL answered 403 (<code>international_sources._ftl_schedule</code> &rarr; <code>raise_for_status</code>). The stored session is still on CERT: only a redirect to the login page drops it, and a 403 is not one.</p>
+    <p><b>What is not known.</b> The response body. The client keeps nothing of a refused response, and no run row opened (a read failure opens none), so the alert carries the status and the URL only.</p>
+    <table>
+      <thead><tr><th>Hypothesis</th><th>Why it fits</th><th>What would show it</th></tr></thead>
+      <tbody>
+        <tr><td><b>H1</b> FTL ties a session to the machine that signed in</td><td>The IMSW run signed in on one GitHub runner; Li&egrave;ge&rsquo;s ran on another, the first run ever to reuse a session on a different machine. Every earlier success used the session of its own sign-in.</td><td>The same cookie from a third machine (this one) is refused on every page.</td></tr>
+        <tr><td><b>H2</b> FTL&rsquo;s edge wants its own cookies first</td><td>A sign-in starts at <code>/account/login</code>, where the edge sets its cookies before anything else is read. The reuse path never visits that page, so its first request carries <code>connect.sid</code> alone. The edge already filters by name (403 to <code>python-httpx</code> since 2 Nov).</td><td>Loading the login page first (no sign-in), then the schedule with the stored cookie, is answered 200.</td></tr>
+        <tr><td><b>H3</b> That one page is forbidden</td><td>Only Li&egrave;ge&rsquo;s schedule was asked. It was readable on 1 Nov with a fresh sign-in.</td><td>IMSW&rsquo;s schedule with the stored cookie is 200 and Li&egrave;ge&rsquo;s is 403.</td></tr>
+      </tbody>
+    </table>
+    <p><b>Rev 5: D1 is withdrawn.</b> Section 00 explains the 403: the account was blocked before that request. H1&ndash;H3 are not tested; no request goes to FTL. What stays from this section: <b>the client records a 403&rsquo;s first 300 characters in the run&rsquo;s log</b>, without the cookie, so the next refusal is not a guess.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The sweep · your question: &ldquo;find all possible places we use FTL scrapes&rdquo;</p>
+    <h2>Every FTL read, and whether it goes through the gate</h2>
+    <p>The gate is <code>get_authed_ftl_client</code> (<code>python/scrapers/ftl_auth.py</code>): the day&rsquo;s cap, the stored session, one second between requests, the client&rsquo;s name. Searched: every <code>.py</code>, <code>.js</code>, <code>.ts</code>, <code>.svelte</code>, <code>.yml</code> and <code>.sh</code> file naming <code>fencingtimelive</code>, and every raw HTTP call (<code>httpx.get</code>, <code>httpx.Client</code>, <code>urlopen</code>, <code>UrlFetchApp</code>) outside the tests.</p>
+    <table>
+      <thead><tr><th>Reader</th><th>Where</th><th>Through the gate?</th></tr></thead>
+      <tbody>
+        <tr><td>Domestic ingest (SPWS, PZSz), its page check</td><td><code>ingest_cli._read_domestic</code>, <code>_ftl_has_direct_elimination</code></td><td>Yes</td></tr>
+        <tr><td>International ingest, the re-read, the sync&rsquo;s ingest</td><td><code>international_sources._ftl_schedule</code> &rarr; <code>ingest_cli</code></td><td>Yes</td></tr>
+        <tr><td>The sync&rsquo;s compare, the daily close</td><td><code>close.read_ftl_schedule</code></td><td>Yes</td></tr>
+        <tr><td>EVF sync&rsquo;s repair of future-dated COMPLETED rows</td><td><code>evf_sync._heal_future_completed</code> &rarr; <code>fetch_ftl_event_metadata(&hellip;, ftl_client)</code></td><td>Yes</td></tr>
+        <tr><td>Results-link check, link discovery, source identity</td><td><code>url_reachability</code>, <code>populate_tournament_urls</code>, <code>set_event_source_urls</code></td><td>Yes; plain httpx only for other hosts</td></tr>
+        <tr><td>Tools: audit, one-event scrape, team events, individual, the 2025/26 rebuild</td><td><code>audit_results</code>, <code>scrape_tournament</code>, <code>scrape_team_events</code>, <code>scrape_ftl_individual</code>, <code>recreate_active_season_2025_2026</code></td><td>Yes</td></tr>
+        <tr><td>Participant-count check</td><td><code>participant_count_validation</code> (a <code>Fetcher</code> given the gated client)</td><td>Yes</td></tr>
+        <tr><td><b>B12 · The legacy fetcher&rsquo;s fallback</b></td><td><code>review_cli.Fetcher._get</code> uses a plain <code>httpx.Client</code> (<code>review_cli.py:156, 165</code>). Its schedule branch switches to the gated client (<code>:299, :365</code>, <code>:602, :633</code>), but a URL that is no schedule and no other engine falls to <code>self.fetch_url(url)</code> (<code>:407</code>, <code>:664</code>, <code>:962</code>), plain. The international reader builds <code>Fetcher()</code> this way for other engines (<code>international_sources.py:450</code>), as do the Phase 5 runner (<code>:570</code>) and the interactive review.</td><td><b>No, for a single FTL results-page link.</b> Latent today: 0 events on PROD hold such a link in any slot (272 bracket rows do, read only through gated tools). Fix: <code>Fetcher._get</code> sends every <code>fencingtimelive.com</code> URL through the gate, so no path can reach FTL plain. Test FTLGATE.03, red first.</td></tr>
+        <tr><td>Not readers</td><td><code>evf_calendar</code> (names the host in a list), <code>source_identity</code>, <code>staging_formatter</code>, <code>build_scorecards</code>, <code>import_events_from_excel</code> (URL text only); <code>scrapers/base.fetch_with_retry</code> (no caller outside tests); the Telegram bot (Telegram, GitHub and Supabase only); the frontend (links only); no workflow calls FTL with <code>curl</code>.</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+    <p><b>Workflows.</b> All eight that hold the FTL login (<code>event-close</code>, <code>evf-sync</code>, <code>ingest-event</code>, <code>phase5-event-runner</code>, <code>populate-urls</code>, <code>promote</code>, <code>scrape-tournament</code>, <code>source-regression</code>) also carry <code>SUPABASE_ACCESS_TOKEN</code>, which the ledger and the session store need; without it the client reads nothing (FTL.WF.01). <b>Answer:</b> the SPWS scraper and every scheduled reader use the session and the cap; one legacy fallback does not, and nothing uses it today.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Your rule · &ldquo;not CLOSED events are only permitted in an active season&rdquo;</p>
+    <h2>A standing rule, not a morning warning</h2>
+    <p><b>Today&rsquo;s pass:</b> zero open events outside the active season on CERT and on PROD (read 20:12 UTC). <b>Closed</b> means COMPLETED, SCORED or CANCELLED; <b>open</b> is every other status. <b>Outside the active season</b> means a season whose end date has passed (N3 says what a future season is).</p>
+    <table>
+      <thead><tr><th>#</th><th>Rule</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td><b>N1</b></td><td>Each morning, before anything else, the daily close <b>completes</b> every open event of a past season, on CERT then PROD, through the validator&rsquo;s steps (PLANNED &rarr; IN_PROGRESS &rarr; COMPLETED), touching no result, and says on Telegram: &ldquo;Daily close: &lt;code&gt; of a past season was &lt;status&gt;: COMPLETED on CERT and PROD.&rdquo; A dry run names and writes nothing. This replaces ADR-119 G64 A, which only named such events and left them to a hand.</td><td><code>close.name_past_season_events</code> becomes <code>close_past_season_events</code>; <code>SqlEnv.past_season_in_progress</code> becomes <code>past_season_open</code> (any open status). Tests CLOSE.PAST.01&ndash;04 rewritten from G64&rsquo;s, red first. ADR-119 amended; handbook lifecycle and runbook pages; RTM.</td></tr>
+        <tr><td><b>N2</b></td><td>A database invariant: no event of a past season is open. It runs in pgTAP against LOCAL&rsquo;s PROD seed, so preflight and CI fail on drift before any release.</td><td><code>supabase/tests/128_no_open_events_outside_active_season.sql</code>, pgTAP total +1 (Appendix D).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">05 · The one code change</p>
+    <h2>What ships together, test-first, in one Release</h2>
+    <ul>
+      <li>G65 R1 and R2 (rev 3 §04, unchanged in substance: the last day&rsquo;s Finished; a pool-only round known by its page holding no DE round, every listing, never by name). <b>Without FTL, the fixtures are derived:</b> the pools-only page is a stored real results page with its <code>/tableaus/</code> round link removed, and the two-day schedule fixture is the stored schedule form with the day-1 and day-2 rows as the 1 Nov log printed them (K3).</li>
+      <li>N1 and N2 (section 04).</li>
+      <li>B12 (section 03) and the 403 record (section 02).</li>
+      <li>PEW1f-2026-2027 on the re-read&rsquo;s known list, &ldquo;not ingested (the user&rsquo;s decision, 4 Nov 2026)&rdquo;.</li>
+      <li><b>K2, the switch:</b> the client honours a repository variable <code>FTL_READS=off</code>: when set, every FTL read fails before anything is sent, with one line saying so, and the ledger is untouched. Reversible without touching a secret, and the way the account is kept idle while FTL deliberates.</li>
+    </ul>
+    <p>Then preflight, commit, push from the integration checkout, CI and Release in the foreground, your PROD approval, CERT and PROD verified. <b>No proof read:</b> Plovdiv&rsquo;s re-read and Li&egrave;ge&rsquo;s ingest wait for FTL&rsquo;s answer; until then the tests are the proof. Then the two scheduled checks are deleted, G70 is dropped, and the records close.</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Decide this</p>
+    <h2>Six decisions</h2>
+    <table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>K1</b></td><td>Keep the blocked account idle, now</td><td><b>A</b> I drop the stored session on CERT (one write, <code>fn_ftl_session_drop</code>; no result touched) and <b>you</b> remove the two FTL secrets from the repository; every FTL read then fails before a request is sent. <b>B</b> Leave both; rely on no FTL event being open.</td><td><b>A:</b> B leaves a by-hand run or the EVF repair able to knock on a blocked door.</td></tr>
+        <tr><td><b>K2</b></td><td>A reversible switch</td><td><b>A</b> <code>FTL_READS=off</code> honoured by the client (section 05). <b>B</b> None; the secrets are the switch.</td><td><b>A:</b> when FTL says yes, you set one variable instead of re-entering a password.</td></tr>
+        <tr><td><b>K3</b></td><td>G65 without a real page</td><td><b>A</b> Build it now on derived fixtures (section 05); re-read Plovdiv by hand once FTL answers, as the live proof. <b>B</b> Wait for FTL before any G65 code.</td><td><b>A:</b> the rule does not depend on the page&rsquo;s wording, only on the round links, which three stored pages show.</td></tr>
+        <tr><td><b>N3</b></td><td>What &ldquo;outside the active season&rdquo; covers</td><td><b>A</b> Past seasons only; a future season&rsquo;s PLANNED events stay as they are. <b>B</b> Every season but the active one.</td><td><b>A:</b> a future season is provisioned as PLANNED skeletons (ADR-077) and must stay open.</td></tr>
+        <tr><td><b>P1</b></td><td>Preflight before the docs push</td><td><b>A</b> Run it (about 5 minutes); it is your rule that exit 0 is the definition of done. <b>B</b> Push the documentation without it.</td><td><b>A.</b> You stopped it; if B, say so.</td></tr>
+        <tr><td><b>B12</b></td><td>The legacy fetcher&rsquo;s plain client</td><td><b>A</b> Route every FTL URL in <code>Fetcher._get</code> through the gate. <b>B</b> Leave it; nothing uses it today.</td><td><b>A:</b> one place, no path left that can reach FTL ungated.</td></tr>
+      </tbody>
+    </table>
+    <p>Sign with the letters. K1 A runs at once (the session drop is mine, the secrets are yours); the code starts after P1&rsquo;s docs push.</p>
+  </section>
+
+  <p class="foot">closing plan · rev 5 · 4 Nov 2026 · read from CERT, PROD, the Actions logs and the source; nothing sent to FTL for this page, and nothing will be until FTL answers</p>
+</div>
