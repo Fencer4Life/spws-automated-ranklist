@@ -307,3 +307,23 @@ The user's rule: *an event that is not closed is permitted only in the active se
 - **A database invariant.** pgTAP `supabase/tests/128_no_open_event_outside_active_season.sql` asserts that no event of a past season is open on the PROD seed LOCAL is built from, and that the check counts a planted one; preflight and CI fail on drift (EVENT.PAST, +2 assertions).
 - **Tests.** CLOSE.PAST.01–05 (`python/tests/test_promotion_lifecycle.py`) replace PROMO.LIFE.18: each open event completed CERT then PROD with the steps written; the dry run; none says nothing; a failed write; the SQL reads every open status, no route, no `bool_active`.
 - **Unchanged.** The close's own selection (active season, IN_PROGRESS, end date passed) and its rule; the validator; the Telegram `complete` command.
+
+## Amendment (2026-11-04, past-season close plan S1 A, S2 A, S3 A) — the close looks at a season on the three mornings after it ends, a run never leaves an ended season's event open, and a PROD write exports PROD's seed
+
+Signed "All A" on `doc/plans/past-season-close-when-2026-11-04.html`.
+
+### Context
+
+The previous amendment put the past-season pass in the daily close, which runs every morning. An open event of a past season arises in only three ways: a season ends with events still open (a PLANNED event that never got a result, or an IN_PROGRESS event the close cannot re-read); a re-ingest of an event of an ended season whose CERT run computes IN_PROGRESS (an unread listing, a round name not understood, a listing dated after the end date), which the promote then writes to PROD (`fn_promote_event_apply`, migration `20261031000004`, lines 138–139 and 269–270), as IMSW-2025-2026 showed; or a status changed by hand. Only the first is tied to a date. Separately, pgTAP 128 reads the PROD seed that CI and LOCAL load (`supabase/config.toml`, `[db.seed]`), and the close never exported it: the morning after a season ended, the committed seed would still hold that season's open events, and CI and preflight would fail until someone exported the seed.
+
+### Decision
+
+- **S1 A — three mornings.** `close_past_season_events` asks each environment only for open events of seasons whose end date lies one to three days before today (`lifecycle.past_season_window`, `PAST_SEASON_DAYS = 3`; `SqlEnv.past_season_open(ended_from, ended_to)`, `s.dt_end BETWEEN …`). A season is looked at on the three mornings after it ends (SPWS-2026-2027: 16, 17 and 18 Jul 2027); on any other morning the query finds nothing and nothing is written or said. The query still runs each morning, bounded to that window; it reads no event of an older season.
+- **S2 A — at the source.** `lifecycle.event_status` takes the season's end date (`season_end`). When it has passed and something would keep the event IN_PROGRESS, the event is COMPLETED and the reasons become one warning ("its season ended <date>, so it is COMPLETED although: …"). ADR-037 still holds: a run that commits nothing moves no status. `lifecycle.run_verdict` reads the season through the connector's `find_season_by_id`, for the live ingest (`lifecycle.apply`) and for the plan (`plan_event`, which reads it from its own connector, not the recorder). The plan keeps the warning on the run record (`jsonb_listings.lifecycle_warnings`, compared and hashed by nothing), and the CERT apply prints it and sends it to Telegram as a warning. The PROD promote computes the same status from the same rule.
+- **S3 A — the seed follows a PROD write.** The close writes a step output `prod_completed` (`true` only when the pass wrote PROD and was not a dry run; also on a red run, since `CloseFailed` carries what was written). `event-close.yml` gains a `seed` job, as `promote.yml` has: it runs when that output is true, exports PROD (`python -m python.pipeline.export_seed`), commits `seed_prod_*.sql` with `[skip ci]` and a retried push, and alerts on failure. Only that job may write to the repository.
+
+### Consequences
+
+- **Tests.** CLOSE.WIN.01–02, CLOSE.SEED.01–02 and LIFE.SEASON.01–07 (`python/tests/test_past_season_close_window.py`); CLOSE.PAST.01 and .05 rewritten for the window. pgTAP 128 is unchanged: an open past-season event that a hand writes on PROD fails CI at the next push after a seed export.
+- **Known limit.** From midnight to the 04:17 UTC close on the first morning after a season ends, CI reads a seed that still holds that season's open events.
+- **Unchanged.** The close's own selection and rule for the active season; the validator; the Telegram `complete` command.

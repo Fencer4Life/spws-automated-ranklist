@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="7e2822203be2858e165994c59abe8d53fcca7e4a8ee8d0ecccec1b022c2b473a">
+<meta name="doc-source-sha256" content="1e0ba646f6dace6a767fa672e1b2b9d8161ab69a6c6e8a5921d77d23668ba001">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>965 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>983 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -5115,129 +5115,222 @@
 </thead>
 <tbody>
 <tr>
-<td>CLOSE.PAST.01</td>
-<td>Each morning, before closing anything, the daily close completes every open event of a past season, on CERT then PROD, through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, and says in the log and on Telegram &quot;Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED.&quot;</td>
+<td>CLOSE.PAST.01 (rewritten)</td>
+<td>On the three mornings after a season ends (CLOSE.WIN), before closing anything, the daily close completes every open event of that season, on CERT then PROD, through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, and says in the log and on Telegram &quot;Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED.&quot;</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04, test-first)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.02</td>
 <td>A dry run computes the steps and writes and sends nothing.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.03</td>
 <td>With no open event of a past season, nothing is said or sent.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.04</td>
 <td>A failed write is reported (&quot;Daily close failed: <code> on <env>: …&quot;), on Telegram and on stderr; the other events are still closed; the run ends red.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
-<td>CLOSE.PAST.05</td>
-<td>The selection reads every event, of every organizer and code, of a season whose end date has passed, whose status is not COMPLETED, SCORED or CANCELLED; it reads no <code>bool_active</code> and no route filter.</td>
+<td>CLOSE.PAST.05 (rewritten)</td>
+<td>The selection reads every event, of every organizer and code, of a season whose end date lies in the window it is given (<code>s.dt_end BETWEEN …</code>), whose status is not COMPLETED, SCORED or CANCELLED; it reads no <code>bool_active</code> and no route filter.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>EVENT.PAST (128.1–128.2)</td>
 <td>No event of a past season is open in the PROD seed LOCAL is built from, and the check counts a planted one.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/128_no_open_event_outside_active_season.sql</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.DE.01–03</td>
 <td>An FTL results page lists a direct-elimination round iff it links a <code>/tableaus/scores/…</code> round; a page with pool rounds only, or no rounds, lists none; the word &quot;tableau&quot; alone is not a round.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.DE.04</td>
 <td>Every stored real results page in the fixtures lists a direct-elimination round.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.DE.05</td>
 <td>The domestic route's page check (<code>ingest_cli._ftl_has_direct_elimination</code>) applies the same rule: the round links, not the word.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.03 (rewritten)</td>
 <td>A listing is never dropped as a pool round by its name; the schedule reader keeps it like any other, and its results page decides.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.04 (rewritten), PROMO.LIFE.03 (rewritten)</td>
 <td>A bracket listed on several days behind one link is one bracket, final when the row of its last listed day says Finished, whatever the earlier rows say; its day is that last day.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code>, <code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.06</td>
 <td>A final FTL listing whose results page lists no direct-elimination round is skipped as &quot;pool round (no direct elimination round on its results page)&quot;, its data never fetched, and the skip never holds the event open; the name plays no part.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.07</td>
 <td>The page is read for final listings only, before their data; an unfinished listing stays &quot;not final&quot; without a request.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.OFF.01–02</td>
 <td>With the repository variable <code>FTL_READS=off</code> every FTL read fails before anything is drawn or sent, with one line; any other value reads as before.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.403.01</td>
 <td>A 403 from FTL is printed with the status, the URL and the body's first 300 characters, never the cookie; the caller's error is unchanged.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.10</td>
 <td>The legacy <code>review_cli.Fetcher</code>, built without a client, reads an FTL URL through the gated client: counted, with the stored session, under the client's name.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.WF.02</td>
 <td>Every workflow step that holds the FTL login passes <code>FTL_READS</code> from the repository variable.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_ledger.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>SRC.REGR.14</td>
 <td><code>PEW1f-2026-2027</code>, completed without results on the user's decision of 4 November 2026, is known to the re-read with that reason; its &quot;no results link&quot; is not a refusal to act on.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_regression.py</code></td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
+<section class="section-card detail"><h2 id="when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</h2>
+<p>Signed &quot;All A&quot; on <code>doc/plans/past-season-close-when-2026-11-04.html</code> (S1–S3); ADR-119 amended 2026-11-04.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Kind</th>
+<th>Test</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLOSE.WIN.01</td>
+<td>The past-season window is the three days before today (<code>lifecycle.past_season_window</code>): a season ending 15 Jul 2027 is looked at on 16, 17 and 18 Jul only.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>CLOSE.WIN.02</td>
+<td>The pass completes the open events of a season that ended in the window, CERT then PROD; it does not look at an older season, and outside the window nothing is asked for, written or said.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>CLOSE.SEED.01</td>
+<td>The close writes the step output <code>prod_completed=true</code> only when the pass wrote PROD and was not a dry run, also when the pass then failed (the run ends red).</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>CLOSE.SEED.02</td>
+<td><code>event-close.yml</code>'s <code>seed</code> job runs when <code>prod_completed</code> is true (even after a failed close), exports PROD's seed, commits it with <code>[skip ci]</code> and a retried push; only that job may write to the repository.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.01</td>
+<td>A run of an event whose season has ended leaves it COMPLETED; what would have kept it IN_PROGRESS becomes one warning naming the season's end date.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.02</td>
+<td>On the season's last day, in a season not ended, or with no season known, the rule is unchanged.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.03</td>
+<td>A run that commits nothing moves no status in an ended season either (ADR-037).</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.04</td>
+<td>The season's end date is read through the connector's <code>find_season_by_id</code>; unknown when the connector or the season cannot say.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.05</td>
+<td>The live ingest's rule (<code>lifecycle.apply</code>) completes such an event and logs the warning.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.06</td>
+<td>The run record keeps the warnings (<code>lifecycle_warnings</code>) only when there are any.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
+<td>Landed LOCAL (2026-11-04)</td>
+</tr>
+<tr>
+<td>LIFE.SEASON.07</td>
+<td>A recorded CERT run of such an event finishes COMPLETED, with the warning in its run record and in one Telegram warning.</td>
+<td>pytest</td>
+<td><code>python/tests/test_past_season_close_window.py</code></td>
 <td>Landed LOCAL (2026-11-04)</td>
 </tr>
 </tbody>
@@ -5253,5 +5346,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7e2822203be2858e165994c59abe8d53fcca7e4a8ee8d0ecccec1b022c2b473a</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>1e0ba646f6dace6a767fa672e1b2b9d8161ab69a6c6e8a5921d77d23668ba001</code></footer>
 </div></body></html>

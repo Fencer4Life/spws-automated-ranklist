@@ -513,11 +513,11 @@ class _PastSeasonEnv:
         self.name = name
         self.open_events = dict(open_events)  # code → status
         self.fail = fail
-        self.asked: list[dt.date] = []
+        self.asked: list[tuple[dt.date, dt.date]] = []
         self.writes: list[str] = []
 
-    def past_season_open(self, today):
-        self.asked.append(today)
+    def past_season_open(self, ended_from, ended_to):
+        self.asked.append((ended_from, ended_to))
         return [{"code": c, "status": s} for c, s in self.open_events.items()]
 
     def event(self, code):
@@ -549,7 +549,8 @@ class TestPastSeasonsAreClosed:
             "IMSW-2025-2026": ["cert:COMPLETED", "prod:COMPLETED"],
             "PEW9f-2024-2025": ["prod:IN_PROGRESS", "prod:COMPLETED"],
         }
-        assert cert.asked == [CLOSE_TODAY] and prod.asked == [CLOSE_TODAY]
+        window = (CLOSE_TODAY - dt.timedelta(days=3), CLOSE_TODAY - dt.timedelta(days=1))
+        assert cert.asked == [window] and prod.asked == [window]
         assert cert.writes == ["IMSW-2025-2026:COMPLETED"]
         assert prod.writes == [
             "IMSW-2025-2026:COMPLETED",
@@ -607,8 +608,9 @@ class TestPastSeasonsAreClosed:
 
     def test_the_sql_reads_every_open_event_of_a_past_season(self):
         """CLOSE.PAST.05 — every event, of every organizer and code; closed means
-        COMPLETED, SCORED or CANCELLED; past means the season's end date has
-        passed (N3 A: a future season's PLANNED events stay as they are)."""
+        COMPLETED, SCORED or CANCELLED; past means the season ended one to three
+        days ago (S1 A, 4 Nov 2026; N3 A: a future season's PLANNED events stay
+        as they are)."""
         seen: list[str] = []
 
         class _Transport:
@@ -617,12 +619,12 @@ class TestPastSeasonsAreClosed:
                 return [{"code": "IMSW-2025-2026", "status": "IN_PROGRESS"}]
 
         env = close.SqlEnv("prod", _Transport())
-        assert env.past_season_open(CLOSE_TODAY) == [
+        assert env.past_season_open(dt.date(2026, 9, 26), dt.date(2026, 9, 28)) == [
             {"code": "IMSW-2025-2026", "status": "IN_PROGRESS"}
         ]
         (sql,) = seen
         assert "e.enum_status NOT IN ('COMPLETED', 'SCORED', 'CANCELLED')" in sql
-        assert "s.dt_end < DATE '2026-09-29'" in sql
+        assert "s.dt_end BETWEEN DATE '2026-09-26' AND DATE '2026-09-28'" in sql
         assert "bool_active" not in sql
         assert close.route_code_regex() not in sql
 

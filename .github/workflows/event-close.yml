@@ -32,6 +32,9 @@ jobs:
   close:
     name: Close finished events
     runs-on: ubuntu-24.04
+    outputs:
+      # S3 A (4 Nov 2026): the past-season pass completed something on PROD.
+      prod_completed: ${{ steps.close.outputs.prod_completed }}
     steps:
       - uses: actions/checkout@v5
 
@@ -43,6 +46,7 @@ jobs:
         run: pip install httpx rapidfuzz beautifulsoup4 pyyaml
 
       - name: Close events
+        id: close
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
@@ -65,3 +69,62 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="Daily event close FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # S3 A (doc/plans/past-season-close-when-2026-11-04.html): CI and LOCAL load
+  # PROD's committed seed, and pgTAP 128 reads it. When the past-season pass
+  # completed events on PROD, the seed is exported the same morning, so the
+  # invariant reads what PROD holds. The close has committed; a failed export
+  # alerts but does not undo it.
+  seed:
+    name: Export PROD seed (ADR-036)
+    needs: close
+    if: always() && needs.close.outputs.prod_completed == 'true'
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx
+
+      - name: Export PROD seed
+        run: python -m python.pipeline.export_seed --ref "${{ secrets.SUPABASE_PROD_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Commit seed file (rebase and retry)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
+          if git diff --cached --quiet; then
+            echo "No seed changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: auto-export seed from PROD after the daily close completed past-season events [skip ci]"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "push attempt $attempt failed; retrying"
+            sleep $((attempt * 10))
+          done
+          exit 1
+
+      - name: Notify failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          MSG="Seed export after the daily close FAILED (the close itself committed). Check: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null

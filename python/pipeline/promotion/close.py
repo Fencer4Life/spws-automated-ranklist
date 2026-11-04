@@ -22,8 +22,11 @@ Before closing anything it completes every open event of a past season, on CERT
 then PROD, through the validator's steps and touching no result (the user's rule
 of 4 Nov 2026, closing plan rev 5 N1, CLOSE.PAST.01–05): an open event is
 permitted only in the active season. This replaces ADR-119 G64 A, which only
-named such events. A database invariant (pgTAP 128) fails preflight and CI on
-any drift.
+named such events. It looks only at seasons that ended one to three days ago, so
+a season is looked at on the three mornings after it ends (S1 A, CLOSE.WIN), and
+when it completed anything on PROD it tells the workflow (`prod_completed`),
+which exports PROD's seed (S3 A, CLOSE.SEED). A database invariant (pgTAP 128)
+fails preflight and CI on any drift.
 """
 
 from __future__ import annotations
@@ -54,7 +57,12 @@ def route_code_regex() -> str:
 
 
 class CloseFailed(RuntimeError):
-    """At least one event could not be written; the others were handled."""
+    """At least one event could not be written; the others were handled.
+    `closed` holds what the past-season pass did write before it failed."""
+
+    def __init__(self, message: str, *, closed: dict[str, list[str]] | None = None):
+        super().__init__(message)
+        self.closed: dict[str, list[str]] = closed or {}
 
 
 class Env(Protocol):
@@ -255,7 +263,7 @@ def close_events(
 class PastSeasons(Protocol):
     name: str
 
-    def past_season_open(self, today: dt.date) -> list[dict]: ...
+    def past_season_open(self, ended_from: dt.date, ended_to: dt.date) -> list[dict]: ...
 
     def set_status(self, code: str, status: str) -> None: ...
 
@@ -273,10 +281,12 @@ def close_past_season_events(
     only in the active season). Each goes through the validator's steps, no
     result is touched, and one line says what was done. A dry run computes the
     steps and writes and sends nothing. Replaces ADR-119 G64 A, which only
-    named such events."""
+    named such events. Only seasons that ended one to three days ago are looked
+    at (S1 A): on any other morning nothing is found, written or said."""
+    ended_from, ended_to = lifecycle.past_season_window(today)
     found: dict[str, dict[str, str]] = {}  # code → {env name: status}
     for env in (cert, prod):
-        for row in env.past_season_open(today):
+        for row in env.past_season_open(ended_from, ended_to):
             found.setdefault(str(row["code"]), {})[env.name] = str(row["status"])
     closed: dict[str, list[str]] = {}
     failures: list[str] = []
@@ -314,8 +324,13 @@ def close_past_season_events(
         print(message, file=sys.stderr)
         if notifier is not None:
             notifier.error(message)
-        raise CloseFailed(message)
+        raise CloseFailed(message, closed=closed)
     return closed
+
+
+def wrote_prod(closed: Mapping[str, list[str]]) -> bool:
+    """Whether the past-season pass wrote anything on PROD (S3 A)."""
+    return any(step.startswith("prod:") for steps in closed.values() for step in steps)
 
 
 # ---------------------------------------------------------------------------
@@ -347,16 +362,17 @@ class SqlEnv:
             or []
         )
 
-    def past_season_open(self, today: dt.date) -> list[dict]:
-        """Every event of a season whose end date has passed that is not closed
-        (COMPLETED, SCORED or CANCELLED), of any organizer or code."""
+    def past_season_open(self, ended_from: dt.date, ended_to: dt.date) -> list[dict]:
+        """Every event not closed (COMPLETED, SCORED or CANCELLED), of any
+        organizer or code, of a season that ended between the two dates."""
         return (
             self.transport.fetch_json(
                 "SELECT coalesce(jsonb_agg(jsonb_build_object('code', e.txt_code, "
                 "'status', e.enum_status) ORDER BY e.txt_code), '[]'::jsonb) AS j "
                 "FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season "
                 "WHERE e.enum_status NOT IN ('COMPLETED', 'SCORED', 'CANCELLED') "
-                f"AND s.dt_end < DATE '{today.isoformat()}'"
+                f"AND s.dt_end BETWEEN DATE '{ended_from.isoformat()}' "
+                f"AND DATE '{ended_to.isoformat()}'"
             )
             or []
         )
@@ -405,6 +421,17 @@ def read_ftl_schedule(url: str) -> Schedule:
         return parse_event_schedule(resp.text, with_skips=True)
 
 
+def _github_output(**values: str) -> None:
+    """Step outputs for event-close.yml; the job installs no Supabase client,
+    so this does not import ingest_cli for its twin."""
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as f:
+        for k, v in values.items():
+            f.write(f"{k}={v}\n")
+
+
 def main(argv: Iterable[str] | None = None) -> int:
     from python.pipeline.notifications import TelegramNotifier
     from python.pipeline.promotion.refresh import CERT_REF, PROD_REF, ManagementTransport
@@ -424,11 +451,16 @@ def main(argv: Iterable[str] | None = None) -> int:
         os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     )
     today = dt.date.fromisoformat(args.today) if args.today else lifecycle.warsaw_today()
+    failed = False
     try:
         past = close_past_season_events(
             cert, prod, notifier=notifier, today=today, write=not args.dry_run
         )
-    except CloseFailed:
+    except CloseFailed as e:
+        past, failed = e.closed, True
+    # S3 A: the workflow exports PROD's seed when this wrote PROD, even on a red run.
+    _github_output(prod_completed="true" if not args.dry_run and wrote_prod(past) else "false")
+    if failed:
         return 1
     try:
         outcomes = close_events(

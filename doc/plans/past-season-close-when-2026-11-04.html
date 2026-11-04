@@ -1,0 +1,189 @@
+<meta charset="utf-8">
+<title>When the daily close looks at past seasons</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Closing plan rev 5 · follow-up to N1 and N2 · 4 Nov 2026</p>
+  <h1>When the daily close needs to look at past seasons</h1>
+  <p class="dek">Every morning, the daily close now checks past seasons for open events. It can only find one on three occasions: when a season ends, when we re-ingest an old event ourselves, or when someone changes a status by hand. Checking every day is waste. This page proposes checking only when something can be there. It also fixes a fault I released today: the database test fails the day after every season ends.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>SIGNED 4 Nov 2026: &ldquo;All A&rdquo; (S1 A, S2 A, S3 A); built on branch claude/past-season-close-at-season-end</span>
+    <span class="pill good"><span class="dot"></span>0 open events in past seasons on CERT and PROD (read 22:40 UTC)</span>
+    <span class="pill warn"><span class="dot"></span>the past-season pass runs every morning: 2 database reads, nothing sent to FTL, no message when it finds nothing</span>
+    <span class="pill danger"><span class="dot"></span>my fault: pgTAP 128 fails CI and preflight the day after a season ends, until PROD&rsquo;s seed is exported again</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Why it runs daily</p>
+    <h2>No reason of its own</h2>
+    <p>I added the pass to the daily close (<code>event-close.yml</code>, 04:17 UTC) because that job already ran every morning. I never asked when the pass could find anything. Each run costs one read query on CERT and one on PROD. It sends nothing to FTL and posts nothing when there is nothing. It is cheap, but it searches every morning for something that is almost never there.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · When an open event can exist outside the active season</p>
+    <h2>Three ways, read from the source</h2>
+    <table>
+      <thead><tr><th>#</th><th>How</th><th>Evidence</th><th>When next</th></tr></thead>
+      <tbody>
+        <tr><td><b>1</b></td><td><b>The season ends while some events are still open.</b> The daily close only completes events that are IN_PROGRESS. An event that never received a result stays PLANNED: a run that commits nothing does not change the status (ADR-037). PEW1f-2026-2027 was this case. An FTL event the close cannot re-read stays IN_PROGRESS, and while FTL reads are off, that means every FTL event.</td><td><code>close.py</code> docstring, lines 4&ndash;7; <code>lifecycle.target_status</code></td><td>SPWS-2026-2027 ends <b>15 Jul 2027</b></td></tr>
+        <tr><td><b>2</b></td><td><b>We re-ingest an event from a season that has ended</b> (G67 Napoli today; Li&egrave;ge once FTL answers). The promote first sets a COMPLETED event to IN_PROGRESS while it corrects it. It then writes the status the CERT run computed. That run computes IN_PROGRESS in three cases: a listing was not read, a round name was not understood, or a listing is dated after the event&rsquo;s end date. <b>This is how IMSW-2025-2026 stayed IN_PROGRESS for a year.</b> Napoli&rsquo;s run came out COMPLETED.</td><td><code>20261031000004_cert_apply_and_promote_ledger.sql</code>, lines 138&ndash;139 and 269&ndash;270; <code>lifecycle.event_status</code></td><td>Only when we run one</td></tr>
+        <tr><td><b>3</b></td><td><b>Someone changes a status by hand</b> (SQL, or a Telegram command).</td><td>Not seen so far</td><td>Unknown</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The fault in what I released</p>
+    <h2>pgTAP 128 reads PROD&rsquo;s exported seed, not PROD itself</h2>
+    <p>CI and LOCAL load <code>supabase/seed_prod_latest.sql</code> (<code>supabase/config.toml</code>, <code>[db.seed]</code>). That file is PROD&rsquo;s last export. The export runs after a promote or when started by hand; the close never runs it.</p>
+    <p>On 16 Jul 2027, every event still open in the committed seed belongs to a season that has ended. Test 128.1 then fails in CI and in preflight. The pass completes those events on PROD that morning, but the committed seed still holds them open. Every push stays red until someone exports the seed again. Today&rsquo;s run passed only because the last export, after Napoli&rsquo;s promote, came after IMSW and PEW1f were completed by hand.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Decide this</p>
+    <h2>Three questions</h2>
+    <table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>S1</b></td><td>When does the close look at past seasons?</td><td><b>A</b> Only on the first three days after a season&rsquo;s end date (next: 16, 17 and 18 Jul 2027). On every other day it does not query past seasons at all. <b>B</b> Every day, as now. <b>C</b> Never; someone closes them by hand when a season ends.</td><td><b>A</b>: your three checks. Case 1 is the only one tied to a date, and three runs cover a failed morning.</td></tr>
+        <tr><td><b>S2</b></td><td>Case 2, our own re-ingest of an event from a season that has ended</td><td><b>A</b> Fix it where it starts: the lifecycle gives such an event the status COMPLETED. Whatever would have kept it open goes into the run record and the Telegram message as a warning. A re-ingest and promote then cannot leave it open. <b>B</b> Leave it. Under S1 A, it would be found at the next season&rsquo;s end, as IMSW was a year late.</td><td><b>A</b>: without it, case 2 has no daily pass to catch it.</td></tr>
+        <tr><td><b>S3</b></td><td>The fault in section 03</td><td><b>A</b> When the pass completes anything on PROD, the close runs the seed exporter, in its own job, as <code>promote.yml</code> does. The committed seed then matches PROD on the same morning. <b>B</b> Export by hand after each season ends.</td><td><b>A</b>: CI could otherwise fail on 16 Jul 2027 with no warning. From midnight to the 04:17 UTC run that morning, CI can still fail; nobody pushes then.</td></tr>
+      </tbody>
+    </table>
+    <p>pgTAP 128 stays as it is. For case 3, it is the backstop: an open past-season event in PROD&rsquo;s exported seed fails CI at the next push. Built test-first, in one change on a new branch, after your sign-off. It needs no FTL request.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · As built · 4 Nov 2026, night · branch claude/past-season-close-at-season-end</p>
+    <h2>Built test-first, in one change</h2>
+    <ul>
+      <li><b>Red first, 16 tests, then green:</b> CLOSE.WIN.01&ndash;02, CLOSE.SEED.01&ndash;02 and LIFE.SEASON.01&ndash;07 (<code>python/tests/test_past_season_close_window.py</code>); CLOSE.PAST.01&ndash;05 rewritten for the new signature and the window. Whole suite: 2,923 passed.</li>
+      <li><b>S1:</b> <code>lifecycle.past_season_window</code> (three days); <code>close_past_season_events</code> asks each environment for the open events of seasons that ended one to three days ago (<code>SqlEnv.past_season_open</code>, <code>s.dt_end BETWEEN &hellip;</code>). <b>One deviation from section 04&rsquo;s wording:</b> it said the close would not query past seasons at all on other days. It still sends that one bounded query per environment each morning; on those mornings the query finds nothing and reads no event of an older season. Knowing whether a season has just ended takes a read, and this is the cheapest one.</li>
+      <li><b>S2:</b> <code>lifecycle.event_status</code> takes the season&rsquo;s end date; <code>run_verdict</code> and <code>season_end</code> read it through <code>find_season_by_id</code> (the plan reads it from its own connector: the recorder passes only its own reads through). The warning goes into the run record (<code>lifecycle_warnings</code>), the CERT apply&rsquo;s log and one Telegram warning. The PROD promote computes the same status with the same rule.</li>
+      <li><b>S3:</b> the close writes <code>prod_completed</code>; <code>CloseFailed</code> carries what was written, so a red run still exports. <code>event-close.yml</code> has a <code>seed</code> job modelled on <code>promote.yml</code>&rsquo;s. Found on the way: importing <code>ingest_cli</code> for its output helper would have needed the Supabase client in the close job (WFDEPS.01 caught it), so <code>close.py</code> has its own five-line copy, as <code>results_sync.py</code> does.</li>
+      <li><b>Documentation:</b> ADR-119 amended (twin rendered); the handbook&rsquo;s lifecycle, workflow-catalog, runbook and codebase-map pages; the RTM&rsquo;s new section; Appendix C. pgTAP unchanged (1,663).</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · past-season close timing · 4 Nov 2026 · read from <code>close.py</code>, <code>lifecycle.py</code>, migration 20261031000004, <code>supabase/config.toml</code>, CERT and PROD; nothing sent to FTL</p>
+</div>
