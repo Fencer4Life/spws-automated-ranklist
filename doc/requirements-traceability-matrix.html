@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="7e2822203be2858e165994c59abe8d53fcca7e4a8ee8d0ecccec1b022c2b473a">
+<meta name="doc-source-sha256" content="7cd52a0d083672feb85235b54265fbbb5a700b1b441c00581a8ebb063685d9ab">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -5119,126 +5119,126 @@
 <td>Each morning, before closing anything, the daily close completes every open event of a past season, on CERT then PROD, through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, and says in the log and on Telegram &quot;Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED.&quot;</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04, test-first)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.02</td>
 <td>A dry run computes the steps and writes and sends nothing.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.03</td>
 <td>With no open event of a past season, nothing is said or sent.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.04</td>
 <td>A failed write is reported (&quot;Daily close failed: <code> on <env>: …&quot;), on Telegram and on stderr; the other events are still closed; the run ends red.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>CLOSE.PAST.05</td>
 <td>The selection reads every event, of every organizer and code, of a season whose end date has passed, whose status is not COMPLETED, SCORED or CANCELLED; it reads no <code>bool_active</code> and no route filter.</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>EVENT.PAST (128.1–128.2)</td>
 <td>No event of a past season is open in the PROD seed LOCAL is built from, and the check counts a planted one.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/128_no_open_event_outside_active_season.sql</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.DE.01–03</td>
 <td>An FTL results page lists a direct-elimination round iff it links a <code>/tableaus/scores/…</code> round; a page with pool rounds only, or no rounds, lists none; the word &quot;tableau&quot; alone is not a round.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.DE.04</td>
 <td>Every stored real results page in the fixtures lists a direct-elimination round.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.DE.05</td>
 <td>The domestic route's page check (<code>ingest_cli._ftl_has_direct_elimination</code>) applies the same rule: the round links, not the word.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.03 (rewritten)</td>
 <td>A listing is never dropped as a pool round by its name; the schedule reader keeps it like any other, and its results page decides.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.04 (rewritten), PROMO.LIFE.03 (rewritten)</td>
 <td>A bracket listed on several days behind one link is one bracket, final when the row of its last listed day says Finished, whatever the earlier rows say; its day is that last day.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code>, <code>python/tests/test_promotion_lifecycle.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.06</td>
 <td>A final FTL listing whose results page lists no direct-elimination round is skipped as &quot;pool round (no direct elimination round on its results page)&quot;, its data never fetched, and the skip never holds the event open; the name plays no part.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>INTL.SCHED.07</td>
 <td>The page is read for final listings only, before their data; an unfinished listing stays &quot;not final&quot; without a request.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pool_only_by_content.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.OFF.01–02</td>
 <td>With the repository variable <code>FTL_READS=off</code> every FTL read fails before anything is drawn or sent, with one line; any other value reads as before.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.403.01</td>
 <td>A 403 from FTL is printed with the status, the URL and the body's first 300 characters, never the cookie; the caller's error is unchanged.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.10</td>
 <td>The legacy <code>review_cli.Fetcher</code>, built without a client, reads an FTL URL through the gated client: counted, with the stored session, under the client's name.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>FTL.WF.02</td>
 <td>Every workflow step that holds the FTL login passes <code>FTL_READS</code> from the repository variable.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_ledger.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 <tr>
 <td>SRC.REGR.14</td>
 <td><code>PEW1f-2026-2027</code>, completed without results on the user's decision of 4 November 2026, is known to the re-read with that reason; its &quot;no results link&quot; is not a refusal to act on.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_regression.py</code></td>
-<td>Landed LOCAL (2026-11-04)</td>
+<td>Covered (main e0eb95a5, 2026-11-04)</td>
 </tr>
 </tbody>
 </table></div>
@@ -5253,5 +5253,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7e2822203be2858e165994c59abe8d53fcca7e4a8ee8d0ecccec1b022c2b473a</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7cd52a0d083672feb85235b54265fbbb5a700b1b441c00581a8ebb063685d9ab</code></footer>
 </div></body></html>
