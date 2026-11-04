@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
-  "sha": "eb08d28beed90ab6a11297b064d734e3061b6ac1",
-  "created": "2026-11-04T21:02:55Z",
+  "sha": "525b152759f8ab770cfd781ffef42aedc04778e4",
+  "created": "2026-11-04T21:43:58Z",
   "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2",
   "migrations": {
     "total": 236,
@@ -9,11 +9,11 @@
   },
   "tests": {
     "pgtap": {
-      "files": 128,
-      "assertions": 1661
+      "files": 129,
+      "assertions": 1663
     },
     "pytest": {
-      "files": 177
+      "files": 178
     },
     "vitest": {
       "files": 73
@@ -21,8 +21,8 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-04T21:02:56Z",
-      "sha": "eb08d28beed90ab6a11297b064d734e3061b6ac1",
+      "at": "2026-11-04T21:44:00Z",
+      "sha": "525b152759f8ab770cfd781ffef42aedc04778e4",
       "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2"
     },
     "prod": {
