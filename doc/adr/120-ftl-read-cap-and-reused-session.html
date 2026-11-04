@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="120-ftl-read-cap-and-reused-session.md">
-<meta name="adr-source-sha256" content="b60083666cd8767f8a7cc32ee934c5f2784cf403d7e7fb259b8c3e05df0c5cd0">
+<meta name="adr-source-sha256" content="c9e7a93bddf7433d1add7c43796cef22208a37f01396180d5ea80e6a139c67a4">
 <title>ADR-120 · FencingTimeLive Is Read Under a Daily Cap, With One Reused Session and a Name</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 120</p><h1>FencingTimeLive Is Read Under a Daily Cap, With One Reused Session and a Name</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed by the user in chat on 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>); implemented test-first on branch <code>claude/ftl-read-cap-and-reused-login</code>, not yet released</dd></div><div><dt>Date</dt><dd class="">2026-11-04</dd></div><div><dt>Source</dt><dd class=""><code>120-ftl-read-cap-and-reused-session.md</code></dd></div><div><dt>Length</dt><dd class="">77 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (signed by the user in chat on 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>); implemented test-first on branch <code>claude/ftl-read-cap-and-reused-login</code>, not yet released
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed by the user in chat on 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>); implemented test-first on branch <code>claude/ftl-read-cap-and-reused-login</code>; released to CERT and PROD 2026-11-04 (main <code>7f35731a</code>, CI run 41796842076, Release run 41797115355)</dd></div><div><dt>Date</dt><dd class="">2026-11-04</dd></div><div><dt>Source</dt><dd class=""><code>120-ftl-read-cap-and-reused-session.md</code></dd></div><div><dt>Length</dt><dd class="">77 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed by the user in chat on 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>); implemented test-first on branch <code>claude/ftl-read-cap-and-reused-login</code>; released to CERT and PROD 2026-11-04 (main <code>7f35731a</code>, CI run 41796842076, Release run 41797115355)
 <strong>Date:</strong> 2026-11-04
 <strong>Amends:</strong> <a href="068-ftl-www-host-and-session-cache.html">ADR-068</a> (its deferred alternative, the session kept across processes, is now the rule; every request carries a name), <a href="119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> (§4: an event read only from FTL is taken at four hours a day and compared by its schedule alone, and a new verdict <code>budget</code>; G42 A (2): an FTL event is dry-read only the day before it starts; G45 A: a completed FTL event is no longer re-read automatically, and one event is re-read by hand)
 <strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (the two new tables are deny-by-default, service role only), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7 (the close's schedule check, which the sync's FTL compare reuses), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the PROD seed export names its tables one by one and never these)
@@ -82,5 +82,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="119-partial-ingest-promote-and-organizer-registry.html">← ADR-119: Partial Ingest and Promote — Only Final Brackets, One Organizer Registry, One Engine Contract</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>120-ftl-read-cap-and-reused-session.md</code> · source SHA-256 <code>b60083666cd8767f8a7cc32ee934c5f2784cf403d7e7fb259b8c3e05df0c5cd0</code></footer>
+<footer class="foot">Generated from <code>120-ftl-read-cap-and-reused-session.md</code> · source SHA-256 <code>c9e7a93bddf7433d1add7c43796cef22208a37f01396180d5ea80e6a139c67a4</code></footer>
 </div></body></html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="762f54231957ca39343fdde8167b3b0b0bc14160cda97d57ec70b2147a165366">
+<meta name="doc-source-sha256" content="ff1412d82b09fc761d4cdf7565d30af8e533adeaa691606edc2d3b177073d878">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2999,7 +2999,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/120-ftl-read-cap-and-reused-session.html">ADR-120</a></td>
-<td><strong>Accepted</strong> (signed 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>; implemented test-first, not yet released). FencingTimeLive is read under a daily cap, with one reused session and a name, after FTL blocked the pipeline's account on the night of 1 to 2 November 2026 following one day of about 700 requests and 13 sign-ins. Every FTL request and sign-in is drawn from a CERT ledger before it is sent (120 requests, 2 sign-ins a Warsaw day, CI and LOCAL alike; <code>FtlBudgetSpent</code> when spent; no access token, no read); the session cookie of a sign-in is stored on CERT and reused by every run for its 10 days; one second between requests; the client is named <code>SPWS-ranklist/1.0</code>. The results sync takes an FTL-only event at 08, 12, 16 and 20 UTC and compares it by its schedule alone; a capped cycle records <code>budget</code>; the weekly re-read leaves out completed FTL events (an open one is still read) and reads one event by hand; FTL events are dry-read only the day before. Tables <code>tbl_ftl_read_ledger</code>, <code>tbl_ftl_session</code> (service role only, CERT only). Tests: FTL.BUDGET.01–09, FTL.SESSION.01–05, FTL.NAME.01, FTL.PACE.01, FTL.STORE.01–05, FTL.WF.01, FTL.SEED.01, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13, pgTAP 125–127.</td>
+<td><strong>Accepted</strong> (signed 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>; implemented test-first; released to CERT and PROD 2026-11-04 (main <code>7f35731a</code>)). FencingTimeLive is read under a daily cap, with one reused session and a name, after FTL blocked the pipeline's account on the night of 1 to 2 November 2026 following one day of about 700 requests and 13 sign-ins. Every FTL request and sign-in is drawn from a CERT ledger before it is sent (120 requests, 2 sign-ins a Warsaw day, CI and LOCAL alike; <code>FtlBudgetSpent</code> when spent; no access token, no read); the session cookie of a sign-in is stored on CERT and reused by every run for its 10 days; one second between requests; the client is named <code>SPWS-ranklist/1.0</code>. The results sync takes an FTL-only event at 08, 12, 16 and 20 UTC and compares it by its schedule alone; a capped cycle records <code>budget</code>; the weekly re-read leaves out completed FTL events (an open one is still read) and reads one event by hand; FTL events are dry-read only the day before. Tables <code>tbl_ftl_read_ledger</code>, <code>tbl_ftl_session</code> (service role only, CERT only). Tests: FTL.BUDGET.01–09, FTL.SESSION.01–05, FTL.NAME.01, FTL.PACE.01, FTL.STORE.01–05, FTL.WF.01, FTL.SEED.01, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13, pgTAP 125–127.</td>
 <td>ADR-068, ADR-119, ADR-083, ADR-108, ADR-036</td>
 </tr>
 <tr>
@@ -3126,5 +3126,5 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>762f54231957ca39343fdde8167b3b0b0bc14160cda97d57ec70b2147a165366</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>ff1412d82b09fc761d4cdf7565d30af8e533adeaa691606edc2d3b177073d878</code></footer>
 </div></body></html>

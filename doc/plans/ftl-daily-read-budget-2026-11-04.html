@@ -127,7 +127,8 @@
   <p class="dek">FTL blocked the pipeline&rsquo;s account in the night of 1 to 2 November, after one day in which we sent it <b>roughly 700 requests and 13 sign-ins</b>, most of them re-reading events that ended months ago. Nothing counts what the pipeline reads. This plan says when and why, what the ranking actually needs from FTL (<b>nothing on most days; a few dozen requests during an FTL event; one sign-in in ten days</b>), and builds that as a hard rule. The new login works (checked 4 Nov, one sign-in, session until 14 Nov).</p>
   <div class="meta">
     <span class="pill good"><span class="dot"></span>Signed 4 Nov 2026: F4 B, every other decision A (&ldquo;F4 - B, the rest as recommended&rdquo;)</span>
-    <span class="pill warn"><span class="dot"></span>Built test-first 4 Nov on claude/ftl-read-cap-and-reused-login; not pushed</span>
+    <span class="pill good"><span class="dot"></span>Released 4 Nov 2026: main 7f35731a, CI and Release green, CERT and PROD verified</span>
+    <span class="pill warn"><span class="dot"></span>Owed: the first CI read signs in once and stores the session (live proof)</span>
     <span class="pill good"><span class="dot"></span>new login checked 4 Nov: signed in, IMSW&rsquo;s schedule read (24 listings), 3 requests</span>
     <span class="pill danger"><span class="dot"></span>no credential seen, stored or logged</span>
     <span class="pill">ADR-068 · ADR-119 §4, G42, G45, G63, G71</span>
@@ -269,6 +270,18 @@
       <li><b>A re-read started by hand for one event names it:</b> the <code>source-regression</code> run is titled with the <code>event_code</code> it was given (RUNNAME.04, which pinned the old title, now pins this one).</li>
       <li><b>Test IDs:</b> SRC.REGR.09 was taken, so the re-read&rsquo;s are SRC.REGR.10–13; the stores&rsquo; are FTL.STORE.01–05 (05: no token, no ledger) and FTL.SEED.01; the sync&rsquo;s SYNC.FTL.01, SYNC.SEL.06–09 and SYNC.CYCLE.10–16; there is no LOCAL file ledger (F2 A).</li>
       <li><b>The record:</b> <a href="../adr/120-ftl-read-cap-and-reused-session.html">ADR-120</a>, amending ADR-068 and ADR-119; Appendix C; the RTM; the handbook&rsquo;s ingestion, workflow-catalog, security-posture, codebase-map, operator-runbook (&ldquo;Read FencingTimeLive within its daily cap&rdquo;) and local-development pages; the <code>ftl-scrape</code> skill.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Released · 4 Nov 2026 · main 7f35731a</p>
+    <h2>What went out, and what was checked</h2>
+    <ul>
+      <li><b>Preflight</b> 23/23 on the branch (commit 0e799c7e). Along the way it caught a stale handbook frame (the new runbook section), the pgTAP total (1632 &rarr; 1661) and RUNNAME.04, which pinned the old run title; each was fixed at its cause.</li>
+      <li><b>Push</b> from the integration checkout: seven commits, this build plus the four that were waiting (the push-4 record, the joint-pool plan, the FTL login pages). It was pushed at 08:05 UTC, and the Release had CERT&rsquo;s tables in place by 08:11. No event was in its sync window (CERT: none for 3&ndash;5 Nov), so no cycle could read FTL before the ledger existed. Today&rsquo;s three daily FTL crons had not started; one that started before CERT&rsquo;s migrations would have failed closed, with nothing sent and nothing paused.</li>
+      <li><b>CI</b> run 41796842076: success (pytest, coherence, CERT roster, pgTAP, Vitest). <b>Release</b> run 41797115355: success; deploy-cert 50&nbsp;s, then deploy-prod 45&nbsp;s after your approval.</li>
+      <li><b>CERT and PROD</b> both hold <code>tbl_ftl_read_ledger</code>, <code>tbl_ftl_session</code>, the five <code>fn_ftl_ledger_*</code> / <code>fn_ftl_session_*</code> functions and the <code>budget</code> verdict. On CERT only <code>service_role</code> can read the session, the ledger or the getter (anon and authenticated: no). Both tables are still empty: nothing has read FTL under the new code yet.</li>
+      <li><b>Owed, live:</b> the first CI read of the day signs in once, stores the session on CERT and counts in the ledger; a later run reuses it without a sign-in. Today&rsquo;s late daily crons (event-close, source re-read, EVF sync) will show it. I start no FTL read myself (S7).</li>
     </ul>
   </section>
 
