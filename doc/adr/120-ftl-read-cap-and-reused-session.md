@@ -1,6 +1,6 @@
 # ADR-120: FencingTimeLive Is Read Under a Daily Cap, With One Reused Session and a Name
 
-**Status:** Accepted (signed by the user in chat on 2026-11-04, "F4 - B, the rest as recommended", on `doc/plans/ftl-daily-read-budget-2026-11-04.html`); implemented test-first on branch `claude/ftl-read-cap-and-reused-login`, not yet released
+**Status:** Accepted (signed by the user in chat on 2026-11-04, "F4 - B, the rest as recommended", on `doc/plans/ftl-daily-read-budget-2026-11-04.html`); implemented test-first on branch `claude/ftl-read-cap-and-reused-login`; released to CERT and PROD 2026-11-04 (main `7f35731a`, CI run 41796842076, Release run 41797115355)
 **Date:** 2026-11-04
 **Amends:** [ADR-068](068-ftl-www-host-and-session-cache.md) (its deferred alternative, the session kept across processes, is now the rule; every request carries a name), [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) (§4: an event read only from FTL is taken at four hours a day and compared by its schedule alone, and a new verdict `budget`; G42 A (2): an FTL event is dry-read only the day before it starts; G45 A: a completed FTL event is no longer re-read automatically, and one event is re-read by hand)
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (the two new tables are deny-by-default, service role only), [ADR-108](108-promote-replays-verified-cert-ingestion.md) §7 (the close's schedule check, which the sync's FTL compare reuses), [ADR-036](036-prod-export-local-mirror.md) (the PROD seed export names its tables one by one and never these)

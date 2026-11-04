@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="f222e7f444910287525b5884c44874a8f9c3b552d17fd1919ee0be755394041d">
+<meta name="doc-source-sha256" content="924c9b7399f5466890e61097c9bc32aaad97970a58e09e5d79661e37740187df">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -4759,7 +4759,7 @@
 <td>A source re-read run says what started it: &quot;daily&quot;, the code of the one event a run started by hand re-reads (ADR-120), or &quot;manual&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_workflow_run_names.py</code></td>
-<td>Covered (released 2026-11-01, main 9fc4cbc1; the event code built 2026-11-04, not released)</td>
+<td>Covered (released 2026-11-01, main 9fc4cbc1; the event code released 2026-11-04, main 7f35731a)</td>
 </tr>
 </tbody>
 </table></div>
@@ -4956,147 +4956,147 @@
 <td>With no ledger the client sends nothing: &quot;FTL is read only with a ledger&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.02–03</td>
 <td>Ten requests are drawn before the first request and again when used; requests are drawn before the sign-in.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.04, 07</td>
 <td>At the day's cap of requests, or of sign-ins, the client raises <code>FtlBudgetSpent</code> with the day's count and sends nothing, the login page included.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.05–06</td>
 <td>The requests a client did not use are given back when it closes; a sign-in is drawn on its own.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.08</td>
 <td>The audit tool reads FTL's data through the client, counted, never with a bare request.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.BUDGET.09</td>
 <td>A process can say the day's count: &quot;FTL today: n/120 requests, m/2 sign-ins&quot;.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.SESSION.01–05</td>
 <td>A stored session is used without a sign-in and sent with the requests; one within 12 hours of its end is renewed; a sign-in is stored before any other request, with its expiry; a session that bounces to the login page is dropped and the next read signs in once; a refused sign-in stores nothing and is counted.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.NAME.01</td>
 <td>Every request, the login page and the sign-in included, carries the client's name <code>SPWS-ranklist/…</code>.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.PACE.01</td>
 <td>A request waits until <code>FTL_PACE_SECONDS</code> have passed since the last.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_auth.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.STORE.01–05</td>
 <td>CERT's ledger draws with the Warsaw day and the caps, and gives back; the stored session is read with its expiry; a failed store or drop never repeats the cookie; without the access token there is no ledger.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_ledger.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.WF.01</td>
 <td>Every workflow step that holds the FTL login also holds the access token the ledger needs.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_ledger.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.SEED.01</td>
 <td>The PROD seed export never names the ledger or the session table.</td>
 <td>pytest</td>
 <td><code>python/tests/test_ftl_ledger.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.LEDGER (pgTAP 125)</td>
 <td><code>tbl_ftl_read_ledger</code> is service role only; a draw is granted up to the cap, a sign-in whole or not at all; a give-back never goes below zero; a new day starts at zero; rows older than 90 days are pruned; a negative draw is refused.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/125_ftl_read_ledger.sql</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FTL.SESSION (pgTAP 126)</td>
 <td><code>tbl_ftl_session</code> is service role only and holds one row; a newer sign-in replaces it; a drop removes only the cookie the caller used; an empty cookie is refused.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/126_ftl_session.sql</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SYNC.BUDGET (pgTAP 127)</td>
 <td>A cycle's verdict <code>budget</code> is recorded; an unknown verdict is still refused.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/127_results_sync_budget_verdict.sql</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SYNC.FTL.01</td>
 <td>An event is read only from FTL when every source is an FTL schedule (its <code>url_event</code>; on the international route every result slot); an EVF results id is not FTL.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_sync.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SYNC.SEL.06–09</td>
 <td>A scheduled cycle takes an FTL-only event only at 08, 12, 16 and 20 UTC, by the hour it was due, and names the events that wait; other engines are taken every hour; a manual code is always taken.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_sync.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SYNC.CYCLE.10–13</td>
 <td>An FTL-only event, a PZSz event excepted, is compared by its schedule alone, as the close checks it: unchanged is nothing to do or promote only; changed or no run is changed, with no listing read; a link changed since the run is a change without a read; the run query carries its link.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_sync.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SYNC.CYCLE.14</td>
 <td>When the compare read no listing, the outcome takes the new listings from the two runs.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_sync.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SYNC.CYCLE.15–16</td>
 <td>A cycle stopped by FTL's daily cap records <code>budget</code>, says so in one ⏸ line and pauses nothing; from 80% of the cap a sent line carries the day's count.</td>
 <td>pytest</td>
 <td><code>python/tests/test_results_sync.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>SRC.REGR.10–13</td>
 <td>The weekly re-read leaves out a completed FTL-only event and counts it, and still reads an open one; an FTL-only event is dry-read only the day before it starts; one event is re-read by hand with <code>--code</code> (the workflow's <code>event_code</code>), its code checked first.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_regression.py</code></td>
-<td>Covered (built 2026-11-04, not released)</td>
+<td><strong>Released</strong> (2026-11-04, main 7f35731a, CERT + PROD)</td>
 </tr>
 </tbody>
 </table></div>
@@ -5111,5 +5111,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>f222e7f444910287525b5884c44874a8f9c3b552d17fd1919ee0be755394041d</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>924c9b7399f5466890e61097c9bc32aaad97970a58e09e5d79661e37740187df</code></footer>
 </div></body></html>

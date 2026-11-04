@@ -1,0 +1,260 @@
+<meta charset="utf-8">
+<title>The plan to end all work</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Closing plan · FTL thread and every other open piece · 4 Nov 2026 · rev 3</p>
+  <h1>The plan to end all work</h1>
+  <p class="dek">Everything still open, in one place, each with what ends it and who does it. On my side: <b>one docs push, four CI runs for G67, one code change for G65, two deletions</b>. Everything else is either already closed, yours in one action, or proposed dropped. No new follow-ups are opened by this plan. <b>Rev 2:</b> a pool-only round is recognised by the content of its results page, never by its name (your instruction, 4 Nov); E2 is settled.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Plovdiv (IMEW-2024-2025): COMPLETED on CERT and PROD already; nothing to close</span>
+    <span class="pill good"><span class="dot"></span>IMSW-2025-2026: COMPLETED on CERT and PROD today</span>
+    <span class="pill warn"><span class="dot"></span>PEW1f-2026-2027: to be COMPLETED without results, on your order (step 2)</span>
+    <span class="pill warn"><span class="dot"></span>no code until you sign; E1, E3&ndash;E6 below (E2 settled by you)</span>
+    <span class="pill">ADR-105 INTL.SCHED.04 · ADR-119 G65, G67 · ADR-120</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Already closed</p>
+    <h2>Nothing to do here, said plainly</h2>
+    <table>
+      <thead><tr><th>Item</th><th>State, read today</th></tr></thead>
+      <tbody>
+        <tr><td><b>Plovdiv, IMEW-2024-2025</b></td><td>COMPLETED on CERT and on PROD, since before today. PROD holds all its brackets. Since ADR-120 (S5) a completed FTL-only event is not re-read automatically, so no job reads it. The only trace left is the 1 Nov re-read calling it &ldquo;different&rdquo;, because three &ldquo;(Day 1)&rdquo; rows never say Finished; G65 below changes that reading. There is no status to write.</td></tr>
+        <tr><td><b>IMSW-2025-2026</b></td><td>COMPLETED on CERT and PROD on your order today. No open event is on FTL any more.</td></tr>
+        <tr><td><b>ADR-120</b> (FTL cap, reused session)</td><td>Released, CERT and PROD verified. The sign-in and the stored session are proven (run 41892095981). The reuse is proven by the next FTL read: step 3 below, if it runs before 14 Nov 06:57 UTC.</td></tr>
+        <tr><td><b>G21</b> (stale token)</td><td>Closed by the token-from-<code>.env</code> change (ADR-036 amendment, released). No action.</td></tr>
+        <tr><td><b>G70</b> (IMSW&rsquo;s dates at FTL)</td><td>Dropped: nothing reads that end date any more (E5).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Three shapes</p>
+    <h2>What &ldquo;end all work&rdquo; can mean</h2>
+    <table>
+      <thead><tr><th>Shape</th><th>What it is</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b> (recommended)</td><td>Close the FTL thread completely (G67, G65, the push, the checks), and hand over everything else as a list where each item is yours, dropped, or one bounded piece. After this plan there is no open item on my side.</td><td>1 docs push, 4 CI runs, 1 code change with one Release; about 50 FTL requests, 0 sign-ins.</td></tr>
+        <tr><td><b>B</b></td><td>Work every thread in memory to zero (ADR-118 F8, worktree rescue, D8, the WordPress steps, the handovers&hellip;).</td><td>Weeks, several Releases, many decisions of yours. Not what a closing plan should be.</td></tr>
+        <tr><td><b>C</b></td><td>Freeze now: push the docs, delete the checks, do nothing else.</td><td>Cheapest. Leaves one missing result (Napoli) that costs no FTL to add, and the Plovdiv-type bracket rule unfixed before May 2027.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Shape A, in order</p>
+    <h2>Seven steps, each with what ends it</h2>
+    <ol class="steps">
+      <li><b>Push the six documentation commits</b> on <code>claude/ftl-read-cap-and-reused-login</code> (450b8ad4 &hellip; fd2f8c91, plus this plan). Documentation only: the Release gate skips build and deploy (ADR-094), so this costs one CI run and needs no PROD approval. Ends: nothing of this thread exists only on this machine.</li>
+      <li><b>Close PEW1f-2026-2027 without results</b> (your order, 4 Nov: &ldquo;we are not going to ingest results&rdquo;; G69 dropped). Read today on CERT and PROD: PLANNED, no results link, no results, and <b>no prior edition linked</b>, so completing it moves no points and ends no carry-over. Two scoped status writes on each environment, CERT first: PLANNED &rarr; IN_PROGRESS &rarr; COMPLETED, because the validator refuses the direct jump; then <code>vw_calendar</code> checked on both. Nothing else is written. It stays on the weekly re-read as &ldquo;refused: no results link&rdquo; until step 4 puts it on the known list with the reason &ldquo;not ingested (the user&rsquo;s decision, 4 Nov 2026)&rdquo;. Ends: the calendar shows it completed and no job asks for its results again.</li>
+      <li><b>G67 Napoli, no FTL.</b> <code>ingest-event.yml</code> with <code>PEW4efs-2025-2026</code>, season end year 2026, target cert (as the Criterium on 1 Nov, G46 B); then <code>promote.yml</code> with the code. Read-only proof of 2 Nov: every other bracket re-reads equal, so only the one result is added. Ends when <code>fn_ranking_full('EPEE','M','V0',4,true)</code> on PROD shows fencer 298 with an international total of about 4 instead of 0, and place 2 unchanged.</li>
+      <li><b>G67 Li&egrave;ge, one FTL read.</b> <code>ingest-event.yml</code> with <code>PEW61s-2025-2026</code>, 2026, cert: the schedule plus the final sabre listings, about 1&nbsp;+&nbsp;10 requests, <b>0 sign-ins expected</b> (the stored session: this is ADR-120&rsquo;s reuse proof, free). If a result of ours appears in women&rsquo;s sabre V0, <code>promote.yml</code>; if none, the event is listed as known with the reason, and nothing is promoted. Ends with the ledger row showing the count and 0 sign-ins, and PROD checked through the ranking function.</li>
+      <li><b>G65, the reader, test-first</b> (section 04), with PEW1f-2026-2027&rsquo;s known-list line and its test. Two reads first, so the test fixtures are real pages: Plovdiv&rsquo;s schedule and one known pools-only results page (2 requests). Preflight, commit, push from the integration checkout, CI and Release watched in the foreground, your PROD approval, CERT and PROD verified. Proof: one by-hand re-read of <code>IMEW-2024-2025</code> (about 1&nbsp;+&nbsp;2&nbsp;&times;&nbsp;20 requests, the page check included) reads &ldquo;equal&rdquo;. Ends: the last &ldquo;different&rdquo; of the 1 Nov re-read is gone, a championship bracket fenced over two days is taken on its DE day, and a pool-only round is skipped whatever it is called.</li>
+      <li><b>Delete the two scheduled checks</b> (9 and 13 Nov): no open event is on FTL, so each would report &ldquo;nothing read&rdquo;; step 3 gives the proof they were for. Ends: no scheduled task of this thread remains.</li>
+      <li><b>Records.</b> The ADR-119 plan&rsquo;s G65 and G67 marked done, the loose-ends page and this page marked closed, memory updated. One commit, in step 4&rsquo;s push or after it.</li>
+    </ol>
+    <p>Your part in A: approve one PROD deploy (step 5), and read four Telegram lines. The FTL reads of A: about 70 requests over the days it runs, 0 sign-ins, all inside the cap.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · G65 · the design</p>
+    <h2>A pool-only round is known by its content, never by its name</h2>
+    <p><b>What a results page holds.</b> FTL&rsquo;s results page of a listing (<code>/events/results/{uuid}</code>) lists the listing&rsquo;s rounds as links: a pool round as <code>/pools/scores/{uuid}/{round}</code>, a direct-elimination round as <code>/tableaus/scores/{uuid}/{round}</code>. The three stored pages in <code>python/tests/fixtures/ftl/</code> each carry one pool link and one tableau link. <b>A page with no <code>/tableaus/</code> round has no DE bouts: it is a pools-only round.</b> That is the whole signal; the listing&rsquo;s name plays no part.</p>
+    <p><b>What exists today.</b></p>
+    <ul>
+      <li><b>The domestic route</b> (SPWS, PZSz) already fetches every listing&rsquo;s results page and drops a listing without a tableau (<code>ingest_cli._ftl_has_direct_elimination</code>, <code>python/pipeline/ingest_cli.py:611&ndash;620</code>, used at <code>:931</code> and <code>:1345</code>; ADR-057, ADR-067, ADR-076). Its test is a word search for &ldquo;tableau&rdquo; anywhere in the page, which today hits only that link.</li>
+      <li><b>The international route decides by name.</b> A listing with pool words (&ldquo;runda grupowa&rdquo;, &ldquo;pool round&rdquo;, &ldquo;poule&rdquo;) is a pool round only when its weapon and gender also have category brackets (<code>_drop_covered_pool_rounds</code>, <code>python/tools/scrape_ftl_event_urls.py:286&ndash;301</code>, INTL.SCHED.03). A name the organiser spells differently next time is read as a bracket. A bracket listed on two days behind one link is joined into one and is final <b>only when both rows say Finished</b> (<code>:227&ndash;232</code>, INTL.SCHED.04). At Plovdiv the three day-1 rows never say Finished, so those brackets never count as final.</li>
+    </ul>
+    <p><b>The change: one structural check for both routes, and the last-day rule.</b></p>
+    <table>
+      <thead><tr><th>#</th><th>Rule</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td><b>R1</b></td><td>One link listed on several days is one bracket. It is final when the row of its <b>last</b> listed day says Finished: that day holds the DE. Its day is that last day. The earlier rows are the pool days and decide nothing.</td><td><code>parse_event_schedule</code>, the twin branch at <code>:227</code>. Test INTL.SCHED.04 rewritten (<code>python/tests/test_international_intake.py:565</code>): day 1 not finished, day 2 finished &rArr; final; day 2 not finished &rArr; not final.</td></tr>
+        <tr><td><b>R2</b></td><td><b>Every listing</b> the international route is about to read is checked by its results page before its data is fetched: the page&rsquo;s round links are parsed; <b>no <code>/tableaus/</code> round &rArr; a pools-only round, skipped with the reason &ldquo;pool round (no direct elimination round)&rdquo; and never holding the event open; a tableau round &rArr; a bracket</b>, read on as today. The name-based pool rule is retired on this route. A listing without a results page at all is not final (unchanged).</td><td>One function, <code>has_direct_elimination(html)</code> in <code>python/scrapers/ftl.py</code>, that parses the round links; the domestic route calls it in place of its word search (same answer on every stored page), the international route calls it in <code>international_sources._other_source</code> for each listing. One request per listing, counted by the ledger. This is also C1(2) of the combined-bracket plan, done by content.</td></tr>
+      </tbody>
+    </table>
+    <p><b>Cost.</b> One more request per listing on every international ingest: an event with L listings costs 1&nbsp;+&nbsp;2L instead of 1&nbsp;+&nbsp;L (IMSW: 49 instead of 25). The hourly compare still reads the schedule only (ADR-120 S3), so the page check runs only when something changed. Inside the cap for any one event; two large FTL events ingesting on the same day would be close to it, and the ledger says so.</p>
+    <p><b>Before the code, two reads</b> (2 requests, inside the cap, after you sign): Plovdiv&rsquo;s schedule, for the exact day-1 and day-2 rows; and one known pools-only results page (Jabłonna 2025&rsquo;s &ldquo;runda grupowa&rdquo; listing), so the pools-only fixture is a real page and the test is red for a real reason.</p>
+    <p><b>Documentation in the same change:</b> ADR-105&rsquo;s schedule lines (INTL.SCHED.03 becomes the content rule, INTL.SCHED.04 &ldquo;final on its last day&rdquo;), with ADR-076 amended to point at the shared check; the handbook&rsquo;s ingestion page (present tense); RTM rows; the combined-bracket plan, rev 3, with C1(2) marked done. Tests, red first: INTL.SCHED.03 and .04 rewritten; FTL.DE.01&ndash;03 for the shared check (a page with a tableau, a pools-only page, a page with no rounds); INTL.SCHED.06 for the skip reason and that it never holds the event open.</p>
+    <p><b>Not in this change:</b> C1(1) and C3 of the combined-bracket plan (sub-events and a lone guest&rsquo;s DE) stay yours to decide; no re-ingest of any closed event beyond G67 and the Plovdiv proof read.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Yours</p>
+    <h2>Items only you can end</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Your action</th><th>Then</th></tr></thead>
+      <tbody>
+        <tr><td><b>G69</b> PEW1f-2026-2027 has no results link</td><td colspan="2"><b>Dropped by you, 4 Nov:</b> no results are ingested; the event is completed without them (step 2).</td></tr>
+        <tr><td><b>G63 / G74</b> FTL&rsquo;s terms</td><td>Your letter to FTL (login page, L4)</td><td>Nothing of mine until FTL answers.</td></tr>
+        <tr><td><b>G49</b> (with G39&rsquo;s run) two public logs hold names</td><td>Delete the logs of runs 39038447502, 41316384426, 41301682664</td><td>Closed.</td></tr>
+        <tr><td><b>G55, G56</b> two decisions on the ADR-119 plan</td><td>Answer them there</td><td>Recorded as yours since 1 Nov; I have not re-read them today.</td></tr>
+        <tr><td><b>C1(1), C3, C5</b> combined brackets</td><td>Decide on that plan (rev 3 after step 4)</td><td>Code only on your sign-off.</td></tr>
+        <tr><td><b>R2.2</b> ADR-119 §3&rsquo;s acceptance on a real event</td><td>Say whether Madrid (31 Oct&ndash;1 Nov, through the recorded route) counts</td><td>One line in the ADR&rsquo;s status.</td></tr>
+        <tr><td><b>PROD approvals</b></td><td>One per Release that deploys (step 4)</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Other threads</p>
+    <h2>Recorded open elsewhere, proposed ending</h2>
+    <p>State as recorded in memory; not re-verified today. Each gets one line, so nothing stays half-open by silence.</p>
+    <table>
+      <thead><tr><th>Thread</th><th>What is open</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>Worktree cleanup (25 Oct)</td><td>8 plan pages exist only in ended worktrees; <code>pzsz-url-event-rca</code> has 3 unpushed commits; the active-season release record e8991569 is not on main</td><td><b>Keep, one bounded session:</b> rescue the pages and commits onto main (docs only), then clean. The only item here that loses work if ignored.</td></tr>
+        <tr><td>ADR-118 F8</td><td>Country form; 7 PROD events without a flag</td><td><b>Yours:</b> enter the 7 countries in Admin, or drop.</td></tr>
+        <tr><td>ADR-117 D8</td><td>PPW5 2024/25 lacks one result (KOLER)</td><td><b>Yours:</b> order the closed-season re-ingest, or drop.</td></tr>
+        <tr><td>Calendar drum D4</td><td>The card edge; needs your screenshot</td><td><b>Drop</b> unless you send it.</td></tr>
+        <tr><td>Calendar <code>panelType</code> UI</td><td>A follow-up noted on the ADR-119 thread</td><td><b>Drop.</b></td></tr>
+        <tr><td>WordPress UI §14 item 7</td><td>Your admin sign-in, then rev 27, then step 13</td><td><b>Yours.</b></td></tr>
+        <tr><td>PZSz namesakes handover Q11</td><td>Your decision first</td><td><b>Yours.</b></td></tr>
+        <tr><td>Joined-bracket scoring, steps 11&ndash;12</td><td>Your go</td><td><b>Yours.</b></td></tr>
+        <tr><td>Scoring-family versioning</td><td>Signed 3 Oct, deferred</td><td><b>Stays deferred.</b></td></tr>
+        <tr><td>Selection method, Tbilisi campaign</td><td>Test methodology; wave 2</td><td><b>Yours.</b></td></tr>
+        <tr><td>Owner name &rarr; Fencer4Life, history rewrite</td><td>Explicit go only</td><td><b>Yours.</b></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Decide this</p>
+    <h2>Six decisions</h2>
+    <table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>E1</b></td><td>The shape</td><td><b>A</b> close the FTL thread, hand over the rest. <b>B</b> work every thread. <b>C</b> freeze.</td><td><b>A.</b></td></tr>
+        <tr><td><b>E2</b></td><td>G65&rsquo;s scope</td><td colspan="2"><b>Settled by you, 4 Nov:</b> a pool-only round is identified by the content of its results page (no DE round), for every listing, never by its name. R1 and R2 as in section 04. Rev 1&rsquo;s &ldquo;ambiguous listings only&rdquo; is withdrawn.</td></tr>
+        <tr><td><b>E3</b></td><td>Order</td><td><b>A</b> steps 1&ndash;4 now (today and tomorrow, so Li&egrave;ge&rsquo;s read proves the reuse before 14 Nov), then G65. <b>B</b> G65 first.</td><td><b>A.</b></td></tr>
+        <tr><td><b>E4</b></td><td>Li&egrave;ge finds no result of ours</td><td><b>A</b> known with the reason, nothing promoted. <b>B</b> promote anyway (re-stores the same brackets).</td><td><b>A.</b></td></tr>
+        <tr><td><b>E5</b></td><td>G70 and the two scheduled checks</td><td><b>A</b> drop G70, delete both checks. <b>B</b> keep either.</td><td><b>A.</b></td></tr>
+        <tr><td><b>E6</b></td><td>Section 06</td><td><b>A</b> as proposed (one rescue session; the rest yours or dropped). <b>B</b> name any line to keep on my side.</td><td><b>A.</b></td></tr>
+      </tbody>
+    </table>
+    <p>Sign with the letters, for example &ldquo;E1, E3&ndash;E6 A&rdquo;. Then steps 1 and 2 start; the G65 code starts after the two reads of section 04.</p>
+  </section>
+
+  <p class="foot">closing plan · rev 3 (PEW1f-2026-2027 closed without results, G69 dropped) · 4 Nov 2026 · read from CERT, PROD, the Actions logs and the stored FTL pages in python/tests/fixtures/ftl; nothing sent to FTL for this page</p>
+</div>
