@@ -125,6 +125,7 @@
   <h1>When the daily close needs to look at past seasons</h1>
   <p class="dek">Every morning, the daily close now checks past seasons for open events. It can only find one on three occasions: when a season ends, when we re-ingest an old event ourselves, or when someone changes a status by hand. Checking every day is waste. This page proposes checking only when something can be there. It also fixes a fault I released today: the database test fails the day after every season ends.</p>
   <div class="meta">
+    <span class="pill good"><span class="dot"></span>SIGNED 4 Nov 2026: &ldquo;All A&rdquo; (S1 A, S2 A, S3 A); built on branch claude/past-season-close-at-season-end</span>
     <span class="pill good"><span class="dot"></span>0 open events in past seasons on CERT and PROD (read 22:40 UTC)</span>
     <span class="pill warn"><span class="dot"></span>the past-season pass runs every morning: 2 database reads, nothing sent to FTL, no message when it finds nothing</span>
     <span class="pill danger"><span class="dot"></span>my fault: pgTAP 128 fails CI and preflight the day after a season ends, until PROD&rsquo;s seed is exported again</span>
@@ -170,6 +171,18 @@
       </tbody>
     </table>
     <p>pgTAP 128 stays as it is. For case 3, it is the backstop: an open past-season event in PROD&rsquo;s exported seed fails CI at the next push. Built test-first, in one change on a new branch, after your sign-off. It needs no FTL request.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · As built · 4 Nov 2026, night · branch claude/past-season-close-at-season-end</p>
+    <h2>Built test-first, in one change</h2>
+    <ul>
+      <li><b>Red first, 16 tests, then green:</b> CLOSE.WIN.01&ndash;02, CLOSE.SEED.01&ndash;02 and LIFE.SEASON.01&ndash;07 (<code>python/tests/test_past_season_close_window.py</code>); CLOSE.PAST.01&ndash;05 rewritten for the new signature and the window. Whole suite: 2,923 passed.</li>
+      <li><b>S1:</b> <code>lifecycle.past_season_window</code> (three days); <code>close_past_season_events</code> asks each environment for the open events of seasons that ended one to three days ago (<code>SqlEnv.past_season_open</code>, <code>s.dt_end BETWEEN &hellip;</code>). <b>One deviation from section 04&rsquo;s wording:</b> it said the close would not query past seasons at all on other days. It still sends that one bounded query per environment each morning; on those mornings the query finds nothing and reads no event of an older season. Knowing whether a season has just ended takes a read, and this is the cheapest one.</li>
+      <li><b>S2:</b> <code>lifecycle.event_status</code> takes the season&rsquo;s end date; <code>run_verdict</code> and <code>season_end</code> read it through <code>find_season_by_id</code> (the plan reads it from its own connector: the recorder passes only its own reads through). The warning goes into the run record (<code>lifecycle_warnings</code>), the CERT apply&rsquo;s log and one Telegram warning. The PROD promote computes the same status with the same rule.</li>
+      <li><b>S3:</b> the close writes <code>prod_completed</code>; <code>CloseFailed</code> carries what was written, so a red run still exports. <code>event-close.yml</code> has a <code>seed</code> job modelled on <code>promote.yml</code>&rsquo;s. Found on the way: importing <code>ingest_cli</code> for its output helper would have needed the Supabase client in the close job (WFDEPS.01 caught it), so <code>close.py</code> has its own five-line copy, as <code>results_sync.py</code> does.</li>
+      <li><b>Documentation:</b> ADR-119 amended (twin rendered); the handbook&rsquo;s lifecycle, workflow-catalog, runbook and codebase-map pages; the RTM&rsquo;s new section; Appendix C. pgTAP unchanged (1,663).</li>
+    </ul>
   </section>
 
   <p class="foot">plan · past-season close timing · 4 Nov 2026 · read from <code>close.py</code>, <code>lifecycle.py</code>, migration 20261031000004, <code>supabase/config.toml</code>, CERT and PROD; nothing sent to FTL</p>

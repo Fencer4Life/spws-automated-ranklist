@@ -138,6 +138,9 @@ class ListingLog:
         self.refusal: dict | None = None
         self.pzsz_event: int | None = None
         self.sources: list[dict] | None = None
+        # S2 A: why an event of an ended season would have stayed open; it is
+        # COMPLETED. Not hashed, and compared by nothing.
+        self.lifecycle_warnings: list[str] = []
         # Each listing's entry, by the record it was read from, so the commit
         # adds its outcome to the entry the read made (ADR-119 §3, B9).
         self._entries: dict[int, dict] = {}
@@ -244,6 +247,8 @@ class ListingLog:
             out["sources"] = self.sources
         if self.refusal:
             out["refusal"] = self.refusal
+        if self.lifecycle_warnings:
+            out["lifecycle_warnings"] = list(self.lifecycle_warnings)
         return out
 
 

@@ -938,11 +938,11 @@ Signed "All A" on `doc/plans/closing-plan-end-all-work-rev4-2026-11-04.html` (re
 
 | ID | Requirement | Kind | Test | Status |
 |----|-------------|------|------|--------|
-| CLOSE.PAST.01 | Each morning, before closing anything, the daily close completes every open event of a past season, on CERT then PROD, through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, and says in the log and on Telegram "Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED." | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
+| CLOSE.PAST.01 (rewritten) | On the three mornings after a season ends (CLOSE.WIN), before closing anything, the daily close completes every open event of that season, on CERT then PROD, through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, and says in the log and on Telegram "Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED." | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
 | CLOSE.PAST.02 | A dry run computes the steps and writes and sends nothing. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
 | CLOSE.PAST.03 | With no open event of a past season, nothing is said or sent. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
 | CLOSE.PAST.04 | A failed write is reported ("Daily close failed: <code> on <env>: …"), on Telegram and on stderr; the other events are still closed; the run ends red. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
-| CLOSE.PAST.05 | The selection reads every event, of every organizer and code, of a season whose end date has passed, whose status is not COMPLETED, SCORED or CANCELLED; it reads no `bool_active` and no route filter. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
+| CLOSE.PAST.05 (rewritten) | The selection reads every event, of every organizer and code, of a season whose end date lies in the window it is given (`s.dt_end BETWEEN …`), whose status is not COMPLETED, SCORED or CANCELLED; it reads no `bool_active` and no route filter. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (main e0eb95a5, 2026-11-04) |
 | EVENT.PAST (128.1–128.2) | No event of a past season is open in the PROD seed LOCAL is built from, and the check counts a planted one. | pgTAP | `supabase/tests/128_no_open_event_outside_active_season.sql` | Covered (main e0eb95a5, 2026-11-04) |
 | FTL.DE.01–03 | An FTL results page lists a direct-elimination round iff it links a `/tableaus/scores/…` round; a page with pool rounds only, or no rounds, lists none; the word "tableau" alone is not a round. | pytest | `python/tests/test_pool_only_by_content.py` | Covered (main e0eb95a5, 2026-11-04) |
 | FTL.DE.04 | Every stored real results page in the fixtures lists a direct-elimination round. | pytest | `python/tests/test_pool_only_by_content.py` | Covered (main e0eb95a5, 2026-11-04) |
@@ -956,6 +956,24 @@ Signed "All A" on `doc/plans/closing-plan-end-all-work-rev4-2026-11-04.html` (re
 | FTL.BUDGET.10 | The legacy `review_cli.Fetcher`, built without a client, reads an FTL URL through the gated client: counted, with the stored session, under the client's name. | pytest | `python/tests/test_ftl_auth.py` | Covered (main e0eb95a5, 2026-11-04) |
 | FTL.WF.02 | Every workflow step that holds the FTL login passes `FTL_READS` from the repository variable. | pytest | `python/tests/test_ftl_ledger.py` | Covered (main e0eb95a5, 2026-11-04) |
 | SRC.REGR.14 | `PEW1f-2026-2027`, completed without results on the user's decision of 4 November 2026, is known to the re-read with that reason; its "no results link" is not a refusal to act on. | pytest | `python/tests/test_source_regression.py` | Covered (main e0eb95a5, 2026-11-04) |
+
+## When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)
+
+Signed "All A" on `doc/plans/past-season-close-when-2026-11-04.html` (S1–S3); ADR-119 amended 2026-11-04.
+
+| ID | Requirement | Kind | Test | Status |
+|----|-------------|------|------|--------|
+| CLOSE.WIN.01 | The past-season window is the three days before today (`lifecycle.past_season_window`): a season ending 15 Jul 2027 is looked at on 16, 17 and 18 Jul only. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| CLOSE.WIN.02 | The pass completes the open events of a season that ended in the window, CERT then PROD; it does not look at an older season, and outside the window nothing is asked for, written or said. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| CLOSE.SEED.01 | The close writes the step output `prod_completed=true` only when the pass wrote PROD and was not a dry run, also when the pass then failed (the run ends red). | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| CLOSE.SEED.02 | `event-close.yml`'s `seed` job runs when `prod_completed` is true (even after a failed close), exports PROD's seed, commits it with `[skip ci]` and a retried push; only that job may write to the repository. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.01 | A run of an event whose season has ended leaves it COMPLETED; what would have kept it IN_PROGRESS becomes one warning naming the season's end date. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.02 | On the season's last day, in a season not ended, or with no season known, the rule is unchanged. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.03 | A run that commits nothing moves no status in an ended season either (ADR-037). | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.04 | The season's end date is read through the connector's `find_season_by_id`; unknown when the connector or the season cannot say. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.05 | The live ingest's rule (`lifecycle.apply`) completes such an event and logs the warning. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.06 | The run record keeps the warnings (`lifecycle_warnings`) only when there are any. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
+| LIFE.SEASON.07 | A recorded CERT run of such an event finishes COMPLETED, with the warning in its run record and in one Telegram warning. | pytest | `python/tests/test_past_season_close_window.py` | Landed LOCAL (2026-11-04) |
 
 ## Cross-references
 

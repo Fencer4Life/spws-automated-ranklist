@@ -10,6 +10,12 @@ which is why the end date matters.
 
 The same rule runs on CERT (the ingestion), in promote's plan (the status its
 apply sets on PROD) and in the daily close (`promotion/close.py`).
+
+An event whose season has ended is never left open by a run (the user's rule of
+4 Nov 2026, S2 A on doc/plans/past-season-close-when-2026-11-04.html): what
+would have kept it IN_PROGRESS becomes a warning, and it is COMPLETED. The daily
+close looks for open events of a past season only on the three mornings after
+a season ends (S1 A, `past_season_window`).
 """
 
 from __future__ import annotations
@@ -29,6 +35,8 @@ NOT_FINAL = "not final (its schedule row does not say Finished)"
 SEEN_ONCE = "not final (no finished signal; its content is not yet 60 minutes old)"
 IN_PROGRESS = "IN_PROGRESS"
 COMPLETED = "COMPLETED"
+# S1 A: the daily close looks at a season on the three mornings after its end date.
+PAST_SEASON_DAYS = 3
 
 
 def is_not_final(reason: object) -> bool:
@@ -44,6 +52,12 @@ def not_final_at(engine: str, state: object) -> str:
 def warsaw_today(now: dt.datetime | None = None) -> dt.date:
     """Today's date in Warsaw."""
     return (now or dt.datetime.now(dt.UTC)).astimezone(WARSAW).date()
+
+
+def past_season_window(today: dt.date) -> tuple[dt.date, dt.date]:
+    """The season end dates the daily close looks at today: one to three days
+    ago (S1 A), so a season is looked at on the three mornings after it ends."""
+    return today - dt.timedelta(days=PAST_SEASON_DAYS), today - dt.timedelta(days=1)
 
 
 def split_final(kept: Iterable[Mapping[str, Any]]) -> tuple[list[dict], list[dict]]:
@@ -72,6 +86,8 @@ class Verdict:
     # G44 A (3): listings still not final at the source after the day after the
     # end date; the event completes without them, and they are named.
     left_out: list[str] = field(default_factory=list)
+    # S2 A: what would have kept an event of an ended season open; it completes.
+    warnings: list[str] = field(default_factory=list)
 
 
 def holds_open(dt_end: dt.date, today: dt.date) -> bool:
@@ -81,8 +97,16 @@ def holds_open(dt_end: dt.date, today: dt.date) -> bool:
     return today <= dt_end + dt.timedelta(days=1)
 
 
-def event_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date) -> Verdict:
-    """The rule over what a run read (`ListingLog.listings()`)."""
+def event_status(
+    listings: Mapping[str, Any],
+    *,
+    dt_end: dt.date,
+    today: dt.date,
+    season_end: dt.date | None = None,
+) -> Verdict:
+    """The rule over what a run read (`ListingLog.listings()`). `season_end` is
+    the end date of the event's season, when known: once it has passed, the
+    event is COMPLETED and the reasons become one warning (S2 A)."""
     schedule = listings.get("schedule") or {}
     rounds = listings.get("rounds") or []
     reasons: list[str] = []
@@ -114,14 +138,55 @@ def event_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date
         )
 
     committed = any(r.get("status") == "committed" for r in rounds)
+    if reasons and season_end is not None and today > season_end:
+        warning = (
+            f"its season ended {season_end.isoformat()}, so it is COMPLETED although: "
+            + "; ".join(reasons)
+        )
+        return Verdict(COMPLETED, committed, [], left_out, [warning])
     return Verdict(COMPLETED if not reasons else IN_PROGRESS, committed, reasons, left_out)
 
 
-def target_status(listings: Mapping[str, Any], *, dt_end: dt.date, today: dt.date) -> str | None:
+def target_status(
+    listings: Mapping[str, Any],
+    *,
+    dt_end: dt.date,
+    today: dt.date,
+    season_end: dt.date | None = None,
+) -> str | None:
     """The status a run leaves the event in, or None when it committed nothing
     (an event without a result is not moved to IN_PROGRESS, ADR-037)."""
-    v = event_status(listings, dt_end=dt_end, today=today)
+    v = event_status(listings, dt_end=dt_end, today=today, season_end=season_end)
     return v.status if v.committed else None
+
+
+def season_end(db: Any, event: Mapping[str, Any]) -> dt.date | None:
+    """The end date of the event's season, or None when the database cannot say
+    (a connector without `find_season_by_id`, or no season)."""
+    find = getattr(db, "find_season_by_id", None)
+    id_season = event.get("id_season")
+    if find is None or id_season is None:
+        return None
+    season = find(id_season)
+    if not isinstance(season, Mapping):
+        return None
+    end = season.get("dt_end")
+    if isinstance(end, dt.date):
+        return end
+    return as_date(end) if isinstance(end, str) and end else None
+
+
+def run_verdict(
+    db: Any, event: Mapping[str, Any], listings: Mapping[str, Any], today: dt.date
+) -> Verdict | None:
+    """The rule for one run of `event`, with its season's end date read from
+    `db`; None when the event has no date."""
+    end = event.get("dt_end") or event.get("dt_start")
+    if not end:
+        return None
+    return event_status(
+        listings, dt_end=as_date(end), today=today, season_end=season_end(db, event)
+    )
 
 
 def steps(current: str | None, target: str) -> list[str]:
@@ -146,11 +211,8 @@ def apply(
 ) -> str | None:
     """Set the event's status by the rule through `db.set_event_status`.
     Returns the status written, or None when nothing changed."""
-    end = event.get("dt_end") or event.get("dt_start")
-    if not end:
-        return None
-    verdict = event_status(listings, dt_end=as_date(end), today=today)
-    if not verdict.committed:
+    verdict = run_verdict(db, event, listings, today)
+    if verdict is None or not verdict.committed:
         return None
     current = event.get("enum_status")
     todo = steps(current, verdict.status)
@@ -158,7 +220,7 @@ def apply(
         db.set_event_status(event["id_event"], status)
     if todo:
         why = (
-            "; ".join(verdict.reasons)
+            "; ".join(verdict.reasons or verdict.warnings)
             or "every listing is final and read, and the end date has passed"
         )
         print(f"lifecycle: {event.get('txt_code')} {current} -> {verdict.status} ({why})")

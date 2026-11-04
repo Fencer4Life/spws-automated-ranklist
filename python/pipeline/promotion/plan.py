@@ -438,15 +438,13 @@ def plan_event(
         finality=TakenByRun(taken or []) if international else None,
         read=read,
     )
+    # The season's end date is read from `prod` itself: the recorder passes only
+    # its own reads through. An event whose season ended completes (S2 A).
+    verdict = lifecycle.run_verdict(prod, event, log.listings(), lifecycle.warsaw_today())
+    status = verdict.status if verdict is not None and verdict.committed else None
+    if status is not None and verdict is not None and verdict.warnings:
+        log.lifecycle_warnings = list(verdict.warnings)
     listings = log.listings()
-    end = event.get("dt_end") or event.get("dt_start")
-    status = (
-        lifecycle.target_status(
-            listings, dt_end=lifecycle.as_date(end), today=lifecycle.warsaw_today()
-        )
-        if end
-        else None
-    )
     return Plan(
         event_code, url_event, recorder.ops, recorder.created, listings, status, list(contexts)
     )

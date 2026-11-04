@@ -299,6 +299,13 @@ def ingest_recorded(
         f"{result.get('deleted') or 0} tournament(s) the plan does not name deleted; "
         f"{target} holds {str(reached)[:12]}, status {plan.status}"
     )
+    # S2 A: an event of an ended season was completed although something would
+    # have kept it open; the warning names listings and dates, never a fencer.
+    for warning in plan.listings.get("lifecycle_warnings") or []:
+        text = f"{event_code} on {target}: {warning}."
+        print(text)
+        if notifier is not None:
+            notifier.warning(text)
     held = db.event_result_state(event_code).get("fingerprint")
     if held != reached:
         text = (
