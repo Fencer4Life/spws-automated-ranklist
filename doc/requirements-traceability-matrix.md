@@ -896,7 +896,7 @@ Acceptance IDs for the sixth amendment of 2026-11-02 to [ADR-119](adr/119-partia
 
 | Acceptance IDs | Contract | Layer | File | Status |
 |----------------|----------|-------|------|--------|
-| PROMO.LIFE.18 | Each morning, before closing anything, the daily close names every event of the route whose season has ended and which is still IN_PROGRESS, with the environments it is in, in the log and on Telegram; a dry run sends nothing; nothing is written. | pytest | `python/tests/test_promotion_lifecycle.py` | Covered (released 2026-11-03, main a6856dea) |
+| PROMO.LIFE.18 | Each morning, before closing anything, the daily close names every event of the route whose season has ended and which is still IN_PROGRESS, with the environments it is in, in the log and on Telegram; a dry run sends nothing; nothing is written. | pytest | `python/tests/test_promotion_lifecycle.py` | Superseded 2026-11-04 by CLOSE.PAST.01–05 (the close completes such events; released 2026-11-03, main a6856dea, as named them) |
 | FOURFENCE.BRONZE.03 | When the pools mix the categories, the second bronze is the unplaced row whose surname begins with a semi-final loser's, whatever its pool rank (Napoli 2026, V4 women's épée: 3rd beside the other bronze, N 10). | pytest | `python/tests/test_fourfence_classification.py` | Covered (released 2026-11-03, main a6856dea) |
 | FOURFENCE.BRONZE.04–05 | Two unplaced namesakes of a semi-final loser: the one whose pool rank is the seed is 3rd; when neither is, both stay out and N still counts the bronze. | pytest | `python/tests/test_fourfence_classification.py` | Covered (released 2026-11-03, main a6856dea) |
 | FTL.REFUSED.01–04 | A sign-in FTL refuses is tried once per process: later FTL reads, a forced login included, fail with the same message and no request; the next process tries once; a login page that fails to load is not a refusal (G71 A). | pytest | `python/tests/test_ftl_auth.py` | Covered (released 2026-11-03, main a6856dea) |
@@ -931,6 +931,31 @@ Acceptance IDs for [ADR-120](adr/120-ftl-read-cap-and-reused-session.md) (signed
 | SYNC.CYCLE.14 | When the compare read no listing, the outcome takes the new listings from the two runs. | pytest | `python/tests/test_results_sync.py` | **Released** (2026-11-04, main 7f35731a, CERT + PROD) |
 | SYNC.CYCLE.15–16 | A cycle stopped by FTL's daily cap records `budget`, says so in one ⏸ line and pauses nothing; from 80% of the cap a sent line carries the day's count. | pytest | `python/tests/test_results_sync.py` | **Released** (2026-11-04, main 7f35731a, CERT + PROD) |
 | SRC.REGR.10–13 | The weekly re-read leaves out a completed FTL-only event and counts it, and still reads an open one; an FTL-only event is dry-read only the day before it starts; one event is re-read by hand with `--code` (the workflow's `event_code`), its code checked first. | pytest | `python/tests/test_source_regression.py` | **Released** (2026-11-04, main 7f35731a, CERT + PROD) |
+
+## The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)
+
+Signed "All A" on `doc/plans/closing-plan-end-all-work-rev4-2026-11-04.html` (rev 5); ADR-119, ADR-105, ADR-076 and ADR-120 amended 2026-11-04.
+
+| ID | Requirement | Kind | Test | Status |
+|----|-------------|------|------|--------|
+| CLOSE.PAST.01 | Each morning, before closing anything, the daily close completes every open event of a past season, on CERT then PROD, through the validator's steps (PLANNED → IN_PROGRESS → COMPLETED), touching no result, and says in the log and on Telegram "Daily close: <code> of a past season was <status> on CERT and PROD: COMPLETED." | pytest | `python/tests/test_promotion_lifecycle.py` | Landed LOCAL (2026-11-04, test-first) |
+| CLOSE.PAST.02 | A dry run computes the steps and writes and sends nothing. | pytest | `python/tests/test_promotion_lifecycle.py` | Landed LOCAL (2026-11-04) |
+| CLOSE.PAST.03 | With no open event of a past season, nothing is said or sent. | pytest | `python/tests/test_promotion_lifecycle.py` | Landed LOCAL (2026-11-04) |
+| CLOSE.PAST.04 | A failed write is reported ("Daily close failed: <code> on <env>: …"), on Telegram and on stderr; the other events are still closed; the run ends red. | pytest | `python/tests/test_promotion_lifecycle.py` | Landed LOCAL (2026-11-04) |
+| CLOSE.PAST.05 | The selection reads every event, of every organizer and code, of a season whose end date has passed, whose status is not COMPLETED, SCORED or CANCELLED; it reads no `bool_active` and no route filter. | pytest | `python/tests/test_promotion_lifecycle.py` | Landed LOCAL (2026-11-04) |
+| EVENT.PAST (128.1–128.2) | No event of a past season is open in the PROD seed LOCAL is built from, and the check counts a planted one. | pgTAP | `supabase/tests/128_no_open_event_outside_active_season.sql` | Landed LOCAL (2026-11-04) |
+| FTL.DE.01–03 | An FTL results page lists a direct-elimination round iff it links a `/tableaus/scores/…` round; a page with pool rounds only, or no rounds, lists none; the word "tableau" alone is not a round. | pytest | `python/tests/test_pool_only_by_content.py` | Landed LOCAL (2026-11-04) |
+| FTL.DE.04 | Every stored real results page in the fixtures lists a direct-elimination round. | pytest | `python/tests/test_pool_only_by_content.py` | Landed LOCAL (2026-11-04) |
+| FTL.DE.05 | The domestic route's page check (`ingest_cli._ftl_has_direct_elimination`) applies the same rule: the round links, not the word. | pytest | `python/tests/test_pool_only_by_content.py` | Landed LOCAL (2026-11-04) |
+| INTL.SCHED.03 (rewritten) | A listing is never dropped as a pool round by its name; the schedule reader keeps it like any other, and its results page decides. | pytest | `python/tests/test_international_intake.py` | Landed LOCAL (2026-11-04) |
+| INTL.SCHED.04 (rewritten), PROMO.LIFE.03 (rewritten) | A bracket listed on several days behind one link is one bracket, final when the row of its last listed day says Finished, whatever the earlier rows say; its day is that last day. | pytest | `python/tests/test_international_intake.py`, `python/tests/test_promotion_lifecycle.py` | Landed LOCAL (2026-11-04) |
+| INTL.SCHED.06 | A final FTL listing whose results page lists no direct-elimination round is skipped as "pool round (no direct elimination round on its results page)", its data never fetched, and the skip never holds the event open; the name plays no part. | pytest | `python/tests/test_pool_only_by_content.py` | Landed LOCAL (2026-11-04) |
+| INTL.SCHED.07 | The page is read for final listings only, before their data; an unfinished listing stays "not final" without a request. | pytest | `python/tests/test_pool_only_by_content.py` | Landed LOCAL (2026-11-04) |
+| FTL.OFF.01–02 | With the repository variable `FTL_READS=off` every FTL read fails before anything is drawn or sent, with one line; any other value reads as before. | pytest | `python/tests/test_ftl_auth.py` | Landed LOCAL (2026-11-04) |
+| FTL.403.01 | A 403 from FTL is printed with the status, the URL and the body's first 300 characters, never the cookie; the caller's error is unchanged. | pytest | `python/tests/test_ftl_auth.py` | Landed LOCAL (2026-11-04) |
+| FTL.BUDGET.10 | The legacy `review_cli.Fetcher`, built without a client, reads an FTL URL through the gated client: counted, with the stored session, under the client's name. | pytest | `python/tests/test_ftl_auth.py` | Landed LOCAL (2026-11-04) |
+| FTL.WF.02 | Every workflow step that holds the FTL login passes `FTL_READS` from the repository variable. | pytest | `python/tests/test_ftl_ledger.py` | Landed LOCAL (2026-11-04) |
+| SRC.REGR.14 | `PEW1f-2026-2027`, completed without results on the user's decision of 4 November 2026, is known to the re-read with that reason; its "no results link" is not a refusal to act on. | pytest | `python/tests/test_source_regression.py` | Landed LOCAL (2026-11-04) |
 
 ## Cross-references
 

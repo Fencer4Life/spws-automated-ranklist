@@ -236,7 +236,9 @@ class TestIngestEventFromUrl:
                     return _Resp(
                         js=[{"id": "f1", "name": "KOWALSKI Jan", "place": "1", "country": "POL"}]
                     )
-                return _Resp(text="<li>Tableau</li>")  # results page → has DE (not pools-only)
+                return _Resp(
+                    text='<a href="/tableaus/scores/X/Y">Tableau</a>'
+                )  # results page → has DE (not pools-only)
 
         seen = []
 
@@ -336,7 +338,12 @@ class TestFtlDirectElimination:
                 r.raise_for_status = lambda: None
                 return r
 
-        assert ingest_cli._ftl_has_direct_elimination(_Client("<li>Tableau</li>"), "U1") is True
+        assert (
+            ingest_cli._ftl_has_direct_elimination(
+                _Client('<a href="/tableaus/scores/X/Y">Tableau</a>'), "U1"
+            )
+            is True
+        )
         assert ingest_cli._ftl_has_direct_elimination(_Client("<li>Pools only</li>"), "U2") is False
 
 

@@ -507,8 +507,12 @@ def test_FINAL_07_several_sources_rehash_in_the_daily_close_as_the_run_hashed_th
     data = {"A1": [], "B1": []}
     client = MagicMock()
     client.__enter__.return_value = client
+    # A schedule answers with its URL (the key into `listed`); a listing's results
+    # page lists a DE round (G65 R2); the data pages answer with their rows.
     client.get.side_effect = lambda url: MagicMock(
-        text=url, json=lambda: data[url.rsplit("/", 1)[-1]], raise_for_status=lambda: None
+        text=url if "eventSchedule" in url else '<a href="/tableaus/scores/X/Y">Table</a>',
+        json=lambda: data[url.rsplit("/", 1)[-1]],
+        raise_for_status=lambda: None,
     )
     with (
         patch("python.scrapers.ftl_auth.get_authed_ftl_client", return_value=client),

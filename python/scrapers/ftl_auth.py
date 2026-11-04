@@ -318,6 +318,10 @@ def get_authed_ftl_client(
     """
     global _cached_session, _refused, _last_sent
 
+    if os.environ.get("FTL_READS", "").strip().lower() == "off":
+        # Closing plan rev 5, K2: one repository variable keeps the account idle
+        # while FTL deliberates; nothing is drawn, nothing is sent.
+        raise FtlAuthError("FTL reads are off (FTL_READS=off): nothing was sent")
     if _refused is not None:
         raise FtlAuthError(_refused)
     try:
@@ -354,6 +358,12 @@ def get_authed_ftl_client(
 
     def after_response(response: httpx.Response) -> None:
         global _cached_session
+        if response.status_code == 403:
+            # 4 Nov 2026: FTL answered 403 to a schedule and nothing kept the
+            # body. The status, the URL and the body's first 300 characters go
+            # to the run's log; never the cookie. The caller's error is unchanged.
+            response.read()
+            print(f"FTL answered 403 to {response.request.url}: {response.text[:300]}")
         if _bounced_to_login(response):
             if store is not None and in_use:
                 store.drop(in_use[0])

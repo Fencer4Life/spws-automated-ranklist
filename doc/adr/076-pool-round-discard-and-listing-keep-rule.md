@@ -105,3 +105,9 @@ pytest: `_ftl_has_direct_elimination` (N13.1), accurate skip reasons (N13.1), `c
 (N13.5). pgTAP 45.1–45.6 (N13.4): `tbl_event` JSONB columns + `fn_set_event_source_override` + `vw_calendar`
 exposure. vitest: accordion source rows + skip/process toggle (N13.6). Dry-run validated live on
 PPW3 (drop + flag) and PPW4 + PPW5 (clean, no intervention).
+
+## Amendment (2026-11-04, closing plan rev 5, G65 R2) — Rule 1 reads the page's round links
+
+**Status:** Signed by the user in chat on 2026-11-04 ("All A" on `doc/plans/closing-plan-end-all-work-rev4-2026-11-04.html`, rev 5); built test-first.
+
+Rule 1's check, `ingest_cli._ftl_has_direct_elimination`, searched the results page for the word "tableau". It now calls `python/scrapers/ftl.py` `has_direct_elimination`, which reads the page's round links: a `/tableaus/scores/…` round is a direct elimination; a page with pool rounds only is a pools-only qualifier, whatever the listing is called; the word alone, in a note or a title, is not a round (FTL.DE.03, FTL.DE.05). The same function is the international route's rule ([ADR-105](105-international-results-keep-source-bracket.md), amended the same day), so both routes recognise a pool round by content and never by name. Every stored real results page holds one such link (FTL.DE.04). Nothing else of this ADR changes.

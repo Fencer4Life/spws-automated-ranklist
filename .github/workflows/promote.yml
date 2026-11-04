@@ -148,6 +148,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_READS: ${{ vars.FTL_READS }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

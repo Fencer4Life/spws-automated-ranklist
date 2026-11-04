@@ -46,11 +46,14 @@ KNOWN = "known"
 # is reported as refused (G72 A).
 _COMBINED = "a combined bracket (no single category)"  # REFUSAL_MEANING["combined"]
 _G51 = (_COMBINED, "an FTL combined bracket the reader refuses (G51 A)")
+_NO_LINK = "no results link"  # REFUSAL_MEANING["no_link"]
 KNOWN_REFUSALS: dict[str, tuple[str, str]] = {
     "PEW4ef-2024-2025": _G51,
     "PEW6efs-2025-2026": _G51,
     "PEW62efs-2025-2026": _G51,
     "PEW9efs-2025-2026": _G51,
+    # Completed without results on the user's order (closing plan rev 3, 4 Nov 2026).
+    "PEW1f-2026-2027": (_NO_LINK, "not ingested (the user's decision, 4 Nov 2026)"),
 }
 KNOWN_DIFFERENCES = {
     "PEW7es-2024-2025": "a men's épée V2 result waits for G53's re-ingest, after G56",

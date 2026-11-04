@@ -183,7 +183,10 @@ def test_SRC_REGR_05_a_known_refusal_names_the_readers_own_words():
     """The cause a known refusal stands for is the reader's own meaning of it."""
     from python.pipeline.core.contract import REFUSAL_MEANING
 
-    assert {cause for cause, _why in sr.KNOWN_REFUSALS.values()} == {REFUSAL_MEANING["combined"]}
+    assert {cause for cause, _why in sr.KNOWN_REFUSALS.values()} == {
+        REFUSAL_MEANING["combined"],
+        REFUSAL_MEANING["no_link"],
+    }
 
 
 def test_SRC_REGR_05_a_known_case_that_reads_equal_says_so():
@@ -464,3 +467,12 @@ def test_SRC_REGR_07_the_log_lines_name_no_one():
     text = "\n".join(sr.log_lines(check))
     assert "PEW1ef-2025-2026: different" in text
     assert "KOWALSKI" not in text and "(101" not in text
+
+
+def test_SRC_REGR_14_an_event_the_user_chose_not_to_ingest_is_known():
+    """PEW1f-2026-2027 is completed without results (closing plan rev 3, the
+    user's decision of 4 Nov 2026): its weekly "no results link" is known, with
+    that reason, not a refusal to act on."""
+    known = sr.refusal("PEW1f-2026-2027", "refused before anything was written: no results link")
+    assert known.status == sr.KNOWN
+    assert "not ingested (the user's decision, 4 Nov 2026)" in (known.known or "")

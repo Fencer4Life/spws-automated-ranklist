@@ -190,7 +190,9 @@ class TestFromUrlCarriesResultsUrl:
                     return _Resp(
                         js=[{"id": "f1", "name": "KOWALSKI Jan", "place": "1", "country": "POL"}]
                     )
-                return _Resp(text="<li>Tableau</li>")  # results page → has DE
+                return _Resp(
+                    text='<a href="/tableaus/scores/X/Y">Tableau</a>'
+                )  # results page → has DE
 
         seen = []
 

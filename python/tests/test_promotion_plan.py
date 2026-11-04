@@ -476,7 +476,8 @@ class _Ftl:
                     for n, p in self.listings[uuid][1]
                 ]
             )
-        return _Resp(text="<li>Tableau</li>")
+        # The listing's results page: a DE round, as its round links say (G65 R2).
+        return _Resp(text='<a href="/tableaus/scores/X/Y">Tableau</a>')
 
 
 def _drive(ftl: _Ftl, fn, *args, **kwargs):

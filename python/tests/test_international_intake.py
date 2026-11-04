@@ -533,11 +533,12 @@ class TestTeamBracketsAndDuplicateCodes:
         assert [e["name"] for e in kept] == ["V2 Szpada Mężczyzn", "V4 Szabla Kobiet"]
         assert [s["name"] for s in skipped] == ["Akademickie Mistrzostwa Warszawy"]
 
-    def test_a_pool_round_is_skipped_when_its_categories_have_brackets(self):
-        """INTL.SCHED.03 a joint pool round ("Szpada Kobiet V3, V4 - runda
-        grupowa") is not a result when the same weapon and gender have their
-        own category brackets on the schedule; those are the results. A pool
-        round with no category bracket beside it is kept."""
+    def test_a_pool_round_is_never_dropped_by_its_name(self):
+        """INTL.SCHED.03 (rewritten 4 Nov 2026, closing plan rev 5, G65 R2): a
+        listing named like a pool round ("Szpada Kobiet V3, V4 - runda grupowa")
+        is kept by the schedule reader like any other. Whether it is a pool
+        round is decided by the content of its results page (INTL.SCHED.06),
+        never by its name: the next organiser may name it anything."""
         from python.tools.scrape_ftl_event_urls import parse_event_schedule
 
         kept, skipped = parse_event_schedule(
@@ -550,16 +551,12 @@ class TestTeamBracketsAndDuplicateCodes:
             with_skips=True,
         )
         assert [e["name"] for e in kept] == [
+            "Szpada Kobiet V3, V4 - runda grupowa",
             "V3 Szpada Kobiet",
             "V4 Szpada Kobiet",
             "Floret Mężczyzn V3, V4 - runda grupowa",
         ]
-        assert [(s["name"], s["reason"]) for s in skipped] == [
-            (
-                "Szpada Kobiet V3, V4 - runda grupowa",
-                "pool round (its categories have their own brackets)",
-            )
-        ]
+        assert skipped == []
 
     def test_a_bracket_listed_for_two_days_is_one_bracket(self):
         """INTL.SCHED.04 FTL lists a two-day bracket twice, "(Day 1)" and
