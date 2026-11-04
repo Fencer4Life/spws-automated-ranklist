@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-11-04T21:02:56Z",
-    "last_sha": "eb08d28beed90ab6a11297b064d734e3061b6ac1",
+    "last_updated": "2026-11-04T21:44:00Z",
+    "last_sha": "525b152759f8ab770cfd781ffef42aedc04778e4",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -243,8 +243,8 @@
     "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2"
   },
   "prod": {
-    "last_updated": "2026-11-04T08:11:53Z",
-    "last_sha": "7f35731a3ad5d61e9d494489485c7ebeb1123c72",
+    "last_updated": "2026-11-04T21:46:21Z",
+    "last_sha": "525b152759f8ab770cfd781ffef42aedc04778e4",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
