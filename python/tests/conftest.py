@@ -34,10 +34,16 @@ def the_checkouts_token_stays_out_of_the_test(
 
 
 @pytest.fixture(autouse=True)
-def each_test_signs_in_to_ftl_afresh() -> None:
+def each_test_signs_in_to_ftl_afresh(monkeypatch: pytest.MonkeyPatch) -> None:
     """ADR-119 G71: a refused FTL sign-in is remembered for the rest of the
     process, so one test's refusal would answer the next test's sign-in. Each
-    test starts with no session and no refusal (FTL.REFUSED.*)."""
+    test starts with no session, no refusal and no ledger (FTL.REFUSED.*,
+    ADR-120), and with no pause between FTL requests (FTL.PACE.01 sets one).
+    Without a token in the environment, no test can build CERT's ledger and
+    reach the real CERT (the file reader already reads a .env that does not
+    exist); a test that needs a token sets its own."""
     from python.scrapers.ftl_auth import reset_session_cache
 
+    monkeypatch.setenv("FTL_PACE_SECONDS", "0")
+    monkeypatch.delenv("SUPABASE_ACCESS_TOKEN", raising=False)
     reset_session_cache()

@@ -27,6 +27,28 @@ values. So:
 
 There is nothing to build — the login tooling already exists. Just call it.
 
+## The daily cap — read this before ANY FTL read (ADR-120)
+
+FTL blocked the pipeline's account in the night of 1 to 2 November 2026 after
+one day of ~700 requests and 13 sign-ins, about half of them read-only
+re-reads run by hand during an investigation. Since then:
+
+- **Every request and sign-in draws from a daily cap** on CERT (120 requests,
+  2 sign-ins a Warsaw day, CI and LOCAL alike). Spent → `FtlBudgetSpent`,
+  nothing sent. The client needs `SUPABASE_ACCESS_TOKEN` (it is in `.env`) to
+  reach the cap; without it, "FTL is read only with a ledger", nothing sent.
+- **One session** is stored on CERT and reused by every run for its 10 days.
+  Don't force a login; don't loop sign-ins.
+- **Never re-read FTL to investigate.** Read CERT's run rows and staging
+  reports instead: they hold what FTL gave. A read on LOCAL is ONE event, only
+  when the user asks for it in so many words, and you report its cost
+  (`ftl_today_line()`, printed at the end of the run).
+- **One account.** Never rotate, pool or switch accounts when one is refused;
+  never present the client as a browser. It sends
+  `SPWS-ranklist/1.0 (…)` on every request (FTL's edge refuses `python-httpx`).
+- A completed FTL event is re-read only by hand: `source-regression.yml` with
+  `event_code`.
+
 ## Prerequisite: credentials in the environment
 
 The repo does **not** auto-load `.env` (no `python-dotenv`). Load it into the
@@ -52,10 +74,13 @@ with get_authed_ftl_client() as client:          # logs in once, caches the sess
 ```
 
 `get_authed_ftl_client(timeout=15.0, *, force_login=False)` is a context manager
-yielding an `httpx.Client` with the authed `connect.sid` cookie. It caches the
-cookie jar + expiry process-wide and reuses it (re-logging in only within 12 h of
-expiry). The client rewrites apex→www on every request and raises `FtlAuthError`
-if any resource fetch is bounced to the login page.
+yielding an `httpx.Client` with the authed `connect.sid` cookie. It uses the
+session this process holds, else the one stored on CERT, else signs in and
+stores the new one before any other request (re-logging in only within 12 h of
+expiry). Every request draws from the day's cap and is paced one second apart.
+The client rewrites apex→www on every request and raises `FtlAuthError` if any
+resource fetch is bounced to the login page (and drops the stored session).
+Tests install their own ledger with `use_stores(...)`.
 
 ## Higher-level helpers (prefer these when they fit)
 

@@ -4,19 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="068-ftl-www-host-and-session-cache.md">
-<meta name="adr-source-sha256" content="8e765e4abe3f5c3faf8123f600cd2fa5640b0247f0cc06bcf3331493271f25fc">
+<meta name="adr-source-sha256" content="1ae8cab54ab759ce17e39d9da1c08d5168431deb58072fa4b3e93ec5ee81e9c8">
 <title>ADR-068 · FTL www-host normalization + cached non-rolling session</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 068</p><h1>FTL <code>www</code>-host normalization + cached non-rolling session</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-31)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>068-ftl-www-host-and-session-cache.md</code></dd></div><div><dt>Length</dt><dd class="">76 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-31)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>068-ftl-www-host-and-session-cache.md</code></dd></div><div><dt>Length</dt><dd class="">86 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-05-31)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-11-04-by-adr-120-the-session-is-kept-across-runs">Amendment (2026-11-04, by ADR-120) — the session is kept across runs</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The &quot;Populate Tournament URLs&quot; workflow silently produced &quot;Discovered 0 /
 Updated 0&quot; for FTL events (e.g. <code>PPW4-2025-2026</code>) while reporting a GitHub
@@ -95,8 +95,17 @@ which did not catch the resource-fetch redirect case.</li>
 admin-managed); normalization happens only at fetch time, so no data
 migration is required.</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-04-by-adr-120-the-session-is-kept-across-runs">Amendment (2026-11-04, by ADR-120) — the session is kept across runs</h2>
+<p>The alternative deferred above, persisting the session across processes, is
+now the rule (<a href="120-ftl-read-cap-and-reused-session.html">ADR-120</a> §2): the
+cookie of a sign-in is stored on CERT right after it, and every later run, CI
+or LOCAL, reuses it for its fixed 10 days. The host normalization and the
+login-redirect guard stand; a bounce now also drops the stored session.
+Every request is drawn from a daily cap and carries the client's name
+(ADR-120 §1, §4).</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="067-structural-pool-only-skip-unified-xml-ingest.html">← ADR-067: Structural pool-only skip + unified XML ingest pipeline</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="069-participant-count-url-validator.html">→ ADR-069: Per-tournament participant-count URL validator (HALT gate)</a></nav>
-<footer class="foot">Generated from <code>068-ftl-www-host-and-session-cache.md</code> · source SHA-256 <code>8e765e4abe3f5c3faf8123f600cd2fa5640b0247f0cc06bcf3331493271f25fc</code></footer>
+<footer class="foot">Generated from <code>068-ftl-www-host-and-session-cache.md</code> · source SHA-256 <code>1ae8cab54ab759ce17e39d9da1c08d5168431deb58072fa4b3e93ec5ee81e9c8</code></footer>
 </div></body></html>

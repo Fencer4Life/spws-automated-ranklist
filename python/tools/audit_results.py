@@ -168,7 +168,11 @@ def scrape_url(url: str) -> list[dict]:
         if FTL_RESULTS_PREFIX in url and "/data/" not in url:
             uuid = url.split(FTL_RESULTS_PREFIX)[-1].split("?")[0].split("#")[0]
             data_url = f"{FTL_DATA_PREFIX}{uuid}"
-        resp = httpx.get(data_url, follow_redirects=True, timeout=15)
+        # ADR-120: FTL only through the gate (the day's cap, the session, the name).
+        from python.scrapers.ftl_auth import get_authed_ftl_client
+
+        with get_authed_ftl_client() as client:
+            resp = client.get(data_url)
         resp.raise_for_status()
         return parse_ftl_json(resp.json())
     elif platform == "engarde":

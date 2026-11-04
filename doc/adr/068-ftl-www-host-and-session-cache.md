@@ -74,3 +74,13 @@ Actions **success**. Investigation (2026-05-31) established:
 - The DB continues to store apex URLs (admin-entered, ADR — URLs are
   admin-managed); normalization happens only at fetch time, so no data
   migration is required.
+
+## Amendment (2026-11-04, by ADR-120) — the session is kept across runs
+
+The alternative deferred above, persisting the session across processes, is
+now the rule ([ADR-120](120-ftl-read-cap-and-reused-session.md) §2): the
+cookie of a sign-in is stored on CERT right after it, and every later run, CI
+or LOCAL, reuses it for its fixed 10 days. The host normalization and the
+login-redirect guard stand; a bounce now also drops the stored session.
+Every request is drawn from a daily cap and carries the client's name
+(ADR-120 §1, §4).

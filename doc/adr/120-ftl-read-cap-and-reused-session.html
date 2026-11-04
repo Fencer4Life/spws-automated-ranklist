@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="120-ftl-read-cap-and-reused-session.md">
+<meta name="adr-source-sha256" content="b60083666cd8767f8a7cc32ee934c5f2784cf403d7e7fb259b8c3e05df0c5cd0">
+<title>ADR-120 · FencingTimeLive Is Read Under a Daily Cap, With One Reused Session and a Name</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 120</p><h1>FencingTimeLive Is Read Under a Daily Cap, With One Reused Session and a Name</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed by the user in chat on 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>); implemented test-first on branch <code>claude/ftl-read-cap-and-reused-login</code>, not yet released</dd></div><div><dt>Date</dt><dd class="">2026-11-04</dd></div><div><dt>Source</dt><dd class=""><code>120-ftl-read-cap-and-reused-session.md</code></dd></div><div><dt>Length</dt><dd class="">77 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed by the user in chat on 2026-11-04, &quot;F4 - B, the rest as recommended&quot;, on <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>); implemented test-first on branch <code>claude/ftl-read-cap-and-reused-login</code>, not yet released
+<strong>Date:</strong> 2026-11-04
+<strong>Amends:</strong> <a href="068-ftl-www-host-and-session-cache.html">ADR-068</a> (its deferred alternative, the session kept across processes, is now the rule; every request carries a name), <a href="119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> (§4: an event read only from FTL is taken at four hours a day and compared by its schedule alone, and a new verdict <code>budget</code>; G42 A (2): an FTL event is dry-read only the day before it starts; G45 A: a completed FTL event is no longer re-read automatically, and one event is re-read by hand)
+<strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (the two new tables are deny-by-default, service role only), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7 (the close's schedule check, which the sync's FTL compare reuses), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the PROD seed export names its tables one by one and never these)
+<strong>Source:</strong> <code>doc/plans/ftl-daily-read-budget-2026-11-04.html</code>, <code>python/scrapers/ftl_auth.py</code>, <code>python/scrapers/ftl_ledger.py</code>, <code>python/pipeline/promotion/results_sync.py</code>, <code>python/pipeline/source_regression.py</code>, <code>supabase/migrations/20261104000001_ftl_read_ledger.sql</code>, <code>supabase/migrations/20261104000002_ftl_session.sql</code>, <code>supabase/migrations/20261104000003_results_sync_budget_verdict.sql</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-every-request-and-sign-in-is-drawn-from-the-day-s-cap-before-it-is-sent">1 · Every request and sign-in is drawn from the day&#x27;s cap before it is sent</a></li><li class="depth-3"><a href="#2-one-session-captured-at-the-sign-in-and-reused-for-its-life">2 · One session, captured at the sign-in and reused for its life</a></li><li class="depth-3"><a href="#3-ftl-is-read-when-it-can-have-changed-and-not-otherwise">3 · FTL is read when it can have changed, and not otherwise</a></li><li class="depth-3"><a href="#4-the-client-says-who-it-is">4 · The client says who it is</a></li><li class="depth-3"><a href="#5-what-a-day-costs">5 · What a day costs</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>FencingTimeLive (FTL) refused the pipeline account's sign-in from the night of 1 to 2 November 2026 (&quot;please contact customer support&quot;, <a href="119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> G63). The Actions logs and this machine's session records put the block between 22:08 UTC on 1 Nov, the last accepted sign-in, and 06:54 UTC on 2 Nov, the first refused one, with nothing of ours signing in between: FTL acted after the day, on the day's volume.</p>
+<p>That day the pipeline sent FTL about 700 requests and 13 sign-ins, from GitHub's runners and one developer machine, all under the HTTP client's default name <code>python-httpx</code>:</p>
+<ul>
+<li>two full source re-reads (ADR-119 G45), each reading every international event of the last 30 months whole, about 150 requests apiece, most of them events completed months before;</li>
+<li>8 to 10 read-only re-reads on LOCAL during an investigation, about 400 requests;</li>
+<li>the daily close and the results sync, a handful.</li>
+</ul>
+<p>Nothing counted these requests. Every process signed in afresh, because ADR-068 keeps the 10-day session inside one process only and deferred keeping it across runs. The hourly sync compared an FTL event in progress by reading every final listing every hour, 13 × (1 + L) requests a day for L listings, to learn that nothing had changed. After 2 Nov FTL's edge also answers 403 to any request named <code>python-httpx/…</code>; a request named for the association is answered.</p>
+<p>FTL's Terms of Use (10 March 2026) allow automated reading only under a written agreement; the user writes to FTL. Meanwhile the ranking needs FTL's results, and the user installed a new login on 4 Nov (one check, under the name below, signed in and read a schedule).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-every-request-and-sign-in-is-drawn-from-the-day-s-cap-before-it-is-sent">1 · Every request and sign-in is drawn from the day's cap before it is sent</h3>
+<p><code>python/scrapers/ftl_auth.py</code> is the one FTL client; every reader already opens it with <code>get_authed_ftl_client</code>. The client takes a ledger: before its first request it draws ten requests, and draws again when they are used; a sign-in is drawn on its own, after the requests, so a day with no request left spends no sign-in. A draw is granted up to the day's cap, <strong>120 requests and 2 sign-ins a Warsaw day</strong> (F1 A); a sign-in is granted whole or not at all. When the cap is spent the client raises <code>FtlBudgetSpent</code> (an <code>FtlAuthError</code>) before anything is sent. On close it gives back the requests it drew and did not use.</p>
+<p>The ledger is one CERT row per day, <code>tbl_ftl_read_ledger</code>, written through <code>fn_ftl_ledger_take</code> and <code>fn_ftl_ledger_give_back</code> with the Management API and the access token every FTL step already holds (<code>python/scrapers/ftl_ledger.py</code>). CI and LOCAL draw from the same row (F2 A), so the count is the account's. <strong>No ledger, no read:</strong> a process that cannot build one, without the access token, reads no FTL at all. Every workflow step that holds the FTL login holds the token (FTL.WF.01); <code>phase5-event-runner</code>, <code>populate-urls</code> and <code>scrape-tournament</code> gained it. The audit tool's FTL branch, which fetched FTL's data with a bare <code>httpx.get</code>, goes through the client.</p>
+<p>A run that read FTL ends with &quot;FTL today: n/120 requests, m/2 sign-ins&quot;.</p>
+<h3 id="2-one-session-captured-at-the-sign-in-and-reused-for-its-life">2 · One session, captured at the sign-in and reused for its life</h3>
+<p>FTL's session cookie is valid a fixed 10 days from its sign-in and not extended by use (ADR-068). The client takes a session store: the session this process holds, else the stored one, else a sign-in, whose cookie and expiry are stored right after it, before any other request. A session within 12 hours of its end is renewed. A resource that bounces to the login page drops the stored session, only if it is still the cookie this client used, so a newer one another run stored is kept; the next read signs in. A refused sign-in stores nothing and is still remembered per process (ADR-119 G71).</p>
+<p>The store is one CERT row, <code>tbl_ftl_session</code> (<code>fn_ftl_session_get</code>, <code>fn_ftl_session_put</code>, <code>fn_ftl_session_drop</code>), shared by CI and LOCAL: one sign-in serves every run for 10 days, so at most three sign-ins a month, none in a month without an FTL read. The cookie is a credential: service role only, never the password, never in an error (a failed store raises with the error's kind only), never in the PROD seed export, never in GitHub's Actions cache, which a pull request's workflow could restore in this public repository.</p>
+<h3 id="3-ftl-is-read-when-it-can-have-changed-and-not-otherwise">3 · FTL is read when it can have changed, and not otherwise</h3>
+<ul>
+<li><strong>Four cycles a day</strong> (F3 A). The results sync takes an event whose every source is an FTL schedule (<code>ftl_only</code>) only in the cycles of the UTC hours 08, 12, 16 and 20, by the hour the cycle was due; the other cycles leave it for the next of these and name it in the select's log. A manual <code>sync &lt;code&gt;</code> always takes its event. Other engines stay hourly.</li>
+<li><strong>The schedule alone.</strong> Such an event, except a PZSz event whose compare also hashes its start lists (ADR-119 G35), is compared by its schedule (<code>schedule_unchanged</code>): its links are the latest finished CERT run's, and the schedule read now hashes as that run recorded it, exactly as the daily close checks it (ADR-108 §7). One request. Unchanged: nothing to do, or promote only when PROD is behind. Changed, or no run: the cycle ingests, and the ingest reads every final listing as before. The outcome takes the new listings from the two runs.</li>
+<li><strong>The cap is a verdict.</strong> A cycle stopped by the cap records <code>budget</code>, sends one ⏸ line and pauses nothing; the next day's allowance reads the event. From 80% of the cap a cycle's line carries the day's count.</li>
+<li><strong>Verification reads</strong> (F4 B). The weekly source re-read leaves out a completed event read only from FTL, counted in its line; an open FTL event is still re-read weekly, to catch a listing corrected after its ingest. An FTL event is dry-read only the day before it starts. One event, completed or not, is re-read by hand: <code>source-regression.yml</code> with <code>event_code</code>.</li>
+<li><strong>Pacing.</strong> Two FTL requests are at least <code>FTL_PACE_SECONDS</code> apart (1 second).</li>
+</ul>
+<h3 id="4-the-client-says-who-it-is">4 · The client says who it is</h3>
+<p>Every request carries <code>User-Agent: SPWS-ranklist/1.0 (Polish Veterans Fencing Association ranking; reads final results)</code> (F7 A). FTL can see, allow or refuse the reader by name. One account at a time: no pool of accounts, no switch when one is refused, no browser's name.</p>
+<h3 id="5-what-a-day-costs">5 · What a day costs</h3>
+<p>With no FTL event in progress (most days): nothing, or one schedule read for an event waiting to close or starting tomorrow. With one in progress (an EVF weekend, about 25 listings): four schedule reads, the close's one, and two or three ingests of 1 + L, about 40 to 80 requests, and a sign-in at most once in 10 days. The cap, 120, is a sixth of the day that got the account blocked.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Rotate between several logins</strong> (proposed 4 Nov: four aliases of one mailbox, one password). Rejected: taking the next account because the last was cut off is working round FTL's block; FTL can link the accounts by mailbox and by the machines that sign in, and could block the association outright.</li>
+<li><strong>Ask FTL first, read nothing until it answers.</strong> Not chosen by the user: the ranking needs results now. The letter to FTL stays the user's, and this ADR gives it a rate and a name to offer.</li>
+<li><strong>Present the client as a browser.</strong> Rejected: a disguise is exactly what FTL's monitoring is right to block.</li>
+<li><strong>Keep the session in GitHub's Actions cache.</strong> Rejected: in a public repository a pull request's workflow can restore it.</li>
+<li><strong>A cap in a file per machine, LOCAL apart from CI</strong> (F2 B). Rejected: the account's total would be no one's; a LOCAL day would cost a sign-in of its own.</li>
+<li><strong>Hourly FTL cycles, each one request</strong> (F3 C). Rejected for four: results show within four hours, and the rate is the one to offer FTL.</li>
+<li><strong>No weekly re-read of open FTL events</strong> (F4 A). Rejected by the user (F4 B): it is what catches a place corrected inside a listing already stored before the close.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>New: <code>python/scrapers/ftl_ledger.py</code>; migrations <code>20261104000001_ftl_read_ledger.sql</code>, <code>20261104000002_ftl_session.sql</code>, <code>20261104000003_results_sync_budget_verdict.sql</code>; pgTAP 125, 126, 127.</li>
+<li>Changed: <code>ftl_auth.get_authed_ftl_client</code> (ledger, session store, pace, name; <code>use_stores</code>, <code>ftl_today_line</code>, <code>Grant</code>, <code>StoredSession</code>, <code>FtlBudgetSpent</code>); <code>results_sync</code> (<code>ftl_only</code>, <code>schedule_only</code>, <code>schedule_unchanged</code>, <code>FTL_HOURS</code>, the <code>budget</code> verdict, the day's count, the run query's link); <code>source_regression</code> (<code>completed_ftl</code>, <code>dry_read</code>, <code>--code</code>); <code>audit_results.scrape_url</code>; four workflows (<code>source-regression.yml</code> takes <code>event_code</code>; three steps gained the access token).</li>
+<li>Tests: FTL.BUDGET.01–09, FTL.SESSION.01–05, FTL.NAME.01, FTL.PACE.01 (<code>test_ftl_auth.py</code>); FTL.STORE.01–05, FTL.WF.01, FTL.SEED.01 (<code>test_ftl_ledger.py</code>); SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16 (<code>test_results_sync.py</code>); SRC.REGR.10–13 (<code>test_source_regression.py</code>); SYNC.PAUSE.01 now reads the latest migration's verdict CHECK. The test suite's conftest gives every test no ledger, no pace and no access token, so no test reaches CERT or FTL.</li>
+<li>A LOCAL run that reads FTL needs the access token in <code>.env</code> and draws from CERT's cap.</li>
+<li>The <code>ftl-scrape</code> skill, the handbook's ingestion, workflow-catalog, security-posture, codebase-map, operator-runbook and local-development pages describe these rules.</li>
+<li>Not changed: the daily close's read (one schedule per open event), the ingest's read (the event written whole), every other engine's rhythm, the eight workflows' FTL secrets.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ul>
+<li><strong>FTL's answer.</strong> The user writes to FTL's support. If FTL sets another rate or offers an API, the cap and the hours change with it; this ADR is then amended.</li>
+<li><strong>Live proof</strong> after release: the first FTL read of CI signs in once and stores the session; the next reads use it; a cycle's log ends with the day's count.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="119-partial-ingest-promote-and-organizer-registry.html">← ADR-119: Partial Ingest and Promote — Only Final Brackets, One Organizer Registry, One Engine Contract</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>120-ftl-read-cap-and-reused-session.md</code> · source SHA-256 <code>b60083666cd8767f8a7cc32ee934c5f2784cf403d7e7fb259b8c3e05df0c5cd0</code></footer>
+</div></body></html>

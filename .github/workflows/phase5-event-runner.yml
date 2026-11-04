@@ -88,6 +88,8 @@ jobs:
           SUPABASE_KEY: ${{ inputs.target == 'prod'
             && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY
             || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          # ADR-120: FTL is read only through CERT's ledger and session rows.
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

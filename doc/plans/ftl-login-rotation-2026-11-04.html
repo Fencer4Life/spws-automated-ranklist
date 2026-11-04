@@ -1,0 +1,273 @@
+<meta charset="utf-8">
+<title>The FencingTimeLive login</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">G63 follow-up · FencingTimeLive login · Brainstorm rev 3</p>
+  <h1>The FencingTimeLive login: ask FTL first</h1>
+  <p class="dek">On 4 Nov FTL would not register the &ldquo;+&rdquo; alias. Reading FTL&rsquo;s Terms of Use (updated 10 Mar 2026) explains more than the alias. The terms allow automated reading of the site only under a <b>written agreement with Fencing Time</b>, and they forbid working round its limits or blocks. That is the most likely reason the pipeline&rsquo;s login was refused on 2 Nov. So this page <b>withdraws the rotation</b>: a new login used the same way would break the same terms. The way forward is to ask FTL (L4); a draft letter is below.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>rev 3, 4 Nov 2026 — L4 first; L1, L2, L5, L6 yours to decide</span>
+    <span class="pill good"><span class="dot"></span>4 Nov: you installed a new login (checked: it signs in) and signed <a href="ftl-daily-read-budget-2026-11-04.html">the read-cap plan</a>, which replaces L1, L2, L5 and L6</span>
+    <span class="pill danger"><span class="dot"></span>credentials never in chat, the repository or a log</span>
+    <span class="pill">ADR-068 · ADR-119 G63, G71, G74</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">4 Nov · what happened</p>
+    <h2>The &ldquo;+&rdquo; alias was refused by FTL&rsquo;s server</h2>
+    <ul>
+      <li><b>The form accepts it; FTL&rsquo;s server does not.</b> I read FTL&rsquo;s public sign-up page and its script, without signing in. The e-mail field is a standard one that a browser accepts with a &ldquo;+&rdquo; in it. The script sends the name, e-mail, password, the terms tick box and a reCAPTCHA to <code>/account/signup</code>, and shows the server&rsquo;s answer in the red box under the form. So FTL&rsquo;s server refused the address, and its message in that box says why. If you note its words, I record them here (without the address).</li>
+      <li><b>No way round it.</b> Whatever the words, FTL decides which addresses it accepts. I do not recommend another mailbox or another domain to get past it, for the reasons in the next section.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Source: <a href="https://www.fencingtimelive.com/terms">fencingtimelive.com/terms</a>, last updated 10 March 2026 · paraphrased</p>
+    <h2>What FTL&rsquo;s terms say</h2>
+    <ul>
+      <li><b>The licence covers what the website shows a person</b>, or an API that Fencing Time authorises under a separate written agreement.</li>
+      <li><b>Automated reading is forbidden:</b> bots, scrapers or any automated means of accessing or extracting data, and getting round the site&rsquo;s rate limits. The terms extend this to systematic manual copying for collection or redistribution.</li>
+      <li><b>Getting round controls is forbidden:</b> bypassing or evading rate limiting, authentication, access control or bot detection.</li>
+      <li><b>Passing on results needs consent:</b> making results or rankings available to third parties needs Fencing Time&rsquo;s prior written consent.</li>
+      <li><b>FT watches and acts.</b> It uses rate limiting, IP blocking and account checks to detect prohibited use, and it may suspend or end an account. An account must hold accurate information.</li>
+      <li><b>When.</b> These terms date from 10 Mar 2026. By 31 May 2026 FTL already required a sign-in for results pages (<a href="../adr/068-ftl-www-host-and-session-cache.html">ADR-068</a> found it then and taught our client to sign in).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Source: <a href="https://www.fencingtimelive.com/privacy">fencingtimelive.com/privacy</a>, last updated 10 March 2026 · read 4 Nov · paraphrased</p>
+    <h2>What FTL&rsquo;s privacy policy adds</h2>
+    <p>The privacy policy sets out what Fencing Time does with the data it holds. It grants no permission and adds no restriction on top of the terms. Four points matter here:</p>
+    <ul>
+      <li><b>FT logs who reads.</b> For reliability and security it records each visitor&rsquo;s IP address, browser and device type, the pages visited and general usage patterns. Its login session is a cookie (our client&rsquo;s <code>connect.sid</code>). So FT sees which machines sign in as which account and how they read: GitHub&rsquo;s runners and this computer, signing in at each run, page after page. That is how a second account from the same machines can be linked to the first, which is one more reason for L1 A.</li>
+      <li><b>The results come from organisers.</b> Placements, rankings, clubs and federation identifiers are supplied by tournament organisers, registration systems and governing bodies. The organiser&rsquo;s own file is the same data at its source, which supports the &ldquo;organiser&rsquo;s own file&rdquo; route below.</li>
+      <li><b>Nothing about third parties&rsquo; use.</b> The policy says results are there so athletes, coaches, organisers and spectators can follow competitions. It says nothing on automated reading, APIs, account limits or reuse by others. Those are in the terms alone, so the terms decide G74.</li>
+      <li><b>One address for everything:</b> <code>support@fencingtime.com</code>, for privacy questions and for deleting an account. It is the same address as the L4 letter.</li>
+    </ul>
+    <p>Our own use of fencers&rsquo; data (names, birth years, places) is governed by the association&rsquo;s own obligations, not by FT&rsquo;s policy. This page does not change it.</p>
+  </section>
+
+  <section>
+    <p class="kicker">What it means for us · G74, found 4 Nov</p>
+    <h2>Our FTL route needs FTL&rsquo;s written agreement</h2>
+    <ul>
+      <li><b>G74.</b> Every FTL read of ours is automated and signed in as one account: an FTL event&rsquo;s ingest, promote, the daily close, the source re-read, the hourly results sync, the URL population and the EVF sync&rsquo;s FTL part. Under these terms that use needs Fencing Time&rsquo;s written agreement, and so does publishing the places it reads in our ranking. We have none that I know of.</li>
+      <li><b>G63, most likely explained.</b> The refusal asks the account holder to contact support, which fits an account suspended for prohibited use better than a counter that resets. Only FTL can confirm it.</li>
+      <li><b>Why not a new login.</b> A second account used the same way would break the terms it accepts at sign-up. Moving to it because the first was blocked is the kind of evasion the terms name. FTL can link accounts by mailbox and by the machines that sign in, so it could block more than the new account. The four-alias rotation stays declined (L1).</li>
+      <li><b>Where it is written down today.</b> ADR-068, the handbook&rsquo;s ingestion pages and the repo&rsquo;s <code>ftl-scrape</code> skill describe the FTL route as it runs, without these terms. They change once FTL has answered, to say what it allows; I do not rewrite them before that.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">L4 · you send it · adapt freely</p>
+    <h2>A draft letter to FTL&rsquo;s support</h2>
+    <p>To <code>support@fencingtime.com</code>, from the mailbox of the refused account, so they can find it. Send it after L6 if you keep the sentence marked [L6].</p>
+    <div class="note">
+      <p class="lede">Subject: SPWS (Polish Veterans Fencing Association): reading results for our ranking, and our account</p>
+      <p>Dear Fencing Time support,</p>
+      <p>We maintain the national ranking of the Polish Veterans Fencing Association (SPWS): rankings by weapon, gender and age category, built from our members&rsquo; places at veterans events in Poland and abroad. Many of these events publish their results on Fencing Time Live.</p>
+      <p>Until 2 November 2026 a small program, signed in with our association&rsquo;s account, read the final results of the events our members fenced, to enter their places in the ranking. Since 2 November the account is refused at sign-in with a message asking us to contact support. We have now read your Terms of Use of 10 March 2026. We understand that this kind of reading needs your written agreement, and we would like to put it on that footing.</p>
+      <p>Could you tell us:</p>
+      <ol>
+        <li>whether Fencing Time would allow this use under a written agreement, or offers an authorised API or data export for results, and on what conditions (how often, attribution, anything else);</li>
+        <li>whether our public ranking may show each member&rsquo;s place at an event whose results are on Fencing Time Live, and with what attribution;</li>
+        <li>whether our account can be restored for use in the browser while we wait for your answer.</li>
+      </ol>
+      <p>We can keep the reading to whatever you set, for example one read of an event&rsquo;s final results after it ends. [L6] Our program makes no further sign-in attempt until we hear from you.</p>
+      <p>Kind regards,<br>[your name], on behalf of SPWS</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Meanwhile</p>
+    <h2>What keeps the ranking going without FTL</h2>
+    <ul>
+      <li><b>Other sources are untouched:</b> Engarde, 4fence, Ophardt and d&rsquo;Artagnan are not FTL, and EVF events with an EVF id are read from EVF&rsquo;s own results (the <code>evf:</code> source; C2 B, signed 3 Nov, stores that id on every EVF event).</li>
+      <li><b>An organiser&rsquo;s own file.</b> An event run on FencingTime software can export its results as a FencingTime XML file, and our ingest already reads that format (<code>fencingtime_xml</code>, <code>SourceKind.FENCINGTIME_XML</code>). The organiser owns those results and can send the file, so a domestic event does not need FTL&rsquo;s website.</li>
+      <li><b>What waits:</b> an FTL-only event in progress, and G65, G67, G70 and G64&rsquo;s correction (L5).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this first · L4 before the rest</p>
+    <h2>Five decisions, each with a recommendation</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>L4</b></td><td>Ask FTL.</td><td><b>A</b> You send the letter above (adapted as you like). You tell me FTL&rsquo;s answer; I record it under G63 and G74 and bring the plan that follows from it.<br><b>B</b> Do not ask.</td><td><b>A</b>: only Fencing Time can give the written agreement its terms require. Every other decision here depends on its answer.</td></tr>
+        <tr><td><b>L6</b></td><td>Stop the refused sign-ins while we wait.</td><td><b>A</b> You delete the two repository secrets, keeping the login in the password manager, each in a terminal in the repository:<pre class="trace"><code>gh secret delete FTL_USERNAME
+gh secret delete FTL_PASSWORD</code></pre>Every FTL read then stops before it reaches FTL. <code>ftl_auth</code> raises &ldquo;FTL_USERNAME and FTL_PASSWORD must be set&rdquo; and the run reports the same failure it reports today, with that message. The other sources run as before. No code changes. You put the secrets back with the steps below once FTL agrees. I make no FTL attempt on LOCAL either way.<br><b>B</b> Leave them: each run that reaches FTL makes one refused attempt (G71), hourly while an FTL event is in progress.</td><td><b>A</b>: repeated refused sign-ins from GitHub&rsquo;s machines are what FTL&rsquo;s monitoring watches for, and the letter can then say truthfully that our program has stopped. G71&rsquo;s live proof then waits for FTL&rsquo;s answer.</td></tr>
+        <tr><td><b>L1</b></td><td>A new login for the pipeline?</td><td><b>A</b> None until FTL answers. Rev 1&rsquo;s guide becomes the steps below, used only with FTL&rsquo;s agreement.<br><b>B</b> Replace the login now (rev 1).<br><b>C</b> Several logins in turn (your proposal of 4 Nov).</td><td><b>A</b>. B breaks the terms the new account accepts and can lose it like the first. C stays declined: four accounts on one mailbox, taken in turn because each is cut off, is a way round a block, and FTL can block all of them.</td></tr>
+        <tr><td><b>L2</b></td><td>Sign in less often.</td><td><b>A</b> If FTL agrees: keep the 10-day session across runs (ADR-068&rsquo;s deferred follow-up), and read no more often than FTL sets. CI keeps the session in a CERT row only the pipeline&rsquo;s service role reads (ADR-083); LOCAL keeps it in a file in your user&rsquo;s cache folder, never in GitHub&rsquo;s Actions cache. Its own build sheet, test-first.<br><b>B</b> One sign-in per run, as now.</td><td><b>A</b>, built only after FTL&rsquo;s yes and within its conditions.</td></tr>
+        <tr><td><b>L5</b></td><td>G65, G67, G70 and G64&rsquo;s correction.</td><td><b>A</b> They wait for FTL&rsquo;s answer. Where an organiser&rsquo;s file or EVF&rsquo;s results give the same result, I bring that option per event.<br><b>B</b> Read them with a new login.</td><td><b>A</b>: B is L1 B.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>L3 is closed.</b> You chose a &ldquo;+&rdquo; alias of the association&rsquo;s Gmail on 4 Nov, and FTL refused to register it. An account in the association&rsquo;s name stays the rule if FTL agrees to one.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Only once FTL agrees · about five minutes · you do it</p>
+    <h2>How to record the login</h2>
+    <p>One piece of code reads the login, <code>python/scrapers/ftl_auth.py</code>, from two names: <code>FTL_USERNAME</code> (the account&rsquo;s e-mail) and <code>FTL_PASSWORD</code>. They live in two places, and both must change.</p>
+    <ol class="steps">
+      <li><b>Use the login FTL restores or names.</b> Sign in once with it at fencingtimelive.com in your own browser. If it is refused there, stop: no file needs changing.</li>
+      <li><b>LOCAL: your <code>.env</code>.</b> Open <code>/Users/aleks/coding/SPWSranklist/.env</code> in your editor (every worktree links to this one file). Change the two lines, keeping their names:
+        <pre class="trace"><code>FTL_USERNAME='the-account@e-mail'
+FTL_PASSWORD='the password'</code></pre>
+        No spaces around <code>=</code>. Keep the single quotes when the password holds a space, <code>$</code>, <code>#</code> or a quote mark. Save.</li>
+      <li><b>CI: the two repository secrets.</b> In a terminal in the repository, run each line on its own; each asks for the value and hides what you paste:
+        <pre class="trace"><code>gh secret set FTL_USERNAME
+gh secret set FTL_PASSWORD</code></pre>
+        Never pass the value on the command line (<code>--body</code>): it would stay in your shell&rsquo;s history. The same works on github.com: Settings &rarr; Secrets and variables &rarr; Actions &rarr; Repository secrets. Eight workflows read these two names (<code>ingest-event</code>, <code>promote</code>, <code>event-close</code>, <code>source-regression</code>, <code>evf-sync</code>, <code>populate-urls</code>, <code>scrape-tournament</code>, <code>phase5-event-runner</code>); the hourly results sync reaches FTL through <code>ingest-event</code>.</li>
+      <li><b>Tell me &ldquo;login restored&rdquo;</b> and what FTL allows. I then make <b>one</b> read-only check on LOCAL within those conditions: a re-read of one FTL event (<code>IMSW-2025-2026</code>), nothing written, the result in one line. If FTL refuses, the run stops at that one attempt (G71).</li>
+    </ol>
+    <div class="note">
+      <p class="lede">What I never do</p>
+      <p>See, print, store or log the values; open <code>.env</code>; ask you to paste them in chat; create an account or sign in at FTL&rsquo;s website. Documentation and memory name the two variables and where they live, never their values.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Background from rev 1</p>
+    <h2>How often we signed in</h2>
+    <ul>
+      <li><b>FTL&rsquo;s session lasts 10 days</b> from sign-in and is not extended by use (ADR-068). Our code keeps it only inside one process, so every run signs in again.</li>
+      <li><b>1 Nov:</b> about twelve sign-ins (CI&rsquo;s two source re-reads, about ten of my read-only runs), all accepted. <b>2 Nov, from 07:00 UTC:</b> refused on this machine and on GitHub&rsquo;s alike (G63).</li>
+      <li><b>With the hourly sync</b>, an FTL event in progress would cost two or three sign-ins per cycle, roughly 50 to 70 a day. That is the rate to bring down (L2) and to agree with FTL (L4).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries</p>
+    <h2>What this does not touch</h2>
+    <ul>
+      <li>No code changes now. L6 A is your action on two secrets; L2 is code, test-first, only after FTL&rsquo;s yes.</li>
+      <li>The FTL export organizer link (<code>tbl_ftl_export_token</code>, ADR-095) is a different thing and is not touched here.</li>
+      <li>No other secret, and no other provider&rsquo;s login.</li>
+      <li>This page reads FTL&rsquo;s terms; it is not legal advice. FTL&rsquo;s answer to L4 is what settles G74.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Rev 3, 4 Nov 2026 · sources: FTL&rsquo;s public Terms of Use and Privacy Policy (both 10 Mar 2026), sign-up page and script, read without signing in; ADR-068; ADR-119 plan G63 and G71; <code>python/scrapers/ftl_auth.py</code> (the missing-login check runs before any request); <code>python/pipeline/ir.py</code> (<code>FENCINGTIME_XML</code>); the workflows that name the two secrets · no credential was read · rev 1 (same day) gave the rotation guide and L1&ndash;L5; rev 2 read the terms and withdrew the rotation; rev 3 adds the privacy policy</p>
+</div>

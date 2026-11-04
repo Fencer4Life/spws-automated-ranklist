@@ -9,7 +9,10 @@ name: Source re-read
 # dry-reads, through results-sync.yml, those with a results link (G42 A (2)).
 # One Telegram line; the named detail goes to CERT's staging-reports bucket,
 # never to this log (D12). Read only on CERT and PROD.
-run-name: "Source re-read · ${{ github.event_name == 'schedule' && 'daily' || 'manual' }}"
+# ADR-120 §3: a completed event read only from FencingTimeLive is not re-read
+# automatically (an open one is), an FTL event is dry-read only the day before
+# it starts, and one event is re-read by hand with event_code.
+run-name: "Source re-read · ${{ github.event_name == 'schedule' && 'daily' || inputs.event_code || 'manual' }}"
 
 on:
   schedule:
@@ -17,6 +20,12 @@ on:
     # which is all a daily check needs (G47 is about the hourly cycles).
     - cron: '17 5 * * *'   # off the hour: GitHub delays runs at the start of an hour (WFCRON.01)
   workflow_dispatch:
+    inputs:
+      event_code:
+        description: "One event to re-read by hand (its exact code); empty: the full re-read"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -40,6 +49,8 @@ jobs:
         id: reread
         env:
           MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+          # Checked against [A-Za-z0-9-]+ by the command before it is used (ADR-120 §3).
+          EVENT_CODE: ${{ inputs.event_code }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           # read_event and plan_event read CERT through this connector and write nothing.
           SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
@@ -49,7 +60,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python -m python.pipeline.source_regression $([ "$MANUAL" = "true" ] && echo --manual)
+          python -m python.pipeline.source_regression $([ "$MANUAL" = "true" ] && echo --manual) ${EVENT_CODE:+--code "$EVENT_CODE"}
 
       - name: Dry-read the upcoming events
         if: steps.reread.outputs.dry_read != '' && steps.reread.outputs.dry_read != '[]'

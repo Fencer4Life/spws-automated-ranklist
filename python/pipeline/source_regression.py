@@ -111,17 +111,36 @@ def _candidates(rows: Iterable[Mapping[str, Any]]) -> list[tuple[str, dt.date, M
     return out
 
 
+def _completed_ftl(code: str, row: Mapping[str, Any]) -> bool:
+    """A completed event read only from FTL (ADR-120 §3): its results are
+    stored and closed, so it is re-read by hand only."""
+    from python.pipeline.promotion.results_sync import ftl_only
+
+    return row.get("enum_status") == "COMPLETED" and ftl_only(code, row)
+
+
+def _in_months(rows: Iterable[Mapping[str, Any]], today: dt.date):
+    since = _months_before(today, MONTHS)
+    return [(code, row) for code, start, row in _candidates(rows) if since <= start <= today]
+
+
 def past_events(rows: Iterable[Mapping[str, Any]], today: dt.date) -> list[str]:
     """The events re-read: international, started in the last 30 months, not
-    cancelled."""
-    since = _months_before(today, MONTHS)
-    return sorted(code for code, start, _ in _candidates(rows) if since <= start <= today)
+    cancelled, and not a completed event read only from FTL (ADR-120 §3, F4 B:
+    an open FTL event is still re-read)."""
+    return sorted(code for code, row in _in_months(rows, today) if not _completed_ftl(code, row))
+
+
+def completed_ftl(rows: Iterable[Mapping[str, Any]], today: dt.date) -> list[str]:
+    """The completed FTL-only events the re-read leaves out (ADR-120 §3)."""
+    return sorted(code for code, row in _in_months(rows, today) if _completed_ftl(code, row))
 
 
 def upcoming(rows: Iterable[Mapping[str, Any]], today: dt.date) -> list[dict]:
     """The international events that start within 14 days, each with whether
-    it has a results link the sync reads (`results_sync.has_link`)."""
-    from python.pipeline.promotion.results_sync import has_link
+    it has a results link the sync reads (`results_sync.has_link`); an event
+    read only from FTL is marked `ftl` (ADR-120 §3)."""
+    from python.pipeline.promotion.results_sync import ftl_only, has_link
 
     soon = [
         {
@@ -129,11 +148,24 @@ def upcoming(rows: Iterable[Mapping[str, Any]], today: dt.date) -> list[dict]:
             "start": start.isoformat(),
             "days": (start - today).days,
             "linked": has_link(code, row),
+            **({"ftl": True} if ftl_only(code, row) else {}),
         }
         for code, start, row in _candidates(rows)
         if today < start <= today + dt.timedelta(days=UPCOMING_DAYS)
     ]
     return sorted(soon, key=lambda u: (u["start"], u["code"]))
+
+
+def dry_read(u: Mapping[str, Any]) -> bool:
+    """An upcoming event is dry-read through the sync when it has a link; one
+    read only from FTL only the day before it starts (ADR-120 §3)."""
+    return bool(u["linked"]) and (not u.get("ftl") or u["days"] <= 1)
+
+
+def _state(u: Mapping[str, Any]) -> str:
+    if dry_read(u):
+        return "dry-read"
+    return "FTL: dry-read the day before" if u["linked"] else "no results link"
 
 
 def full_due(rows: Iterable[Mapping[str, Any]], today: dt.date, *, manual: bool) -> bool:
@@ -249,8 +281,11 @@ def _codes(checks: list[EventCheck], status: str) -> list[str]:
     return [c.code for c in checks if c.status == status]
 
 
-def line(checks: list[EventCheck], soon: list[dict], *, roster_alike: bool = True) -> str:
-    """The one Telegram line: codes and counts only."""
+def line(
+    checks: list[EventCheck], soon: list[dict], *, roster_alike: bool = True, left: int = 0
+) -> str:
+    """The one Telegram line: codes and counts only; `left` completed FTL events
+    were not re-read (ADR-120 §3)."""
     if checks:
         parts = [f"{len(checks)} event(s), {len(_codes(checks, EQUAL))} equal"]
         for status in (DIFFERENT, REFUSED, KNOWN):
@@ -265,17 +300,15 @@ def line(checks: list[EventCheck], soon: list[dict], *, roster_alike: bool = Tru
         read = Counter(label for c in checks for label in c.read_from)
         if read:  # G60 A: a refusal is not a sign-in failure when the source was read
             parts.append("sources read: " + ", ".join(f"{k} {n}" for k, n in sorted(read.items())))
+        if left:
+            parts.append(f"completed FTL not re-read: {left}")
         head = "; ".join(parts)
     else:
         head = "no event re-read today"
     if not roster_alike:
         head += "; CERT's roster is not PROD's, so a difference may be the refresh's"
     if soon:
-        tail = "; ".join(
-            f"{u['code']} in {u['days']} days, "
-            + ("dry-read" if u["linked"] else "no results link")
-            for u in soon
-        )
+        tail = "; ".join(f"{u['code']} in {u['days']} days, {_state(u)}" for u in soon)
     else:
         tail = "none"
     return f"🔎 Source re-read: {head}. Upcoming: {tail}"
@@ -419,22 +452,33 @@ def run(
     output: Callable[..., None],
     stamp: str,
     roster_alike: bool = True,
+    code: str | None = None,
 ) -> int:
     """One day's run: the upcoming events every day, the full re-read when it
-    is due. A difference is reported, not a failure of the run."""
-    soon = upcoming(rows, today)
+    is due. A difference is reported, not a failure of the run. With `code`,
+    that one event is re-read by hand, completed or not, and nothing else
+    (ADR-120 §3)."""
+    soon = [] if code else upcoming(rows, today)
     for u in soon:
-        state = "dry-read" if u["linked"] else "no results link"
-        print(f"upcoming {u['code']}: in {u['days']} day(s), {state}")
-    output(dry_read=json.dumps([u["code"] for u in soon if u["linked"]]))
+        print(f"upcoming {u['code']}: in {u['days']} day(s), {_state(u)}")
+    output(dry_read=json.dumps([u["code"] for u in soon if dry_read(u)]))
     checks: list[EventCheck] = []
-    if full_due(rows, today, manual=manual):
-        for code in past_events(rows, today):
+    left: list[str] = []
+    if code or full_due(rows, today, manual=manual):
+        if code:
+            print(f"re-read by hand: {code}")
+            codes = [code]
+        else:
+            codes = past_events(rows, today)
+            left = completed_ftl(rows, today)
+            if left:
+                print(f"{len(left)} completed FTL event(s) not re-read: by hand only")
+        for one in codes:
             try:
-                result = check(code)
+                result = check(one)
             except Exception as e:  # the event's refusal, never the run's
                 result = refusal(
-                    code,
+                    one,
                     public_reason(e),
                     named=f"{type(e).__name__}: {e}",
                     read_from=tuple(getattr(e, "read_from", ())),
@@ -446,7 +490,7 @@ def run(
     else:
         print("no full re-read today: it runs on demand, on Mondays and the day before an event")
     if checks or soon:
-        said = line(checks, soon, roster_alike=roster_alike)
+        said = line(checks, soon, roster_alike=roster_alike, left=len(left))
         print(f"summary: {said}")  # G60 A: the log ends with what Telegram is told
         send(said)
     return 0
@@ -473,8 +517,19 @@ def main(argv: Iterable[str] | None = None) -> int:
     from python.supabase_token import supabase_access_token
     from python.tools._backends import CERT_REF, PROD_REF
 
+    def event_code(text: str) -> str:
+        if not _CODE.match(text):
+            raise argparse.ArgumentTypeError(f"not an event code: {text!r}")
+        return text
+
     ap = argparse.ArgumentParser(description="Re-read every international source (G45 A).")
     ap.add_argument("--manual", action="store_true", help="run the full re-read today")
+    ap.add_argument(
+        "--code",
+        type=event_code,
+        default=None,
+        help="re-read this one event by hand, completed or not (ADR-120 §3)",
+    )
     args = ap.parse_args(list(argv) if argv is not None else None)
     token = supabase_access_token()
     if not token:
@@ -499,6 +554,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         output=_github_output,
         stamp=now.astimezone(dt.UTC).strftime("%Y%m%d-%H%M%SZ"),
         roster_alike=roster_alike,
+        code=args.code,
     )
 
 
