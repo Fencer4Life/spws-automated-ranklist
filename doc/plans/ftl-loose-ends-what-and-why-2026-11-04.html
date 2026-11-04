@@ -1,0 +1,197 @@
+<meta charset="utf-8">
+<title>The FTL loose ends: what each problem is, and what fixing it is worth</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">ADR-119 G64, G65, G67, G70 · FencingTimeLive loose ends · 4 Nov 2026</p>
+  <h1>The FTL loose ends: what each problem is, and what fixing it is worth</h1>
+  <p class="dek">Three findings from the October re-read were waiting for FTL. One is closed today and needed no FTL at all. Of the other two, one adds about <b>5 points to one fencer&rsquo;s total</b> without changing anyone&rsquo;s place, plus one result whose value is unknown. The last protects an event <b>six months away</b>. None of them is urgent.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>IMSW-2025-2026 COMPLETED on CERT and PROD, 4 Nov, on your order</span>
+    <span class="pill warn"><span class="dot"></span>G67: about +5 points for one fencer, place unchanged; Li&egrave;ge unknown</span>
+    <span class="pill warn"><span class="dot"></span>G65: matters first at IMEW-2026-2027, 5&ndash;9 May 2027</span>
+    <span class="pill danger"><span class="dot"></span>my error: I tied G64 to FTL when it needed no FTL</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">G64 + G70 · done</p>
+    <h2>IMSW-2025-2026 left &ldquo;in progress&rdquo;</h2>
+    <p><b>The problem.</b> The world championship of November 2025 was still IN_PROGRESS, a year later, on CERT and on PROD. The daily close reads only the active season, so it never looked at it.</p>
+    <p><b>What it affected:</b></p>
+    <ul>
+      <li>The 2025/26 calendar labelled it &ldquo;in progress&rdquo;.</li>
+      <li>The daily close sent a warning about it every morning.</li>
+      <li>The weekly re-read kept reading it on FTL: 27 requests a week, for data that no longer changes.</li>
+    </ul>
+    <p><b>What it did not affect: any points.</b> The ranking counts IN_PROGRESS and COMPLETED events the same way (<code>vw_eligible_event</code>). Its results also stopped carrying into 2026/27 once the next edition, MSW-2026-2027 (Tbilisi), was completed.</p>
+    <p><b>Done 4 Nov 2026.</b> I set the status to COMPLETED on CERT and then PROD, with the same scoped write the daily close uses. No result was touched, and <code>vw_calendar</code> shows it completed on both.</p>
+    <p><b>Where I went wrong.</b> I made this wait for G70, reading the event&rsquo;s dates at FTL, and so for a working FTL login. The status write reads nothing from FTL. G70&rsquo;s stated reason does not hold for a past event either: &ldquo;a wrong end date misleads the daily close and the sync window&rdquo;. The close reads only the active season, the sync window ended a year ago, and the carry-over ended with Tbilisi. G70 has nothing left to protect.</p>
+    <p><b>A side effect:</b> no open event is on FTL any more, so Monday&rsquo;s and Friday&rsquo;s re-reads read nothing from FTL. The two scheduled checks (9 and 13 Nov) therefore have nothing to check. The proof that the stored session is reused waits for the next FTL read.</p>
+  </section>
+
+  <section>
+    <p class="kicker">G67 · two results missing from the ranking</p>
+    <h2>Napoli 2026 and Li&egrave;ge 2026</h2>
+    <p><b>Why this is not only last season.</b> A 2025/26 result keeps counting in the live 2026/27 ranking until the event&rsquo;s next edition is scored, for up to 366 days. Napoli 2026 (<code>PEW4efs-2025-2026</code>) carries until its 2027 edition (6 Mar 2027). Li&egrave;ge 2026 (<code>PEW61s-2025-2026</code>) carries until April 2027.</p>
+    <table>
+      <thead><tr><th></th><th>Napoli 2026, men&rsquo;s &eacute;p&eacute;e V0</th><th>Li&egrave;ge 2026, women&rsquo;s sabre V0</th></tr></thead>
+      <tbody>
+        <tr><td><b>Source</b></td><td>4fence, not FTL</td><td>FTL</td></tr>
+        <tr><td><b>What is missing</b></td><td>One fencer of ours, 37th of 50. The original ingest did not match the name: 4fence printed &ldquo;L&rdquo; for &ldquo;&#321;&rdquo;. Today&rsquo;s matcher handles that.</td><td>FTL lists a 3-fencer bracket with one fencer of ours. We hold no such bracket. <b>Why is not known</b>, and only an FTL read can say.</td></tr>
+        <tr><td><b>What fixing it is worth</b></td><td>This fencer has no international result in the 2026/27 ranking, so this one would count. It is worth about 4&ndash;5 points: the nearest stored result, 39th of 50 at another 2025/26 PEW, scored 4.11. The fencer is <b>2nd</b> in V0 men&rsquo;s &eacute;p&eacute;e with 270.50; 1st has 293.84 and 3rd 183.41. The total rises; <b>no place changes</b>.</td><td>Unknown. If she fenced, it is a place out of 3 with podium points, counted until April 2027. If she did not start, there is nothing to add.</td></tr>
+        <tr><td><b>Cost</b></td><td>One CERT ingest and one promote. <b>No FTL request.</b></td><td>One FTL read of that event, inside the daily cap, before anything else.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="kicker">G65 · two-day brackets</p>
+    <h2>A bracket fenced over two days is never &ldquo;final&rdquo;</h2>
+    <p><b>The problem.</b> At the European championship in Plovdiv (<code>IMEW-2024-2025</code>), FTL lists three men&rsquo;s &eacute;p&eacute;e brackets twice, as &ldquo;(Day 1)&rdquo; and &ldquo;(Day 2)&rdquo;, behind one link. Our reader calls such a bracket final only when both rows say Finished. A year and a half later they still don&rsquo;t. My guess is that the Day 1 row never says Finished; it has not been read.</p>
+    <p><b>What it affects today: nothing.</b> PROD holds all three brackets; they were stored before this rule existed.</p>
+    <p><b>When it would bite.</b> Only during a championship that FTL lists this way:</p>
+    <ul>
+      <li>While the event is open, a two-day bracket never counts as final, so the event stays open.</li>
+      <li>The daily close then completes the event <b>without</b> that bracket.</li>
+      <li>Those are the largest brackets, worth 1.3 times the points at a European championship, and they stay out of the ranking until someone ingests them by hand.</li>
+    </ul>
+    <p>The next championship is <code>IMEW-2026-2027</code>, on <b>5&ndash;9 May 2027</b>. I have not checked whether Tbilisi 2026 had two-day brackets.</p>
+    <p><b>Cost:</b> one FTL read of Plovdiv&rsquo;s schedule (a few requests), then a test-first change. Any time before May 2027 will do.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this</p>
+    <h2>Four short questions</h2>
+    <table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><b>L1</b></td><td>The checks set for 9 and 13 Nov</td><td><b>A</b> Delete both: no FTL read is due before the session&rsquo;s reuse window ends (14 Nov). <b>B</b> Keep them.</td><td><b>A</b>: they would only report &ldquo;nothing read&rdquo;.</td></tr>
+        <tr><td><b>L2</b></td><td>G70, IMSW&rsquo;s dates at FTL</td><td><b>A</b> Drop it. <b>B</b> Read the dates at FTL.</td><td><b>A</b>: nothing reads that end date any more.</td></tr>
+        <tr><td><b>L3</b></td><td>G67, the two missing results</td><td><b>A</b> Re-ingest Napoli (no FTL) and read Li&egrave;ge once at FTL, then re-ingest it if a result is there. <b>B</b> Napoli only. <b>C</b> Leave both.</td><td><b>B</b>: Napoli costs no FTL and fixes a real total, though only by about 5 points. Li&egrave;ge spends FTL reads on a result that may not exist. Choose A if you want to know.</td></tr>
+        <tr><td><b>L4</b></td><td>G65, two-day brackets</td><td><b>A</b> Before May 2027: one read of Plovdiv&rsquo;s schedule, then the fix, test-first. <b>B</b> No change; if it happens, that bracket is ingested by hand.</td><td><b>A</b>, but not now: it can wait until FTL has answered your letter.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="foot">plan · FTL loose ends · what and why · 4 Nov 2026</p>
+</div>
