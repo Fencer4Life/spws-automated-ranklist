@@ -1,15 +1,11 @@
 {
   "version": "0.1.0",
-  "sha": "7f35731a3ad5d61e9d494489485c7ebeb1123c72",
-  "created": "2026-11-04T08:10:09Z",
+  "sha": "eb08d28beed90ab6a11297b064d734e3061b6ac1",
+  "created": "2026-11-04T21:02:55Z",
   "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2",
   "migrations": {
     "total": 236,
-    "new_since_last": [
-      "20261104000001_ftl_read_ledger.sql",
-      "20261104000002_ftl_session.sql",
-      "20261104000003_results_sync_budget_verdict.sql"
-    ]
+    "new_since_last": []
   },
   "tests": {
     "pgtap": {
@@ -25,8 +21,8 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-04T08:10:11Z",
-      "sha": "7f35731a3ad5d61e9d494489485c7ebeb1123c72",
+      "at": "2026-11-04T21:02:56Z",
+      "sha": "eb08d28beed90ab6a11297b064d734e3061b6ac1",
       "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2"
     },
     "prod": {
