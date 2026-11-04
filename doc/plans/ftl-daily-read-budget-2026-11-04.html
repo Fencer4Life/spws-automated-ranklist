@@ -128,7 +128,7 @@
   <div class="meta">
     <span class="pill good"><span class="dot"></span>Signed 4 Nov 2026: F4 B, every other decision A (&ldquo;F4 - B, the rest as recommended&rdquo;)</span>
     <span class="pill good"><span class="dot"></span>Released 4 Nov 2026: main 7f35731a, CI and Release green, CERT and PROD verified</span>
-    <span class="pill warn"><span class="dot"></span>Owed: the live proof. No job reads FTL before Mon 9 Nov; decide F7 below</span>
+    <span class="pill warn"><span class="dot"></span>Owed: the live proof. No job reads FTL before Mon 9 Nov; F8 A signed: checks on Mon 9 and Fri 13 Nov, 18:00 Warsaw</span>
     <span class="pill good"><span class="dot"></span>new login checked 4 Nov: signed in, IMSW&rsquo;s schedule read (24 listings), 3 requests</span>
     <span class="pill danger"><span class="dot"></span>no credential seen, stored or logged</span>
     <span class="pill">ADR-068 · ADR-119 §4, G42, G45, G63, G71</span>
@@ -307,7 +307,7 @@
     </ul>
     <p><b>B11, noted while checking:</b> the EVF sync&rsquo;s repair of future-dated COMPLETED rows treats any <code>FtlAuthError</code> as &ldquo;no date can be read&rdquo; and demotes those rows to PLANNED. Since ADR-120 that error also means the day&rsquo;s cap is spent, or the ledger cannot be reached. The demotion is the repair&rsquo;s documented fallback: it can be undone, and the calendar flow supplies the date later. CERT has no such row today, and the cap leaves far more room than this needs. I recommend no change. Say if you want the repair to wait a day instead.</p>
 
-    <h3>F7 · How to get the proof</h3>
+    <h3>F8 · How to get the proof · signed A</h3>
     <table>
       <thead><tr><th>Option</th><th>What happens</th><th>Extra FTL reads</th></tr></thead>
       <tbody>
@@ -317,6 +317,13 @@
       </tbody>
     </table>
     <p><b>Recommendation: A.</b> The proof comes from reads the schedule makes anyway, and you don&rsquo;t have to remember to ask. C spends reads for nothing but the proof, which is the kind of reading this plan exists to stop.</p>
+    <p><b>Signed 4 Nov 2026 in chat: &ldquo;F7 A&rdquo;.</b> This decision was first put to you as F7, a number the signed table above already uses for the client&rsquo;s name. It is renumbered F8 here so the two cannot be confused; both were answered A.</p>
+    <p><b>As built.</b> Two one-time tasks in this app, saved in Auto mode:</p>
+    <ul>
+      <li><code>ftl-live-proof-check-2026-11-09</code>, Mon 9 Nov at 18:00 Warsaw: expects the 9 Nov ledger row at 1 sign-in and about 25 requests, a session signed in on 9 Nov that expires about 19 Nov, and an &ldquo;FTL today:&rdquo; line in the re-read&rsquo;s log.</li>
+      <li><code>ftl-live-proof-check-2026-11-13</code>, Fri 13 Nov at 18:00 Warsaw: expects 0 sign-ins from 10 to 13 Nov and the same sign-in time as Monday&rsquo;s, so the session was reused. If <code>IMSW-2025-2026</code> has been completed by then, the re-read reads nothing on FTL. That is correct, and the reuse proof waits for the next FTL read.</li>
+    </ul>
+    <p>Each check reads CERT with SELECT only, never the cookie. It sends nothing to FTL and starts no workflow. Its report lands next to this page as <code>ftl-live-proof-check-2026-11-09.html</code> or <code>ftl-live-proof-check-2026-11-13.html</code>, and I fold the verdict into this section. A check runs while the app is open, or at its next launch.</p>
   </section>
 
   <section>
