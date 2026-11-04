@@ -128,7 +128,8 @@
   <div class="meta">
     <span class="pill good"><span class="dot"></span>Signed 4 Nov 2026: F4 B, every other decision A (&ldquo;F4 - B, the rest as recommended&rdquo;)</span>
     <span class="pill good"><span class="dot"></span>Released 4 Nov 2026: main 7f35731a, CI and Release green, CERT and PROD verified</span>
-    <span class="pill warn"><span class="dot"></span>Owed: the live proof. No job reads FTL before Mon 9 Nov; F8 A signed: checks on Mon 9 and Fri 13 Nov, 18:00 Warsaw</span>
+    <span class="pill good"><span class="dot"></span>Proven 4 Nov 2026, 18:57 UTC: one by-hand read signed in once, stored the session (until 14 Nov) and counted 27 requests</span>
+    <span class="pill warn"><span class="dot"></span>Owed: the reuse. Checks on Mon 9 and Fri 13 Nov, 18:00 Warsaw, expect 0 sign-ins (F8 A)</span>
     <span class="pill good"><span class="dot"></span>new login checked 4 Nov: signed in, IMSW&rsquo;s schedule read (24 listings), 3 requests</span>
     <span class="pill danger"><span class="dot"></span>no credential seen, stored or logged</span>
     <span class="pill">ADR-068 · ADR-119 §4, G42, G45, G63, G71</span>
@@ -300,8 +301,8 @@
     </table>
     <p>The re-read&rsquo;s selection through 16 Nov:</p>
     <ul>
-      <li><b>Mon 9 Nov, the first FTL read.</b> The full re-read reads 20 events. Only one has FTL sources: <code>IMSW-2025-2026</code>, which is FTL-only and still IN_PROGRESS, so the re-read still reads it (F4 B). No event mixes FTL with another engine. Expected: the run signs in (1/2), stores the session on CERT and reads IMSW&rsquo;s schedule and its listings, about 25 requests. The 9 completed FTL-only events are left out. The cron is due at 05:17 UTC; yesterday&rsquo;s started at 12:50.</li>
-      <li><b>Fri 13 Nov, the reuse.</b> The full re-read is due again, because <code>PEW3ef-2026-2027</code> starts on 14 Nov. It reads IMSW again, this time with the stored session: 0 sign-ins expected.</li>
+      <li><b>Mon 9 Nov, the first scheduled FTL read.</b> The full re-read reads 20 events. Only one has FTL sources: <code>IMSW-2025-2026</code>, which is FTL-only and still IN_PROGRESS, so the re-read still reads it (F4 B). No event mixes FTL with another engine. The 9 completed FTL-only events are left out. Since the by-hand read of 4 Nov (below), the run reuses the stored session: 0 sign-ins and about 25 requests expected. The cron is due at 05:17 UTC; yesterday&rsquo;s started at 12:50.</li>
+      <li><b>Fri 13 Nov, the reuse again.</b> The full re-read is due again, because <code>PEW3ef-2026-2027</code> starts on 14 Nov. It reads IMSW with the same session: 0 sign-ins expected. The client reuses the session until 12 hours before it expires, so until 14 Nov 06:57 UTC. The first FTL read after that signs in again.</li>
       <li><b>PEW3ef-2026-2027</b> (14&ndash;15 Nov) has no results link yet. Once it has an FTL link, it gets one dry read the day before, then sync reads at 08, 12, 16 and 20 UTC during its window.</li>
       <li><b>IMSW-2025-2026</b> is the only reason the re-read touches FTL at all. It is completed by hand on your go once its dates are read at the source (ADR-119 G64, G70). After that, the weekly re-read reads no FTL event until one is open again.</li>
     </ul>
@@ -320,9 +321,10 @@
     <p><b>Signed 4 Nov 2026 in chat: &ldquo;F7 A&rdquo;.</b> This decision was first put to you as F7, a number the signed table above already uses for the client&rsquo;s name. It is renumbered F8 here so the two cannot be confused; both were answered A.</p>
     <p><b>As built.</b> Two one-time tasks in this app, saved in Auto mode:</p>
     <ul>
-      <li><code>ftl-live-proof-check-2026-11-09</code>, Mon 9 Nov at 18:00 Warsaw: expects the 9 Nov ledger row at 1 sign-in and about 25 requests, a session signed in on 9 Nov that expires about 19 Nov, and an &ldquo;FTL today:&rdquo; line in the re-read&rsquo;s log.</li>
-      <li><code>ftl-live-proof-check-2026-11-13</code>, Fri 13 Nov at 18:00 Warsaw: expects 0 sign-ins from 10 to 13 Nov and the same sign-in time as Monday&rsquo;s, so the session was reused. If <code>IMSW-2025-2026</code> has been completed by then, the re-read reads nothing on FTL. That is correct, and the reuse proof waits for the next FTL read.</li>
+      <li><code>ftl-live-proof-check-2026-11-09</code>, Mon 9 Nov at 18:00 Warsaw: expects the 9 Nov ledger row at 0 sign-ins and about 25 requests, no sign-in from 5 to 9 Nov, the session&rsquo;s sign-in time still 4 Nov 18:57:12 UTC, and an &ldquo;FTL today:&rdquo; line showing 0/2 sign-ins.</li>
+      <li><code>ftl-live-proof-check-2026-11-13</code>, Fri 13 Nov at 18:00 Warsaw: expects the same for 10 to 13 Nov.</li>
     </ul>
+    <p>Both checks were retargeted on 4 Nov after the by-hand read below, from &ldquo;sign-in on Monday, reuse on Friday&rdquo; to &ldquo;reuse on both&rdquo;. If <code>IMSW-2025-2026</code> has been completed by then, the re-read reads nothing on FTL. That is correct, and the check says so.</p>
     <p>Each check reads CERT with SELECT only, never the cookie. It sends nothing to FTL and starts no workflow. Its report lands next to this page as <code>ftl-live-proof-check-2026-11-09.html</code> or <code>ftl-live-proof-check-2026-11-13.html</code>, and I fold the verdict into this section. A check runs while the app is open, or at its next launch.</p>
 
     <h3>Re-checked 4 Nov 2026, 18:53 UTC · read-only, nothing sent to FTL</h3>
@@ -337,6 +339,18 @@
       </tbody>
     </table>
     <p>What a read-only check can prove is proven: the new code runs green in every FTL job, and it leaves FTL alone when there is nothing to read. Only an FTL read can prove the sign-in, the stored session and its reuse. The first scheduled one is Monday&rsquo;s. It lands five days before the first FTL event that needs results (<code>PEW3ef-2026-2027</code>, 14&ndash;15 Nov, once it has a link), so the proof arrives before anything depends on it. To have it today instead: one by-hand re-read of <code>IMSW-2025-2026</code> (about 25 requests and 1 sign-in, inside the cap). Monday&rsquo;s run would then prove the reuse, and Friday&rsquo;s check would confirm it again. That happens only on your go.</p>
+
+    <h3>Proven 4 Nov 2026, 18:57 UTC · one by-hand re-read on your go (&ldquo;Yes, run it now&rdquo;)</h3>
+    <p>The run was Source re-read <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/41892095981">41892095981</a>, started by hand with <code>event_code</code> <code>IMSW-2025-2026</code>. It succeeded in 1 min 17 s.</p>
+    <table>
+      <thead><tr><th>What</th><th>Expected</th><th>Found</th></tr></thead>
+      <tbody>
+        <tr><td>Run log</td><td>one event re-read, an &ldquo;FTL today:&rdquo; line, no budget or sign-in error</td><td>&ldquo;re-read by hand: IMSW-2025-2026&rdquo;, &ldquo;IMSW-2025-2026: equal&rdquo;, &ldquo;sources read: FencingTimeLive 1&rdquo;, &ldquo;FTL today: 27/120 requests, 1/2 sign-ins&rdquo;</td></tr>
+        <tr><td>CERT <code>tbl_ftl_read_ledger</code></td><td>one row for 4 Nov, 1 sign-in, about 25 requests</td><td>2026-11-04: 27 requests, 1 sign-in, updated 18:57:37 UTC</td></tr>
+        <tr><td>CERT <code>tbl_ftl_session</code> (times only)</td><td>one row, signed in now, expiring 10 days later</td><td>signed in 18:57:12 UTC, expires 14 Nov 18:57:11 UTC: a life of 10 days</td></tr>
+      </tbody>
+    </table>
+    <p>This proves four things on CI: the sign-in and the requests are counted in CERT&rsquo;s ledger, the session is stored on CERT right after the sign-in, the run gives back what it does not use (27 is not a multiple of the draw of 10, so 3 of the 30 drawn were returned), and the honest client name is accepted. Stored results are equal to the source. What is left is the reuse: the next run must take this session and not sign in. The two scheduled checks now expect exactly that.</p>
   </section>
 
   <section>
