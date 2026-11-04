@@ -128,7 +128,7 @@
   <div class="meta">
     <span class="pill good"><span class="dot"></span>Signed 4 Nov 2026: F4 B, every other decision A (&ldquo;F4 - B, the rest as recommended&rdquo;)</span>
     <span class="pill good"><span class="dot"></span>Released 4 Nov 2026: main 7f35731a, CI and Release green, CERT and PROD verified</span>
-    <span class="pill warn"><span class="dot"></span>Owed: the first CI read signs in once and stores the session (live proof)</span>
+    <span class="pill warn"><span class="dot"></span>Owed: the live proof. No job reads FTL before Mon 9 Nov; decide F7 below</span>
     <span class="pill good"><span class="dot"></span>new login checked 4 Nov: signed in, IMSW&rsquo;s schedule read (24 listings), 3 requests</span>
     <span class="pill danger"><span class="dot"></span>no credential seen, stored or logged</span>
     <span class="pill">ADR-068 · ADR-119 §4, G42, G45, G63, G71</span>
@@ -281,8 +281,42 @@
       <li><b>Push</b> from the integration checkout: seven commits, this build plus the four that were waiting (the push-4 record, the joint-pool plan, the FTL login pages). It was pushed at 08:05 UTC, and the Release had CERT&rsquo;s tables in place by 08:11. No event was in its sync window (CERT: none for 3&ndash;5 Nov), so no cycle could read FTL before the ledger existed. Today&rsquo;s three daily FTL crons had not started; one that started before CERT&rsquo;s migrations would have failed closed, with nothing sent and nothing paused.</li>
       <li><b>CI</b> run 41796842076: success (pytest, coherence, CERT roster, pgTAP, Vitest). <b>Release</b> run 41797115355: success; deploy-cert 50&nbsp;s, then deploy-prod 45&nbsp;s after your approval.</li>
       <li><b>CERT and PROD</b> both hold <code>tbl_ftl_read_ledger</code>, <code>tbl_ftl_session</code>, the five <code>fn_ftl_ledger_*</code> / <code>fn_ftl_session_*</code> functions and the <code>budget</code> verdict. On CERT only <code>service_role</code> can read the session, the ledger or the getter (anon and authenticated: no). Both tables are still empty: nothing has read FTL under the new code yet.</li>
-      <li><b>Owed, live:</b> the first CI read of the day signs in once, stores the session on CERT and counts in the ledger; a later run reuses it without a sign-in. Today&rsquo;s late daily crons (event-close, source re-read, EVF sync) will show it. I start no FTL read myself (S7).</li>
+      <li><b>Owed, live:</b> the first CI read of the day signs in once, stores the session on CERT and counts in the ledger; a later run reuses it without a sign-in. This comes from the first scheduled FTL read, which is not today (next section). I start no FTL read myself (S7).</li>
     </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Live proof · checked 4 Nov 2026, 08:15&ndash;08:40 UTC · read from CERT and PROD, nothing sent to FTL</p>
+    <h2>When the first FTL read comes</h2>
+    <p>Under the new rules, none of the jobs that read FTL has anything to read today. I worked out each job&rsquo;s selection with its own code against CERT&rsquo;s rows; no request went to FTL.</p>
+    <table>
+      <thead><tr><th>Job</th><th>Today, Wed 4 Nov</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b>Results sync</b> (hourly)</td><td>no FTL read</td><td>No event has a window covering 3&ndash;5 Nov. The last cycle (3 Nov, 22:17 UTC) found &ldquo;0 event(s) to sync&rdquo;.</td></tr>
+        <tr><td><b>Daily close</b> (04:17 UTC)</td><td>no FTL read</td><td>No active-season event is IN_PROGRESS past its end date, on CERT or on PROD.</td></tr>
+        <tr><td><b>Source re-read</b> (05:17 UTC)</td><td>no FTL read</td><td>The full re-read runs on Mondays, by hand, and the day before an international event starts. No event starts on 5 Nov, and no linked FTL event is due a dry read.</td></tr>
+        <tr><td><b>EVF sync</b> (06:23 UTC)</td><td>no FTL read</td><td>It reads FTL only to repair an event marked COMPLETED with a future date. CERT has 0 such rows.</td></tr>
+      </tbody>
+    </table>
+    <p>The re-read&rsquo;s selection through 16 Nov:</p>
+    <ul>
+      <li><b>Mon 9 Nov, the first FTL read.</b> The full re-read reads 20 events. Only one has FTL sources: <code>IMSW-2025-2026</code>, which is FTL-only and still IN_PROGRESS, so the re-read still reads it (F4 B). No event mixes FTL with another engine. Expected: the run signs in (1/2), stores the session on CERT and reads IMSW&rsquo;s schedule and its listings, about 25 requests. The 9 completed FTL-only events are left out. The cron is due at 05:17 UTC; yesterday&rsquo;s started at 12:50.</li>
+      <li><b>Fri 13 Nov, the reuse.</b> The full re-read is due again, because <code>PEW3ef-2026-2027</code> starts on 14 Nov. It reads IMSW again, this time with the stored session: 0 sign-ins expected.</li>
+      <li><b>PEW3ef-2026-2027</b> (14&ndash;15 Nov) has no results link yet. Once it has an FTL link, it gets one dry read the day before, then sync reads at 08, 12, 16 and 20 UTC during its window.</li>
+      <li><b>IMSW-2025-2026</b> is the only reason the re-read touches FTL at all. It is completed by hand on your go once its dates are read at the source (ADR-119 G64, G70). After that, the weekly re-read reads no FTL event until one is open again.</li>
+    </ul>
+    <p><b>B11, noted while checking:</b> the EVF sync&rsquo;s repair of future-dated COMPLETED rows treats any <code>FtlAuthError</code> as &ldquo;no date can be read&rdquo; and demotes those rows to PLANNED. Since ADR-120 that error also means the day&rsquo;s cap is spent, or the ledger cannot be reached. The demotion is the repair&rsquo;s documented fallback: it can be undone, and the calendar flow supplies the date later. CERT has no such row today, and the cap leaves far more room than this needs. I recommend no change. Say if you want the repair to wait a day instead.</p>
+
+    <h3>F7 · How to get the proof</h3>
+    <table>
+      <thead><tr><th>Option</th><th>What happens</th><th>Extra FTL reads</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b> (recommended)</td><td>No extra read. I add two one-time checks in this app: Mon 9 Nov and Fri 13 Nov, at 18:00 Warsaw. Each reads CERT&rsquo;s ledger row and the session&rsquo;s sign-in time and expiry (never the cookie) plus the re-read&rsquo;s log, and reports here: Monday the sign-in and store, Friday the reuse. They run while the app is open, or at its next launch.</td><td>0</td></tr>
+        <tr><td><b>B</b></td><td>No extra read and no scheduled check. You ask me after Monday&rsquo;s run, and I check then.</td><td>0</td></tr>
+        <tr><td><b>C</b></td><td>Prove it today. I run one by-hand re-read of <code>IMSW-2025-2026</code> on CI (<code>source-regression</code>, <code>event_code</code>), then a second to show the reuse.</td><td>~50 requests, 1 sign-in</td></tr>
+      </tbody>
+    </table>
+    <p><b>Recommendation: A.</b> The proof comes from reads the schedule makes anyway, and you don&rsquo;t have to remember to ask. C spends reads for nothing but the proof, which is the kind of reading this plan exists to stop.</p>
   </section>
 
   <section>
