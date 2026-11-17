@@ -1,0 +1,310 @@
+[
+ {
+  "name": "form-back__desktop__en__4-search-and-filters.png",
+  "firstMatch": 307,
+  "last": 842,
+  "anyDiff": 25,
+  "maxDiff": 10
+ },
+ {
+  "name": "form-back__desktop__pl__4-search-and-filters.png",
+  "firstMatch": 307,
+  "last": 842,
+  "anyDiff": 25,
+  "maxDiff": 10
+ },
+ {
+  "name": "form-back__phone__en__4-search-and-filters.png",
+  "firstMatch": 376,
+  "last": 860,
+  "anyDiff": 36,
+  "maxDiff": 4
+ },
+ {
+  "name": "form-back__phone__pl__4-search-and-filters.png",
+  "firstMatch": 376,
+  "last": 860,
+  "anyDiff": 36,
+  "maxDiff": 4
+ },
+ {
+  "name": "modal__desktop__en__2-category-v2.png",
+  "firstMatch": 265,
+  "last": 1318,
+  "anyDiff": 37,
+  "maxDiff": 7
+ },
+ {
+  "name": "modal__desktop__en__3-search-kow.png",
+  "firstMatch": 265,
+  "last": 430,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__desktop__en__4-search-and-filters.png",
+  "firstMatch": 265,
+  "last": 800,
+  "anyDiff": 27,
+  "maxDiff": 7
+ },
+ {
+  "name": "modal__desktop__en__5-weapon-epee.png",
+  "firstMatch": 265,
+  "last": 2095,
+  "anyDiff": 42,
+  "maxDiff": 7
+ },
+ {
+  "name": "modal__desktop__en__6-no-match.png",
+  "firstMatch": 265,
+  "last": 386,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__desktop__pl__2-category-v2.png",
+  "firstMatch": 265,
+  "last": 1318,
+  "anyDiff": 36,
+  "maxDiff": 7
+ },
+ {
+  "name": "modal__desktop__pl__3-search-kow.png",
+  "firstMatch": 265,
+  "last": 430,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__desktop__pl__4-search-and-filters.png",
+  "firstMatch": 265,
+  "last": 800,
+  "anyDiff": 27,
+  "maxDiff": 7
+ },
+ {
+  "name": "modal__desktop__pl__5-weapon-epee.png",
+  "firstMatch": 265,
+  "last": 2095,
+  "anyDiff": 42,
+  "maxDiff": 7
+ },
+ {
+  "name": "modal__desktop__pl__6-no-match.png",
+  "firstMatch": 265,
+  "last": 386,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__phone__en__2-category-v2.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 46,
+  "maxDiff": 5
+ },
+ {
+  "name": "modal__phone__en__3-search-kow.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__phone__en__4-search-and-filters.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 6,
+  "maxDiff": 5
+ },
+ {
+  "name": "modal__phone__en__5-weapon-epee.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 96,
+  "maxDiff": 5
+ },
+ {
+  "name": "modal__phone__en__6-no-match.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__phone__pl__2-category-v2.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 46,
+  "maxDiff": 5
+ },
+ {
+  "name": "modal__phone__pl__3-search-kow.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "modal__phone__pl__4-search-and-filters.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 6,
+  "maxDiff": 5
+ },
+ {
+  "name": "modal__phone__pl__5-weapon-epee.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 96,
+  "maxDiff": 5
+ },
+ {
+  "name": "modal__phone__pl__6-no-match.png",
+  "firstMatch": 326,
+  "last": 4132,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__desktop__en__2-category-v2.png",
+  "firstMatch": 265,
+  "last": 1318,
+  "anyDiff": 54,
+  "maxDiff": 10
+ },
+ {
+  "name": "standalone__desktop__en__3-search-kow.png",
+  "firstMatch": 265,
+  "last": 430,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__desktop__en__4-search-and-filters.png",
+  "firstMatch": 265,
+  "last": 800,
+  "anyDiff": 29,
+  "maxDiff": 10
+ },
+ {
+  "name": "standalone__desktop__en__5-weapon-epee.png",
+  "firstMatch": 265,
+  "last": 2095,
+  "anyDiff": 74,
+  "maxDiff": 6
+ },
+ {
+  "name": "standalone__desktop__en__6-no-match.png",
+  "firstMatch": 265,
+  "last": 386,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__desktop__pl__2-category-v2.png",
+  "firstMatch": 265,
+  "last": 1318,
+  "anyDiff": 53,
+  "maxDiff": 10
+ },
+ {
+  "name": "standalone__desktop__pl__3-search-kow.png",
+  "firstMatch": 265,
+  "last": 430,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__desktop__pl__4-search-and-filters.png",
+  "firstMatch": 265,
+  "last": 800,
+  "anyDiff": 29,
+  "maxDiff": 10
+ },
+ {
+  "name": "standalone__desktop__pl__5-weapon-epee.png",
+  "firstMatch": 265,
+  "last": 2095,
+  "anyDiff": 73,
+  "maxDiff": 6
+ },
+ {
+  "name": "standalone__desktop__pl__6-no-match.png",
+  "firstMatch": 265,
+  "last": 386,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__phone__en__2-category-v2.png",
+  "firstMatch": 334,
+  "last": 1294,
+  "anyDiff": 52,
+  "maxDiff": 4
+ },
+ {
+  "name": "standalone__phone__en__3-search-kow.png",
+  "firstMatch": 334,
+  "last": 478,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__phone__en__4-search-and-filters.png",
+  "firstMatch": 334,
+  "last": 818,
+  "anyDiff": 30,
+  "maxDiff": 7
+ },
+ {
+  "name": "standalone__phone__en__5-weapon-epee.png",
+  "firstMatch": 334,
+  "last": 2008,
+  "anyDiff": 77,
+  "maxDiff": 5
+ },
+ {
+  "name": "standalone__phone__en__6-no-match.png",
+  "firstMatch": 334,
+  "last": 470,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__phone__pl__2-category-v2.png",
+  "firstMatch": 334,
+  "last": 1294,
+  "anyDiff": 52,
+  "maxDiff": 4
+ },
+ {
+  "name": "standalone__phone__pl__3-search-kow.png",
+  "firstMatch": 334,
+  "last": 478,
+  "anyDiff": 0,
+  "maxDiff": 0
+ },
+ {
+  "name": "standalone__phone__pl__4-search-and-filters.png",
+  "firstMatch": 334,
+  "last": 818,
+  "anyDiff": 30,
+  "maxDiff": 7
+ },
+ {
+  "name": "standalone__phone__pl__5-weapon-epee.png",
+  "firstMatch": 334,
+  "last": 2008,
+  "anyDiff": 77,
+  "maxDiff": 5
+ },
+ {
+  "name": "standalone__phone__pl__6-no-match.png",
+  "firstMatch": 334,
+  "last": 470,
+  "anyDiff": 0,
+  "maxDiff": 0
+ }
+]
