@@ -12,6 +12,7 @@ vi.mock('../src/lib/api', () => ({
   matchRegistrationFencer: vi.fn(),
   createRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
+  deleteRegistration: vi.fn(),
 }))
 import { fetchEventForRegistration, fetchEntryList } from '../src/lib/api'
 import RegistrationModal from '../src/components/RegistrationModal.svelte'
@@ -69,5 +70,27 @@ describe('RegistrationModal', () => {
     await findByText(/Nie znaleziono wydarzenia/)
     await fireEvent.click(container.querySelector('button.reg-close')!)
     expect(onclose).toHaveBeenCalled()
+  })
+
+  // FR-166, ELREM.12 — the modal forwards the administrator setting, the
+  // event's name and whether registration is open to the entry list.
+  it('hands the administrator setting to the entry list, and nothing by default', async () => {
+    const rows = [
+      { id_registration: 1, id_event: 5, txt_surname: 'KOWAL', txt_first_name: 'Anna', enum_gender: 'F' as const, arr_weapons: ['EPEE' as const], enum_age_category: 'V1' as const },
+    ]
+    mockFetchEntryList.mockResolvedValue(rows)
+    const plain = render(RegistrationModal, { props: { open: true, eventId: 5, view: 'list' } })
+    await waitFor(() => expect(plain.container.querySelector('td.el-name')).not.toBeNull())
+    expect(plain.container.querySelector('button.el-remove')).toBeNull()
+    plain.unmount()
+
+    const admin = render(RegistrationModal, {
+      props: { open: true, eventId: 5, view: 'list', canRemove: true, eventName: 'PEW5 Łomianki', registrationOpen: false },
+    })
+    await waitFor(() => expect(admin.container.querySelector('button.el-remove')).not.toBeNull())
+    await fireEvent.click(admin.container.querySelector('button.el-remove')!)
+    const dialog = admin.container.querySelector('[role="alertdialog"]')
+    expect(dialog?.textContent).toContain('PEW5 Łomianki')
+    expect(dialog?.textContent).toContain('Termin zapisów już minął.')
   })
 })

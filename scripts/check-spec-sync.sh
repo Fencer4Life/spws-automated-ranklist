@@ -118,7 +118,10 @@ if [ -f "$RTM" ]; then
   # 164 since 2026-11-17: +FR-165 (the entry list's tiles show the selection;
   #   the name search folds diacritics). Registered as Planned before code
   #   (plan entry-list-tiles-follow-filters-tdd-plan §08 step 3).
-  EXPECTED=164
+  # 165 since 2026-11-17: +FR-166 (an administrator removes an entry from the
+  #   entry list). Registered as Planned before code (plan
+  #   entry-list-admin-removes-entry-tdd-plan §07 step 2).
+  EXPECTED=165
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

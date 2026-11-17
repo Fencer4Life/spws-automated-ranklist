@@ -21,6 +21,7 @@ import {
   createRegistration,
   fetchEntryList,
   fetchEventForRegistration,
+  deleteRegistration,
 } from '../src/lib/api'
 
 beforeEach(() => {
@@ -181,5 +182,39 @@ describe('fetchEventForRegistration (P2.2, D7 — standalone page resolves the e
     const single = vi.fn().mockResolvedValue({ data: null, error: { message: 'not found' } })
     mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ single }) }) })
     expect(await fetchEventForRegistration('NOPE')).toBeNull()
+  })
+})
+
+// FR-166 — an administrator removes an entry. A delete that row security
+// refuses does not raise: it answers success with zero rows, so the function
+// counts a removal as done only when the database returns the removed row.
+describe('deleteRegistration (FR-166, an administrator removes an entry)', () => {
+  function chain(result: { data: unknown; error: unknown }) {
+    const select = vi.fn().mockResolvedValue(result)
+    const eq = vi.fn().mockReturnValue({ select })
+    const del = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ delete: del })
+    return { del, eq, select }
+  }
+
+  // REGDEL.03
+  it('deletes exactly the one registration identifier', async () => {
+    const c = chain({ data: [{ id_registration: 17 }], error: null })
+    await deleteRegistration(17)
+    expect(mockFrom).toHaveBeenCalledWith('tbl_registration')
+    expect(c.del).toHaveBeenCalledTimes(1)
+    expect(c.eq).toHaveBeenCalledWith('id_registration', 17)
+    expect(c.select).toHaveBeenCalledWith('id_registration')
+  })
+
+  // REGDEL.04
+  it('fails when the database returns no row (a refused delete)', async () => {
+    chain({ data: [], error: null })
+    await expect(deleteRegistration(17)).rejects.toThrow()
+  })
+
+  it('fails on a database error', async () => {
+    chain({ data: null, error: { message: 'permission denied' } })
+    await expect(deleteRegistration(17)).rejects.toThrow()
   })
 })

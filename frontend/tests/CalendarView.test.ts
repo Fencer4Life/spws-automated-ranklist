@@ -43,6 +43,7 @@ vi.mock('../src/lib/api', () => ({
   matchRegistrationFencer: vi.fn(),
   createRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
+  deleteRegistration: vi.fn(),
 }))
 import { fetchEventForRegistration, fetchEntryList } from '../src/lib/api'
 
@@ -297,6 +298,47 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     await fireEvent.click(container.querySelector('.modal-overlay') as HTMLElement)
     expect(container.querySelector('.modal-overlay')).toBeNull()
     expect(container.querySelector('.card')).not.toBeNull()
+  })
+
+  // FR-166, ELREM.12 — the calendar hands the administrator setting, the
+  // event's name and whether registration is open down to the entry list.
+  const ROSTER = [
+    { id_registration: 1, id_event: 99, txt_surname: 'KOWAL', txt_first_name: 'Anna', enum_gender: 'F' as const, arr_weapons: ['EPEE' as const], enum_age_category: 'V1' as const },
+  ]
+
+  async function openList(props: Record<string, unknown>) {
+    mockFetchEntryList.mockResolvedValue(ROSTER)
+    const view = render(CalendarView, { props })
+    await fireEvent.click(view.container.querySelector('.entry-list-link') as HTMLAnchorElement)
+    await waitFor(() => expect(view.container.querySelector('td.el-name')).not.toBeNull())
+    return view
+  }
+
+  it('CV.15: a signed-in administrator gets „Usuń”; signing out removes it', async () => {
+    const view = await openList({ events: [spwsEvent({ txt_name: 'PEW5 Łomianki' })], isAdmin: true })
+    const btn = view.container.querySelector('button.el-remove') as HTMLButtonElement
+    expect(btn).not.toBeNull()
+    await fireEvent.click(btn)
+    const dialog = view.container.querySelector('[role="alertdialog"]')
+    expect(dialog?.textContent).toContain('PEW5 Łomianki')
+    expect(dialog?.textContent).toContain('przed końcem terminu zapisów')
+    await view.rerender({ events: [spwsEvent({ txt_name: 'PEW5 Łomianki' })], isAdmin: false })
+    await waitFor(() => expect(view.container.querySelector('button.el-remove')).toBeNull())
+    expect(view.container.querySelector('[role="alertdialog"]')).toBeNull()
+  })
+
+  it('CV.16: a visitor never gets „Usuń”', async () => {
+    const view = await openList({ events: [spwsEvent()] })
+    expect(view.container.querySelector('button.el-remove')).toBeNull()
+  })
+
+  it('CV.17: after the registration deadline the confirmation says it has passed', async () => {
+    const view = await openList({
+      events: [spwsEvent({ dt_registration_deadline: '2020-01-01' })],
+      isAdmin: true,
+    })
+    await fireEvent.click(view.container.querySelector('button.el-remove') as HTMLButtonElement)
+    expect(view.container.querySelector('[role="alertdialog"]')?.textContent).toContain('Termin zapisów już minął.')
   })
 })
 

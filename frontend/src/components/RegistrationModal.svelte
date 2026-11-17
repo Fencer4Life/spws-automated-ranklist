@@ -2,7 +2,7 @@
   <div class="modal-overlay" role="presentation" onclick={onclose}>
     <div role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       {#if view === 'list' && eventId != null}
-        <EntryList eventId={eventId} {onclose} />
+        <EntryList eventId={eventId} {onclose} {canRemove} {eventName} {registrationOpen} />
       {:else}
         <RegistrationForm {eventCode} {payee} {iban} {onclose} />
       {/if}
@@ -28,6 +28,12 @@
     payee = '',
     iban = '',
     onclose,
+    // FR-166 — forwarded to the entry list: whether a signed-in administrator
+    // may remove entries, the event's name for the confirmation, and whether
+    // registration is still open. Defaults are a visitor's view.
+    canRemove = false,
+    eventName = '',
+    registrationOpen = true,
   }: {
     open?: boolean
     eventCode?: string
@@ -36,6 +42,9 @@
     payee?: string
     iban?: string
     onclose?: () => void
+    canRemove?: boolean
+    eventName?: string
+    registrationOpen?: boolean
   } = $props()
 </script>
 

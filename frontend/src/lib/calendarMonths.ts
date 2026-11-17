@@ -51,6 +51,10 @@ export interface MonthRow {
 export interface RegistrationState {
   /** `dt_registration_deadline ?? dt_start` — ADR-030. */
   regCutoff: string | null
+  /** Today is on or before the cutoff: a fencer can still (re-)register. The
+   *  registration link and the administrator's removal note (FR-166) both
+   *  read this one rule. */
+  registrationOpen: boolean
   showDeadline: boolean
   showRegistrationLink: boolean
   showEntryListLink: boolean
@@ -634,6 +638,7 @@ export function registrationState(
 
   return {
     regCutoff,
+    registrationOpen: cutoffOpen,
     showDeadline: deadline != null && today <= deadline,
     showRegistrationLink: !!event.url_registration && cutoffOpen,
     showEntryListLink:

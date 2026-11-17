@@ -188,6 +188,13 @@
 <figcaption>Narrowed by the search „k”, category V2 and men: every tile shows the selection against the event total, and „Wyczyść filtry” brings the whole list back.</figcaption>
 </figure>
 
+<p>Nobody withdraws themself from the list. A fencer who changes plans tells the organizer, who asks an administrator; the entry is a declared intent, and someone who simply does not appear is not penalised either. The administrator works in the admin application: signed in, the same roster opened from the calendar carries a <b>Usuń</b> button on every row. It asks first, naming the fencer, their weapons and category, and the event, and says the operation cannot be undone. While registration is open it adds that the fencer can register again before the deadline; once the deadline has passed it says so instead, since signing up again is then closed. Confirming deletes the registration: the row leaves the list, the tiles count down and a line names who was removed. Nothing marked „withdrawn” is kept. The public page and the WordPress calendar never show the button, and the database refuses a delete from anyone not signed in, whatever the page does. Source: <code>frontend/src/components/EntryList.svelte</code> and <code>deleteRegistration</code> in <code>frontend/src/lib/api.ts</code>; requirement FR-166, tests REGDEL.01–04 and ELREM.01–13.</p>
+
+<figure class="shot">
+<img src="../assets/registration/08-entry-list-admin-remove.png" alt="The admin application on a local environment: the entry list searched for zzwalk shows one entry with a Usuń button, and over it a confirmation reading Usunąć zgłoszenie?, the fencer with szpada and V2, the event, the sentence that the operation cannot be undone and that she can register again before the registration deadline, and the buttons Usuń zgłoszenie and Anuluj.">
+<figcaption>Signed in as an administrator: „Usuń” on the row asks first, naming the fencer and the event, before the entry is deleted.</figcaption>
+</figure>
+
 <div class="warning">
 <p>The projection publishes the row identifier and the age category. The category is a ten-year band, so it narrows the birth year considerably — and the match lookup answers per birth year <em>before</em> anything is written, which makes an exact year recoverable by an anonymous caller. Any reasoning that treats the birth year as private is therefore unsound. This is the single largest open gap.</p>
 </div>
