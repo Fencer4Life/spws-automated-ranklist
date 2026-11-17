@@ -1,0 +1,231 @@
+<meta charset="utf-8">
+<title>Entry list: an administrator removes an entry · design</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.mkrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0 6px}
+.mkcap{font:600 12px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#555;margin:0 0 6px}
+.mk{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:18px;color:#e0e0e0;font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.mk *{box-sizing:border-box}
+.mk .t{font-weight:600;color:#fff;font-size:1.05em;margin:0 0 10px}
+.mk .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}
+.mk .tile{background:#0d1b2a;border-radius:8px;padding:7px 9px;color:#fff;font-weight:600}
+.mk .tile span{display:block;font-size:.7em;color:#7fbadc;font-weight:400}
+.mk .field{background:#0d1b2a;border:1px solid #00d4ff;border-radius:8px;padding:8px 12px;color:#e0e0e0;margin:0 0 10px;font-size:.92em}
+.mk .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #1a2c4a;color:#e0e0e0;font-size:.92em}
+.mk .li .w{color:#8894a8;font-size:.85em}
+.mk .rm{color:#ff8a8a;border:1px solid #7a2e3a;border-radius:8px;padding:4px 10px;font-size:.82em;outline:2px dashed #ffd24a;outline-offset:3px}
+.mk .confirm{background:#2a1520;border:1px solid #7a2e3a;border-radius:10px;padding:12px;color:#ffd7d7;margin:0 0 12px}
+.mk .confirm b{color:#fff}
+.mk .acts{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.mk .btn{border-radius:8px;padding:9px 16px;font-weight:600;font-size:.92em}
+.mk .btn.danger{background:#e5484d;color:#fff}
+.mk .btn.quiet{color:#9fc4dc;border:1px solid #1a4a8a}
+.mk .ok{color:#4ade80;margin:12px 0 0}
+.mk .muted{color:#8894a8;font-size:.85em;margin:12px 0 0}
+.mk .new{outline:2px dashed #ffd24a;outline-offset:3px;border-radius:6px;color:#9fc4dc}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Entry list · Administrator · Design proposal</p>
+  <h1>Removing a fencer from the entry list: an administrator's „Usuń” button</h1>
+  <p class="dek">A fencer who changes plans tells the organizer; the organizer asks the administrator; the administrator removes the entry. The fencer's side gets no new control. This page proposes where the button lives and how it behaves. Nothing is built.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Design signed 17 Nov 2026 · Q1 yes · Q2 no · Q3 no</span>
+    <span class="pill">no code written</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · The plan in one paragraph</p>
+    <h2>What I propose</h2>
+    <p>The administrator already opens the same „Lista zgłoszonych” that fencers see, from the calendar card in the admin application. <b>While signed in, each row of that list shows a „Usuń” button.</b> Tapping it asks for confirmation with the fencer's name and the event; confirming deletes the entry, the row disappears and the tiles count down. Visitors who are not signed in see the list exactly as it is today.</p>
+    <p>The search and filters released today are what make this the right place: the administrator types „zak”, sees one row, removes it.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Mock</p>
+    <h2>What the administrator sees</h2>
+    <p>The yellow dashed outline marks what is new.</p>
+    <div class="mkrow">
+      <div><p class="mkcap">1 · signed in: every row carries „Usuń”</p>
+        <div class="mk">
+          <p class="t">Lista zgłoszonych</p>
+          <div class="tiles"><div class="tile"><span>Zgłoszeni</span>1 z 80</div><div class="tile"><span>Szpada</span>1 z 50</div><div class="tile"><span>Floret</span>0 z 20</div><div class="tile"><span>Szabla</span>0 z 25</div></div>
+          <div class="field">zak</div>
+          <div class="li"><span>ŻAK Anna <span class="w">· szpada · V2</span></span><span class="rm">Usuń</span></div>
+        </div></div>
+      <div><p class="mkcap">2 · the confirmation</p>
+        <div class="mk">
+          <div class="confirm"><b>Usunąć zgłoszenie?</b><br>ŻAK Anna · szpada · V2<br>PEW5 Łomianki<br><br>Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.</div>
+          <div class="acts"><span class="btn danger">Usuń zgłoszenie</span><span class="btn quiet">Anuluj</span></div>
+        </div></div>
+      <div><p class="mkcap">3 · after: the row is gone, the count is 79</p>
+        <div class="mk">
+          <p class="t">Lista zgłoszonych</p>
+          <div class="tiles"><div class="tile"><span>Zgłoszeni</span>79</div><div class="tile"><span>Szpada</span>49</div><div class="tile"><span>Floret</span>20</div><div class="tile"><span>Szabla</span>25</div></div>
+          <p class="ok">✓ Usunięto zgłoszenie: ŻAK Anna</p>
+        </div></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Why here</p>
+    <h2>Two other places I considered</h2>
+    <ul>
+      <li><b>In the event editor (Wydarzenia → „Rejestracja SPWS”).</b> It would need a second list of entrants built from nothing, without the search and filters. More work for a worse tool.</li>
+      <li><b>A command to the Telegram bot</b> („usuń PEW5 Żak Anna”). Handy on a phone, but two people can share a name, a typo removes nobody or the wrong person, and there is no list to look at before confirming. The admin application already works on a phone.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · How it works</p>
+    <h2>Behaviour and rules</h2>
+    <ul>
+      <li><b>Only a signed-in administrator can remove.</b> The database already says so: the registration table lets administrators delete and refuses everyone else. The button is hidden for visitors, and a visitor who forged the request would be refused by the database, not merely by the page. The plan's first step proves this with a test on LOCAL before anything else is written.</li>
+      <li><b>The public pages do not change.</b> The public registration page and the WordPress calendar have no sign-in, so the button can never appear there.</li>
+      <li><b>The entry is deleted</b>, not marked. It leaves the public list and the organizer's start files, which are built from the list at download time.</li>
+      <li><b>It works until the event starts</b>, also after the registration deadline. After the deadline the fencer cannot sign up again; the confirmation text then says so instead of „może zgłosić się ponownie przed końcem terminu zapisów”.</li>
+      <li><b>The administrator must be looking at PROD.</b> Real entries live on PROD; the admin application's CERT/PROD switch decides which list is shown, as for every other admin action.</li>
+      <li><b>If the delete fails</b> (connection lost, session expired), the row stays and a message says the entry was not removed.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Decided</p>
+    <h2>Your answers, 17 Nov 2026</h2>
+    <ol class="steps">
+      <li><b>Q1 · The button lives on the entry list, for a signed-in administrator:</b> yes.</li>
+      <li><b>Q2 · A line under the public list telling fencers how to withdraw:</b> no. We do not want to encourage people to resign; the public list gets no new text.</li>
+      <li><b>Q3 · A trace of removals:</b> no.</li>
+    </ol>
+    <p>The confirmation text is as you worded it: „Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.”</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Next</p>
+    <h2>After your sign-off</h2>
+    <p>I write the TDD plan as its own page: the requirement, tests first (the database refusing a visitor's delete and allowing an administrator's; the button absent for visitors and present for administrators; confirm, cancel and failure), a before/after pixel sheet proving the public list is unchanged, the documentation gate, and release only on your go.</p>
+    <p>Still open from before: the I6 plan (the comment in <code>register.html</code>) waits for your sign-off. W1 from the previous page stands: the documentation search tool is missing from this session.</p>
+  </section>
+
+  <p class="foot">design · entry-list-admin-remove · 17 Nov 2026 · rev 2 · no code written</p>
+</div>

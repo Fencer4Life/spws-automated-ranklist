@@ -1,0 +1,192 @@
+<meta charset="utf-8">
+<title>Entry list: an administrator removes an entry · pixel sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0 28px;align-items:start}
+.shot{margin:0;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.shot img{width:100%;height:auto;display:block;border-radius:4px}
+.shot figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Entry list · Administrator · Pixel sheet</p>
+  <h1>An administrator removes an entry: before and after</h1>
+  <p class="dek">The public list is <b>unchanged: 56 of 56 captures pixel-identical</b>. Below are the new states only an administrator sees, for your approval before anything is pushed.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting your approval</span>
+    <span class="pill">plan: entry-list-admin-removes-entry-tdd-plan-2026-11-17.html</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Proof of no harm</p>
+    <h2>The public list: 56 of 56 identical</h2>
+    <p>The same 56 states as the last sheet (standalone page, calendar modal, from the form; desktop and phone; Polish and English; unfiltered, every filter, search, no match), captured from a build of <code>main</code> and a build of this change with the same tools (<code>doc/plans/entry-list-tiles-follow-filters-sheet/tools/</code>), software drawing, stable shots. Result: <b>56 identical, 0 different</b>; no horizontal scroll in any state. Record: <code>entry-list-admin-removes-entry-sheet/public-before-after-diff.json</code>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · For your eyes</p>
+    <h2>What only a signed-in administrator sees</h2>
+    <p>The real <code>RegistrationModal</code> and entry list, mounted with the administrator setting inside a custom element as in the live calendar, with the invented roster of the last sheet (76 entries). Deletes are answered by a stub; no database is read or written. 24 captures; page errors in 0 of them, horizontal scroll in 0. Click an image for full size. The confirmation and the done line are captured where the tapped row is, so the list behind them is scrolled.</p>
+    <h3>The list, signed in: every row carries „Usuń”</h3>
+<div class="shots"><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__1-list.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__1-list.png" alt="The list, signed in: every row carries „Usuń”, desktop, PL" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__1-list.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__1-list.png" alt="The list, signed in: every row carries „Usuń”, desktop, EN" loading="lazy"></a><figcaption>desktop · EN</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__1-list.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__1-list.png" alt="The list, signed in: every row carries „Usuń”, phone, PL" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__1-list.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__1-list.png" alt="The list, signed in: every row carries „Usuń”, phone, EN" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+<h3>Confirmation for a woman, registration open</h3>
+<div class="shots"><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__2-confirm-woman.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__2-confirm-woman.png" alt="Confirmation for a woman, registration open, desktop, PL" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__2-confirm-woman.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__2-confirm-woman.png" alt="Confirmation for a woman, registration open, desktop, EN" loading="lazy"></a><figcaption>desktop · EN</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__2-confirm-woman.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__2-confirm-woman.png" alt="Confirmation for a woman, registration open, phone, PL" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__2-confirm-woman.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__2-confirm-woman.png" alt="Confirmation for a woman, registration open, phone, EN" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+<h3>Confirmation for a man, registration open</h3>
+<div class="shots"><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__3-confirm-man.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__3-confirm-man.png" alt="Confirmation for a man, registration open, desktop, PL" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__3-confirm-man.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__3-confirm-man.png" alt="Confirmation for a man, registration open, desktop, EN" loading="lazy"></a><figcaption>desktop · EN</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__3-confirm-man.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__3-confirm-man.png" alt="Confirmation for a man, registration open, phone, PL" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__3-confirm-man.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__3-confirm-man.png" alt="Confirmation for a man, registration open, phone, EN" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+<h3>Confirmation after the registration deadline (Q1)</h3>
+<div class="shots"><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__4-confirm-closed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__4-confirm-closed.png" alt="Confirmation after the registration deadline (Q1), desktop, PL" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__4-confirm-closed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__4-confirm-closed.png" alt="Confirmation after the registration deadline (Q1), desktop, EN" loading="lazy"></a><figcaption>desktop · EN</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__4-confirm-closed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__4-confirm-closed.png" alt="Confirmation after the registration deadline (Q1), phone, PL" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__4-confirm-closed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__4-confirm-closed.png" alt="Confirmation after the registration deadline (Q1), phone, EN" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+<h3>After confirming: the row is gone, the tiles count down, the done line in view</h3>
+<div class="shots"><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__5-done.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__5-done.png" alt="After confirming: the row is gone, the tiles count down, the done line in view, desktop, PL" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__5-done.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__5-done.png" alt="After confirming: the row is gone, the tiles count down, the done line in view, desktop, EN" loading="lazy"></a><figcaption>desktop · EN</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__5-done.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__5-done.png" alt="After confirming: the row is gone, the tiles count down, the done line in view, phone, PL" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__5-done.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__5-done.png" alt="After confirming: the row is gone, the tiles count down, the done line in view, phone, EN" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+<h3>The delete failed: the confirmation stays with the failed line</h3>
+<div class="shots"><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__6-failed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__pl__6-failed.png" alt="The delete failed: the confirmation stays with the failed line, desktop, PL" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot shot-desktop"><a href="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__6-failed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__desktop__en__6-failed.png" alt="The delete failed: the confirmation stays with the failed line, desktop, EN" loading="lazy"></a><figcaption>desktop · EN</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__6-failed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__pl__6-failed.png" alt="The delete failed: the confirmation stays with the failed line, phone, PL" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot shot-phone"><a href="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__6-failed.png"><img src="entry-list-admin-removes-entry-sheet/admin/admin__phone__en__6-failed.png" alt="The delete failed: the confirmation stays with the failed line, phone, EN" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Found while capturing</p>
+    <h2>Two problems fixed before this sheet</h2>
+    <ul>
+      <li><b>P1 · On a phone the „Usuń” button was clipped at the card's edge.</b> Its cell kept the desktop width rule (1 %), so it measured 3 px and the button spilled out. The phone layout now gives that cell its own width. Visitors never have that cell.</li>
+      <li><b>P2 · After a removal far down the list the done line was out of view</b>, and focus fell to the page when the confirmation closed. Focus now moves to the done line, which brings it into view (ELREM.05 extended, seen red first).</li>
+      <li><b>From the tests:</b> CV.15 found that signing out left an open confirmation on screen; it now closes with the buttons.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Checked, nothing to fix</p>
+    <h2>The WordPress calendar</h2>
+    <p>The WordPress calendar element mounts the same application as the admin app, so the new setting reaches its code path. It cannot become true there: the application resets the sign-in on load and opens a sign-in only on github.io or on the page carrying <code>admin-entry</code> (/ranking/). The existing test WP.ADM.01 (<code>frontend/tests/SiteChrome.test.ts</code>) pins that the calendar page ignores <code>?admin=1</code>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · The real application on LOCAL</p>
+    <h2>End to end, against the LOCAL database</h2>
+    <p>The full admin application built from this branch, on the LOCAL Docker stack. A visitor registered a throwaway entry (ZZWALKUSUN Ewa) through the real form and saw no „Usuń”. Signed in as the LOCAL test administrator, the same list showed „Usuń”; confirming removed the row, and the database afterwards held no such entry in the table or in the public list. Record: <code>entry-list-admin-removes-entry-sheet/local-walkthrough.md</code>.</p>
+    <div class="shots">
+      <figure class="shot"><a href="entry-list-admin-removes-entry-sheet/local/local-1-visitor-list.png"><img src="entry-list-admin-removes-entry-sheet/local/local-1-visitor-list.png" alt="A visitor's entry list on LOCAL with the throwaway entry and no remove button" loading="lazy"></a><figcaption>visitor · no „Usuń”</figcaption></figure>
+      <figure class="shot"><a href="entry-list-admin-removes-entry-sheet/local/local-2-admin-confirm.png"><img src="entry-list-admin-removes-entry-sheet/local/local-2-admin-confirm.png" alt="The administrator's confirmation over the entry list on LOCAL" loading="lazy"></a><figcaption>administrator · confirmation</figcaption></figure>
+      <figure class="shot"><a href="entry-list-admin-removes-entry-sheet/local/local-3-admin-done.png"><img src="entry-list-admin-removes-entry-sheet/local/local-3-admin-done.png" alt="The entry list on LOCAL after the removal, with the done line" loading="lazy"></a><figcaption>administrator · removed</figcaption></figure>
+    </div>
+  </section>
+
+  <p class="foot">sheet · entry-list-admin-removes-entry · 17 Nov 2026 · tools: entry-list-admin-removes-entry-sheet/tools/capture-admin.cjs</p>
+</div>
