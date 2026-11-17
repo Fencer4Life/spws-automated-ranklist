@@ -2,8 +2,9 @@
 // nazwisko/broń/kategoria/płeć filters. No birth year or club (GDPR
 // minimisation) — vw_registration_entry_list already excludes them.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, fireEvent, waitFor } from '@testing-library/svelte'
+import { setLocale } from '../src/lib/locale.svelte'
 
 vi.mock('../src/lib/api', () => ({
   fetchEntryList: vi.fn(),
@@ -270,5 +271,283 @@ describe('EntryList — surname ordering', () => {
         'ŻAK Adam',
       ]),
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-165 — the tiles show the selection; the search folds diacritics.
+// Plan: doc/plans/entry-list-tiles-follow-filters-tdd-plan-2026-11-17.html §04.
+// Design signed 2026-11-17: doc/plans/entry-list-selection-count-2026-11-17.html.
+//
+// Invented entries. Totals: 8 registered; épée 5, foil 3, sabre 2.
+// ---------------------------------------------------------------------------
+const SEL: RegistrationEntry[] = [
+  { id_registration: 1, id_event: 3, txt_surname: 'ŻAK', txt_first_name: 'Adam', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V2' },
+  { id_registration: 2, id_event: 3, txt_surname: 'ŁOŚ', txt_first_name: 'Ewa', enum_gender: 'F', arr_weapons: ['FOIL'], enum_age_category: 'V2' },
+  { id_registration: 3, id_event: 3, txt_surname: 'KOWAL', txt_first_name: 'Jan', enum_gender: 'M', arr_weapons: ['EPEE', 'SABRE'], enum_age_category: 'V2' },
+  { id_registration: 4, id_event: 3, txt_surname: 'KOWAL', txt_first_name: 'Anna', enum_gender: 'F', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+  { id_registration: 5, id_event: 3, txt_surname: 'ĆWIK', txt_first_name: 'Marek', enum_gender: 'M', arr_weapons: ['SABRE'], enum_age_category: 'V1' },
+  { id_registration: 6, id_event: 3, txt_surname: 'NOWAK', txt_first_name: 'Piotr', enum_gender: 'M', arr_weapons: ['EPEE', 'FOIL'], enum_age_category: 'V2' },
+  { id_registration: 7, id_event: 3, txt_surname: 'ŚLIWA', txt_first_name: 'Zofia', enum_gender: 'F', arr_weapons: ['FOIL'], enum_age_category: 'V3' },
+  { id_registration: 8, id_event: 3, txt_surname: 'lis', txt_first_name: 'Paweł', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V0' },
+]
+
+async function renderSel(rows: RegistrationEntry[] = SEL) {
+  mockFetchEntryList.mockResolvedValue(rows)
+  const view = render(EntryList, { props: { eventId: 3 } })
+  const c = view.container
+  if (rows.length) await waitFor(() => expect(c.querySelector('td.el-name')).not.toBeNull())
+  else await waitFor(() => expect(mockFetchEntryList).toHaveBeenCalled())
+  const search = c.querySelector('input[name="search"]') as HTMLInputElement
+  const weapon = c.querySelector('select[name="weaponFilter"]') as HTMLSelectElement
+  const category = c.querySelector('select[name="categoryFilter"]') as HTMLSelectElement
+  const gender = c.querySelector('select[name="genderFilter"]') as HTMLSelectElement
+  const type = (value: string) => fireEvent.input(search, { target: { value } })
+  const pick = (el: HTMLSelectElement, value: string) => fireEvent.change(el, { target: { value } })
+  /** The four tiles' numbers, whitespace collapsed: ['4 z 8', '3 z 5', ...]. */
+  const tiles = () =>
+    Array.from(c.querySelectorAll('.el-metrics .el-metric .el-v')).map((v) =>
+      (v.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    )
+  return { ...view, c, search, weapon, category, gender, type, pick, tiles }
+}
+
+const PLAIN = ['8', '5', '3', '2']
+
+describe('EntryList — the tiles show the selection (FR-165)', () => {
+  afterEach(() => setLocale('pl'))
+
+  // ELSEL.01 — guard: holds before the change; proven by a mutation run.
+  it('shows plain totals and none of the selection marks when nothing narrows', async () => {
+    const v = await renderSel()
+    expect(v.tiles()).toEqual(PLAIN)
+    expect(v.c.querySelector('.el-of')).toBeNull()
+    expect(v.c.querySelector('.el-metrics.el-narrowed')).toBeNull()
+    expect(v.c.querySelector('.el-dim')).toBeNull()
+    expect(v.c.querySelector('.el-active')).toBeNull()
+    expect(v.c.querySelector('button.el-search-clear')).toBeNull()
+    expect(v.c.querySelector('button.el-clear-all')).toBeNull()
+  })
+
+  // ELSEL.02
+  it('shows selection z total on every tile under a category filter', async () => {
+    const v = await renderSel()
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(v.tiles()).toEqual(['4 z 8', '3 z 5', '2 z 3', '1 z 2']))
+  })
+
+  // ELSEL.03
+  it('narrows the tiles by the search alone', async () => {
+    const v = await renderSel()
+    await v.type('kow')
+    await waitFor(() => expect(v.tiles()).toEqual(['2 z 8', '2 z 5', '0 z 3', '1 z 2']))
+  })
+
+  // ELSEL.04
+  it('combines the search with all three filters', async () => {
+    const v = await renderSel()
+    await v.type('kow')
+    await v.pick(v.weapon, 'EPEE')
+    await v.pick(v.category, 'V2')
+    await v.pick(v.gender, 'M')
+    await waitFor(() => expect(v.tiles()).toEqual(['1 z 8', '1 z 5', '0 z 3', '1 z 2']))
+    expect(renderedNames(v.c)).toEqual(['KOWAL Jan'])
+  })
+
+  // ELSEL.05
+  it('keeps the first tile equal to the number of listed rows', async () => {
+    const v = await renderSel()
+    const combos: [string, string, string, string][] = [
+      ['', 'FOIL', '', ''],
+      ['', '', 'V1', ''],
+      ['', '', '', 'F'],
+      ['a', 'EPEE', '', 'M'],
+      ['ow', '', 'V2', ''],
+    ]
+    for (const [q, w, cat, g] of combos) {
+      await v.type(q)
+      await v.pick(v.weapon, w)
+      await v.pick(v.category, cat)
+      await v.pick(v.gender, g)
+      await waitFor(() => expect(v.tiles()[0]).toBe(`${renderedNames(v.c).length} z 8`))
+    }
+  })
+
+  // ELSEL.06
+  it('shows 0 z total on every tile when nothing matches, with the empty message', async () => {
+    const v = await renderSel()
+    await v.type('qqq')
+    await waitFor(() => expect(v.tiles()).toEqual(['0 z 8', '0 z 5', '0 z 3', '0 z 2']))
+    expect(v.c.textContent).toMatch(/Brak wyników/)
+  })
+
+  // ELSEL.07 — guard: holds before the change; proven by a mutation run.
+  it('does not treat a search of spaces as narrowing', async () => {
+    const v = await renderSel()
+    await v.type('   ')
+    await waitFor(() => expect(renderedNames(v.c)).toHaveLength(8))
+    expect(v.tiles()).toEqual(PLAIN)
+    expect(v.c.querySelector('.el-metrics.el-narrowed')).toBeNull()
+  })
+
+  // ELSEL.08
+  it('announces the tiles politely to a screen reader', async () => {
+    const v = await renderSel()
+    expect(v.c.querySelector('.el-metrics')?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  // ELSEL.09
+  it('reads "of" in English and keeps the filter across the language switch', async () => {
+    const v = await renderSel()
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(v.tiles()[0]).toBe('4 z 8'))
+    await fireEvent.click(v.c.querySelector('.lang-btn[aria-label="English"]') as HTMLButtonElement)
+    await waitFor(() => expect(v.tiles()).toEqual(['4 of 8', '3 of 5', '2 of 3', '1 of 2']))
+    expect(v.category.value).toBe('V2')
+  })
+
+  // ELSEL.17
+  it('counts an event with no entries as 0, and 0 z 0 under a filter', async () => {
+    const v = await renderSel([])
+    await waitFor(() => expect(v.tiles()).toEqual(['0', '0', '0', '0']))
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(v.tiles()).toEqual(['0 z 0', '0 z 0', '0 z 0', '0 z 0']))
+    expect(v.c.textContent).toMatch(/Brak wyników/)
+  })
+})
+
+describe('EntryList — frame and highlight while narrowed (FR-165, S5, S1)', () => {
+  // ELSEL.10
+  it('frames the tiles only while the list is narrowed', async () => {
+    const v = await renderSel()
+    const metrics = v.c.querySelector('.el-metrics') as HTMLElement
+    expect(metrics.classList.contains('el-narrowed')).toBe(false)
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(metrics.classList.contains('el-narrowed')).toBe(true))
+    await v.pick(v.category, '')
+    await waitFor(() => expect(metrics.classList.contains('el-narrowed')).toBe(false))
+  })
+
+  // ELSEL.11
+  it('highlights only the controls that narrow, the search box included', async () => {
+    const v = await renderSel()
+    const active = () =>
+      [v.search, v.weapon, v.category, v.gender].filter((el) => el.classList.contains('el-active'))
+    expect(active()).toEqual([])
+    await v.type('kow')
+    await waitFor(() => expect(active()).toEqual([v.search]))
+    await v.type('')
+    await v.pick(v.category, 'V1')
+    await waitFor(() => expect(active()).toEqual([v.category]))
+    await v.pick(v.weapon, 'FOIL')
+    await v.pick(v.gender, 'F')
+    await waitFor(() => expect(active()).toEqual([v.weapon, v.category, v.gender]))
+  })
+})
+
+describe('EntryList — clearing the search and the filters (FR-165, S2, S3)', () => {
+  afterEach(() => setLocale('pl'))
+  const clearSearch = (c: HTMLElement) => c.querySelector('button.el-search-clear') as HTMLButtonElement | null
+
+  // ELSEL.12
+  it('shows a × only with search text, and it empties the search alone', async () => {
+    const v = await renderSel()
+    expect(clearSearch(v.c)).toBeNull()
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(v.tiles()[0]).toBe('4 z 8'))
+    expect(clearSearch(v.c)).toBeNull()
+    await v.type('kow')
+    await waitFor(() => expect(clearSearch(v.c)).not.toBeNull())
+    await fireEvent.click(clearSearch(v.c) as HTMLButtonElement)
+    await waitFor(() => expect(v.search.value).toBe(''))
+    expect(v.category.value).toBe('V2')
+    expect(v.tiles()).toEqual(['4 z 8', '3 z 5', '2 z 3', '1 z 2'])
+    expect(clearSearch(v.c)).toBeNull()
+  })
+
+  // ELSEL.14 (the ×)
+  it('makes the × a button named in the page language', async () => {
+    const v = await renderSel()
+    await v.type('kow')
+    await waitFor(() => expect(clearSearch(v.c)).not.toBeNull())
+    expect(clearSearch(v.c)?.type).toBe('button')
+    expect(clearSearch(v.c)?.getAttribute('aria-label')).toBe('Wyczyść wyszukiwanie')
+    await fireEvent.click(v.c.querySelector('.lang-btn[aria-label="English"]') as HTMLButtonElement)
+    await waitFor(() => expect(clearSearch(v.c)?.getAttribute('aria-label')).toBe('Clear search'))
+  })
+
+  const clearAll = (c: HTMLElement) => c.querySelector('button.el-clear-all') as HTMLButtonElement | null
+
+  // ELSEL.13
+  it('shows the clear link only while narrowed, and it resets the search and all three filters', async () => {
+    const v = await renderSel()
+    expect(clearAll(v.c)).toBeNull()
+    // Each of the four inputs alone brings the link.
+    for (const apply of [
+      () => v.type('kow'),
+      () => v.pick(v.weapon, 'FOIL'),
+      () => v.pick(v.category, 'V1'),
+      () => v.pick(v.gender, 'F'),
+    ]) {
+      await apply()
+      await waitFor(() => expect(clearAll(v.c)).not.toBeNull())
+      await fireEvent.click(clearAll(v.c) as HTMLButtonElement)
+      await waitFor(() => expect(clearAll(v.c)).toBeNull())
+    }
+    // All four at once, cleared in one tap.
+    await v.type('a')
+    await v.pick(v.weapon, 'EPEE')
+    await v.pick(v.category, 'V2')
+    await v.pick(v.gender, 'M')
+    await waitFor(() => expect(clearAll(v.c)).not.toBeNull())
+    await fireEvent.click(clearAll(v.c) as HTMLButtonElement)
+    await waitFor(() => expect(v.tiles()).toEqual(PLAIN))
+    expect([v.search.value, v.weapon.value, v.category.value, v.gender.value]).toEqual(['', '', '', ''])
+    expect(renderedNames(v.c)).toHaveLength(8)
+    expect(clearAll(v.c)).toBeNull()
+  })
+
+  // ELSEL.14 (the link)
+  it('makes the clear link a button named in the page language', async () => {
+    const v = await renderSel()
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(clearAll(v.c)).not.toBeNull())
+    expect(clearAll(v.c)?.type).toBe('button')
+    expect(clearAll(v.c)?.textContent?.trim()).toBe('Wyczyść filtry')
+    await fireEvent.click(v.c.querySelector('.lang-btn[aria-label="English"]') as HTMLButtonElement)
+    await waitFor(() => expect(clearAll(v.c)?.textContent?.trim()).toBe('Clear filters'))
+  })
+})
+
+describe('EntryList — a chosen weapon dims the other weapon tiles (FR-165, S4)', () => {
+  // ELSEL.15
+  it('dims only the two weapon tiles other than the chosen one', async () => {
+    const v = await renderSel()
+    const dimmed = () =>
+      Array.from(v.c.querySelectorAll('.el-metrics .el-metric')).map((m) => m.classList.contains('el-dim'))
+    expect(dimmed()).toEqual([false, false, false, false])
+    await v.pick(v.weapon, 'EPEE')
+    await waitFor(() => expect(dimmed()).toEqual([false, false, true, true]))
+    await v.pick(v.weapon, 'SABRE')
+    await waitFor(() => expect(dimmed()).toEqual([false, true, true, false]))
+    await v.pick(v.weapon, '')
+    await v.pick(v.category, 'V2')
+    await waitFor(() => expect(v.tiles()[0]).toBe('4 z 8'))
+    expect(dimmed()).toEqual([false, false, false, false])
+  })
+})
+
+describe('EntryList — the search folds diacritics (FR-165, issue 1)', () => {
+  // ELSEL.16
+  it('finds a name whatever the visitor does with the Polish letters', async () => {
+    const v = await renderSel()
+    await v.type('zak')
+    await waitFor(() => expect(renderedNames(v.c)).toEqual(['ŻAK Adam']))
+    await v.type('los')
+    await waitFor(() => expect(renderedNames(v.c)).toEqual(['ŁOŚ Ewa']))
+    await v.type('ŻAK')
+    await waitFor(() => expect(renderedNames(v.c)).toEqual(['ŻAK Adam']))
+    await v.type('pawel')
+    await waitFor(() => expect(renderedNames(v.c)).toEqual(['lis Paweł']))
   })
 })

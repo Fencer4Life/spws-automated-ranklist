@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="1e0ba646f6dace6a767fa672e1b2b9d8161ab69a6c6e8a5921d77d23668ba001">
+<meta name="doc-source-sha256" content="89692e74bb04d2eed1807d838a8babf05e2d7e38c3380e4ebd2c2e8b72a7e9cd">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>983 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1013 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1113,6 +1113,13 @@
 <td><a href="adr/119-partial-ingest-promote-and-organizer-registry.html">ADR-119</a> §4, ADR-108 §9, ADR-113 §7, ADR-077, ADR-072, ADR-083</td>
 <td>SYNC.SEL.01–05, SYNC.DUE.01, SYNC.CYCLE.01–09, SYNC.PAUSE.01–06 (and pgTAP 123), SYNC.SEED.01, SYNC.PZSZ.01–04, LOG.PRIV.01–06, WFLANE.02, GAS.SYNC.01–04, RUNNAME.03, SYNC.BOT.01–04, SYNC.DEDUP.01–04 (and pgTAP 124)</td>
 <td>Covered (2026-11-01: 3a and 3b released, main e7f8a3a3, CERT + PROD; LOG.PRIV.04–05 released, main d5947612; LOG.PRIV.06 released, main 80e30964; SYNC.BOT, SYNC.DEDUP and GAS.SYNC.02–04 released main af30c76d)</td>
+</tr>
+<tr>
+<td>FR-165</td>
+<td><strong>The public entry list's tiles show the selection.</strong> While the name search or any of the weapon, category and gender filters narrows the list, each of the four tiles shows the selection against the event total („4 z 8”, “4 of 8”); the selection is exactly the rows listed. While narrowed the tiles carry a yellow dashed frame, each narrowing control is highlighted, the two weapon tiles other than a chosen weapon are dimmed, the search box carries a × that empties it, and a „Wyczyść filtry” link under the filters empties the search and resets all three filters. With nothing narrowing the list looks as before. The name search folds diacritics on both sides by the rule of <code>fold_diacritics</code> (<code>python/matcher/fuzzy_match.py</code>), so „zak” finds ŻAK. Design signed 2026-11-17 (<code>doc/plans/entry-list-selection-count-2026-11-17.html</code>).</td>
+<td>UC (public entry list), FR-123, FR-130, FR-154</td>
+<td>FOLD.01–05, ELSEL.01–17</td>
+<td>Covered (2026-11-17, LOCAL; release pending)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -5336,6 +5343,176 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list's tiles show the selection (FOLD.<em>, ELSEL.</em>)</h2>
+<p>FR-165. Design signed 2026-11-17 (<code>doc/plans/entry-list-selection-count-2026-11-17.html</code>, rev 4); acceptance IDs from <code>doc/plans/entry-list-tiles-follow-filters-tdd-plan-2026-11-17.html</code> §04, registered before any code. Each was observed RED for its stated reason before its implementation landed; ELSEL.01 and ELSEL.07 held before the change and were proven by a recorded mutation run instead (<code>doc/plans/entry-list-tiles-follow-filters-sheet/mutation-runs.md</code>). Before/after pixel sheet approved 2026-11-17 (<code>doc/plans/entry-list-tiles-follow-filters-pixel-sheet-2026-11-17.html</code>).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Kind</th>
+<th>Test</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FOLD.01</td>
+<td>ą ć ę ł ń ó ś ź ż fold to a c e l n o s z z.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/foldName.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>FOLD.02</td>
+<td>Upper case folds and lower-cases: ŻAK → zak, ŁOŚ → los, ĆWIK → cwik.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/foldName.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>FOLD.03</td>
+<td>Plain letters, digits, spaces and hyphens are unchanged apart from lower-casing.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/foldName.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>FOLD.04</td>
+<td>Other accented Latin letters lose their marks (ü → u, é → e, č → c), as in the Python fold.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/foldName.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>FOLD.05</td>
+<td>Text that arrives decomposed (Z + combining dot) folds as the composed letter does.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/foldName.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.01</td>
+<td>Nothing narrowing: plain totals; no selection figure, frame, dimming, highlight, × or clear link.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.02</td>
+<td>A category filter: every tile shows selection z total.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.03</td>
+<td>A search alone narrows the tiles the same way.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.04</td>
+<td>Search, weapon, category and gender together.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.05</td>
+<td>The first tile's selection always equals the number of listed rows.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.06</td>
+<td>No match: every tile shows 0 z total, with the existing empty message.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.07</td>
+<td>A search of spaces only does not narrow.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.08</td>
+<td>The tile group is a polite live region.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.09</td>
+<td>English: “of” replaces „z”, and the filters survive the language switch.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.10</td>
+<td>The frame is present only while narrowed.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.11</td>
+<td>Only the controls that narrow are highlighted, the search box included.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.12</td>
+<td>The × shows only with search text and empties the search alone.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.13</td>
+<td>The clear link shows only while narrowed and empties the search and all three filters.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.14</td>
+<td>Both new controls are buttons named in the page's language.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.15</td>
+<td>A chosen weapon dims the other two weapon tiles only.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.16</td>
+<td>The search finds names whatever the Polish letters: zak → ŻAK, los → ŁOŚ, pawel → Paweł.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+<tr>
+<td>ELSEL.17</td>
+<td>An event with no entries: tiles 0, and 0 z 0 under a filter.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Landed LOCAL (2026-11-17)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -5346,5 +5523,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>1e0ba646f6dace6a767fa672e1b2b9d8161ab69a6c6e8a5921d77d23668ba001</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>89692e74bb04d2eed1807d838a8babf05e2d7e38c3380e4ebd2c2e8b72a7e9cd</code></footer>
 </div></body></html>

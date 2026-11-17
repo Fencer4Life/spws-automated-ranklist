@@ -115,7 +115,10 @@ if [ -f "$RTM" ]; then
   #   ledger; ADR-119 release 2).
   # 163 since 2026-11-01: +FR-164 (the hourly results sync; ADR-119 release
   #   3, registered with 3a, the pause store, before the sync's code).
-  EXPECTED=163
+  # 164 since 2026-11-17: +FR-165 (the entry list's tiles show the selection;
+  #   the name search folds diacritics). Registered as Planned before code
+  #   (plan entry-list-tiles-follow-filters-tdd-plan §08 step 3).
+  EXPECTED=164
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

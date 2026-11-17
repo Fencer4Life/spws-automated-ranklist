@@ -14,19 +14,30 @@
     </div>
   </div>
 
-  <div class="el-metrics">
-    <div class="el-metric"><div class="el-k">{t('reg_registered_count')}</div><div class="el-v">{rows.length}</div></div>
-    <div class="el-metric"><div class="el-k">{t('reg_weapon_epee')}</div><div class="el-v">{countByWeapon('EPEE')}</div></div>
-    <div class="el-metric"><div class="el-k">{t('reg_weapon_foil')}</div><div class="el-v">{countByWeapon('FOIL')}</div></div>
-    <div class="el-metric"><div class="el-k">{t('reg_weapon_sabre')}</div><div class="el-v">{countByWeapon('SABRE')}</div></div>
+  <!-- FR-165: while anything narrows the list, each tile reads "selection z
+       total"; the selection is exactly the rows listed below. -->
+  <div class="el-metrics" class:el-narrowed={isNarrowed} aria-live="polite">
+    {#each TILES as tile (tile.label)}
+      <div class="el-metric" class:el-dim={tile.weapon !== null && weaponFilter !== '' && tile.weapon !== weaponFilter}>
+        <div class="el-k">{t(tile.label)}</div>
+        <div class="el-v">{count(isNarrowed ? filteredRows : rows, tile.weapon)}{#if isNarrowed}{' '}<span class="el-of">{t('reg_sel_of_total', { total: count(rows, tile.weapon) })}</span>{/if}</div>
+      </div>
+    {/each}
   </div>
 
   <div class="el-filters">
-    <input name="search" class="el-search" placeholder={t('reg_search_surname')} bind:value={search} />
+    <div class="el-searchwrap">
+      <input name="search" class="el-search" class:el-active={search.trim() !== ''} placeholder={t('reg_search_surname')} bind:value={search} />
+      <!-- Shown for any text, spaces included: spaces do not narrow the list,
+           but the × still lets the visitor empty the box in one tap (S2). -->
+      {#if search !== ''}
+        <button type="button" class="el-search-clear" aria-label={t('reg_search_clear')} onclick={() => (search = '')}>&times;</button>
+      {/if}
+    </div>
     <div class="el-fgroup">
       <label class="el-flabel">
         <span>{t('weapon')}</span>
-        <select name="weaponFilter" bind:value={weaponFilter}>
+        <select name="weaponFilter" class:el-active={weaponFilter !== ''} bind:value={weaponFilter}>
           <option value="">--</option>
           <option value="EPEE">{t('reg_weapon_epee')}</option>
           <option value="FOIL">{t('reg_weapon_foil')}</option>
@@ -35,7 +46,7 @@
       </label>
       <label class="el-flabel">
         <span>{t('category')}</span>
-        <select name="categoryFilter" bind:value={categoryFilter}>
+        <select name="categoryFilter" class:el-active={categoryFilter !== ''} bind:value={categoryFilter}>
           <option value="">--</option>
           <option value="V0">V0 (30+)</option>
           <option value="V1">V1 (40+)</option>
@@ -46,13 +57,16 @@
       </label>
       <label class="el-flabel">
         <span>{t('gender')}</span>
-        <select name="genderFilter" bind:value={genderFilter}>
+        <select name="genderFilter" class:el-active={genderFilter !== ''} bind:value={genderFilter}>
           <option value="">--</option>
           <option value="F">{t('reg_filter_women')}</option>
           <option value="M">{t('reg_filter_men')}</option>
         </select>
       </label>
     </div>
+    {#if isNarrowed}
+      <button type="button" class="el-clear-all" onclick={clearAll}>{t('reg_clear_filters')}</button>
+    {/if}
   </div>
 
   {#if filteredRows.length > 0}
@@ -91,6 +105,7 @@
   import { t } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
   import { fetchEntryList } from '../lib/api'
+  import { foldName } from '../lib/foldName'
   import type { RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
 
   let {
@@ -150,10 +165,12 @@
     })
   })
 
+  // Both sides folded (foldName): a visitor without Polish keys types "zak"
+  // and finds ŻAK (FR-165, ELSEL.16).
   const filteredRows = $derived.by(() => {
-    const q = search.trim().toLowerCase()
+    const q = foldName(search.trim())
     return rows.filter((r) => {
-      if (q && !`${r.txt_surname} ${r.txt_first_name}`.toLowerCase().includes(q)) return false
+      if (q && !foldName(`${r.txt_surname} ${r.txt_first_name}`).includes(q)) return false
       if (weaponFilter && !r.arr_weapons.includes(weaponFilter)) return false
       if (categoryFilter && r.enum_age_category !== categoryFilter) return false
       if (genderFilter && r.enum_gender !== genderFilter) return false
@@ -161,8 +178,32 @@
     })
   })
 
-  function countByWeapon(w: WeaponType): number {
-    return rows.filter((r) => r.arr_weapons.includes(w)).length
+  // Anything that narrows the list: search text (spaces alone do not count)
+  // or any of the three filters (FR-165).
+  const isNarrowed = $derived(
+    search.trim() !== '' || weaponFilter !== '' || categoryFilter !== '' || genderFilter !== '',
+  )
+
+  // "Wyczyść filtry" (S3): the search and all three filters back to empty.
+  function clearAll() {
+    search = ''
+    weaponFilter = ''
+    categoryFilter = ''
+    genderFilter = ''
+  }
+
+  // The tiles in their fixed order: everyone, then one per weapon.
+  const TILES: { label: string; weapon: WeaponType | null }[] = [
+    { label: 'reg_registered_count', weapon: null },
+    { label: 'reg_weapon_epee', weapon: 'EPEE' },
+    { label: 'reg_weapon_foil', weapon: 'FOIL' },
+    { label: 'reg_weapon_sabre', weapon: 'SABRE' },
+  ]
+
+  // Fencers in `list`, or those of them entered in `weapon`. A fencer entered
+  // in two weapons counts on both weapon tiles, as before.
+  function count(list: RegistrationEntry[], weapon: WeaponType | null): number {
+    return weapon ? list.filter((r) => r.arr_weapons.includes(weapon)).length : list.length
   }
 
   function weaponCode(w: WeaponType): string {
@@ -258,6 +299,81 @@
     font-size: 1.3em;
     font-weight: 600;
     color: #fff;
+  }
+  /* While narrowed (FR-165): the tiles are framed (S5) and every control that
+     narrows the list is highlighted (S1). */
+  .el-metrics.el-narrowed {
+    outline: 2px dashed #ffd24a;
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+  .el-filters .el-active {
+    border-color: #00d4ff;
+    box-shadow: 0 0 0 1px #00d4ff;
+  }
+  /* The × that empties the search (S2). 36px touch area (FR-130); the input
+     keeps its text clear of it only while there is text. */
+  .el-searchwrap {
+    position: relative;
+  }
+  .el-searchwrap .el-search.el-active {
+    padding-right: 44px;
+  }
+  .el-search-clear {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #7fbadc;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .el-search-clear:hover {
+    color: #fff;
+    background: rgba(0, 212, 255, 0.1);
+  }
+  .el-search-clear:focus-visible {
+    outline: 2px solid #00d4ff;
+    outline-offset: 1px;
+  }
+  /* "Wyczyść filtry" (S3): right-aligned under the filters, shown only while
+     narrowed. Drawn as a link, with a 36px touch height (FR-130). */
+  .el-clear-all {
+    align-self: flex-end;
+    min-height: 36px;
+    padding: 0 2px;
+    background: none;
+    border: 0;
+    color: #7fd8ff;
+    font-family: inherit;
+    font-size: 0.82em;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .el-clear-all:hover {
+    color: #00d4ff;
+  }
+  .el-clear-all:focus-visible {
+    outline: 2px solid #00d4ff;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* A chosen weapon dims the other two weapon tiles (S4). */
+  .el-metric.el-dim {
+    opacity: 0.4;
+  }
+  /* The total beside the selection, while narrowed (FR-165). */
+  .el-of {
+    font-size: 0.6em;
+    font-weight: 500;
+    color: #7fbadc;
   }
   .el-filters {
     display: flex;
