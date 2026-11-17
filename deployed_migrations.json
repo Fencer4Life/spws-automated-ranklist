@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-11-04T22:23:54Z",
-    "last_sha": "51e7760bb8ce1d7c8cad520b14da8c00f91d06fb",
+    "last_updated": "2026-11-17T19:38:56Z",
+    "last_sha": "2b184ed6f193afe544dfc0bb8306ac819ccce896",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",

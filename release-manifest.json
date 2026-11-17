@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
-  "sha": "51e7760bb8ce1d7c8cad520b14da8c00f91d06fb",
-  "created": "2026-11-04T22:23:52Z",
+  "sha": "2b184ed6f193afe544dfc0bb8306ac819ccce896",
+  "created": "2026-11-17T19:38:55Z",
   "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2",
   "migrations": {
     "total": 236,
@@ -16,13 +16,13 @@
       "files": 179
     },
     "vitest": {
-      "files": 73
+      "files": 74
     }
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-04T22:23:54Z",
-      "sha": "51e7760bb8ce1d7c8cad520b14da8c00f91d06fb",
+      "at": "2026-11-17T19:38:56Z",
+      "sha": "2b184ed6f193afe544dfc0bb8306ac819ccce896",
       "schema_fingerprint": "3694b551443f3d1505b610e4fa91bcd2"
     },
     "prod": {
