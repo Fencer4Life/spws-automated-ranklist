@@ -1,0 +1,394 @@
+[
+ {
+  "name": "standalone__desktop__pl__1-unfiltered.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__pl__2-category-v2.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__pl__3-search-kow.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__pl__4-search-and-filters.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__pl__5-weapon-epee.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__pl__6-no-match.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__en__1-unfiltered.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__en__2-category-v2.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__en__3-search-kow.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__en__4-search-and-filters.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__en__5-weapon-epee.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__desktop__en__6-no-match.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__pl__1-unfiltered.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__pl__2-category-v2.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__pl__3-search-kow.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__pl__4-search-and-filters.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__pl__5-weapon-epee.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__pl__6-no-match.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__en__1-unfiltered.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__en__2-category-v2.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__en__3-search-kow.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__en__4-search-and-filters.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__en__5-weapon-epee.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "standalone__phone__en__6-no-match.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__pl__1-unfiltered.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__pl__2-category-v2.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__pl__3-search-kow.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__pl__4-search-and-filters.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__pl__5-weapon-epee.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__pl__6-no-match.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__en__1-unfiltered.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__en__2-category-v2.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__en__3-search-kow.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__en__4-search-and-filters.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__en__5-weapon-epee.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__desktop__en__6-no-match.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__pl__1-unfiltered.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__pl__2-category-v2.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__pl__3-search-kow.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__pl__4-search-and-filters.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__pl__5-weapon-epee.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__pl__6-no-match.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__en__1-unfiltered.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__en__2-category-v2.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__en__3-search-kow.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__en__4-search-and-filters.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__en__5-weapon-epee.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "modal__phone__en__6-no-match.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__desktop__pl__1-unfiltered.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__desktop__pl__4-search-and-filters.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__desktop__en__1-unfiltered.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__desktop__en__4-search-and-filters.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__phone__pl__1-unfiltered.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__phone__pl__4-search-and-filters.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__phone__en__1-unfiltered.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ },
+ {
+  "name": "form-back__phone__en__4-search-and-filters.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "searchClear": [],
+  "clearAll": []
+ }
+]

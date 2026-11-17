@@ -7,7 +7,7 @@
 <meta name="doc-status" content="current">
 <meta name="doc-type" content="reference">
 <meta name="doc-owner" content="Events and registration">
-<meta name="last-verified" content="2026-10-24">
+<meta name="last-verified" content="2026-11-17">
 <meta name="source-globs" content="frontend/src/components/Registration*; frontend/src/components/EntryList.svelte; frontend/src/ce/*Element.svelte; frontend/src/lib/editToken.ts; supabase/migrations/**registration*; python/pipeline/ftl_seed_export*.py">
 <meta name="review-triggers" content="Registration form steps, the public write or edit RPCs, the entry-list projection, the FTL seed population, or identity resolution of a registration at ingestion">
 <title>Registration lifecycle · SPWS Handbook</title>
@@ -20,7 +20,7 @@
 <h1>Registration lifecycle</h1>
 <p class="dek">One registration, followed from the administrator enabling it to the row being purged after results are ingested — with the failure at each stage, because that is where the behaviour is least obvious.</p>
 <div class="doc-meta"><span>Current</span><span>Events and registration</span></div>
-</div><aside class="facts" data-frame="handbook" aria-label="Page metadata"><dl><div><dt>Status</dt><dd class="current">Current</dd></div><div><dt>Owner</dt><dd class="">Events and registration</dd></div><div><dt>Type</dt><dd class="">Reference</dd></div><div><dt>Last verified</dt><dd class="">24 October 2026</dd></div><div><dt>Page id</dt><dd class="">HB-REF-REG-LIFECYCLE</dd></div></dl></aside></header>
+</div><aside class="facts" data-frame="handbook" aria-label="Page metadata"><dl><div><dt>Status</dt><dd class="current">Current</dd></div><div><dt>Owner</dt><dd class="">Events and registration</dd></div><div><dt>Type</dt><dd class="">Reference</dd></div><div><dt>Last verified</dt><dd class="">17 November 2026</dd></div><div><dt>Page id</dt><dd class="">HB-REF-REG-LIFECYCLE</dd></div></dl></aside></header>
 <div class="layout" data-frame="handbook"><nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#purpose">Purpose</a></li><li class="depth-2"><a href="#enabling">Enabling registration on an event</a></li><li class="depth-2"><a href="#entry-points">How a fencer reaches the form</a></li><li class="depth-2"><a href="#declaring">Identity, and what is not checked</a></li><li class="depth-2"><a href="#consent">The privacy notice and what it commits us to</a></li><li class="depth-2"><a href="#writing">How the entry list is built, and how entries are overwritten</a></li><li class="depth-2"><a href="#paying">What the fencer is left holding</a></li><li class="depth-2"><a href="#correcting">Fixing a declaration that is already submitted</a></li><li class="depth-2"><a href="#published">What the public roster shows</a></li><li class="depth-2"><a href="#organizer">What the organizer receives</a></li><li class="depth-2"><a href="#after">Resolution, and the end of the row</a></li><li class="depth-2"><a href="#failures">Failure boundaries</a></li><li class="depth-2"><a href="#gaps">What this page is not claiming</a></li><li class="depth-2"><a href="#decisions">Related decisions</a></li></ol></nav><main>
 
 <section id="purpose">
@@ -180,6 +180,13 @@
 <p>The roster is a deliberately narrow projection: surname, given name, gender, weapons and the age category. <b>Birth year and club are excluded</b>, which is why the page says so in plain language at the bottom. Every declared registration appears; there is no payment gate.</p>
 
 <p>Rows are displayed <b>surname A–Z</b>, given name breaking a shared surname. The ordering is applied in the browser under Polish collation, fixed regardless of the interface language, because a code-unit comparison sorts Ć, Ę, Ł and Ż after Z and the surnames are Polish whatever the labels say. The projection itself is unordered; the query's registration order survives only as the final tie-break between two people sharing both names.</p>
+
+<p>The four tiles above the search count the whole event until the visitor narrows the list. Narrowing means any text in the name search, spaces aside, or any of the weapon, category and gender filters. From then on each tile shows the <b>selection against the total</b> — „12 z 76”, “12 of 76” — and the selection is exactly the rows listed, so the first tile always equals the number of names below it. A fencer entered in two weapons counts on both weapon tiles. While the list is narrowed, a yellow dashed frame surrounds the tiles, every control that narrows the list is highlighted (the search box included), and a chosen weapon dims the other two weapon tiles. A × in the search box empties the search alone, and „Wyczyść filtry” under the filters empties the search and resets all three filters in one tap. The name search ignores Polish letters on both sides, by the same rule the name matcher uses (<code>fold_diacritics</code>), so typing „zak” finds ŻAK. Source: <code>frontend/src/components/EntryList.svelte</code> and <code>frontend/src/lib/foldName.ts</code>; requirement FR-165, tests FOLD.01–05 and ELSEL.01–17.</p>
+
+<figure class="shot">
+<img src="../assets/registration/07-entry-list-narrowed.png" alt="The entry list narrowed by the search k, category V2 and men: the tiles read 12 z 76, 5 z 47, 3 z 19 and 5 z 25 inside a yellow dashed frame, the search box and both chosen filters are highlighted, the search box shows a clear button, and Wyczyść filtry sits under the filters above twelve names.">
+<figcaption>Narrowed by the search „k”, category V2 and men: every tile shows the selection against the event total, and „Wyczyść filtry” brings the whole list back.</figcaption>
+</figure>
 
 <div class="warning">
 <p>The projection publishes the row identifier and the age category. The category is a ten-year band, so it narrows the birth year considerably — and the match lookup answers per birth year <em>before</em> anything is written, which makes an exact year recoverable by an anonymous caller. Any reasoning that treats the birth year as private is therefore unsound. This is the single largest open gap.</p>

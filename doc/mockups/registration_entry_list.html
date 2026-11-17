@@ -36,6 +36,16 @@
   .w-S { background:rgba(240,159,39,0.18); color:#f0b967; }
   .muted { color:#8894a8; font-size:0.78em; margin-top:12px; display:flex; gap:6px; }
   .empty { text-align:center; color:#8894a8; font-size:0.9em; padding:20px; }
+  /* FR-165 (signed 2026-11-17): the tiles show the selection while anything narrows the list. */
+  .metrics.sel { outline:2px dashed #ffd24a; outline-offset:4px; border-radius:8px; }
+  .metric .of { font-size:0.6em; font-weight:500; color:#7fbadc; }
+  .metric.dim { opacity:0.4; }
+  .filters .active { border-color:#00d4ff; box-shadow:0 0 0 1px #00d4ff; }
+  .sw { position:relative; flex:1; min-width:150px; display:flex; }
+  .sw input { flex:1; }
+  .sw input.active { padding-right:40px; }
+  .qx { position:absolute; right:2px; top:50%; transform:translateY(-50%); width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:#7fbadc; font-size:20px; cursor:pointer; }
+  .clr { flex-basis:100%; text-align:right; background:none; border:0; color:#7fd8ff; text-decoration:underline; font-family:inherit; font-size:0.82em; min-height:36px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -53,18 +63,19 @@
     </div>
   </div>
 
-  <div class="metrics">
+  <div class="metrics" id="metrics">
     <div class="metric"><div class="k" data-pl="Zgłoszonych" data-en="Registered">Zgłoszonych</div><div class="v" id="mTot">10</div></div>
-    <div class="metric"><div class="k" data-pl="Szpada" data-en="Épée">Szpada</div><div class="v" id="mE">5</div></div>
-    <div class="metric"><div class="k" data-pl="Floret" data-en="Foil">Floret</div><div class="v" id="mF">4</div></div>
-    <div class="metric"><div class="k" data-pl="Szabla" data-en="Sabre">Szabla</div><div class="v" id="mS">5</div></div>
+    <div class="metric" id="tE"><div class="k" data-pl="Szpada" data-en="Épée">Szpada</div><div class="v" id="mE">5</div></div>
+    <div class="metric" id="tF"><div class="k" data-pl="Floret" data-en="Foil">Floret</div><div class="v" id="mF">4</div></div>
+    <div class="metric" id="tS"><div class="k" data-pl="Szabla" data-en="Sabre">Szabla</div><div class="v" id="mS">5</div></div>
   </div>
 
   <div class="filters">
-    <input id="q" data-pl="Szukaj nazwiska…" data-en="Search surname…" placeholder="Szukaj nazwiska…">
+    <span class="sw"><input id="q" data-pl="Szukaj nazwiska…" data-en="Search surname…" placeholder="Szukaj nazwiska…"><button class="qx" id="qx" style="display:none" aria-label="Wyczyść wyszukiwanie">&times;</button></span>
     <select id="fw"><option value="" data-pl="Broń: wszystkie" data-en="Weapon: all">Broń: wszystkie</option><option value="E" data-pl="Szpada" data-en="Épée">Szpada</option><option value="F" data-pl="Floret" data-en="Foil">Floret</option><option value="S" data-pl="Szabla" data-en="Sabre">Szabla</option></select>
     <select id="fc"><option value="" data-pl="Kategoria: wszystkie" data-en="Category: all">Kategoria: wszystkie</option><option>V0</option><option>V1</option><option>V2</option><option>V3</option><option>V4</option></select>
     <select id="fg"><option value="" data-pl="Płeć: wszyscy" data-en="Gender: all">Płeć: wszyscy</option><option value="K" data-pl="Kobiety" data-en="Women">Kobiety</option><option value="M" data-pl="Mężczyźni" data-en="Men">Mężczyźni</option></select>
+    <button class="clr" id="clr" style="display:none" data-pl="Wyczyść filtry" data-en="Clear filters">Wyczyść filtry</button>
   </div>
 
   <table>
@@ -102,22 +113,43 @@ function applyLang(){
   document.getElementById('bpl').classList.toggle('on',lang==='pl');
   document.getElementById('ben').classList.toggle('on',lang==='en');
 }
+// FR-165: names compared folded on both sides (ł by hand, then accents dropped),
+// so "zak" finds ŻAK; the same rule as frontend/src/lib/foldName.ts.
+function fold(s){ return s.replace(/ł/g,'l').replace(/Ł/g,'L').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
+function hasW(r,w){ return (' '+r.getAttribute('data-w')+' ').indexOf(' '+w+' ')>=0; }
 function filter(){
-  var q=(document.getElementById('q').value||'').toLowerCase().trim();
+  var raw=document.getElementById('q').value||'';
+  var q=fold(raw.trim());
   var fw=document.getElementById('fw').value, fc=document.getElementById('fc').value, fg=document.getElementById('fg').value;
-  var rows=[].slice.call(document.querySelectorAll('#tb tr')); var n=0;
+  var rows=[].slice.call(document.querySelectorAll('#tb tr')); var n=0; var sel=[];
   rows.forEach(function(r){
-    var ok=(!q||r.getAttribute('data-name').indexOf(q)>=0)
-      && (!fw||(' '+r.getAttribute('data-w')+' ').indexOf(' '+fw+' ')>=0)
+    var ok=(!q||fold(r.getAttribute('data-name')).indexOf(q)>=0)
+      && (!fw||hasW(r,fw))
       && (!fc||r.getAttribute('data-c')===fc)
       && (!fg||r.getAttribute('data-g')===fg);
-    r.style.display=ok?'':'none'; if(ok){ n++; r.children[0].textContent=n; }
+    r.style.display=ok?'':'none'; if(ok){ n++; r.children[0].textContent=n; sel.push(r); }
   });
   document.getElementById('empty').style.display=n?'none':'';
+  // The tiles: plain totals until something narrows the list, then "selection z total".
+  var narrowed=!!(q||fw||fc||fg);
+  var of=lang==='pl'?'z':'of';
+  [['mTot',null],['mE','E'],['mF','F'],['mS','S']].forEach(function(t){
+    var count=function(list){ return t[1]?list.filter(function(r){return hasW(r,t[1]);}).length:list.length; };
+    var v=document.getElementById(t[0]);
+    v.innerHTML=narrowed?count(sel)+' <span class="of">'+of+' '+count(rows)+'</span>':String(count(rows));
+  });
+  document.getElementById('metrics').classList.toggle('sel',narrowed);
+  ['E','F','S'].forEach(function(w){ document.getElementById('t'+w).classList.toggle('dim',!!fw&&fw!==w); });
+  document.getElementById('q').classList.toggle('active',!!q);
+  ['fw','fc','fg'].forEach(function(id){ var el=document.getElementById(id); el.classList.toggle('active',!!el.value); });
+  document.getElementById('qx').style.display=raw?'':'none';
+  document.getElementById('clr').style.display=narrowed?'':'none';
 }
 ['q','fw','fc','fg'].forEach(function(id){var el=document.getElementById(id);el.oninput=filter;el.onchange=filter;});
-document.getElementById('bpl').onclick=function(){lang='pl';applyLang();};
-document.getElementById('ben').onclick=function(){lang='en';applyLang();};
+document.getElementById('qx').onclick=function(){ document.getElementById('q').value=''; filter(); };
+document.getElementById('clr').onclick=function(){ ['q','fw','fc','fg'].forEach(function(id){ document.getElementById(id).value=''; }); filter(); };
+document.getElementById('bpl').onclick=function(){lang='pl';applyLang();filter();};
+document.getElementById('ben').onclick=function(){lang='en';applyLang();filter();};
 applyLang(); filter();
 </script>
 </body>

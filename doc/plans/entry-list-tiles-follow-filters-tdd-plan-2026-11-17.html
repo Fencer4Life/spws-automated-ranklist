@@ -1,0 +1,689 @@
+<meta charset="utf-8">
+<title>Entry list: tiles follow the search and the filters — TDD implementation plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  /* ---------- playground chrome (plan-only) ---------- */
+  .opts{border:1px solid var(--line);border-radius:10px 10px 0 0;background:var(--surface);padding:14px 18px;margin:18px 0 0;font-size:16px}
+  .opts h4{margin:10px 0 6px;font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .opts h4:first-child{margin-top:0}
+  .opts label{display:flex;gap:10px;align-items:flex-start;margin:7px 0;cursor:pointer}
+  .opts input{margin-top:5px;width:17px;height:17px;flex:none}
+  .opts .tag{font-family:var(--mono);font-weight:800;color:var(--accent)}
+  .opts .seg{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px}
+  .opts .seg button{font:inherit;font-size:15px;padding:5px 14px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);cursor:pointer}
+  .opts .seg button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .stage{background:#0b1020;border-radius:0 0 14px 14px;padding:22px;margin:0 0 18px}
+  .stage.phone{padding:22px 0}
+  .stage.phone .el-card{max-width:375px;border-radius:0}
+
+  /* ---------- the component's own CSS, from EntryList.svelte + LangToggle.svelte ---------- */
+  .el-card{max-width:760px;margin:0 auto;background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:22px;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.35}
+  .el-backrow{margin-bottom:12px}
+  .el-back{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid #1a4a8a;color:#7fd8ff;border-radius:8px;padding:6px 13px;cursor:pointer;font-size:.85em;font-family:inherit}
+  .el-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+  .el-top-actions{display:flex;align-items:center;gap:10px}
+  .el-title{font-weight:600;color:#fff;font-size:1.05em}
+  .el-close{background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:#7fbadc;padding:0 2px}
+  .lang-toggle{display:inline-flex;flex:none;padding:2px;background:#f6f8fb;border:1px solid #d5dbe3;border-radius:999px}
+  .lang-btn{padding:4px 7px;border:0;border-radius:999px;background:none;line-height:0;cursor:pointer}
+  .lang-btn.active{background:#fff;box-shadow:0 1px 2px rgba(16,34,64,.2)}
+  .lang-btn svg{width:20px;height:20px;border-radius:50%;display:block;transition:opacity .15s,filter .15s}
+  .lang-btn:not(.active) svg{opacity:.42;filter:saturate(.5)}
+  .lang-btn:not(.active):hover svg{opacity:.8;filter:none}
+  .phone .lang-btn{padding:6px 8px}
+  .phone .lang-btn svg{width:22px;height:22px}
+  .el-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .phone .el-metrics{grid-template-columns:repeat(2,1fr)}
+  .el-metric{background:#0d1b2a;border-radius:8px;padding:9px 12px;transition:opacity .15s}
+  .el-k{font-size:.72em;color:#7fbadc}
+  .el-v{font-size:1.3em;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+  .el-filters{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .el-filters input,.el-filters select{background:#0d1b2a;border:1px solid #1a4a8a;color:#e0e0e0;padding:8px 10px;border-radius:8px;font-size:16px;font-family:inherit;min-height:44px;width:100%;box-sizing:border-box}
+  .el-fgroup{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .el-flabel{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .el-flabel span{font-size:.72em;color:#7fbadc;text-transform:uppercase;letter-spacing:.3px}
+  /* This page has no doctype, and in that mode a table ignores its parent's
+     text colour (rev 2 drew the names black). Stated explicitly here. */
+  .el-card table{width:100%;border-collapse:collapse;color:inherit;font-size:inherit;line-height:inherit;font-weight:inherit}
+  .el-card th{text-align:left;font-size:.74em;color:#7fbadc;text-transform:uppercase;letter-spacing:.5px;padding:8px;border-bottom:1px solid #1a4a8a;font-weight:700}
+  .el-card td{padding:9px 8px;font-size:.88em;border-bottom:1px solid #16273f;color:#e0e0e0}
+  .el-narrow{width:40px}
+  .el-cat{font-size:.78em;padding:2px 9px;border-radius:999px;background:rgba(0,212,255,.12);color:#7fd8ff}
+  .el-wpn{display:inline-block;width:22px;text-align:center;font-size:.72em;padding:2px 0;border-radius:6px;margin-right:3px;font-weight:600}
+  .el-w-E{background:rgba(96,196,89,.18);color:#9fe08c}
+  .el-w-F{background:rgba(0,212,255,.16);color:#7fd8ff}
+  .el-w-S{background:rgba(240,159,39,.18);color:#f0b967}
+  .el-empty{text-align:center;color:#8894a8;font-size:.9em;padding:20px;max-width:none;margin:0}
+  .el-legend{color:#8894a8;font-size:.78em;margin:12px 0 0;max-width:none}
+  .phone thead{display:none}
+  .phone table,.phone tbody{display:block;width:100%}
+  .phone tr{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;border-bottom:1px solid #1a2c4a;padding:8px 0}
+  .phone td{display:inline-flex;align-items:center;flex:none;border-bottom:none;padding:0;width:auto}
+  .phone .el-name{flex:1 1 auto;min-width:0;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ---------- proposed additions ---------- */
+  .el-of{font-size:.6em;font-weight:500;color:#7fbadc;margin-left:5px}
+  .frame .el-metrics.sel{outline:2px dashed #ffd24a;outline-offset:4px;border-radius:8px}
+  .el-metric.dim{opacity:.4}
+  .el-khead{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  button.el-metric{display:block;width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+  button.el-metric:hover,button.el-metric:focus-visible{box-shadow:inset 0 0 0 1px #00d4ff;outline:none}
+  .el-clr{font-size:.72em;color:#ffd24a;white-space:nowrap}
+  .el-searchwrap{position:relative}
+  .el-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:#7fbadc;font-size:20px;line-height:1;cursor:pointer}
+  .el-clear:hover{color:#fff;background:rgba(0,212,255,.1)}
+  .hl .el-filters .active{border-color:#00d4ff;box-shadow:0 0 0 1px #00d4ff}
+  .el-reset{align-self:flex-end;background:none;border:0;color:#7fd8ff;font:inherit;font-size:.82em;cursor:pointer;padding:2px 0;text-decoration:underline}
+  [hidden]{display:none!important}
+
+  /* ---------- keep the template's table rules out of the mock ---------- */
+  .el-card table{min-width:0}
+  .el-card th,.el-card td{vertical-align:middle}
+  .el-card thead th{background:none;font-family:inherit}
+  .el-card tbody tr:hover{background:none}
+  .el-card tr:last-child td{border-bottom:1px solid #16273f}
+  .phone .el-card tr:last-child td{border-bottom:none}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Frontend · Entry list (Lista zgłoszonych) · TDD implementation plan</p>
+  <h1>Entry list: tiles follow the search and the filters</h1>
+  <p class="dek">How the design you signed on 17 November gets built: <b>every test written and seen red before its code</b>, the existing 19 entry-list tests left untouched, and a <b>before/after pixel sheet</b> you approve before anything is pushed.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Design signed 17 Nov 2026</span>
+    <span class="pill"><span class="dot"></span>Plan signed 17 Nov · built · pixel sheet approved 17 Nov</span>
+    <span class="pill"><span class="dot"></span>Q1, Q2 answered 17 Nov</span>
+    <span class="pill">no database, no API, no workflow change</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="s00">
+    <p class="kicker">00 · Read order</p>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#s01">What gets built</a> (locked decisions) and <a href="#s01b">the playable mock</a></li>
+      <li><a href="#s02">What the code does today</a> (verified, with line numbers)</li>
+      <li><a href="#s03">Requirements and traceability</a></li>
+      <li><a href="#s04">Acceptance tests</a>, written first</li>
+      <li><a href="#s05">What must not change</a></li>
+      <li><a href="#s06">Scenario walk-throughs</a></li>
+      <li><a href="#s07">The two questions, answered</a> (Q1, Q2)</li>
+      <li><a href="#s08">The build, step by step</a> (red before green)</li>
+      <li><a href="#s09">Change set</a></li>
+      <li><a href="#s10">Before/after pixel sheet</a></li>
+      <li><a href="#s11">LOCAL, CERT and PROD</a></li>
+      <li><a href="#s12">Documentation coherence gate</a></li>
+      <li><a href="#s13">Definition of done</a></li>
+    </ol>
+    <p>The signed design, with the mock you can play with: <a href="entry-list-selection-count-2026-11-17.html">doc/plans/entry-list-selection-count-2026-11-17.html</a> (rev 4).</p>
+  </section>
+
+  <section id="s01">
+    <p class="kicker">01 · Locked decisions</p>
+    <h2>What gets built</h2>
+    <p>One component changes: <code>frontend/src/components/EntryList.svelte</code>. It is the same component in the calendar modal, in the registration flow's list step and on the standalone <code>register.html?view=list</code> page, so one change covers all three.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Decision</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><b>Mock C</b></td><td>While anything narrows the list, each of the four tiles reads "selection z total" ("of" in English). The selection is exactly the rows shown below: search text and the weapon, category and gender dropdowns together. With nothing narrowing, the tiles show the plain totals as today.</td></tr>
+        <tr><td><b>S1</b></td><td>Every control that narrows the list is highlighted, the search box included.</td></tr>
+        <tr><td><b>S2</b></td><td>A × inside the search box empties the search alone.</td></tr>
+        <tr><td><b>S3</b></td><td>A "Wyczyść filtry" / "Clear filters" link, right-aligned under the three dropdowns, shown only while narrowed. It empties the search and resets all three dropdowns.</td></tr>
+        <tr><td><b>S4</b></td><td>When a weapon is chosen, the other two weapon tiles dim. The first tile never dims.</td></tr>
+        <tr><td><b>S5</b></td><td>A yellow dashed frame surrounds the tiles while narrowed.</td></tr>
+        <tr><td><b>Issue 1</b></td><td>The search folds Polish letters: "zak" finds ŻAK, "los" finds ŁOŚ.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">One adjustment to the mock: touch sizes</p>
+      <p>FR-130 requires touch targets of at least 36px. The mock drew the × at 32px and the link as bare text. In the build both get a touch area of at least 36px high; what you see stays as in the mock. The pixel sheet measures both.</p>
+    </div>
+  </section>
+
+  <section id="s01b">
+    <p class="kicker">01 · The signed design, playable</p>
+    <h2>The mock</h2>
+    <p>The same mock as on the design page, copied here so this plan stands alone. It starts with the signed settings; the switches remain for comparison only. 76 invented fencers with the screenshot's totals (épée 47, foil 19, sabre 25). Try: type <code>kow</code>; type <code>zak</code> (finds ŻAK); pick V2 + Mężczyźni; pick Szpada; tap "Wyczyść filtry"; switch the language with the flags.</p>
+    <p>The build differs from this drawing in one respect only: the × and the clear link get a touch area of at least 36px (see the note above).</p>
+
+    <div class="opts">
+      <h4>View</h4>
+      <div class="seg"><button id="wDesk" class="on">Desktop / modal</button><button id="wPhone">Phone</button></div>
+      <label><input type="checkbox" id="oBack"><span>Show the Back button (the form shows it only when the list is opened from inside registration)</span></label>
+      <h4>Decided (switches kept for comparison)</h4>
+      <label><input type="checkbox" id="oHl" checked><span><span class="tag">S1</span> Highlight every control that is narrowing the list, the search box included</span></label>
+      <label><input type="checkbox" id="oClear" checked><span><span class="tag">S2</span> A × inside the search box to empty it</span></label>
+      <div><span class="tag">S3</span> Clear all filters:</div>
+      <div class="seg" id="segReset"><button data-v="link" class="on">A link under the filters</button><button data-v="tile">The first tile is the button</button><button data-v="none">Neither</button></div>
+      <label><input type="checkbox" id="oDim" checked><span><span class="tag">S4</span> When a weapon is chosen, dim the other two weapon tiles</span></label>
+      <label><input type="checkbox" id="oFrame" checked><span><span class="tag">S5</span> Yellow dashed frame around the tiles while the list is narrowed</span></label>
+    </div>
+    <div class="stage hl frame" id="stage">
+      <div class="el-card">
+        <div class="el-backrow" id="backrow" hidden><button class="el-back">&larr; <span id="tBack"></span></button></div>
+        <div class="el-top">
+          <span class="el-title" id="tTitle"></span>
+          <div class="el-top-actions">
+            <div class="lang-toggle" role="group">
+              <button type="button" class="lang-btn" id="lEn" title="English" aria-label="English">
+                <svg viewBox="0 0 20 20"><rect width="20" height="20" fill="#1f3c8a"/><path d="M0 0L20 20M20 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L20 20M20 0L0 20" stroke="#c8102e" stroke-width="1.6"/><path d="M10 0V20M0 10H20" stroke="#fff" stroke-width="6"/><path d="M10 0V20M0 10H20" stroke="#c8102e" stroke-width="3.2"/></svg></button>
+              <button type="button" class="lang-btn active" id="lPl" title="Polski" aria-label="Polski">
+                <svg viewBox="0 0 20 20"><rect width="20" height="10" fill="#fff"/><rect y="10" width="20" height="10" fill="#dc143c"/><circle cx="10" cy="10" r="9.6" fill="none" stroke="#d5dbe3" stroke-width=".8"/></svg></button>
+            </div>
+            <button class="el-close" aria-label="Close">&times;</button>
+          </div>
+        </div>
+
+        <div class="el-metrics" id="tiles" aria-live="polite"></div>
+
+        <div class="el-filters">
+          <div class="el-searchwrap">
+            <input id="q" autocomplete="off">
+            <button class="el-clear" id="qx" hidden>&times;</button>
+          </div>
+          <div class="el-fgroup">
+            <label class="el-flabel"><span id="tW"></span>
+              <select id="fw"><option value="">--</option><option value="E"></option><option value="F"></option><option value="S"></option></select></label>
+            <label class="el-flabel"><span id="tC"></span>
+              <select id="fc"><option value="">--</option><option value="V0">V0 (30+)</option><option value="V1">V1 (40+)</option><option value="V2">V2 (50+)</option><option value="V3">V3 (60+)</option><option value="V4">V4 (70+)</option></select></label>
+            <label class="el-flabel"><span id="tG"></span>
+              <select id="fg"><option value="">--</option><option value="F"></option><option value="M"></option></select></label>
+          </div>
+          <button class="el-reset" id="reset" hidden></button>
+        </div>
+
+        <table id="tbl"><thead><tr><th id="thN"></th><th class="el-narrow" id="thC"></th><th id="thW"></th></tr></thead><tbody id="tb"></tbody></table>
+        <p class="el-empty" id="empty" hidden></p>
+        <p class="el-legend" id="tLegend"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="s02">
+    <p class="kicker">02 · Verified in the source</p>
+    <h2>What the code does today</h2>
+    <ul>
+      <li><b>Tiles</b>, <code>EntryList.svelte</code> lines 17–22: the first reads <code>rows.length</code>; the three weapon tiles call <code>countByWeapon(w)</code> (lines 164–166), which counts over <code>rows</code>, the whole event.</li>
+      <li><b>Selection</b>, lines 153–162: <code>filteredRows</code> filters <code>rows</code> by the trimmed, lower-cased search text, then weapon, category and gender. The table (lines 58–85) renders <code>filteredRows</code>; with none, it shows <code>reg_no_entries</code>.</li>
+      <li><b>Issue 1</b>, line 156: the name test is <code>`${surname} ${first}`.toLowerCase().includes(q)</code>. No diacritic folding. There is no folding helper anywhere under <code>frontend/src</code>.</li>
+      <li><b>The Python side already folds</b>: <code>fold_diacritics</code> in <code>python/matcher/fuzzy_match.py</code> (line 58) replaces ł/Ł by hand, then strips combining marks after NFD. The frontend helper follows the same rule.</li>
+      <li><b>Translations</b>: <code>t(key, vars)</code> in <code>frontend/src/lib/locale.svelte.ts</code> replaces <code>{name}</code> placeholders. <code>frontend/tests/locale-parity.test.ts</code> requires identical key sets in <code>pl.json</code> and <code>en.json</code>; <code>translation-completeness.test.ts</code> (TR.01, TR.03) requires every used key to exist and flags a value pasted identically into both files.</li>
+      <li><b>Who renders the component</b> (code graph): <code>RegistrationModal.svelte</code>, <code>RegistrationForm.svelte</code>, <code>ce/EntryListElement.svelte</code>. None of them reaches into the tiles or filters. No test outside <code>frontend/tests/EntryList.test.ts</code> asserts on the tiles, the search box or the filters, and no Playwright spec covers the entry list.</li>
+      <li><b>Existing tests</b>: <code>frontend/tests/EntryList.test.ts</code> holds 19 tests in three groups (list and filters 10, back and close 5, surname order 4).</li>
+    </ul>
+    <p>Not verified, and said so: how the modal is best captured in a real browser with fixed data. Step 2 of the build settles it before any code changes (§10).</p>
+  </section>
+
+  <section id="s03">
+    <p class="kicker">03 · Planning gate</p>
+    <h2>Requirements and traceability</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Requirement</th><th>Role here</th></tr></thead>
+      <tbody>
+        <tr><td><b>FR-165</b> (new)</td><td><b>The entry list's tiles show the selection.</b> While the search or a filter narrows the list, each tile shows selection of total, the tiles are framed, narrowing controls are highlighted, the other weapon tiles dim, and the visitor can clear the search or all filters in one tap. The name search folds diacritics. Unfiltered, the list is as before. Tests: FOLD.01–05, ELSEL.01–17.</td></tr>
+        <tr><td>FR-123</td><td>The public entry list. Its view, columns and the GDPR exclusion are untouched; its existing tests stay green unchanged.</td></tr>
+        <tr><td>FR-130</td><td>Mobile-first registration UI: single column at 480px and below, no horizontal scroll, touch targets of at least 36px. Applies to the two new controls.</td></tr>
+        <tr><td>FR-154</td><td>Every interface string in the reader's language. The three new strings exist in both locales; TR.01–TR.06 stay green.</td></tr>
+      </tbody>
+    </table></div>
+    <p>FR-164 is the highest number in <code>doc/requirements-traceability-matrix.md</code> today; the prefixes <code>FOLD.</code> and <code>ELSEL.</code> are unused there. FR-165 and its acceptance-ID table are registered in the matrix <b>before any code</b> (build step 3).</p>
+    <p>Approved mockup: <code>doc/mockups/registration_entry_list.html</code> shows static tiles. It is brought up to the signed design in the documentation step.</p>
+  </section>
+
+  <section id="s04">
+    <p class="kicker">04 · Written first</p>
+    <h2>Acceptance tests</h2>
+
+    <h3>Fixture for the new tests</h3>
+    <p>A new constant <code>SEL</code> in the test file, eight invented entries. Totals: 8 registered; épée 5, foil 3, sabre 2.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Name</th><th>Gender</th><th>Cat.</th><th>Weapons</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>ŻAK Adam</td><td>M</td><td>V2</td><td>épée</td></tr>
+        <tr><td>2</td><td>ŁOŚ Ewa</td><td>F</td><td>V2</td><td>foil</td></tr>
+        <tr><td>3</td><td>KOWAL Jan</td><td>M</td><td>V2</td><td>épée, sabre</td></tr>
+        <tr><td>4</td><td>KOWAL Anna</td><td>F</td><td>V1</td><td>épée</td></tr>
+        <tr><td>5</td><td>ĆWIK Marek</td><td>M</td><td>V1</td><td>sabre</td></tr>
+        <tr><td>6</td><td>NOWAK Piotr</td><td>M</td><td>V2</td><td>épée, foil</td></tr>
+        <tr><td>7</td><td>ŚLIWA Zofia</td><td>F</td><td>V3</td><td>foil</td></tr>
+        <tr><td>8</td><td>lis Paweł</td><td>M</td><td>V0</td><td>épée</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Names the tests pin</h3>
+    <p>Tiles: <code>.el-metrics</code> holds four <code>.el-metric</code> in the order total, épée, foil, sabre; the number is the text of <code>.el-v</code>, read with whitespace collapsed. New class names: <code>el-narrowed</code> (on <code>.el-metrics</code>), <code>el-of</code>, <code>el-dim</code>, <code>el-active</code>, <code>button.el-search-clear</code>, <code>button.el-clear-all</code>. New locale keys: <code>reg_sel_of_total</code> ("z {total}" / "of {total}"), <code>reg_search_clear</code> ("Wyczyść wyszukiwanie" / "Clear search"), <code>reg_clear_filters</code> ("Wyczyść filtry" / "Clear filters").</p>
+
+    <h3>Folding helper · <code>frontend/tests/foldName.test.ts</code> (new)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td>FOLD.01</td><td>ą ć ę ł ń ó ś ź ż fold to a c e l n o s z z.</td></tr>
+        <tr><td>FOLD.02</td><td>Upper case folds and lower-cases: ŻAK → zak, ŁOŚ → los, ĆWIK → cwik.</td></tr>
+        <tr><td>FOLD.03</td><td>Plain letters, digits, spaces and hyphens come back unchanged apart from lower-casing.</td></tr>
+        <tr><td>FOLD.04</td><td>Other accented Latin letters lose their marks (ü → u, é → e, č → c), as in the Python fold.</td></tr>
+        <tr><td>FOLD.05</td><td>Text that arrives already decomposed (Z + combining dot) folds the same as the composed letter.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Component · <code>frontend/tests/EntryList.test.ts</code> (appended; the 19 existing tests are not edited)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Asserts</th><th>Red before</th></tr></thead>
+      <tbody>
+        <tr><td>ELSEL.01</td><td>Nothing narrowing: tiles read 8, 5, 3, 2; no <code>.el-of</code>, no <code>el-narrowed</code>, no <code>el-dim</code>, no <code>el-active</code>, no × button, no clear link.</td><td><span class="chip plain">guard</span> holds today; proven by a recorded mutation run</td></tr>
+        <tr><td>ELSEL.02</td><td>Category V2: tiles read "4 z 8", "3 z 5", "2 z 3", "1 z 2".</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.03</td><td>Search "kow" alone: "2 z 8", "2 z 5", "0 z 3", "1 z 2".</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.04</td><td>Search "kow" + épée + V2 + men: "1 z 8", "1 z 5", "0 z 3", "1 z 2"; one row, KOWAL Jan.</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.05</td><td>For five different combinations, the first tile's selection number equals the number of rendered rows.</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.06</td><td>No match: "0 z 8", "0 z 5", "0 z 3", "0 z 2" together with the existing empty message.</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.07</td><td>A search of spaces only does not narrow: plain totals, no frame.</td><td><span class="chip plain">guard</span> mutation run</td></tr>
+        <tr><td>ELSEL.08</td><td><code>.el-metrics</code> carries <code>aria-live="polite"</code>.</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.09</td><td>English: after switching the language with a V2 filter set, tiles read "4 of 8" and so on, and the filter is still V2.</td><td><span class="chip over">red</span> step 6</td></tr>
+        <tr><td>ELSEL.10</td><td>Frame: <code>el-narrowed</code> present while narrowed, gone when the filter returns to "--".</td><td><span class="chip over">red</span> step 7</td></tr>
+        <tr><td>ELSEL.11</td><td>Highlight: search text alone marks only the search box <code>el-active</code>; a category alone marks only that dropdown.</td><td><span class="chip over">red</span> step 7</td></tr>
+        <tr><td>ELSEL.12</td><td>×: absent with an empty search; present with text; a click empties the search and leaves a V2 filter in place, tiles then showing V2 alone.</td><td><span class="chip over">red</span> step 8</td></tr>
+        <tr><td>ELSEL.13</td><td>Clear link: absent when nothing narrows; present with any one of the four; a click empties the search, sets all three dropdowns to "--", restores plain totals and removes the link.</td><td><span class="chip over">red</span> step 9</td></tr>
+        <tr><td>ELSEL.14</td><td>Both new controls are <code>type="button"</code> and named in the current language: "Wyczyść wyszukiwanie", "Wyczyść filtry"; in English "Clear search", "Clear filters".</td><td><span class="chip over">red</span> steps 8–9</td></tr>
+        <tr><td>ELSEL.15</td><td>Dimming: with épée chosen, the foil and sabre tiles carry <code>el-dim</code>, the total and épée tiles do not; with only a category chosen, no tile does.</td><td><span class="chip over">red</span> step 10</td></tr>
+        <tr><td>ELSEL.16</td><td>Issue 1: "zak" finds ŻAK Adam; "los" finds ŁOŚ Ewa; "ŻAK" typed with its letters still finds him; "pawel" finds lis Paweł.</td><td><span class="chip over">red</span> step 5</td></tr>
+        <tr><td>ELSEL.17</td><td>An event with no registrations: tiles read 0; a filter gives "0 z 0" and the empty message.</td><td><span class="chip over">red</span> step 6</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Suites that must stay green without edits</h3>
+    <ul>
+      <li>The 19 existing tests in <code>frontend/tests/EntryList.test.ts</code>.</li>
+      <li><code>RegistrationModal.test.ts</code>, <code>RegistrationForm.test.ts</code>, <code>EntryListElement.test.ts</code>, <code>CeDemoAttribute.test.ts</code>.</li>
+      <li><code>locale-parity.test.ts</code> and <code>translation-completeness.test.ts</code> (TR.01–TR.06), which check the three new keys by themselves.</li>
+    </ul>
+    <p>A guard that already holds cannot be seen red. Following the matrix's own precedent (calendar drum plan, 6 October), each guard is proven by a recorded mutation: break the code on purpose, see the guard fail, restore.</p>
+  </section>
+
+  <section id="s05">
+    <p class="kicker">05 · No deterioration</p>
+    <h2>What must not change</h2>
+    <ul>
+      <li><b>The unfiltered form, pixel for pixel</b>: back row, title, language switch, close button, four tiles, search box, three dropdowns, table, legend; desktop and phone; Polish and English.</li>
+      <li><b>The list itself</b> in every state: rows, order (Polish collation), badges, column headers, the phone row layout, the empty message.</li>
+      <li><b>Which rows a filter selects.</b> The only change is that a search now also matches when the visitor leaves out Polish marks. A search that matched before still matches.</li>
+      <li><b>The data</b>: the fetch, the view, the columns, the absence of birth year and club.</li>
+      <li><b>Component props</b> (<code>eventId</code>, <code>onclose</code>, <code>onback</code>, <code>backLabel</code>) and the three hosts.</li>
+      <li><b>Everything else in the app.</b> No other component, style sheet or page is edited.</li>
+    </ul>
+    <p>While narrowed, the agreed differences are the only ones: tile text, the frame, the highlights, the ×, the clear link (which moves the list down by its own height), and dimmed tiles.</p>
+  </section>
+
+  <section id="s06">
+    <p class="kicker">06 · Walk-throughs</p>
+    <h2>Scenarios</h2>
+    <ol>
+      <li><b>Phone, from a calendar card.</b> A fencer opens the list, picks V2, then Mężczyźni. After the first pick the tiles read "… z 76" inside the frame, the Kategoria dropdown is highlighted, and "Wyczyść filtry" appears under the dropdowns. After the second, both dropdowns are highlighted and the numbers shrink. One tap on the link returns the plain form.</li>
+      <li><b>A guest without Polish keys</b> types "zak". ŻAK appears; the first tile reads "1 z 76"; the search box is highlighted and shows ×. Tapping × empties the box; with no other filter set, the form is plain again.</li>
+      <li><b>Search plus filters.</b> Category V2 is set, then "kow" is typed. × removes only the text and V2 stays; the link removes both.</li>
+      <li><b>Weapon chosen.</b> Szpada: the Szpada tile reads "47 z 47", Floret shows the épée fencers who also fence foil and is dimmed with Szabla.</li>
+      <li><b>No match.</b> Tiles read "0 z 76"; the list shows the existing empty message; the clear link is there to get out.</li>
+      <li><b>Language switched mid-filter.</b> Labels, "z"/"of" and the link's text change; the search text and the dropdown choices stay.</li>
+      <li><b>From the payment step.</b> The Back button is present above the title and works as before; filters do not affect it.</li>
+      <li><b>An event with nobody registered.</b> Tiles read 0; the empty message shows; a filter gives "0 z 0".</li>
+      <li><b>Screen reader.</b> The tile group is a polite live region, so a change of selection is announced after the user stops; both new controls are buttons with names in the page's language.</li>
+    </ol>
+  </section>
+
+  <section id="s07">
+    <p class="kicker">07 · Decided 17 November</p>
+    <h2>The two questions, answered</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">Q1</span> ADR-079: amend if needed. Checked: not needed.</p>
+      <p>You said to amend ADR-079 if needed. I read <code>doc/adr/079-event-self-registration-identity.md</code>: its entry-list passages cover the roster's spelling of a name, how long the list stays visible, the modal presentation and the <code>onclose</code>/<code>onviewlist</code> props. It says nothing about the tiles, the search box or the filters, so nothing in it is contradicted or left stale by this change. No ADR is written; FR-165, the design page and this plan carry the record. If you want the amendment anyway, say so and I draft it here for sign-off first.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">Q2</span> The fold follows the Python rule.</p>
+      <p>ł by hand, then every accent mark stripped, as <code>fold_diacritics</code> in <code>python/matcher/fuzzy_match.py</code> does. Letters that are not accents (ø, đ, ß, æ) are not mapped.</p>
+    </div>
+  </section>
+
+  <section id="s08">
+    <p class="kicker">08 · Red before green</p>
+    <h2>The build, step by step</h2>
+    <p>Every "red" below is run and read before the code that turns it green is written. A test that passes before its code is rewritten. No existing test is edited, skipped or deleted.</p>
+    <ol class="steps">
+      <li><b>Branch.</b> Rename to <code>claude/entry-list-tiles-follow-filters</code> and write its description (title of at most 72 characters, then what was wrong and what it does now).</li>
+      <li><b>Before captures, on the untouched code.</b> Settle the capture method (§10), then photograph every state in the sheet's list. Nothing has changed yet, so these are the reference.</li>
+      <li><b>Register the requirement.</b> FR-165 and the FOLD / ELSEL acceptance table go into <code>doc/requirements-traceability-matrix.md</code>, marked planned; render with <code>python scripts/render_docs.py</code>.</li>
+      <li><b>Folding helper.</b> Write FOLD.01–05 → run → <b>red</b> (the module does not exist). Add <code>frontend/src/lib/foldName.ts</code> with one pure function → <b>green</b>.</li>
+      <li><b>Issue 1.</b> Write ELSEL.16 → <b>red</b> ("zak" finds nobody). Use the helper on the typed text and on the names in <code>filteredRows</code> → <b>green</b>. Run the 19 existing tests: green.</li>
+      <li><b>Tiles.</b> Write ELSEL.02–06, 08, 09, 17 and the guards ELSEL.01, 07 → the eight are <b>red</b>, the guards hold. Add the derived <code>isNarrowed</code>; tile values read <code>filteredRows</code> when narrowed and <code>rows</code> otherwise; <code>countByWeapon</code> takes the list to count; add <code>reg_sel_of_total</code> to both locale files; <code>aria-live</code> on the tile group → <b>green</b>. Record the mutation runs for the two guards.</li>
+      <li><b>Frame and highlight.</b> Write ELSEL.10, 11 → <b>red</b>. Add <code>el-narrowed</code> and <code>el-active</code> with their style rules → <b>green</b>.</li>
+      <li><b>× in the search box.</b> Write ELSEL.12 and the × half of ELSEL.14 → <b>red</b>. Add the button and <code>reg_search_clear</code> → <b>green</b>.</li>
+      <li><b>Clear link.</b> Write ELSEL.13 and the link half of ELSEL.14 → <b>red</b>. Add <code>clearAll()</code>, the link and <code>reg_clear_filters</code> → <b>green</b>.</li>
+      <li><b>Dimming.</b> Write ELSEL.15 → <b>red</b>. Add <code>el-dim</code> → <b>green</b>.</li>
+      <li><b>Refactor and check.</b> Tidy with tests green. <code>npm run check -- --fail-on-warnings</code> at zero findings; <code>npm test</code>; <code>npm run test:e2e</code>.</li>
+      <li><b>After captures and the pixel sheet</b> (§10). Send you the sheet and <b>stop until you approve it</b>.</li>
+      <li><b>Documentation</b> (§12): handbook page, approved mockup, matrix status, renderers, <code>check_docs.py</code>.</li>
+      <li><b>Graph and search index.</b> <code>scripts/refresh-graph.sh</code>, then <code>python3 tools/docs-search/ingest.py</code>, before the commit. Commits name explicit paths and are authored as Fencer4Life.</li>
+      <li><b><code>scripts/preflight.sh</code> exits 0.</b> Any finding is fixed at its cause, never by loosening a gate.</li>
+      <li><b>Release, only on your go.</b> Through the integration checkout (<code>scripts/integrate-agent-branch.sh</code>, then <code>integration/main:main</code>), watched in the foreground. A push to main puts the frontend bundle on PROD's pages with no approval gate, so step 12 is the gate. Done means workflows green and the live list checked on CERT and PROD in both languages.</li>
+    </ol>
+    <p>Nothing is pushed before step 16. Commits before then stay on the branch in this worktree.</p>
+  </section>
+
+  <section id="s09">
+    <p class="kicker">09 · Files</p>
+    <h2>Change set</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><code>frontend/src/lib/foldName.ts</code></td><td>One pure function: fold a name for comparison.</td><td><span class="chip never">new</span></td></tr>
+        <tr><td><code>frontend/tests/foldName.test.ts</code></td><td>FOLD.01–05.</td><td><span class="chip never">new</span></td></tr>
+        <tr><td><code>frontend/tests/EntryList.test.ts</code></td><td>The <code>SEL</code> fixture and ELSEL.01–17 appended. Existing tests untouched.</td><td><span class="chip fill">append</span></td></tr>
+        <tr><td><code>frontend/src/components/EntryList.svelte</code></td><td>Tiles, frame, highlights, ×, clear link, dimming, folded search; the style rules for them.</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>frontend/src/lib/locales/pl.json</code>, <code>en.json</code></td><td>Three keys each.</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>doc/requirements-traceability-matrix.md</code> + rendered <code>.html</code></td><td>FR-165 and its acceptance table.</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>doc/handbook/reference/registration-lifecycle.html</code></td><td>The entry-list passage describes the selection tiles, the clear controls and the folded search; <code>last-verified</code>; one added screenshot of a narrowed list.</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>doc/mockups/registration_entry_list.html</code></td><td>Brought up to the signed design.</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>doc/plans/</code></td><td>This plan, the design page, the before/after sheet and its images.</td><td><span class="chip never">new</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Not touched: SQL, migrations, Python, workflows, secrets, <code>RegistrationModal.svelte</code>, <code>RegistrationForm.svelte</code>, <code>EntryListElement.svelte</code>, <code>LangToggle.svelte</code>, <code>register.html</code>.</p>
+  </section>
+
+  <section id="s10">
+    <p class="kicker">10 · Proof of no deterioration</p>
+    <h2>Before/after pixel sheet</h2>
+    <p>The same states are photographed in a real browser (Playwright's Chromium, already a project dependency) on the untouched code (step 2) and on the finished code (step 12), with the same fixed roster and the same window sizes.</p>
+    <ul>
+      <li><b>Data:</b> a fixed, invented roster served to the page by intercepting the entry-list request in the browser. No database on any environment is written to.</li>
+      <li><b>Surfaces:</b> the standalone <code>register.html?view=list</code> page, and the calendar modal. For the modal, the calendar comes from the LOCAL Docker stack and only the entry-list request is intercepted. If the modal cannot be reached that way, I report it at step 2 with the alternative, before any code changes.</li>
+      <li><b>Sizes and languages:</b> desktop width and 375px phone; Polish and English.</li>
+      <li><b>States:</b> unfiltered; one filter; search alone; search plus filters; weapon chosen; no match; with the Back button.</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>Pass means</th></tr></thead>
+      <tbody>
+        <tr><td>Unfiltered, every surface, size and language</td><td>Zero differing pixels between before and after.</td></tr>
+        <tr><td>Narrowed states</td><td>Differences only in the tiles, the highlighted controls, the × and the clear-link row; the list below is identical apart from being moved down by the link's height.</td></tr>
+        <tr><td>Touch sizes at phone width</td><td>× and clear link each at least 36px high.</td></tr>
+        <tr><td>No horizontal scroll at 375px</td><td>Page width equals window width in every state.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The sheet is an <code>.html</code> file in <code>doc/plans/</code> with each pair side by side and the pixel-difference count beside it. You approve it in chat before any push.</p>
+  </section>
+
+  <section id="s11">
+    <p class="kicker">11 · Parity</p>
+    <h2>LOCAL, CERT and PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL (Docker Supabase)</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Behaviour</td><td>Identical</td><td>Identical</td><td>Identical</td></tr>
+        <tr><td>Environment switch</td><td colspan="3">None. The change is in the shared frontend bundle and reads no environment.</td></tr>
+        <tr><td>Database, migrations, functions</td><td colspan="3">Unchanged everywhere.</td></tr>
+        <tr><td>Operator work in progress</td><td colspan="3">Not affected: no admin screen, workflow or command changes.</td></tr>
+      </tbody>
+    </table></div>
+    <p>No workflow, secret, Telegram command or FTL request is involved.</p>
+  </section>
+
+  <section id="s12">
+    <p class="kicker">12 · Required in every plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note good">
+      <p class="lede">☑ Documentation coherence gate complete (17 Nov 2026)</p>
+      <pre class="trace" style="border-left-color:var(--good)">Impact: product | reference
+Canonical docs affected: doc/handbook/reference/registration-lifecycle.html
+  (one present-tense paragraph + screenshot 07-entry-list-narrowed.png);
+  doc/requirements-traceability-matrix.md (+ rendered .html): FR-165, FOLD.01–05, ELSEL.01–17;
+  doc/mockups/registration_entry_list.html (brought to the signed design);
+  scripts/check-spec-sync.sh (FR count 163 → 164)
+ADR impact: none — ADR-079 read on 17 Nov; it does not describe the tiles, search or filters
+Operational impact: none — no workflow, runbook, environment or operator change
+Source-map / last-verified updated: yes — registration-lifecycle.html, last-verified 2026-11-17
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS: 26 pages valid]
+Superseded prose archived rather than appended: not applicable — nothing superseded; a paragraph added</pre>
+    </div>
+    <p>The validator reported 11 ownership warnings (advisory). Each owning page was read for anything about the entry list's tiles, search or filters: <code>index.html</code>, <code>documentation-map.html</code>, <code>business-overview.html</code>, <code>glossary.html</code>, <code>product-surfaces.html</code>, <code>system-context.html</code>, <code>containers-and-data.html</code>, <code>frontend-and-automation.html</code>, <code>codebase-map.html</code>, <code>test-and-traceability.html</code> and <code>documentation-standard.html</code> mention the entry list only as a surface or projection, or not at all, so none became stale. The one instruction found there, keeping the requirement count in <code>scripts/check-spec-sync.sh</code> in step with the matrix, was applied. <code>check-spec-sync.sh</code> and <code>check-coherence.sh</code> both pass.</p>
+  </section>
+
+  <section id="s13">
+    <p class="kicker">13 · Binary</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>FOLD.01–05 and ELSEL.01–17 exist with their IDs in the test code and in the matrix; each was seen red first, or, for the two guards, proven by a recorded mutation run.</li>
+      <li>The 19 existing entry-list tests and the other named suites pass without having been edited.</li>
+      <li>You approved the before/after pixel sheet.</li>
+      <li>The documentation coherence gate is ticked.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>After your go: the release workflows are green and the live entry list behaves as designed on CERT and PROD, in Polish and English, on desktop and phone width.</li>
+    </ul>
+    <p>Per-change steps outside preflight: <code>scripts/refresh-graph.sh</code> and <code>python3 tools/docs-search/ingest.py</code> before the commit. No SQL is touched, so no <code>postgrestools</code> run applies.</p>
+  </section>
+
+  <p class="foot">plan · entry-list-tiles-follow-filters · 17 Nov 2026 · rev 3 (built; pixel sheet approved; documentation gate ticked) · release waits for your go · no code written</p>
+</div>
+
+<script>
+  // ---- 76 invented fencers; weapon totals match the screenshot: E 47, F 19, S 25 ----
+  const SUR = ['Lis','Kowal','Wilk','Sowa','Kruk','Mazur','Nowak','Baran','Zając','Żak','Łoś','Ćwik','Dąb','Góra','Wróbel','Kozioł','Gołąb','Sikora','Kos','Bąk','Kot','Ryba','Mróz','Śliwa','Jeż','Bocian','Rak','Dudek','Kania','Sroka','Czyż','Burak','Kwiat','Lach','Stach','Wrona','Żuk','Pająk'];
+  const FM = ['Adam','Piotr','Marek','Jan','Tomasz','Robert','Paweł','Łukasz','Jerzy','Karol','Rafał','Zbigniew'];
+  const FF = ['Anna','Ewa','Maria','Zofia','Halina','Dorota','Iwona','Bożena'];
+  const SETS = [].concat(
+    Array(37).fill('E'), Array(9).fill('F'), Array(16).fill('S'),
+    Array(5).fill('EF'), Array(4).fill('ES'), Array(4).fill('FS'), ['EFS']);
+  const CATS = ['V0','V1','V1','V2','V2','V2','V3','V3','V4'];
+  const all = [];
+  for (let i = 0; i < 76; i++) {
+    const g = i % 3 === 0 ? 'F' : 'M';
+    all.push({
+      sur: SUR[i % SUR.length].toUpperCase(),
+      first: g === 'F' ? FF[(i * 5) % FF.length] : FM[(i * 7) % FM.length],
+      g, cat: CATS[(i * 7) % CATS.length], w: SETS[(i * 29) % 76],
+    });
+  }
+  const coll = new Intl.Collator('pl', { sensitivity: 'base' });
+  all.sort((a, b) => coll.compare(a.sur, b.sur) || coll.compare(a.first, b.first));
+  const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L').toLowerCase();
+  all.forEach(r => { r.key = fold(r.sur + ' ' + r.first); });
+
+  // ---- the form's real strings (pl.json / en.json) + the three new ones ----
+  const L = {
+    pl: { title:'Lista zgłoszonych', back:'Wstecz', reg:'Zgłoszonych', E:'Szpada', F:'Floret', S:'Szabla',
+          search:'Szukaj nazwiska…', weapon:'Broń', category:'Kategoria', gender:'Płeć', women:'Kobiety', men:'Mężczyźni',
+          colN:'Nazwisko i imię', colC:'Kat.', colW:'Broń', empty:'Brak wyników dla wybranych filtrów.',
+          legend:'Legenda broni: E — szpada, F — floret, S — szabla. Rok urodzenia i klub nie są pokazywane.',
+          of:'z', clear:'wyczyść', clearAll:'Wyczyść filtry' },
+    en: { title:'Entry list', back:'Back', reg:'Registered', E:'Épée', F:'Foil', S:'Sabre',
+          search:'Search surname…', weapon:'Weapon', category:'Category', gender:'Gender', women:'Women', men:'Men',
+          colN:'Surname and name', colC:'Cat.', colW:'Weapon', empty:'No entries match the filters.',
+          legend:'Weapon key: E — épée, F — foil, S — sabre. Year of birth and club are not shown.',
+          of:'of', clear:'clear', clearAll:'Clear filters' },
+  };
+  let lang = 'pl', resetMode = 'link';
+
+  const $ = id => document.getElementById(id);
+  const q = $('q'), fw = $('fw'), fc = $('fc'), fg = $('fg');
+  const count = (list, w) => w ? list.filter(r => r.w.includes(w)).length : list.length;
+  const clearAll = () => { q.value = fw.value = fc.value = fg.value = ''; render(); };
+
+  function render() {
+    const s = L[lang];
+    $('tTitle').textContent = s.title; $('tBack').textContent = s.back;
+    q.placeholder = s.search; $('qx').setAttribute('aria-label', s.clear);
+    $('tW').textContent = s.weapon; $('tC').textContent = s.category; $('tG').textContent = s.gender;
+    fw.options[1].text = s.E; fw.options[2].text = s.F; fw.options[3].text = s.S;
+    fg.options[1].text = s.women; fg.options[2].text = s.men;
+    $('thN').textContent = s.colN; $('thC').textContent = s.colC; $('thW').textContent = s.colW;
+    $('empty').textContent = s.empty; $('tLegend').textContent = s.legend; $('reset').textContent = s.clearAll;
+    $('lPl').classList.toggle('active', lang === 'pl'); $('lEn').classList.toggle('active', lang === 'en');
+
+    const text = fold(q.value.trim());
+    const sel = all.filter(r =>
+      (!text || r.key.includes(text)) &&
+      (!fw.value || r.w.includes(fw.value)) &&
+      (!fc.value || r.cat === fc.value) &&
+      (!fg.value || r.g === fg.value));
+    const narrowed = !!(text || fw.value || fc.value || fg.value);
+
+    const tiles = $('tiles');
+    tiles.classList.toggle('sel', narrowed);
+    tiles.innerHTML = [['reg', null], ['E', 'E'], ['F', 'F'], ['S', 'S']].map(([k, w]) => {
+      const dim = $('oDim').checked && fw.value && w && w !== fw.value;
+      const v = narrowed ? `${count(sel, w)}<span class="el-of">${s.of} ${count(all, w)}</span>` : count(all, w);
+      const isBtn = !w && narrowed && resetMode === 'tile';
+      const head = isBtn
+        ? `<div class="el-khead"><span class="el-k">${s[k]}</span><span class="el-clr">${s.clear} ✕</span></div>`
+        : `<div class="el-k">${s[k]}</div>`;
+      const tag = isBtn ? 'button' : 'div';
+      return `<${tag} class="el-metric${dim ? ' dim' : ''}"${isBtn ? ` id="tileReset" type="button" aria-label="${s.clearAll}"` : ''}>${head}<div class="el-v">${v}</div></${tag}>`;
+    }).join('');
+    const tr = $('tileReset'); if (tr) tr.addEventListener('click', clearAll);
+
+    $('tb').innerHTML = sel.map(r =>
+      `<tr><td class="el-name">${r.sur} ${r.first}</td><td><span class="el-cat">${r.cat}</span></td><td>${[...r.w].map(c => `<span class="el-wpn el-w-${c}">${c}</span>`).join('')}</td></tr>`).join('');
+    $('tbl').hidden = sel.length === 0;
+    $('empty').hidden = sel.length !== 0;
+
+    q.classList.toggle('active', !!text);
+    for (const e of [fw, fc, fg]) e.classList.toggle('active', !!e.value);
+    $('qx').hidden = !($('oClear').checked && q.value);
+    $('reset').hidden = !(resetMode === 'link' && narrowed);
+    $('stage').classList.toggle('hl', $('oHl').checked);
+    $('stage').classList.toggle('frame', $('oFrame').checked);
+    $('backrow').hidden = !$('oBack').checked;
+  }
+
+  for (const el of [q, fw, fc, fg]) el.addEventListener('input', render);
+  for (const id of ['oHl', 'oClear', 'oDim', 'oFrame', 'oBack']) $(id).addEventListener('change', render);
+  $('qx').addEventListener('click', () => { q.value = ''; q.focus(); render(); });
+  $('reset').addEventListener('click', clearAll);
+  $('lPl').addEventListener('click', () => { lang = 'pl'; render(); });
+  $('lEn').addEventListener('click', () => { lang = 'en'; render(); });
+  for (const b of $('segReset').children) b.addEventListener('click', () => {
+    resetMode = b.dataset.v;
+    for (const o of $('segReset').children) o.classList.toggle('on', o === b);
+    render();
+  });
+  const width = phone => {
+    $('stage').classList.toggle('phone', phone);
+    $('wPhone').classList.toggle('on', phone);
+    $('wDesk').classList.toggle('on', !phone);
+  };
+  $('wDesk').addEventListener('click', () => width(false));
+  $('wPhone').addEventListener('click', () => width(true));
+  render();
+</script>

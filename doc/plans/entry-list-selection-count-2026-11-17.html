@@ -1,0 +1,434 @@
+<meta charset="utf-8">
+<title>Entry list: tiles that follow the search and the filters</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+
+  /* ---------- playground chrome (plan-only) ---------- */
+  .opts{border:1px solid var(--line);border-radius:10px 10px 0 0;background:var(--surface);padding:14px 18px;margin:18px 0 0;font-size:16px}
+  .opts h4{margin:10px 0 6px;font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .opts h4:first-child{margin-top:0}
+  .opts label{display:flex;gap:10px;align-items:flex-start;margin:7px 0;cursor:pointer}
+  .opts input{margin-top:5px;width:17px;height:17px;flex:none}
+  .opts .tag{font-family:var(--mono);font-weight:800;color:var(--accent)}
+  .opts .seg{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px}
+  .opts .seg button{font:inherit;font-size:15px;padding:5px 14px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);cursor:pointer}
+  .opts .seg button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .stage{background:#0b1020;border-radius:0 0 14px 14px;padding:22px;margin:0 0 18px}
+  .stage.phone{padding:22px 0}
+  .stage.phone .el-card{max-width:375px;border-radius:0}
+
+  /* ---------- the component's own CSS, from EntryList.svelte + LangToggle.svelte ---------- */
+  .el-card{max-width:760px;margin:0 auto;background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:22px;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.35}
+  .el-backrow{margin-bottom:12px}
+  .el-back{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid #1a4a8a;color:#7fd8ff;border-radius:8px;padding:6px 13px;cursor:pointer;font-size:.85em;font-family:inherit}
+  .el-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+  .el-top-actions{display:flex;align-items:center;gap:10px}
+  .el-title{font-weight:600;color:#fff;font-size:1.05em}
+  .el-close{background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:#7fbadc;padding:0 2px}
+  .lang-toggle{display:inline-flex;flex:none;padding:2px;background:#f6f8fb;border:1px solid #d5dbe3;border-radius:999px}
+  .lang-btn{padding:4px 7px;border:0;border-radius:999px;background:none;line-height:0;cursor:pointer}
+  .lang-btn.active{background:#fff;box-shadow:0 1px 2px rgba(16,34,64,.2)}
+  .lang-btn svg{width:20px;height:20px;border-radius:50%;display:block;transition:opacity .15s,filter .15s}
+  .lang-btn:not(.active) svg{opacity:.42;filter:saturate(.5)}
+  .lang-btn:not(.active):hover svg{opacity:.8;filter:none}
+  .phone .lang-btn{padding:6px 8px}
+  .phone .lang-btn svg{width:22px;height:22px}
+  .el-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .phone .el-metrics{grid-template-columns:repeat(2,1fr)}
+  .el-metric{background:#0d1b2a;border-radius:8px;padding:9px 12px;transition:opacity .15s}
+  .el-k{font-size:.72em;color:#7fbadc}
+  .el-v{font-size:1.3em;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+  .el-filters{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .el-filters input,.el-filters select{background:#0d1b2a;border:1px solid #1a4a8a;color:#e0e0e0;padding:8px 10px;border-radius:8px;font-size:16px;font-family:inherit;min-height:44px;width:100%;box-sizing:border-box}
+  .el-fgroup{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .el-flabel{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .el-flabel span{font-size:.72em;color:#7fbadc;text-transform:uppercase;letter-spacing:.3px}
+  /* This page has no doctype, and in that mode a table ignores its parent's
+     text colour (rev 2 drew the names black). Stated explicitly here. */
+  .el-card table{width:100%;border-collapse:collapse;color:inherit;font-size:inherit;line-height:inherit;font-weight:inherit}
+  .el-card th{text-align:left;font-size:.74em;color:#7fbadc;text-transform:uppercase;letter-spacing:.5px;padding:8px;border-bottom:1px solid #1a4a8a;font-weight:700}
+  .el-card td{padding:9px 8px;font-size:.88em;border-bottom:1px solid #16273f;color:#e0e0e0}
+  .el-narrow{width:40px}
+  .el-cat{font-size:.78em;padding:2px 9px;border-radius:999px;background:rgba(0,212,255,.12);color:#7fd8ff}
+  .el-wpn{display:inline-block;width:22px;text-align:center;font-size:.72em;padding:2px 0;border-radius:6px;margin-right:3px;font-weight:600}
+  .el-w-E{background:rgba(96,196,89,.18);color:#9fe08c}
+  .el-w-F{background:rgba(0,212,255,.16);color:#7fd8ff}
+  .el-w-S{background:rgba(240,159,39,.18);color:#f0b967}
+  .el-empty{text-align:center;color:#8894a8;font-size:.9em;padding:20px;max-width:none;margin:0}
+  .el-legend{color:#8894a8;font-size:.78em;margin:12px 0 0;max-width:none}
+  .phone thead{display:none}
+  .phone table,.phone tbody{display:block;width:100%}
+  .phone tr{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;border-bottom:1px solid #1a2c4a;padding:8px 0}
+  .phone td{display:inline-flex;align-items:center;flex:none;border-bottom:none;padding:0;width:auto}
+  .phone .el-name{flex:1 1 auto;min-width:0;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ---------- proposed additions ---------- */
+  .el-of{font-size:.6em;font-weight:500;color:#7fbadc;margin-left:5px}
+  .frame .el-metrics.sel{outline:2px dashed #ffd24a;outline-offset:4px;border-radius:8px}
+  .el-metric.dim{opacity:.4}
+  .el-khead{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  button.el-metric{display:block;width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+  button.el-metric:hover,button.el-metric:focus-visible{box-shadow:inset 0 0 0 1px #00d4ff;outline:none}
+  .el-clr{font-size:.72em;color:#ffd24a;white-space:nowrap}
+  .el-searchwrap{position:relative}
+  .el-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:#7fbadc;font-size:20px;line-height:1;cursor:pointer}
+  .el-clear:hover{color:#fff;background:rgba(0,212,255,.1)}
+  .hl .el-filters .active{border-color:#00d4ff;box-shadow:0 0 0 1px #00d4ff}
+  .el-reset{align-self:flex-end;background:none;border:0;color:#7fd8ff;font:inherit;font-size:.82em;cursor:pointer;padding:2px 0;text-decoration:underline}
+  [hidden]{display:none!important}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Frontend · Entry list (Lista zgłoszonych) · Brainstorm + Plan · rev 4</p>
+  <h1>Tiles that follow the search and the filters</h1>
+  <p class="dek">Mock C with your choices applied: the tiles show the selection inside a <b>yellow dashed frame</b>, the narrowing controls are highlighted, the search box has a ×, the other weapon tiles dim, and a <b>"Wyczyść filtry" link under the filters</b> clears everything. Issue 1 is fixed in the same change.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>S1–S5 decided 17 Nov</span>
+    <span class="pill warn"><span class="dot"></span>Awaiting your go to build</span>
+    <span class="pill">Mock C chosen</span>
+    <span class="pill danger"><span class="dot"></span>Issue 1: fix in this change</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Your decisions, 17 November</p>
+    <h2>Settled</h2>
+    <ul>
+      <li><strong>S1 yes.</strong> Every control that narrows the list is highlighted, the search box included.</li>
+      <li><strong>S2 yes.</strong> A × inside the search box empties it.</li>
+      <li><strong>S3: the link under the filters.</strong> "Wyczyść filtry" / "Clear filters", right-aligned under the three dropdowns, shown only while the list is narrowed. It empties the search and resets all three dropdowns. The first tile stays a plain tile.</li>
+      <li><strong>S4 yes.</strong> When a weapon is chosen, the other two weapon tiles dim.</li>
+      <li><strong>S5 yes.</strong> A yellow dashed frame surrounds the tiles while the list is narrowed.</li>
+      <li><strong>Issue 1: fix.</strong> The search folds Polish letters.</li>
+    </ul>
+    <p>The mock below now starts with exactly these settings. The switches remain so you can still compare.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Play with it</p>
+    <h2>The mock</h2>
+    <p>76 invented fencers with your screenshot's totals (épée 47, foil 19, sabre 25). Try: type <code>kow</code>; type <code>zak</code> (finds ŻAK); pick V2 + Mężczyźni; then tap "Wyczyść filtry" to clear everything; pick Szpada to see the other weapon tiles dim; switch the language with the flags.</p>
+
+    <div class="opts">
+      <h4>View</h4>
+      <div class="seg"><button id="wDesk" class="on">Desktop / modal</button><button id="wPhone">Phone</button></div>
+      <label><input type="checkbox" id="oBack"><span>Show the Back button (the form shows it only when the list is opened from inside registration)</span></label>
+      <h4>Decided (switches kept for comparison)</h4>
+      <label><input type="checkbox" id="oHl" checked><span><span class="tag">S1</span> Highlight every control that is narrowing the list, the search box included</span></label>
+      <label><input type="checkbox" id="oClear" checked><span><span class="tag">S2</span> A × inside the search box to empty it</span></label>
+      <div><span class="tag">S3</span> Clear all filters:</div>
+      <div class="seg" id="segReset"><button data-v="link" class="on">A link under the filters</button><button data-v="tile">The first tile is the button</button><button data-v="none">Neither</button></div>
+      <label><input type="checkbox" id="oDim" checked><span><span class="tag">S4</span> When a weapon is chosen, dim the other two weapon tiles</span></label>
+      <label><input type="checkbox" id="oFrame" checked><span><span class="tag">S5</span> Yellow dashed frame around the tiles while the list is narrowed</span></label>
+    </div>
+    <div class="stage hl frame" id="stage">
+      <div class="el-card">
+        <div class="el-backrow" id="backrow" hidden><button class="el-back">&larr; <span id="tBack"></span></button></div>
+        <div class="el-top">
+          <span class="el-title" id="tTitle"></span>
+          <div class="el-top-actions">
+            <div class="lang-toggle" role="group">
+              <button type="button" class="lang-btn" id="lEn" title="English" aria-label="English">
+                <svg viewBox="0 0 20 20"><rect width="20" height="20" fill="#1f3c8a"/><path d="M0 0L20 20M20 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L20 20M20 0L0 20" stroke="#c8102e" stroke-width="1.6"/><path d="M10 0V20M0 10H20" stroke="#fff" stroke-width="6"/><path d="M10 0V20M0 10H20" stroke="#c8102e" stroke-width="3.2"/></svg></button>
+              <button type="button" class="lang-btn active" id="lPl" title="Polski" aria-label="Polski">
+                <svg viewBox="0 0 20 20"><rect width="20" height="10" fill="#fff"/><rect y="10" width="20" height="10" fill="#dc143c"/><circle cx="10" cy="10" r="9.6" fill="none" stroke="#d5dbe3" stroke-width=".8"/></svg></button>
+            </div>
+            <button class="el-close" aria-label="Close">&times;</button>
+          </div>
+        </div>
+
+        <div class="el-metrics" id="tiles" aria-live="polite"></div>
+
+        <div class="el-filters">
+          <div class="el-searchwrap">
+            <input id="q" autocomplete="off">
+            <button class="el-clear" id="qx" hidden>&times;</button>
+          </div>
+          <div class="el-fgroup">
+            <label class="el-flabel"><span id="tW"></span>
+              <select id="fw"><option value="">--</option><option value="E"></option><option value="F"></option><option value="S"></option></select></label>
+            <label class="el-flabel"><span id="tC"></span>
+              <select id="fc"><option value="">--</option><option value="V0">V0 (30+)</option><option value="V1">V1 (40+)</option><option value="V2">V2 (50+)</option><option value="V3">V3 (60+)</option><option value="V4">V4 (70+)</option></select></label>
+            <label class="el-flabel"><span id="tG"></span>
+              <select id="fg"><option value="">--</option><option value="F"></option><option value="M"></option></select></label>
+          </div>
+          <button class="el-reset" id="reset" hidden></button>
+        </div>
+
+        <table id="tbl"><thead><tr><th id="thN"></th><th class="el-narrow" id="thC"></th><th id="thW"></th></tr></thead><tbody id="tb"></tbody></table>
+        <p class="el-empty" id="empty" hidden></p>
+        <p class="el-legend" id="tLegend"></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Clear all</p>
+    <h2>The "Wyczyść filtry" link</h2>
+    <ul>
+      <li><strong>Where:</strong> right-aligned, directly under the three dropdowns, above the list.</li>
+      <li><strong>When:</strong> only while the search box or any dropdown narrows the list. Unfiltered, it is absent and the form is identical to today.</li>
+      <li><strong>What it does:</strong> empties the search box and sets weapon, category and gender back to "--" in one tap. The tiles return to the plain totals; the frame and the highlights go.</li>
+      <li><strong>Cost:</strong> when it appears, the list moves down by one short line; it moves back when the link goes.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">The rules the mock follows</p>
+    <h2>How the search box joins the filters</h2>
+    <ul>
+      <li><strong>One selection, four inputs.</strong> A fencer is in the selection when they pass the search text <em>and</em> the weapon, category and gender dropdowns. The tiles count the same rows the list shows.</li>
+      <li><strong>Nothing narrowing: today's form.</strong> Plain totals, no frame, no highlight, no clear link.</li>
+      <li><strong>Anything narrowing:</strong> every tile reads "selection z total" ("of" in English), the yellow frame appears, and the narrowing controls are highlighted.</li>
+      <li><strong>Search reacts on every keystroke.</strong> Spaces alone do not count as a search.</li>
+      <li><strong>No match:</strong> the tiles read "0 z 76" and the list shows the existing "Brak wyników dla wybranych filtrów."</li>
+      <li><strong>Weapon tiles count fencers.</strong> With Szpada chosen, the Floret tile shows the épée fencers who also entered foil, and the Floret and Szabla tiles are dimmed. Dimming follows the weapon dropdown only; the first tile never dims.</li>
+      <li><strong>Language switch:</strong> filters and search text stay as they are when the language changes; only the labels change.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Found while reading the code</p>
+    <h2>Issue 1: the search does not fold Polish letters</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">1 ×</span> Typing "zak" does not find ŻAK today</p>
+      <p><code>EntryList.svelte</code> compares with <code>toLowerCase().includes()</code>. A visitor without Polish keys cannot find ŁOŚ, ŻAK or ĆWIK. With live tiles the wrong "0 z 76" would be on display.</p>
+      <p><strong>Fix, in this same change, test first:</strong> fold both the typed text and the names before comparing (strip accents, plus ł→l). The mock already does this. There is no folding helper in the frontend yet, so one small function is added in <code>frontend/src/lib/</code> with its own tests.</p>
+    </div>
+    <p>Noted, not changed: the placeholder says "Szukaj nazwiska…" while the search also matches first names.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The build · starts on your go</p>
+    <h2>Implementation plan</h2>
+    <ol class="steps">
+      <li><strong>Rename the branch</strong> to <code>claude/entry-list-tiles-follow-filters</code> with its description, before anything else.</li>
+      <li><strong>Tests first, seen red.</strong> A new test file for the folding function. In <code>frontend/tests/EntryList.test.ts</code>:
+        plain totals, no frame, no clear link, no dimmed tile when nothing narrows;
+        "selection z total" after a category filter, after a search alone, and after all four together;
+        weapon tiles count the selection's fencers per weapon;
+        "0 z total" together with the empty message;
+        whitespace-only search does not narrow;
+        search "zak" finds ŻAK (issue 1);
+        the frame class is present only while narrowed (S5);
+        the "Wyczyść filtry" link is present only while narrowed, and tapping it empties the search and resets all three dropdowns (S3);
+        with a weapon chosen the other two weapon tiles carry the dim class while the first tile and the chosen one do not, and without a weapon none does (S4);
+        active class on each narrowing control and none otherwise (S1);
+        the × appears only with text and empties the search alone (S2);
+        English "of" and "clear" after the language toggle, with filters kept;
+        the tile region carries <code>aria-live="polite"</code>.</li>
+      <li><strong>Folding helper</strong> in <code>frontend/src/lib/</code>: one pure function, used on the typed text and on the names.</li>
+      <li><strong>Component</strong>, <code>EntryList.svelte</code> only: a derived <code>isNarrowed</code>; tile values read <code>filteredRows</code> when narrowed and <code>rows</code> otherwise; <code>countByWeapon</code> takes the list to count; a <code>clearAll()</code> function and its link under the dropdowns; the dim class on the other weapon tiles; an active class on the four controls; the × button; the frame class. Back row, title, language switch, close button, table and legend are not touched.</li>
+      <li><strong>Locale</strong>, <code>pl.json</code> and <code>en.json</code>: "{n} z {total}" / "{n} of {total}", "Wyczyść filtry" / "Clear filters", and the × button's label.</li>
+      <li><strong>Checks</strong>: <code>npm run check</code> at zero findings, the frontend suite, then <code>scripts/preflight.sh</code> exit 0.</li>
+      <li><strong>Before/after pixel sheet</strong> for your approval before any push: desktop and phone, in both languages; unfiltered (must be identical to today), filtered, searched, no match; in the calendar modal and on the standalone <code>register.html</code> page.</li>
+      <li><strong>Documentation coherence gate</strong>: the handbook's registration lifecycle page describes the tiles, the clear link and the folded search; RTM check; then <code>scripts/refresh-graph.sh</code> and <code>python3 tools/docs-search/ingest.py</code> before the commit.</li>
+      <li><strong>Release</strong> only on your go. A push to main puts the frontend bundle on PROD's pages with no approval gate, so the pixel sheet is the gate.</li>
+    </ol>
+  </section>
+
+  <p class="foot">plan · entry-list-selection-count · 17 Nov 2026 · rev 4 (S1–S5 decided: clear link under the filters, dimming on; issue 1 fixed in this change) · no code written</p>
+</div>
+
+<script>
+  // ---- 76 invented fencers; weapon totals match the screenshot: E 47, F 19, S 25 ----
+  const SUR = ['Lis','Kowal','Wilk','Sowa','Kruk','Mazur','Nowak','Baran','Zając','Żak','Łoś','Ćwik','Dąb','Góra','Wróbel','Kozioł','Gołąb','Sikora','Kos','Bąk','Kot','Ryba','Mróz','Śliwa','Jeż','Bocian','Rak','Dudek','Kania','Sroka','Czyż','Burak','Kwiat','Lach','Stach','Wrona','Żuk','Pająk'];
+  const FM = ['Adam','Piotr','Marek','Jan','Tomasz','Robert','Paweł','Łukasz','Jerzy','Karol','Rafał','Zbigniew'];
+  const FF = ['Anna','Ewa','Maria','Zofia','Halina','Dorota','Iwona','Bożena'];
+  const SETS = [].concat(
+    Array(37).fill('E'), Array(9).fill('F'), Array(16).fill('S'),
+    Array(5).fill('EF'), Array(4).fill('ES'), Array(4).fill('FS'), ['EFS']);
+  const CATS = ['V0','V1','V1','V2','V2','V2','V3','V3','V4'];
+  const all = [];
+  for (let i = 0; i < 76; i++) {
+    const g = i % 3 === 0 ? 'F' : 'M';
+    all.push({
+      sur: SUR[i % SUR.length].toUpperCase(),
+      first: g === 'F' ? FF[(i * 5) % FF.length] : FM[(i * 7) % FM.length],
+      g, cat: CATS[(i * 7) % CATS.length], w: SETS[(i * 29) % 76],
+    });
+  }
+  const coll = new Intl.Collator('pl', { sensitivity: 'base' });
+  all.sort((a, b) => coll.compare(a.sur, b.sur) || coll.compare(a.first, b.first));
+  const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L').toLowerCase();
+  all.forEach(r => { r.key = fold(r.sur + ' ' + r.first); });
+
+  // ---- the form's real strings (pl.json / en.json) + the three new ones ----
+  const L = {
+    pl: { title:'Lista zgłoszonych', back:'Wstecz', reg:'Zgłoszonych', E:'Szpada', F:'Floret', S:'Szabla',
+          search:'Szukaj nazwiska…', weapon:'Broń', category:'Kategoria', gender:'Płeć', women:'Kobiety', men:'Mężczyźni',
+          colN:'Nazwisko i imię', colC:'Kat.', colW:'Broń', empty:'Brak wyników dla wybranych filtrów.',
+          legend:'Legenda broni: E — szpada, F — floret, S — szabla. Rok urodzenia i klub nie są pokazywane.',
+          of:'z', clear:'wyczyść', clearAll:'Wyczyść filtry' },
+    en: { title:'Entry list', back:'Back', reg:'Registered', E:'Épée', F:'Foil', S:'Sabre',
+          search:'Search surname…', weapon:'Weapon', category:'Category', gender:'Gender', women:'Women', men:'Men',
+          colN:'Surname and name', colC:'Cat.', colW:'Weapon', empty:'No entries match the filters.',
+          legend:'Weapon key: E — épée, F — foil, S — sabre. Year of birth and club are not shown.',
+          of:'of', clear:'clear', clearAll:'Clear filters' },
+  };
+  let lang = 'pl', resetMode = 'link';
+
+  const $ = id => document.getElementById(id);
+  const q = $('q'), fw = $('fw'), fc = $('fc'), fg = $('fg');
+  const count = (list, w) => w ? list.filter(r => r.w.includes(w)).length : list.length;
+  const clearAll = () => { q.value = fw.value = fc.value = fg.value = ''; render(); };
+
+  function render() {
+    const s = L[lang];
+    $('tTitle').textContent = s.title; $('tBack').textContent = s.back;
+    q.placeholder = s.search; $('qx').setAttribute('aria-label', s.clear);
+    $('tW').textContent = s.weapon; $('tC').textContent = s.category; $('tG').textContent = s.gender;
+    fw.options[1].text = s.E; fw.options[2].text = s.F; fw.options[3].text = s.S;
+    fg.options[1].text = s.women; fg.options[2].text = s.men;
+    $('thN').textContent = s.colN; $('thC').textContent = s.colC; $('thW').textContent = s.colW;
+    $('empty').textContent = s.empty; $('tLegend').textContent = s.legend; $('reset').textContent = s.clearAll;
+    $('lPl').classList.toggle('active', lang === 'pl'); $('lEn').classList.toggle('active', lang === 'en');
+
+    const text = fold(q.value.trim());
+    const sel = all.filter(r =>
+      (!text || r.key.includes(text)) &&
+      (!fw.value || r.w.includes(fw.value)) &&
+      (!fc.value || r.cat === fc.value) &&
+      (!fg.value || r.g === fg.value));
+    const narrowed = !!(text || fw.value || fc.value || fg.value);
+
+    const tiles = $('tiles');
+    tiles.classList.toggle('sel', narrowed);
+    tiles.innerHTML = [['reg', null], ['E', 'E'], ['F', 'F'], ['S', 'S']].map(([k, w]) => {
+      const dim = $('oDim').checked && fw.value && w && w !== fw.value;
+      const v = narrowed ? `${count(sel, w)}<span class="el-of">${s.of} ${count(all, w)}</span>` : count(all, w);
+      const isBtn = !w && narrowed && resetMode === 'tile';
+      const head = isBtn
+        ? `<div class="el-khead"><span class="el-k">${s[k]}</span><span class="el-clr">${s.clear} ✕</span></div>`
+        : `<div class="el-k">${s[k]}</div>`;
+      const tag = isBtn ? 'button' : 'div';
+      return `<${tag} class="el-metric${dim ? ' dim' : ''}"${isBtn ? ` id="tileReset" type="button" aria-label="${s.clearAll}"` : ''}>${head}<div class="el-v">${v}</div></${tag}>`;
+    }).join('');
+    const tr = $('tileReset'); if (tr) tr.addEventListener('click', clearAll);
+
+    $('tb').innerHTML = sel.map(r =>
+      `<tr><td class="el-name">${r.sur} ${r.first}</td><td><span class="el-cat">${r.cat}</span></td><td>${[...r.w].map(c => `<span class="el-wpn el-w-${c}">${c}</span>`).join('')}</td></tr>`).join('');
+    $('tbl').hidden = sel.length === 0;
+    $('empty').hidden = sel.length !== 0;
+
+    q.classList.toggle('active', !!text);
+    for (const e of [fw, fc, fg]) e.classList.toggle('active', !!e.value);
+    $('qx').hidden = !($('oClear').checked && q.value);
+    $('reset').hidden = !(resetMode === 'link' && narrowed);
+    $('stage').classList.toggle('hl', $('oHl').checked);
+    $('stage').classList.toggle('frame', $('oFrame').checked);
+    $('backrow').hidden = !$('oBack').checked;
+  }
+
+  for (const el of [q, fw, fc, fg]) el.addEventListener('input', render);
+  for (const id of ['oHl', 'oClear', 'oDim', 'oFrame', 'oBack']) $(id).addEventListener('change', render);
+  $('qx').addEventListener('click', () => { q.value = ''; q.focus(); render(); });
+  $('reset').addEventListener('click', clearAll);
+  $('lPl').addEventListener('click', () => { lang = 'pl'; render(); });
+  $('lEn').addEventListener('click', () => { lang = 'en'; render(); });
+  for (const b of $('segReset').children) b.addEventListener('click', () => {
+    resetMode = b.dataset.v;
+    for (const o of $('segReset').children) o.classList.toggle('on', o === b);
+    render();
+  });
+  const width = phone => {
+    $('stage').classList.toggle('phone', phone);
+    $('wPhone').classList.toggle('on', phone);
+    $('wDesk').classList.toggle('on', !phone);
+  };
+  $('wDesk').addEventListener('click', () => width(false));
+  $('wPhone').addEventListener('click', () => width(true));
+  render();
+</script>
