@@ -1,0 +1,126 @@
+[
+  {
+    "tag": "ranking",
+    "w": "desktop",
+    "lang": "pl",
+    "element": "spws-ranklist",
+    "path": "/ranking/",
+    "appClasses": [
+      "ranklist-app"
+    ],
+    "appHeight": 556,
+    "calendarHeight": null,
+    "viewport": 900,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "ranking",
+    "w": "desktop",
+    "lang": "en",
+    "element": "spws-ranklist",
+    "path": "/ranking/",
+    "appClasses": [
+      "ranklist-app"
+    ],
+    "appHeight": 556,
+    "calendarHeight": null,
+    "viewport": 900,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "ranking",
+    "w": "phone",
+    "lang": "pl",
+    "element": "spws-ranklist",
+    "path": "/ranking/",
+    "appClasses": [
+      "ranklist-app"
+    ],
+    "appHeight": 716,
+    "calendarHeight": null,
+    "viewport": 812,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "ranking",
+    "w": "phone",
+    "lang": "en",
+    "element": "spws-ranklist",
+    "path": "/ranking/",
+    "appClasses": [
+      "ranklist-app"
+    ],
+    "appHeight": 716,
+    "calendarHeight": null,
+    "viewport": 812,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "calendar",
+    "w": "desktop",
+    "lang": "pl",
+    "element": "spws-calendar",
+    "path": "/znajdz-zawody/",
+    "appClasses": [
+      "ranklist-app",
+      "site-fill"
+    ],
+    "appHeight": 900,
+    "calendarHeight": 838,
+    "viewport": 900,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "calendar",
+    "w": "desktop",
+    "lang": "en",
+    "element": "spws-calendar",
+    "path": "/znajdz-zawody/",
+    "appClasses": [
+      "ranklist-app",
+      "site-fill"
+    ],
+    "appHeight": 900,
+    "calendarHeight": 838,
+    "viewport": 900,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "calendar",
+    "w": "phone",
+    "lang": "pl",
+    "element": "spws-calendar",
+    "path": "/znajdz-zawody/",
+    "appClasses": [
+      "ranklist-app",
+      "site-fill"
+    ],
+    "appHeight": 812,
+    "calendarHeight": 748,
+    "viewport": 812,
+    "sideScroll": false,
+    "errors": []
+  },
+  {
+    "tag": "calendar",
+    "w": "phone",
+    "lang": "en",
+    "element": "spws-calendar",
+    "path": "/znajdz-zawody/",
+    "appClasses": [
+      "ranklist-app",
+      "site-fill"
+    ],
+    "appHeight": 812,
+    "calendarHeight": 748,
+    "viewport": 812,
+    "sideScroll": false,
+    "errors": []
+  }
+]

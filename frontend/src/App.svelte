@@ -20,7 +20,12 @@
   />
 {/if}
 
-<div class="ranklist-app" class:embedded class:site-fill={site && currentView === 'calendar'}>
+<div
+  class="ranklist-app"
+  class:embedded
+  class:site-fill={site && currentView === 'calendar'}
+  class:site-own-height={site && currentView === 'calendar' && view !== 'calendar'}
+>
   {#if site}
     <SiteBar
       homeHref={siteLinks?.home ?? ''}
@@ -1803,6 +1808,14 @@
     align-items: center;
     gap: 8px;
     flex: 0 0 auto;
+  }
+  /* The calendar opened in place on /ranking/ by a signed-in admin (I7,
+     WP.ADM.05). That element's host has no height of its own (only
+     CalendarElement's :host sets 100dvh), so `height: 100%` above would
+     collapse the barrel; the app takes the viewport height itself. The
+     calendar page's own element started on the calendar and never gets this. */
+  .ranklist-app.site-own-height {
+    height: 100dvh;
   }
   /* The calendar takes the remaining height; the barrel scrolls inside it
      rather than growing the page. */

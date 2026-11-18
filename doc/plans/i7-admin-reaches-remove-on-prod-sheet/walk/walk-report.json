@@ -1,0 +1,26 @@
+[
+  {
+    "step": "1 visitor registered on the calendar page",
+    "ok": "✓ Zgłoszenie potwierdzone"
+  },
+  {
+    "step": "2 signed in on /ranking/, „Znajdź zawody” opened in place",
+    "path": "/ranking/"
+  },
+  {
+    "step": "3 confirmation",
+    "text": "Usunąć zgłoszenie? ZZWALKITRZY Ewa · szpada · V2 EVF Circuit – Łomianki (POL) Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów. Usuń zgłoszenie Anuluj"
+  },
+  {
+    "step": "4 done",
+    "text": "✓ Usunięto zgłoszenie: ZZWALKITRZY Ewa",
+    "rowsWithName": 0
+  },
+  {
+    "step": "5 capture entry removed",
+    "text": "✓ Usunięto zgłoszenie: ZZPOKAZ Anna"
+  },
+  {
+    "errors": []
+  }
+]

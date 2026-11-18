@@ -146,14 +146,22 @@
   // The entry for the page already open only closes the drawer: following it
   // would just reload the page. And a signed-in admin is on /ranking/, the only
   // page that admits sign-in, where App resets the sign-in at mount: there the
-  // Ranking entry returns to the list in place instead of reloading the page
-  // and losing the session.
+  // Ranking entry returns to the list in place, and the calendar entry opens
+  // the calendar in place, instead of loading another page and losing the
+  // session (WP.NAV.05, I7: otherwise the entry list's „Usuń” is unreachable
+  // on PROD). The calculator and the points table stay links.
+  const IN_PLACE_WHEN_SIGNED_IN: Partial<Record<SitePage, AppView>> = {
+    ranklist: 'ranklist',
+    calendar: 'calendar',
+  }
+
   function followSiteLink(e: MouseEvent, page: SitePage) {
+    const inPlace = IN_PLACE_WHEN_SIGNED_IN[page]
     if (page === currentView) {
       e.preventDefault()
-    } else if (page === 'ranklist' && isAdmin) {
+    } else if (inPlace && isAdmin) {
       e.preventDefault()
-      onnavigate('ranklist')
+      onnavigate(inPlace)
     }
     onclose()
   }

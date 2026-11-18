@@ -1,0 +1,70 @@
+[
+  {
+    "w": "desktop",
+    "calendarInPlace": {
+      "element": "spws-ranklist",
+      "path": "/ranking/",
+      "appClasses": [
+        "ranklist-app",
+        "site-fill",
+        "site-own-height"
+      ],
+      "appHeight": 900,
+      "calendarHeight": 838,
+      "viewport": 900,
+      "sideScroll": false,
+      "adminSection": 1
+    },
+    "entryRows": 1,
+    "removeButtons": 1,
+    "afterSignOut": {
+      "element": "spws-ranklist",
+      "path": "/ranking/",
+      "appClasses": [
+        "ranklist-app",
+        "site-fill",
+        "site-own-height"
+      ],
+      "appHeight": 900,
+      "calendarHeight": 838,
+      "viewport": 900,
+      "sideScroll": false,
+      "adminSection": 0
+    },
+    "errors": []
+  },
+  {
+    "w": "phone",
+    "calendarInPlace": {
+      "element": "spws-ranklist",
+      "path": "/ranking/",
+      "appClasses": [
+        "ranklist-app",
+        "site-fill",
+        "site-own-height"
+      ],
+      "appHeight": 812,
+      "calendarHeight": 748,
+      "viewport": 812,
+      "sideScroll": false,
+      "adminSection": 1
+    },
+    "entryRows": 1,
+    "removeButtons": 1,
+    "afterSignOut": {
+      "element": "spws-ranklist",
+      "path": "/ranking/",
+      "appClasses": [
+        "ranklist-app",
+        "site-fill",
+        "site-own-height"
+      ],
+      "appHeight": 812,
+      "calendarHeight": 748,
+      "viewport": 812,
+      "sideScroll": false,
+      "adminSection": 0
+    },
+    "errors": []
+  }
+]

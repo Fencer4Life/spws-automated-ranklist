@@ -1,0 +1,200 @@
+<meta charset="utf-8">
+<title>I7 · Removing an entry on PROD · pixel sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0 28px;align-items:start}
+.shot{margin:0;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.shot img{width:100%;height:auto;display:block;border-radius:4px}
+.shot figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Entry list · Administrator · I7 · Pixel sheet</p>
+  <h1>„Znajdź zawody” in place on /ranking/: before and after</h1>
+  <p class="dek">Captured on the <b>WordPress page bodies themselves</b> (<code>doc/wordpress/ranking.html</code>, <code>znajdz-zawody.html</code>), with the published bundle built from main and from this branch and LOCAL standing in for PROD. Visitors: <b>16 of 16 captures pixel-identical</b>. The administrator now stays signed in and reaches „Usuń”.</p>
+  <div class="meta">
+    <span class="pill" style="color:var(--good);background:var(--good-soft)"><span class="dot" style="background:var(--good)"></span>Approved by the user in chat, 18 Nov 2026</span>
+    <span class="pill">plan: i7-admin-reaches-remove-on-prod-2026-11-18.html</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Visitors</p>
+    <h2>Nothing changes for a visitor</h2>
+    <ul>
+      <li><b>Noise floor first.</b> Two identical runs of main's build gave 16 of 16 pixel-identical captures. The first attempt did not match: the drawer slides in on a <code>left</code> transition, and its text rasterised differently from run to run. For the drawer captures, transitions are switched off inside the element, identically for both builds. Neither build changes how the drawer looks.</li>
+      <li><b>Before against after</b>, for the Ranking page and the calendar page, with the drawer closed and open, on desktop 1280 × 900 and phone 375 × 812, in PL and EN: <b>16 of 16 identical</b>. There are no page errors and no sideways scroll (<code>i7-admin-reaches-remove-on-prod-sheet/visitor-before-after-diff.json</code>).</li>
+      <li><b>The new height class never appears for a visitor</b>, and the calendar page keeps its own height:</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Page</th><th>Element</th><th>App px</th><th>Calendar px</th><th>Viewport</th><th>Height class</th></tr></thead>
+      <tbody><tr><td>ranking · desktop · PL</td><td><code>spws-ranklist</code></td><td>556</td><td>—</td><td>900</td><td>no</td></tr><tr><td>ranking · desktop · EN</td><td><code>spws-ranklist</code></td><td>556</td><td>—</td><td>900</td><td>no</td></tr><tr><td>ranking · phone · PL</td><td><code>spws-ranklist</code></td><td>716</td><td>—</td><td>812</td><td>no</td></tr><tr><td>ranking · phone · EN</td><td><code>spws-ranklist</code></td><td>716</td><td>—</td><td>812</td><td>no</td></tr><tr><td>calendar · desktop · PL</td><td><code>spws-calendar</code></td><td>900</td><td>838</td><td>900</td><td>no</td></tr><tr><td>calendar · desktop · EN</td><td><code>spws-calendar</code></td><td>900</td><td>838</td><td>900</td><td>no</td></tr><tr><td>calendar · phone · PL</td><td><code>spws-calendar</code></td><td>812</td><td>748</td><td>812</td><td>no</td></tr><tr><td>calendar · phone · EN</td><td><code>spws-calendar</code></td><td>812</td><td>748</td><td>812</td><td>no</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The administrator, before and after</p>
+    <h2>Signed in on /ranking/?admin=1, then „Znajdź zawody”</h2>
+    <p>The LOCAL test administrator signs in on the Ranking page body, opens the drawer and chooses „Znajdź zawody”. They then open Łomianki's „Lista zgłoszonych”, which holds one throwaway entry registered through the visitor form, and finally sign out.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Build</th><th>Where the menu led</th><th>Still signed in</th><th>Calendar height</th><th>Rows</th><th>„Usuń”</th><th>After sign-out</th><th>Errors</th></tr></thead>
+      <tbody><tr><td>main (before) · desktop</td><td><code>/znajdz-zawody/</code> · <code>spws-calendar</code></td><td><b>no</b></td><td>838 of 900</td><td>1</td><td>0</td><td>—</td><td>0</td></tr><tr><td>main (before) · phone</td><td><code>/znajdz-zawody/</code> · <code>spws-calendar</code></td><td><b>no</b></td><td>748 of 812</td><td>1</td><td>0</td><td>—</td><td>0</td></tr><tr><td>this branch · desktop</td><td><code>/ranking/</code> · <code>spws-ranklist</code></td><td>yes</td><td>838 of 900</td><td>1</td><td>1</td><td>stays on /ranking/, calendar 838 px, admin section gone</td><td>0</td></tr><tr><td>this branch · phone</td><td><code>/ranking/</code> · <code>spws-ranklist</code></td><td>yes</td><td>748 of 812</td><td>1</td><td>1</td><td>stays on /ranking/, calendar 748 px, admin section gone</td><td>0</td></tr></tbody>
+    </table></div>
+    <div class="note danger"><p class="lede">Before: the defect, reproduced</p><p>The menu loads <code>/znajdz-zawody/</code>. The fresh element there resets the sign-in, so the list shows no „Usuń”.</p></div>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-before/admin__desktop__2-calendar.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-before/admin__desktop__2-calendar.png" alt="Before: calendar page after the menu, desktop" loading="lazy"></a><figcaption>before · desktop · the calendar page, signed out</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-before/admin__desktop__4-entry-list.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-before/admin__desktop__4-entry-list.png" alt="Before: entry list without Usuń, desktop" loading="lazy"></a><figcaption>before · desktop · no „Usuń”</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-before/admin__phone__4-entry-list.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-before/admin__phone__4-entry-list.png" alt="Before: entry list without Usuń, phone" loading="lazy"></a><figcaption>before · phone · no „Usuń”</figcaption></figure></div>
+    <h3>After: the new states (approved 18 Nov 2026, before any push)</h3>
+    <p class="mkcap">1 · signed in on /ranking/: the drawer with the admin section</p>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__1-drawer.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__1-drawer.png" alt="Drawer signed in, desktop" loading="lazy"></a><figcaption>desktop</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__1-drawer.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__1-drawer.png" alt="Drawer signed in, phone" loading="lazy"></a><figcaption>phone</figcaption></figure></div>
+    <p class="mkcap">2 · „Znajdź zawody” opened in place, using the full height (WP.ADM.05)</p>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__2-calendar.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__2-calendar.png" alt="Calendar in place, desktop" loading="lazy"></a><figcaption>desktop</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__2-calendar.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__2-calendar.png" alt="Calendar in place, phone" loading="lazy"></a><figcaption>phone</figcaption></figure></div>
+    <p class="mkcap">3 · the Łomianki card</p>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__3-card.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__3-card.png" alt="Łomianki card, desktop" loading="lazy"></a><figcaption>desktop</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__3-card.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__3-card.png" alt="Łomianki card, phone" loading="lazy"></a><figcaption>phone</figcaption></figure></div>
+    <p class="mkcap">4 · „Lista zgłoszonych” with „Usuń”</p>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__4-entry-list.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__4-entry-list.png" alt="Entry list with Usuń, desktop" loading="lazy"></a><figcaption>desktop</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__4-entry-list.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__4-entry-list.png" alt="Entry list with Usuń, phone" loading="lazy"></a><figcaption>phone</figcaption></figure></div>
+    <p class="mkcap">5 · signed out: the calendar stays, now a visitor's view (Q1)</p>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__5-signed-out.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__desktop__5-signed-out.png" alt="Signed out, calendar stays, desktop" loading="lazy"></a><figcaption>desktop</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__5-signed-out.png"><img src="i7-admin-reaches-remove-on-prod-sheet/admin-after/admin__phone__5-signed-out.png" alt="Signed out, calendar stays, phone" loading="lazy"></a><figcaption>phone</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · LOCAL walk-through on the page bodies</p>
+    <h2>Registered as a visitor, removed by the administrator</h2>
+    <ol class="steps">
+      <li>A visitor registered ZZWALKITRZY Ewa through the form on the calendar page body and saw „✓ Zgłoszenie potwierdzone”.</li>
+      <li>The administrator signed in on the Ranking page body and chose „Znajdź zawody”. The address stayed <code>/ranking/</code>.</li>
+      <li>The confirmation read: „Usunąć zgłoszenie? ZZWALKITRZY Ewa · szpada · V2 · EVF Circuit – Łomianki (POL) · Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.”</li>
+      <li>After confirming, the list showed „✓ Usunięto zgłoszenie: ZZWALKITRZY Ewa”, and no row with that name remained. The capture entry ZZPOKAZ Anna was removed the same way.</li>
+      <li>The LOCAL database then held 0 rows for the event in <code>tbl_registration</code> and 0 in <code>vw_registration_entry_list</code>, as before the run.</li>
+    </ol>
+    <div class="shots"><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/walk/walk-1-confirm.png"><img src="i7-admin-reaches-remove-on-prod-sheet/walk/walk-1-confirm.png" alt="Walk-through confirmation" loading="lazy"></a><figcaption>the confirmation</figcaption></figure><figure class="shot"><a href="i7-admin-reaches-remove-on-prod-sheet/walk/walk-2-done.png"><img src="i7-admin-reaches-remove-on-prod-sheet/walk/walk-2-done.png" alt="Walk-through done" loading="lazy"></a><figcaption>done</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Found on the way</p>
+    <h2>Issues</h2>
+    <ul>
+      <li><b>I8 · An unused variable in <code>Sidebar.test.ts</code>.</b> The closed-drawer test computed <code>sidebar</code> and never checked it. Fixed: the test now asserts the closed drawer is present without <code>.open</code>.</li>
+      <li><b>I9 · Escape does not close „Lista zgłoszonych”.</b> The calendar's modal stops key events, so only the × closes the list, and a keyboard user cannot leave it with Escape. Not changed here, because this plan touches only what you approved. I propose it as a separate small fix.</li>
+    </ul>
+  </section>
+
+  <p class="foot">pixel sheet · i7-admin-reaches-remove-on-prod · 18 Nov 2026 · tools: i7-admin-reaches-remove-on-prod-sheet/tools/proof.cjs (visitor · admin · walk), mutate.py, build_sheet.py</p>
+</div>
