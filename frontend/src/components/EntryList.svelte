@@ -69,6 +69,10 @@
     {/if}
   </div>
 
+  {#if removedName}
+    <p class="el-remove-done" role="status" tabindex="-1" bind:this={doneEl}>{t('reg_remove_done', { name: removedName })}</p>
+  {/if}
+
   {#if filteredRows.length > 0}
     <table>
       <thead>
@@ -76,6 +80,7 @@
           <th>{t('reg_col_name')}</th>
           <th class="el-narrow">{t('reg_col_category')}</th>
           <th>{t('reg_col_weapon')}</th>
+          {#if canRemove}<th class="el-act"></th>{/if}
         </tr>
       </thead>
       <tbody>
@@ -90,6 +95,15 @@
                 <span class="el-wpn el-w-{weaponCode(w)}">{weaponCode(w)}</span>
               {/each}
             </td>
+            {#if canRemove}
+              <td class="el-act">
+                <button
+                  type="button"
+                  class="el-remove"
+                  aria-label={t('reg_remove_row', { name: fullName(row) })}
+                  onclick={() => askRemove(row)}>{t('reg_remove')}</button>
+              </td>
+            {/if}
           </tr>
         {/each}
       </tbody>
@@ -99,12 +113,43 @@
   {/if}
 
   <p class="el-legend">{t('reg_weapon_legend')}</p>
+
+  <!-- FR-166: the administrator's confirmation. It takes focus when it opens
+       and handles Escape itself, because the calendar's modal stops key events
+       from reaching the window. Shown only while removal is allowed, so
+       signing out also closes a confirmation left open. -->
+  {#if pending && canRemove}
+    <div class="el-confirm-backdrop" role="presentation" onclick={cancelRemove}>
+      <div
+        class="el-confirm"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="el-confirm-title"
+        tabindex="-1"
+        bind:this={confirmEl}
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => {
+          if (e.key === 'Escape') cancelRemove()
+        }}>
+        <p id="el-confirm-title" class="el-confirm-title">{t('reg_remove_title')}</p>
+        <p class="el-confirm-who">{fullName(pending)} · {weaponsText(pending)}{#if pending.enum_age_category}{' · '}{pending.enum_age_category}{/if}</p>
+        {#if eventName}<p class="el-confirm-event">{eventName}</p>{/if}
+        <p class="el-confirm-note">{removeNote(pending)}</p>
+        {#if removeFailed}<p class="el-remove-failed" role="alert">{t('reg_remove_failed')}</p>{/if}
+        <div class="el-confirm-acts">
+          <button type="button" class="el-remove-confirm" disabled={removing} onclick={confirmRemove}>{t('reg_remove_confirm')}</button>
+          <button type="button" class="el-remove-cancel" disabled={removing} onclick={cancelRemove}>{t('reg_remove_cancel')}</button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <script lang="ts">
+  import { tick } from 'svelte'
   import { t } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
-  import { fetchEntryList } from '../lib/api'
+  import { fetchEntryList, deleteRegistration } from '../lib/api'
   import { foldName } from '../lib/foldName'
   import type { RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
 
@@ -113,8 +158,21 @@
     onclose,
     onback,
     backLabel = '',
+    canRemove = false,
+    eventName = '',
+    registrationOpen = true,
   }: {
     eventId: number
+    // FR-166 — true only from the admin application's calendar while an
+    // administrator is signed in (App → CalendarView → RegistrationModal).
+    // The public custom element never passes it. Without it the list renders
+    // exactly as for a visitor.
+    canRemove?: boolean
+    // Named in the removal's confirmation.
+    eventName?: string
+    // Whether the fencer could still register again: decides the
+    // confirmation's second sentence (FR-166, Q1 of the plan).
+    registrationOpen?: boolean
     // Modal-embed (RegistrationModal, opened from CalendarView) — when
     // provided, renders a close (×) affordance. Undefined on the standalone
     // register.html page (nothing to close to).
@@ -204,6 +262,79 @@
   // in two weapons counts on both weapon tiles, as before.
   function count(list: RegistrationEntry[], weapon: WeaponType | null): number {
     return weapon ? list.filter((r) => r.arr_weapons.includes(weapon)).length : list.length
+  }
+
+  // ---- FR-166: an administrator removes an entry -------------------------
+
+  // The entry awaiting confirmation; null while no confirmation is open.
+  let pending = $state<RegistrationEntry | null>(null)
+  let removing = $state(false)
+  let removeFailed = $state(false)
+  // The last removed fencer, for the done line.
+  let removedName = $state('')
+  let confirmEl = $state<HTMLElement | null>(null)
+  let doneEl = $state<HTMLElement | null>(null)
+
+  // Focus moves into the confirmation as it opens, so Escape and the keyboard
+  // land on it rather than on the row underneath.
+  $effect(() => {
+    confirmEl?.focus()
+  })
+
+  const WEAPON_LABEL: Record<WeaponType, string> = {
+    EPEE: 'reg_weapon_epee',
+    FOIL: 'reg_weapon_foil',
+    SABRE: 'reg_weapon_sabre',
+  }
+
+  function fullName(r: RegistrationEntry): string {
+    return `${r.txt_surname} ${r.txt_first_name}`
+  }
+
+  function weaponsText(r: RegistrationEntry): string {
+    return r.arr_weapons.map((w) => t(WEAPON_LABEL[w]).toLowerCase()).join(', ')
+  }
+
+  // Signed decision: after the deadline the fencer cannot register again, so
+  // the second sentence says the deadline has passed instead.
+  function removeNote(r: RegistrationEntry): string {
+    if (!registrationOpen) return t('reg_remove_note_closed')
+    return t(r.enum_gender === 'F' ? 'reg_remove_note_open_f' : 'reg_remove_note_open_m')
+  }
+
+  function askRemove(r: RegistrationEntry) {
+    pending = r
+    removeFailed = false
+    removedName = ''
+  }
+
+  function cancelRemove() {
+    if (removing) return
+    pending = null
+    removeFailed = false
+  }
+
+  // The row leaves the list only once the database confirms the delete; a
+  // failure keeps the row and the confirmation open with the failed line.
+  async function confirmRemove() {
+    const r = pending
+    if (!r || removing) return
+    removing = true
+    removeFailed = false
+    try {
+      await deleteRegistration(r.id_registration)
+      rows = rows.filter((x) => x.id_registration !== r.id_registration)
+      removedName = fullName(r)
+      pending = null
+      // The confirmation that held focus is gone: hand focus to the done line,
+      // which also scrolls it into view after a removal far down the list.
+      await tick()
+      doneEl?.focus()
+    } catch {
+      removeFailed = true
+    } finally {
+      removing = false
+    }
   }
 
   function weaponCode(w: WeaponType): string {
@@ -475,6 +606,112 @@
     margin-top: 12px;
   }
 
+  /* FR-166 — the administrator's removal. Nothing below renders for a
+     visitor. */
+  .el-act {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .el-remove {
+    background: transparent;
+    color: #ff8a8a;
+    border: 1px solid #7a2e3a;
+    border-radius: 8px;
+    padding: 4px 10px;
+    min-height: 32px;
+    font-size: 0.82em;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .el-remove:hover {
+    border-color: #ff8a8a;
+    background: rgba(255, 138, 138, 0.08);
+  }
+  .el-remove-done {
+    color: #4ade80;
+    font-size: 0.9em;
+    margin: 0 0 12px;
+    scroll-margin-top: 16px;
+  }
+  .el-remove-done:focus {
+    outline: none;
+  }
+  .el-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .el-confirm {
+    width: 100%;
+    max-width: 420px;
+    background: #2a1520;
+    border: 1px solid #7a2e3a;
+    border-radius: 10px;
+    padding: 16px;
+    color: #ffd7d7;
+    font-size: 0.92em;
+    line-height: 1.5;
+  }
+  .el-confirm:focus {
+    outline: none;
+  }
+  .el-confirm p {
+    margin: 0 0 6px;
+  }
+  .el-confirm-title {
+    font-weight: 600;
+    color: #fff;
+    font-size: 1.05em;
+  }
+  .el-confirm-who,
+  .el-confirm-event {
+    color: #fff;
+  }
+  .el-confirm .el-confirm-note {
+    margin-top: 10px;
+  }
+  .el-remove-failed {
+    color: #ffb4b4;
+    font-weight: 600;
+  }
+  .el-confirm-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .el-remove-confirm,
+  .el-remove-cancel {
+    border-radius: 8px;
+    padding: 9px 16px;
+    min-height: 40px;
+    font-weight: 600;
+    font-size: 0.92em;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .el-remove-confirm {
+    background: #e5484d;
+    color: #fff;
+    border: none;
+  }
+  .el-remove-cancel {
+    background: transparent;
+    color: #9fc4dc;
+    border: 1px solid #1a4a8a;
+  }
+  .el-remove-confirm:disabled,
+  .el-remove-cancel:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
   @media (max-width: 480px) {
     table, tbody {
       display: block;
@@ -497,6 +734,11 @@
       flex: none;
       border-bottom: none;
       padding: 0;
+      width: auto;
+    }
+    /* FR-166: the row's last cell takes the button's own width; the desktop
+       1% would squeeze it to a few pixels and clip the button. */
+    .el-act {
       width: auto;
     }
     .el-name {

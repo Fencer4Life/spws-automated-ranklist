@@ -657,6 +657,22 @@ export async function fetchEntryList(eventId: number): Promise<RegistrationEntry
   return (data ?? []) as RegistrationEntry[]
 }
 
+// FR-166 — an administrator removes one entry from the entry list. The table's
+// one policy lets a signed-in administrator delete and refuses everyone else
+// (pgTAP REGDEL.01–02). A delete that row security filters out does not raise:
+// it answers success with zero rows. So the removal counts as done only when
+// the database hands back the removed row; anything else throws, and the list
+// keeps the row.
+export async function deleteRegistration(id: number): Promise<void> {
+  const { data, error } = await getClient()
+    .from('tbl_registration')
+    .delete()
+    .eq('id_registration', id)
+    .select('id_registration')
+  if (error) throw error
+  if (!data || data.length !== 1) throw new Error(`Registration ${id} was not removed`)
+}
+
 // P2.2 (D7) — the standalone registration page resolves its event by
 // txt_code (from the ?event= URL param), not by id. anon-readable (vw_calendar
 // already grants anon SELECT). Returns null on no-match/error so the caller

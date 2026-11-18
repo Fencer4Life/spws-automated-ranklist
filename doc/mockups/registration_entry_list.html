@@ -46,6 +46,17 @@
   .sw input.active { padding-right:40px; }
   .qx { position:absolute; right:2px; top:50%; transform:translateY(-50%); width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:#7fbadc; font-size:20px; cursor:pointer; }
   .clr { flex-basis:100%; text-align:right; background:none; border:0; color:#7fd8ff; text-decoration:underline; font-family:inherit; font-size:0.82em; min-height:36px; cursor:pointer; }
+  /* FR-166 (signed 2026-11-17): what only a signed-in administrator sees. */
+  .admin-h { max-width:760px; margin:28px auto 8px; color:#00d4ff; font-size:1.05em; }
+  .admin-note { max-width:760px; margin:0 auto 12px; color:#888; font-size:0.85em; }
+  .rm { background:transparent; color:#ff8a8a; border:1px solid #7a2e3a; border-radius:8px; padding:4px 10px; min-height:32px; font-size:0.82em; font-family:inherit; }
+  .confirm { max-width:420px; margin:14px auto 0; background:#2a1520; border:1px solid #7a2e3a; border-radius:10px; padding:16px; color:#ffd7d7; font-size:0.92em; }
+  .confirm p { margin:0 0 6px; }
+  .confirm .t, .confirm .w { color:#fff; }
+  .confirm .t { font-weight:600; }
+  .confirm .acts { display:flex; gap:12px; margin-top:14px; }
+  .confirm .ok { background:#e5484d; color:#fff; border:0; border-radius:8px; padding:9px 16px; font-weight:600; font-family:inherit; }
+  .confirm .no { background:transparent; color:#9fc4dc; border:1px solid #1a4a8a; border-radius:8px; padding:9px 16px; font-weight:600; font-family:inherit; }
 </style>
 </head>
 <body>
@@ -102,6 +113,30 @@
   <div class="empty" id="empty" style="display:none" data-pl="Brak wyników dla wybranych filtrów." data-en="No entries match the filters.">Brak wyników dla wybranych filtrów.</div>
 
   <p class="muted"><span>🔒</span><span data-pl="Legenda broni: E — szpada, F — floret, S — szabla. Rok urodzenia i klub nie są pokazywane." data-en="Weapon key: E — épée, F — foil, S — sabre. Year of birth and club are not shown.">Legenda broni: E — szpada, F — floret, S — szabla. Rok urodzenia i klub nie są pokazywane.</span></p>
+</div>
+
+<h2 class="admin-h">Widok administratora · Administrator's view (FR-166)</h2>
+<p class="admin-note">Only in the admin application, while an administrator is signed in: every row gains „Usuń”, which asks first. Visitors, the public page and the WordPress calendar never see it. A fencer who changes plans tells the organizer, who asks the administrator.</p>
+<div class="card">
+  <table>
+    <thead><tr>
+      <th>Nazwisko i imię</th>
+      <th style="width:60px">Kat.</th>
+      <th style="width:110px">Broń</th>
+      <th style="width:1%"></th>
+    </tr></thead>
+    <tbody>
+      <tr><td>WIŚNIEWSKA Anna</td><td><span class="cat">V2</span></td><td><span class="wpn w-F">F</span></td><td><button class="rm" aria-label="Usuń zgłoszenie: WIŚNIEWSKA Anna">Usuń</button></td></tr>
+    </tbody>
+  </table>
+  <div class="confirm" role="alertdialog" aria-label="Usunąć zgłoszenie?">
+    <p class="t">Usunąć zgłoszenie?</p>
+    <p class="w">WIŚNIEWSKA Anna · floret · V2</p>
+    <p class="w">IV Puchar Polski Weteranów — Gdańsk 2026</p>
+    <p style="margin-top:10px">Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.</p>
+    <p style="color:#8894a8;font-size:0.85em">After the registration deadline the second sentence reads: „Termin zapisów już minął.”</p>
+    <div class="acts"><button class="ok">Usuń zgłoszenie</button><button class="no">Anuluj</button></div>
+  </div>
 </div>
 <script>
 var lang='pl';

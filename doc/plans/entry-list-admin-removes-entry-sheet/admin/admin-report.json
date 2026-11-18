@@ -1,0 +1,170 @@
+[
+ {
+  "name": "admin__desktop__pl__1-list.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__pl__2-confirm-woman.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__pl__3-confirm-man.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__pl__4-confirm-closed.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__pl__5-done.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__pl__6-failed.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__en__1-list.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__en__2-confirm-woman.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__en__3-confirm-man.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__en__4-confirm-closed.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__en__5-done.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__desktop__en__6-failed.png",
+  "width": 1280,
+  "scrollWidth": 1280,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__pl__1-list.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__pl__2-confirm-woman.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__pl__3-confirm-man.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__pl__4-confirm-closed.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__pl__5-done.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__pl__6-failed.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__en__1-list.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__en__2-confirm-woman.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__en__3-confirm-man.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__en__4-confirm-closed.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 0,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__en__5-done.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 1,
+  "errors": []
+ },
+ {
+  "name": "admin__phone__en__6-failed.png",
+  "width": 375,
+  "scrollWidth": 375,
+  "deletes": 1,
+  "errors": []
+ }
+]

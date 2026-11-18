@@ -51,4 +51,14 @@ describe('EntryListElement — standalone roster', () => {
     expect(assign).toHaveBeenCalledWith('?event=PPW1-2026-2027')
     vi.unstubAllGlobals()
   })
+
+  // FR-166, ELREM.13 — guard: the public page has no sign-in, so it never
+  // passes the administrator setting. Proven by a mutation run.
+  it('never offers „Usuń” on the public page', async () => {
+    const { container, findByText } = render(EntryListElement, {
+      props: { event: 'PPW1-2026-2027', demo: false },
+    })
+    await findByText('KOWALSKI Jan')
+    expect(container.querySelector('button.el-remove')).toBeNull()
+  })
 })

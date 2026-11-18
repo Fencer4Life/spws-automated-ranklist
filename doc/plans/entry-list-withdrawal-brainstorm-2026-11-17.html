@@ -1,0 +1,350 @@
+<meta charset="utf-8">
+<title>Withdrawing from the entry list · brainstorm</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+/* Mock styles. Every colour is set explicitly; nothing relies on inheritance. */
+.mkrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0 6px}
+.mkcap{font:600 12px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#555;margin:0 0 6px;letter-spacing:.02em}
+.mk{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:18px;color:#e0e0e0;font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.mk *{box-sizing:border-box}
+.mk .t{font-weight:600;color:#fff;font-size:1.05em;margin:0 0 2px}
+.mk .s{color:#7fbadc;font-size:.82em;margin:0 0 12px}
+.mk .ok{color:#4ade80;font-size:.95em;margin:0 0 12px}
+.mk .panel{background:#0d1b2a;border:1px solid #1a4a8a;border-radius:10px;padding:10px 12px;margin:0 0 12px;color:#e0e0e0}
+.mk .prow{display:flex;gap:10px;padding:6px 0;border-top:1px solid #1a2c4a;color:#e0e0e0;font-size:.9em}
+.mk .prow:first-of-type{border-top:none}
+.mk .pk{color:#7fbadc;flex:none;width:76px}
+.mk .muted{color:#8894a8;font-size:.85em;margin:0 0 12px}
+.mk .acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mk .btn{background:#00d4ff;color:#0d1b2a;border-radius:8px;padding:9px 16px;font-weight:600;font-size:.92em;display:inline-block}
+.mk .btn.ghost{background:none;color:#ff8a8a;border:1px solid #7a2e3a}
+.mk .btn.danger{background:#e5484d;color:#fff}
+.mk .btn.quiet{background:none;color:#9fc4dc;border:1px solid #1a4a8a}
+.mk .lnk{color:#00d4ff;font-size:.9em}
+.mk .lnk.red{color:#ff8a8a;text-decoration:underline}
+.mk .new{outline:2px dashed #ffd24a;outline-offset:3px;border-radius:8px}
+.mk .confirm{background:#2a1520;border:1px solid #7a2e3a;border-radius:10px;padding:12px;color:#ffd7d7;margin:0 0 12px}
+.mk .confirm b{color:#fff}
+.mk .field{background:#0d1b2a;border:1px solid #1a4a8a;border-radius:8px;padding:9px 12px;color:#e0e0e0;margin:0 0 10px;font-size:.92em}
+.mk .field span{color:#7fbadc;font-size:.78em;display:block}
+.mk .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}
+.mk .tile{background:#0d1b2a;border-radius:8px;padding:7px 9px;color:#fff;font-weight:600}
+.mk .tile span{display:block;font-size:.7em;color:#7fbadc;font-weight:400}
+.mk .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #1a2c4a;color:#e0e0e0;font-size:.92em}
+.mk .li .w{color:#8894a8;font-size:.85em}
+.mk .li.sel{background:#0d1b2a;margin:0 -8px;padding:8px}
+.mk .url{background:#0d1b2a;border:1px dashed #1a4a8a;border-radius:8px;padding:8px 10px;color:#9fc4dc;font:12px/1.4 ui-monospace,Menlo,monospace;word-break:break-all;margin:0 0 10px}
+.mk .gone{color:#4ade80}
+.opt{border:1px solid var(--rule,#d8d4cc);border-radius:10px;padding:18px 20px;margin:26px 0}
+.opt h3{margin:0 0 4px}
+.pc{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:10px}
+.pc ul{margin:6px 0 0;padding-left:18px}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Entry list · Registration · Brainstorm</p>
+  <h1>A fencer changes their mind: how to withdraw from the entry list</h1>
+  <p class="dek">Today nobody can take themself off „Lista zgłoszonych”. This page states what the system gives us to work with, shows three ways to add a withdrawal, and recommends one. Nothing is built; you choose, then I write the TDD plan.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting your choice</span>
+    <span class="pill">3 options · 4 questions</span>
+    <span class="pill">no code written</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · What exists today</p>
+    <h2>The facts every option has to live with</h2>
+    <ul>
+      <li><b>There is no withdrawal.</b> A fencer can add an entry and correct it („Popraw dane”), never remove it. The only removal today is an administrator deleting the row in the database by hand; I found no screen for it.</li>
+      <li><b>We hold no way to reach the fencer.</b> The privacy notice says the e-mail is a one-time check and is not kept, and the system sends no e-mail at all. So „we will mail you a withdrawal link” is not available without a new consent text and a mail service.</li>
+      <li><b>Identity is the declared name and birth year.</b> A fencer who returns re-enters surname, given name and birth year; that lands on their existing row and lets them correct it. Anyone who knows a fencer's name and birth year can already rewrite that fencer's weapons. This is an accepted posture (ADR-079 §4), and the birth year is not secret.</li>
+      <li><b>The registration window closes at the deadline</b> (or the event start where no deadline is set); the entry list stays visible until the event starts.</li>
+      <li><b>No payment is tracked.</b> The system only shows transfer details; a refund is between the fencer and the organizer.</li>
+      <li><b>The organizer's start files are built at the moment of download</b> from the current list, so a withdrawn fencer disappears from them with no further step.</li>
+    </ul>
+    <p>Sources: <code>doc/handbook/reference/registration-lifecycle.html</code>, <code>supabase/migrations/20260828000003_registration_edit_handle.sql</code>, <code>frontend/src/components/RegistrationForm.svelte</code>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The options</p>
+    <h2>Three ways to withdraw</h2>
+    <p>In the mocks the yellow dashed outline marks what is new. Everything else is the form as it is today. Labels are in Polish as the fencer will read them; the language switch gives the English ones.</p>
+
+    <div class="opt">
+      <h3>Option A · „Wycofaj zgłoszenie” beside „Popraw dane” <span class="pill">recommended</span></h3>
+      <p>The fencer opens the registration form and enters their name and birth year, exactly as they do today to correct an entry. The form recognises the existing entry and the last screen gains one more button. A confirmation step, then the row is gone. The entry list gets a small link under the list that leads here, so the door is where people look for it.</p>
+      <div class="mkrow">
+        <div><p class="mkcap">A1 · the entry list: a new link under the list</p>
+          <div class="mk">
+            <p class="t">Lista zgłoszonych</p><p class="s">PEW5 Łomianki · 80 zgłoszonych</p>
+            <div class="li"><span>ŻAK Anna</span><span class="w">szpada · V2</span></div>
+            <div class="li"><span>ŻUREK Piotr</span><span class="w">szabla · V1</span></div>
+            <p class="muted" style="margin-top:12px">Lista nie pokazuje roku urodzenia ani klubu.</p>
+            <p style="margin:0"><span class="lnk new">Jesteś na liście i chcesz zmienić lub wycofać zgłoszenie? →</span></p>
+          </div></div>
+        <div><p class="mkcap">A2 · the form's last screen, after re-entering name and birth year</p>
+          <div class="mk">
+            <p class="ok">✓ Zgłoszenie potwierdzone</p>
+            <div class="panel"><div class="prow"><span class="pk">Tytuł</span><span>PEW5 ŻAK Anna szpada V2</span></div><div class="prow"><span class="pk">Kwota</span><span>150 PLN</span></div></div>
+            <div class="acts"><span class="btn">Popraw dane</span><span class="btn ghost new">Wycofaj zgłoszenie</span><span class="lnk">Lista zgłoszonych →</span></div>
+          </div></div>
+        <div><p class="mkcap">A3 · the confirmation, then the result</p>
+          <div class="mk">
+            <div class="confirm"><b>Wycofać zgłoszenie?</b><br>ŻAK Anna zniknie z listy zgłoszonych na PEW5 Łomianki. Jeśli opłata została już przelana, zwrot ustal z organizatorem.</div>
+            <div class="acts" style="margin-bottom:14px"><span class="btn danger">Tak, wycofuję się</span><span class="btn quiet">Zostaję na liście</span></div>
+            <p class="ok gone" style="margin:0">✓ Zgłoszenie wycofane. Możesz zgłosić się ponownie do końca zapisów.</p>
+          </div></div>
+      </div>
+      <div class="pc">
+        <div><b>For</b><ul>
+          <li>Reuses the path that already exists for corrections: same screens, same check, one new database function.</li>
+          <li>No new secret to keep and nothing to lose: works from any device, and for the 80 people already on the Łomianki list.</li>
+          <li>The withdrawal sits next to the transfer details, where the refund note belongs.</li>
+        </ul></div>
+        <div><b>Against</b><ul>
+          <li>Someone who knows a fencer's name and birth year could withdraw that fencer. That same person can already rewrite the entry's weapons today, so the exposure is the same in kind, larger in effect. Question Q4 answers it with a notice to the administrator.</li>
+          <li>Two steps before the button appears (identity, consent screen as today for a returning entrant).</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <h3>Option B · Withdraw straight from the row on the entry list</h3>
+      <p>Each row on the list can be opened. The fencer taps their own name, types their birth year as the check, confirms, and the row disappears in front of them.</p>
+      <div class="mkrow">
+        <div><p class="mkcap">B1 · tapping a row opens it</p>
+          <div class="mk">
+            <p class="t">Lista zgłoszonych</p>
+            <div class="tiles"><div class="tile"><span>Zgłoszeni</span>80</div><div class="tile"><span>Szpada</span>50</div><div class="tile"><span>Floret</span>20</div><div class="tile"><span>Szabla</span>25</div></div>
+            <div class="li sel"><span>ŻAK Anna</span><span class="lnk red new">To ja — wycofuję się</span></div>
+            <div class="li"><span>ŻUREK Piotr</span><span class="w">szabla · V1</span></div>
+          </div></div>
+        <div><p class="mkcap">B2 · the check and the confirmation</p>
+          <div class="mk">
+            <div class="confirm"><b>Wycofać zgłoszenie ŻAK Anna?</b><br>Podaj swój rok urodzenia, żeby potwierdzić, że to Twoje zgłoszenie.</div>
+            <div class="field new"><span>Rok urodzenia</span>1968</div>
+            <div class="acts"><span class="btn danger">Wycofuję się</span><span class="btn quiet">Anuluj</span></div>
+          </div></div>
+      </div>
+      <div class="pc">
+        <div><b>For</b><ul>
+          <li>The shortest path: find your name, one field, done. The tiles count down at once.</li>
+          <li>Needs no trip through the registration form.</li>
+        </ul></div>
+        <div><b>Against</b><ul>
+          <li>Puts a „remove” control on every row of a public list. The check is the same name and birth year as option A, but here the name is already filled in, so mischief costs one guessed number. The age category on the row narrows the guess to ten years.</li>
+          <li>Changes the list we finished today: rows become tappable, which also affects the phone layout and needs its own pixel sheet.</li>
+          <li>A wrong tap on a neighbour's row is easy on a phone.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <h3>Option C · A personal withdrawal link, given at registration</h3>
+      <p>The last screen of the form shows a private link that belongs to this entry. Whoever holds the link can withdraw the entry; nobody else can. The fencer saves or copies it; opening it later shows the entry and one button.</p>
+      <div class="mkrow">
+        <div><p class="mkcap">C1 · the form's last screen</p>
+          <div class="mk">
+            <p class="ok">✓ Zgłoszenie potwierdzone</p>
+            <div class="panel new"><b style="color:#fff">Twój link do wycofania zgłoszenia</b>
+              <p class="muted" style="margin:4px 0 8px">Zachowaj go. Tylko z tym linkiem można wycofać to zgłoszenie.</p>
+              <div class="url">…/register.html?event=PEW5efs&amp;withdraw=9f2c…e1</div>
+              <div class="acts"><span class="btn quiet">Kopiuj link</span><span class="btn quiet">Wyślij do siebie</span></div></div>
+            <div class="acts"><span class="btn">Popraw dane</span><span class="lnk">Lista zgłoszonych →</span></div>
+          </div></div>
+        <div><p class="mkcap">C2 · opening the link later</p>
+          <div class="mk">
+            <p class="t">Twoje zgłoszenie</p><p class="s">PEW5 Łomianki · ŻAK Anna · szpada · V2</p>
+            <div class="confirm"><b>Wycofać zgłoszenie?</b><br>Jeśli opłata została już przelana, zwrot ustal z organizatorem.</div>
+            <div class="acts"><span class="btn danger">Tak, wycofuję się</span><span class="btn quiet">Zostaję na liście</span></div>
+          </div></div>
+      </div>
+      <div class="pc">
+        <div><b>For</b><ul>
+          <li>The only option where knowing a name and birth year is not enough: real proof that the person withdrawing is the person who registered.</li>
+          <li>One tap to withdraw for a fencer who kept the link.</li>
+        </ul></div>
+        <div><b>Against</b><ul>
+          <li>People lose links. Without a second path, a fencer without the link is back to writing to the organizer, which is the by-hand step we want to remove.</li>
+          <li>The 80 people already entered for Łomianki have no link and cannot get one.</li>
+          <li>Needs a second, lasting key on each entry: the existing correction handle changes every time the identity is re-entered, by design, so it cannot serve as a link that must keep working.</li>
+          <li>Stronger than the rest of the form: the same entry could still be rewritten by name and birth year, so the link protects withdrawal only.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <h3>Looked at and set aside</h3>
+    <ul>
+      <li><b>A withdrawal link by e-mail.</b> We keep no address and send no mail; it would need a new privacy text, a new consent version and a mail service.</li>
+      <li><b>An administrator's „remove” button only.</b> It keeps a person in the loop for every change of mind, where the aim is that the fencer does it alone.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Side by side</p>
+    <h2>The three compared</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>A · button in the form</th><th>B · row on the list</th><th>C · personal link</th></tr></thead>
+      <tbody>
+        <tr><td><b>Steps for the fencer</b></td><td>name + birth year, confirm</td><td>tap name, birth year, confirm</td><td>open link, confirm</td></tr>
+        <tr><td><b>Works for today's entries</b></td><td>yes</td><td>yes</td><td>no</td></tr>
+        <tr><td><b>Works from any device</b></td><td>yes</td><td>yes</td><td>only where the link was saved</td></tr>
+        <tr><td><b>Who else could withdraw you</b></td><td>someone who knows your name and birth year</td><td>the same, with less effort</td><td>nobody without the link</td></tr>
+        <tr><td><b>Touches the entry list we just released</b></td><td>one link under the list</td><td>every row</td><td>no</td></tr>
+        <tr><td><b>Size of the build</b></td><td>small</td><td>medium</td><td>medium to large</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Recommendation: option A</p>
+      <p>It is the one that works for everyone, including the people already entered, on any device, and it adds no new idea to the form: withdrawing becomes the third thing a returning fencer can do, after adding a weapon and correcting a name. Its one weakness, that a name and a birth year are enough, already exists for corrections; question Q4 makes every withdrawal visible to the administrator so a wrongful one is noticed and undone by registering again.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Your decisions</p>
+    <h2>Four questions, each with my recommendation</h2>
+    <ol class="steps">
+      <li><b>Q1 · Which option?</b> Recommended: <b>A</b>.</li>
+      <li><b>Q2 · Until when can a fencer withdraw?</b> Recommended: <b>until the event starts</b>, not only until the registration deadline. Most changes of mind come after the deadline, the list stays visible until the start, and the organizer's files follow the list. After the deadline a withdrawal is final, because signing up again is closed; the confirmation text will say so.</li>
+      <li><b>Q3 · What happens to the entry?</b> Recommended: <b>the row is deleted</b>. Nothing marked „withdrawn” stays on the public list, and we keep no personal data we no longer need. Before the deadline the fencer can simply register again.</li>
+      <li><b>Q4 · Does anyone get told?</b> Recommended: <b>yes, a Telegram message to the administrator for each withdrawal</b> (event, name, weapons, time), sent automatically. It costs nobody a step, and it is the answer to a withdrawal made by the wrong person. How the existing alert for identity changes is wired will be checked in the plan and reused if it fits.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Found on the way</p>
+    <h2>Issues met during this research</h2>
+    <ul>
+      <li><b>W1 · The documentation search tool was not available in this session</b> after the model change (the <code>spws-docs</code> tool is not in the session's tool list). I read the owning handbook page directly instead. It needs to be back before the plan's research.</li>
+      <li><b>W2 · The rate limit promised in ADR-079 §4 is still not built</b> (already tracked in <code>doc/plans/registration-impersonation-posture-2026-08-28.html</code>). A withdrawal function raises its importance; the plan will state how it is handled.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Next</p>
+    <h2>After your answers</h2>
+    <p>I write the TDD plan for the chosen option as its own page: requirement, tests first (database and form), the documentation gate, a before/after pixel sheet for every screen it touches, and release only on your go. The open I6 plan (the comment in <code>register.html</code>) still waits for your sign-off and is not affected.</p>
+  </section>
+
+  <p class="foot">brainstorm · entry-list-withdrawal · 17 Nov 2026 · rev 1 · no code written</p>
+</div>

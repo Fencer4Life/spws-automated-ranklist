@@ -72,6 +72,9 @@
   eventCode={regModalEventCode}
   eventId={regModalEventId}
   view={regModalView}
+  canRemove={isAdmin}
+  eventName={regModalEventName}
+  registrationOpen={regModalRegistrationOpen}
   onclose={() => { regModalOpen = false }}
 />
 
@@ -89,7 +92,7 @@
   // flat rolling-progress strip.
   import type { CalendarEvent } from '../lib/types'
   import { t } from '../lib/locale.svelte'
-  import { buildCalendar, type CalendarScope } from '../lib/calendarMonths'
+  import { buildCalendar, registrationState, type CalendarScope } from '../lib/calendarMonths'
   import { WEAPON_ORDER, WEAPON_LETTER, WEAPON_KEY, WEAPON_COLOR } from '../lib/weapons'
   import type { WeaponType } from '../lib/types'
   import CalendarBarrel from './CalendarBarrel.svelte'
@@ -99,9 +102,13 @@
   let {
     events = [] as CalendarEvent[],
     showEvfToggle = false,
+    isAdmin = false,
   }: {
     events?: CalendarEvent[]
     showEvfToggle?: boolean
+    // FR-166 — a signed-in administrator may remove entries from the entry
+    // list. Passed by App only; the public calendar element never sets it.
+    isAdmin?: boolean
   } = $props()
 
   // ADR-044 amend — with the Calendar +EVF flag ON, default the scope to the
@@ -176,9 +183,16 @@
     regModalOpen = true
   }
 
+  // FR-166 — named in the removal's confirmation, and whether the fencer could
+  // still register again, from the same rule as the card's registration link.
+  let regModalEventName = $state('')
+  let regModalRegistrationOpen = $state(true)
+
   function openEntryListModal(ev: CalendarEvent) {
     regModalEventCode = ev.txt_code
     regModalEventId = ev.id_event
+    regModalEventName = ev.txt_name
+    regModalRegistrationOpen = registrationState(ev).registrationOpen
     regModalView = 'list'
     regModalOpen = true
   }

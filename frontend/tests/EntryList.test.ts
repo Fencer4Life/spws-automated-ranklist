@@ -8,8 +8,9 @@ import { setLocale } from '../src/lib/locale.svelte'
 
 vi.mock('../src/lib/api', () => ({
   fetchEntryList: vi.fn(),
+  deleteRegistration: vi.fn(),
 }))
-import { fetchEntryList } from '../src/lib/api'
+import { fetchEntryList, deleteRegistration } from '../src/lib/api'
 import EntryList from '../src/components/EntryList.svelte'
 import type { RegistrationEntry } from '../src/lib/types'
 
@@ -549,5 +550,202 @@ describe('EntryList — the search folds diacritics (FR-165, issue 1)', () => {
     await waitFor(() => expect(renderedNames(v.c)).toEqual(['ŻAK Adam']))
     await v.type('pawel')
     await waitFor(() => expect(renderedNames(v.c)).toEqual(['lis Paweł']))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-166 — an administrator removes an entry (ELREM.01–11). The setting is
+// passed only by the admin application's calendar; see RegistrationModal and
+// CalendarView tests for ELREM.12 and EntryListElement for ELREM.13.
+// ---------------------------------------------------------------------------
+
+const mockDelete = vi.mocked(deleteRegistration)
+
+const PL_OPEN_F = 'Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.'
+const PL_OPEN_M = 'Tej operacji nie można cofnąć. Zawodnik może zgłosić się ponownie przed końcem terminu zapisów.'
+const PL_CLOSED = 'Tej operacji nie można cofnąć. Termin zapisów już minął.'
+
+async function renderRem(props: Record<string, unknown> = {}) {
+  mockFetchEntryList.mockResolvedValue(SEL)
+  const view = render(EntryList, {
+    props: { eventId: 3, canRemove: true, eventName: 'PEW5 Łomianki', registrationOpen: true, ...props },
+  })
+  const c = view.container
+  await waitFor(() => expect(c.querySelector('td.el-name')).not.toBeNull())
+  const search = c.querySelector('input[name="search"]') as HTMLInputElement
+  const type = (value: string) => fireEvent.input(search, { target: { value } })
+  const tiles = () =>
+    Array.from(c.querySelectorAll('.el-metrics .el-metric .el-v')).map((v) =>
+      (v.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    )
+  /** The row of `name`'s own „Usuń” button. */
+  const removeOf = (name: string) => {
+    const row = Array.from(c.querySelectorAll('tbody tr')).find(
+      (tr) => tr.querySelector('td.el-name')?.textContent?.trim() === name,
+    )
+    return row?.querySelector('button.el-remove') as HTMLButtonElement
+  }
+  const dialog = () => c.querySelector('[role="alertdialog"]') as HTMLElement | null
+  const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
+  const confirmBtn = () => c.querySelector('button.el-remove-confirm') as HTMLButtonElement
+  const cancelBtn = () => c.querySelector('button.el-remove-cancel') as HTMLButtonElement
+  return { ...view, c, type, tiles, removeOf, dialog, text, confirmBtn, cancelBtn }
+}
+
+describe('EntryList — an administrator removes an entry (FR-166)', () => {
+  afterEach(() => setLocale('pl'))
+
+  // ELREM.01 — guard: holds before the change; proven by a mutation run.
+  it('shows no remove control without the administrator setting', async () => {
+    const v = await renderSel()
+    expect(v.c.querySelector('button.el-remove')).toBeNull()
+    expect(v.c.querySelectorAll('thead th')).toHaveLength(3)
+    expect(v.c.querySelector('[role="alertdialog"]')).toBeNull()
+  })
+
+  // ELREM.02
+  it('gives every listed row one „Usuń” button with the setting', async () => {
+    const v = await renderRem()
+    const rows = v.c.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(8)
+    rows.forEach((tr) => expect(tr.querySelectorAll('button.el-remove')).toHaveLength(1))
+    expect(v.removeOf('ŻAK Adam').textContent?.trim()).toBe('Usuń')
+    await v.type('kowal')
+    await waitFor(() => expect(v.c.querySelectorAll('button.el-remove')).toHaveLength(2))
+  })
+
+  // ELREM.03
+  it('asks for confirmation naming the fencer, weapons, category and event', async () => {
+    const v = await renderRem()
+    await fireEvent.click(v.removeOf('KOWAL Jan'))
+    const d = v.dialog()
+    expect(d).not.toBeNull()
+    expect(v.text(d)).toContain('Usunąć zgłoszenie?')
+    expect(v.text(d)).toContain('KOWAL Jan · szpada, szabla · V2')
+    expect(v.text(d)).toContain('PEW5 Łomianki')
+    expect(v.confirmBtn().textContent?.trim()).toBe('Usuń zgłoszenie')
+    expect(v.cancelBtn().textContent?.trim()).toBe('Anuluj')
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  // ELREM.04
+  it('closes on „Anuluj” and on Escape without deleting', async () => {
+    const v = await renderRem()
+    await fireEvent.click(v.removeOf('ŻAK Adam'))
+    await fireEvent.click(v.cancelBtn())
+    expect(v.dialog()).toBeNull()
+    await fireEvent.click(v.removeOf('ŻAK Adam'))
+    expect(v.dialog()).not.toBeNull()
+    // The dialog takes focus when it opens, so a real Escape lands on it (the
+    // calendar's modal stops key events from reaching the window).
+    expect(v.dialog()!.contains(document.activeElement)).toBe(true)
+    await fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' })
+    expect(v.dialog()).toBeNull()
+    expect(mockDelete).not.toHaveBeenCalled()
+    expect(v.c.querySelectorAll('tbody tr')).toHaveLength(8)
+  })
+
+  // ELREM.05
+  it('deletes that row once on confirming, drops it and names the fencer', async () => {
+    mockDelete.mockResolvedValue(undefined)
+    const v = await renderRem()
+    await fireEvent.click(v.removeOf('ŻAK Adam'))
+    await fireEvent.click(v.confirmBtn())
+    await waitFor(() => expect(v.dialog()).toBeNull())
+    expect(mockDelete).toHaveBeenCalledTimes(1)
+    expect(mockDelete).toHaveBeenCalledWith(1)
+    expect(v.removeOf('ŻAK Adam')).toBeUndefined()
+    expect(v.c.querySelectorAll('tbody tr')).toHaveLength(7)
+    expect(v.text(v.c.querySelector('.el-remove-done'))).toBe('✓ Usunięto zgłoszenie: ŻAK Adam')
+    // The closed confirmation hands focus to the done line, which brings it
+    // into view after a removal far down the list (found in the pixel sheet).
+    await waitFor(() => expect(document.activeElement).toBe(v.c.querySelector('.el-remove-done')))
+  })
+
+  // ELREM.06
+  it('counts the tiles down, and both figures while narrowed', async () => {
+    mockDelete.mockResolvedValue(undefined)
+    const v = await renderRem()
+    expect(v.tiles()).toEqual(['8', '5', '3', '2'])
+    await v.type('kowal')
+    await waitFor(() => expect(v.tiles()).toEqual(['2 z 8', '2 z 5', '0 z 3', '1 z 2']))
+    await fireEvent.click(v.removeOf('KOWAL Jan'))
+    await fireEvent.click(v.confirmBtn())
+    await waitFor(() => expect(v.tiles()).toEqual(['1 z 7', '1 z 4', '0 z 3', '0 z 1']))
+    await v.type('')
+    await waitFor(() => expect(v.tiles()).toEqual(['7', '4', '3', '1']))
+  })
+
+  // ELREM.07
+  it('keeps the row and the tiles when the delete fails, and says so', async () => {
+    mockDelete.mockRejectedValue(new Error('refused'))
+    const v = await renderRem()
+    await fireEvent.click(v.removeOf('ŻAK Adam'))
+    await fireEvent.click(v.confirmBtn())
+    await waitFor(() => expect(v.c.querySelector('.el-remove-failed')).not.toBeNull())
+    expect(v.text(v.c.querySelector('.el-remove-failed'))).toBe('Nie udało się usunąć zgłoszenia. Spróbuj ponownie.')
+    expect(v.removeOf('ŻAK Adam')).toBeDefined()
+    expect(v.tiles()).toEqual(['8', '5', '3', '2'])
+    expect(v.c.querySelector('.el-remove-done')).toBeNull()
+  })
+
+  // ELREM.08
+  it('disables the confirm button while the delete is in flight', async () => {
+    let finish!: () => void
+    mockDelete.mockReturnValue(new Promise<void>((r) => (finish = r)))
+    const v = await renderRem()
+    await fireEvent.click(v.removeOf('ŻAK Adam'))
+    await fireEvent.click(v.confirmBtn())
+    expect(v.confirmBtn().disabled).toBe(true)
+    await fireEvent.click(v.confirmBtn())
+    expect(mockDelete).toHaveBeenCalledTimes(1)
+    finish()
+    await waitFor(() => expect(v.dialog()).toBeNull())
+    expect(mockDelete).toHaveBeenCalledTimes(1)
+  })
+
+  // ELREM.09
+  it('names „Zawodniczka” for a woman and „Zawodnik” for a man', async () => {
+    const v = await renderRem()
+    await fireEvent.click(v.removeOf('KOWAL Anna'))
+    expect(v.text(v.dialog())).toContain(PL_OPEN_F)
+    await fireEvent.click(v.cancelBtn())
+    await fireEvent.click(v.removeOf('ŻAK Adam'))
+    expect(v.text(v.dialog())).toContain(PL_OPEN_M)
+  })
+
+  // ELREM.10
+  it('says the deadline has passed when registration is closed', async () => {
+    const v = await renderRem({ registrationOpen: false })
+    await fireEvent.click(v.removeOf('KOWAL Anna'))
+    expect(v.text(v.dialog())).toContain(PL_CLOSED)
+    expect(v.text(v.dialog())).not.toContain('zgłosić się ponownie')
+  })
+
+  // ELREM.11
+  it('speaks English after the language switch', async () => {
+    setLocale('en')
+    mockDelete.mockRejectedValueOnce(new Error('refused')).mockResolvedValueOnce(undefined)
+    const v = await renderRem()
+    expect(v.removeOf('KOWAL Anna').textContent?.trim()).toBe('Remove')
+    await fireEvent.click(v.removeOf('KOWAL Anna'))
+    expect(v.text(v.dialog())).toContain('Remove this entry?')
+    expect(v.text(v.dialog())).toContain('KOWAL Anna · épée · V1')
+    expect(v.text(v.dialog())).toContain('This cannot be undone. The fencer can register again before the registration deadline.')
+    expect(v.confirmBtn().textContent?.trim()).toBe('Remove entry')
+    expect(v.cancelBtn().textContent?.trim()).toBe('Cancel')
+    await fireEvent.click(v.confirmBtn())
+    await waitFor(() =>
+      expect(v.text(v.c.querySelector('.el-remove-failed'))).toBe('The entry could not be removed. Try again.'),
+    )
+    await fireEvent.click(v.confirmBtn())
+    await waitFor(() => expect(v.text(v.c.querySelector('.el-remove-done'))).toBe('✓ Entry removed: KOWAL Anna'))
+  })
+
+  it('speaks English when registration is closed', async () => {
+    setLocale('en')
+    const v = await renderRem({ registrationOpen: false })
+    await fireEvent.click(v.removeOf('KOWAL Anna'))
+    expect(v.text(v.dialog())).toContain('This cannot be undone. The registration deadline has passed.')
   })
 })

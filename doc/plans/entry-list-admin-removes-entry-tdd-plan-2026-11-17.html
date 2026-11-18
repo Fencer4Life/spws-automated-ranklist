@@ -1,0 +1,347 @@
+<meta charset="utf-8">
+<title>Entry list: an administrator removes an entry · TDD plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.mkrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0 6px}
+.mkcap{font:600 12px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#555;margin:0 0 6px}
+.mk{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:18px;color:#e0e0e0;font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.mk *{box-sizing:border-box}
+.mk .t{font-weight:600;color:#fff;font-size:1.05em;margin:0 0 10px}
+.mk .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}
+.mk .tile{background:#0d1b2a;border-radius:8px;padding:7px 9px;color:#fff;font-weight:600}
+.mk .tile span{display:block;font-size:.7em;color:#7fbadc;font-weight:400}
+.mk .field{background:#0d1b2a;border:1px solid #00d4ff;border-radius:8px;padding:8px 12px;color:#e0e0e0;margin:0 0 10px;font-size:.92em}
+.mk .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #1a2c4a;color:#e0e0e0;font-size:.92em}
+.mk .li .w{color:#8894a8;font-size:.85em}
+.mk .rm{color:#ff8a8a;border:1px solid #7a2e3a;border-radius:8px;padding:4px 10px;font-size:.82em;outline:2px dashed #ffd24a;outline-offset:3px}
+.mk .confirm{background:#2a1520;border:1px solid #7a2e3a;border-radius:10px;padding:12px;color:#ffd7d7;margin:0 0 12px}
+.mk .confirm b{color:#fff}
+.mk .acts{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.mk .btn{border-radius:8px;padding:9px 16px;font-weight:600;font-size:.92em}
+.mk .btn.danger{background:#e5484d;color:#fff}
+.mk .btn.quiet{color:#9fc4dc;border:1px solid #1a4a8a}
+.mk .ok{color:#4ade80;margin:12px 0 0}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Entry list · Administrator · TDD plan</p>
+  <h1>An administrator removes an entry from „Lista zgłoszonych”</h1>
+  <p class="dek">A signed-in administrator gets a „Usuń” button on each row of the entry list. Visitors see the list exactly as today. Design signed on 17 Nov 2026 (<code>doc/plans/entry-list-admin-remove-design-2026-11-17.html</code>, rev 2). This is the build plan: tests first, nothing else changed.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 17 Nov 2026</span>
+    <span class="pill">frontend only · no migration</span>
+    <span class="pill">new requirement FR-166</span>
+    <span class="pill">no code written</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Verified before planning</p>
+    <h2>What the system already gives us</h2>
+    <ul>
+      <li><b>The database already allows it, on LOCAL, CERT and PROD.</b> Read on 17 Nov: a signed-in administrator holds the right to delete from the registration table, a visitor does not, and the table's one policy admits administrators only. So this change needs <b>no migration</b>.</li>
+      <li><b>A refused delete does not raise an error.</b> When the database's row rules refuse a delete, the request still answers „success” with zero rows. The new code therefore counts a removal as done only when the database returns the removed row.</li>
+      <li><b>The administrator's calendar is the public calendar.</b> <code>App.svelte</code> knows whether someone is signed in (<code>isAdmin</code>) but does not tell <code>CalendarView</code>; the list is opened through <code>RegistrationModal</code> → <code>EntryList</code>. The sign-in state has to be handed down that one path.</li>
+      <li><b>The public pages cannot show the button.</b> The registration page and the WordPress calendar mount the list through custom elements that have no sign-in and will not pass the new setting.</li>
+      <li><b>The list already knows each entrant's gender</b>, so the confirmation can say „Zawodniczka” or „Zawodnik”.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The signed design</p>
+    <h2>What the administrator sees</h2>
+    <p>The yellow dashed outline marks what is new.</p>
+    <div class="mkrow">
+      <div><p class="mkcap">1 · signed in: every row carries „Usuń”</p>
+        <div class="mk">
+          <p class="t">Lista zgłoszonych</p>
+          <div class="tiles"><div class="tile"><span>Zgłoszeni</span>1 z 80</div><div class="tile"><span>Szpada</span>1 z 50</div><div class="tile"><span>Floret</span>0 z 20</div><div class="tile"><span>Szabla</span>0 z 25</div></div>
+          <div class="field">zak</div>
+          <div class="li"><span>ŻAK Anna <span class="w">· szpada · V2</span></span><span class="rm">Usuń</span></div>
+        </div></div>
+      <div><p class="mkcap">2 · the confirmation</p>
+        <div class="mk">
+          <div class="confirm"><b>Usunąć zgłoszenie?</b><br>ŻAK Anna · szpada · V2<br>PEW5 Łomianki<br><br>Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.</div>
+          <div class="acts"><span class="btn danger">Usuń zgłoszenie</span><span class="btn quiet">Anuluj</span></div>
+        </div></div>
+      <div><p class="mkcap">3 · after: the row is gone, the count is 79</p>
+        <div class="mk">
+          <p class="t">Lista zgłoszonych</p>
+          <div class="tiles"><div class="tile"><span>Zgłoszeni</span>79</div><div class="tile"><span>Szpada</span>49</div><div class="tile"><span>Floret</span>20</div><div class="tile"><span>Szabla</span>25</div></div>
+          <p class="ok">✓ Usunięto zgłoszenie: ŻAK Anna</p>
+        </div></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Wording</p>
+    <h2>Every new text, Polish and English</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Polish</th><th>English</th></tr></thead>
+      <tbody>
+        <tr><td>Row button</td><td>Usuń</td><td>Remove</td></tr>
+        <tr><td>Confirmation title</td><td>Usunąć zgłoszenie?</td><td>Remove this entry?</td></tr>
+        <tr><td>Confirmation, registration still open, woman</td><td>Tej operacji nie można cofnąć. Zawodniczka może zgłosić się ponownie przed końcem terminu zapisów.</td><td>This cannot be undone. The fencer can register again before the registration deadline.</td></tr>
+        <tr><td>The same, man</td><td>Tej operacji nie można cofnąć. Zawodnik może zgłosić się ponownie przed końcem terminu zapisów.</td><td>(same English sentence)</td></tr>
+        <tr><td>Confirmation, registration closed (Q1)</td><td>Tej operacji nie można cofnąć. Termin zapisów już minął.</td><td>This cannot be undone. The registration deadline has passed.</td></tr>
+        <tr><td>Confirm / cancel</td><td>Usuń zgłoszenie / Anuluj</td><td>Remove entry / Cancel</td></tr>
+        <tr><td>Done</td><td>✓ Usunięto zgłoszenie: ŻAK Anna</td><td>✓ Entry removed: ŻAK Anna</td></tr>
+        <tr><td>Failed</td><td>Nie udało się usunąć zgłoszenia. Spróbuj ponownie.</td><td>The entry could not be removed. Try again.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Q1 · Decided 17 Nov 2026</p>
+      <p>After the registration deadline the second half of the sentence reads „Termin zapisów już minął.”, as in the table.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Scope</p>
+    <h2>Files that change, and what must not</h2>
+    <ul>
+      <li><code>frontend/src/lib/api.ts</code>: a new <code>deleteRegistration(id)</code> that deletes one row by its identifier and fails unless the database returns that row.</li>
+      <li><code>frontend/src/components/EntryList.svelte</code>: three optional settings (may remove, event name, registration open); the row button, the confirmation, the done and failed lines. Without the settings the component renders exactly as now.</li>
+      <li><code>frontend/src/components/RegistrationModal.svelte</code>, <code>CalendarView.svelte</code>, <code>App.svelte</code>: hand the sign-in state, the event's name and whether registration is open down to the list. Whether registration is open comes from the rule that already hides the registration link on the calendar card; no second copy of that rule.</li>
+      <li><code>frontend/src/lib/locales/pl.json</code>, <code>en.json</code>: the texts of §03.</li>
+    </ul>
+    <p><b>Not touched:</b> the database, the registration form, the two custom elements for the public pages, the tiles, search, filters and sorting, the organizer's download page. The 19 original entry-list tests and ELSEL.01–17 stay as they are and stay green.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Tests first</p>
+    <h2>The tests, written and seen failing before any code</h2>
+    <p>Order for each: write the test, run it, see it fail for the right reason, then write the code. A test that guards something already true (marked ◆) cannot fail first; it is proven by a recorded mutation run: break the guarded thing on purpose, see the test fail, restore.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>What it proves</th></tr></thead>
+      <tbody>
+        <tr><td>REGDEL.01 ◆</td><td>Database (pgTAP, LOCAL): a signed-in administrator's delete removes the row.</td></tr>
+        <tr><td>REGDEL.02 ◆</td><td>Database: a visitor's delete is refused, and the row is still there.</td></tr>
+        <tr><td>REGDEL.03</td><td><code>deleteRegistration</code> asks the database to delete exactly the one identifier.</td></tr>
+        <tr><td>REGDEL.04</td><td><code>deleteRegistration</code> fails when the database returns zero rows (the silent refusal).</td></tr>
+        <tr><td>ELREM.01 ◆</td><td>Without the setting, no row has a „Usuń” button and the rendered list is the same as today.</td></tr>
+        <tr><td>ELREM.02</td><td>With the setting, every listed row has one „Usuń” button.</td></tr>
+        <tr><td>ELREM.03</td><td>Tapping „Usuń” shows the confirmation with the name, weapons, category and event; nothing is deleted yet.</td></tr>
+        <tr><td>ELREM.04</td><td>„Anuluj” and the Escape key close the confirmation; nothing is deleted.</td></tr>
+        <tr><td>ELREM.05</td><td>Confirming deletes that row's identifier, once; the row disappears; the done line names the fencer.</td></tr>
+        <tr><td>ELREM.06</td><td>After a removal the tiles count down, for the total and for each of the fencer's weapons; while the list is narrowed, both the selection and the total.</td></tr>
+        <tr><td>ELREM.07</td><td>If the delete fails, the row stays, the tiles do not change and the failed line shows.</td></tr>
+        <tr><td>ELREM.08</td><td>While the delete is in flight the confirm button is disabled: a double tap deletes once.</td></tr>
+        <tr><td>ELREM.09</td><td>The sentence says „Zawodniczka” for a woman and „Zawodnik” for a man.</td></tr>
+        <tr><td>ELREM.10</td><td>Registration closed: the second sentence is „Termin zapisów już minął.” (Q1).</td></tr>
+        <tr><td>ELREM.11</td><td>English: every text of §03 after the language switch.</td></tr>
+        <tr><td>ELREM.12</td><td>The modal hands the setting to the list only when the application says an administrator is signed in; signing out removes the buttons.</td></tr>
+        <tr><td>ELREM.13 ◆</td><td>The two custom elements for the public pages never pass the setting.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Proof of no harm</p>
+    <h2>Pixel sheet and LOCAL walk-through</h2>
+    <ol class="steps">
+      <li><b>The public list is pixel-identical.</b> The 56 captures of today's sheet (desktop and phone, Polish and English, all filter states) are retaken from a build of the branch start and a build of the change with the same tools (<code>doc/plans/entry-list-tiles-follow-filters-sheet/tools/</code>). Expected: 56 of 56 identical.</li>
+      <li><b>The new states, for your eyes:</b> the list with buttons, the confirmation (woman, man, registration closed), the done line, the failed line; desktop and phone, Polish and English. You approve the sheet before any push.</li>
+      <li><b>LOCAL walk-through in the admin application:</b> a throwaway entry made through the registration form on LOCAL, removed with the button, then checked gone from the public list and from the organizer's download. LOCAL is the Docker stack.</li>
+    </ol>
+    <div class="note warn">
+      <p class="lede">What I cannot prove on PROD</p>
+      <p>I do not sign in as an administrator and I do not write test entries to PROD. After the release I verify, read-only, that the public list on PROD is unchanged and shows no button. The button itself on PROD is first seen by you; the first real removal is its live proof.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Steps</p>
+    <h2>The build and release</h2>
+    <ol class="steps">
+      <li>A new branch <code>claude/entry-list-admin-removes-entry</code> from <code>origin/main</code> in this session's worktree; you set its description with the one-line command I give you.</li>
+      <li>FR-166 added to the specification and the traceability matrix; <code>scripts/check-spec-sync.sh</code> count raised to 165.</li>
+      <li>Tests of §05, each seen failing (or mutation-proven); then the code of §04.</li>
+      <li><code>svelte-check</code> on every changed frontend file; the pixel sheet of §06; your approval of the sheet.</li>
+      <li>The LOCAL walk-through; the documentation gate of §09.</li>
+      <li><code>scripts/refresh-graph.sh</code>, <code>python3 tools/docs-search/ingest.py</code>; commits authored as Fencer4Life, explicit paths only.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>Release only on your go, through the integration checkout, CI and Release watched in the foreground. A push to main puts the bundle on PROD with no further approval.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Parity</p>
+    <h2>LOCAL, CERT and PROD</h2>
+    <p>The same bundle everywhere; no database change anywhere. The permission the button relies on was read on LOCAL, CERT and PROD on 17 Nov and is identical on all three: an administrator may delete, a visitor may not, one policy.</p>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Required in every plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--good)">Impact: a new administrator action on the entry list (FR-166)
+Canonical docs updated:
+  doc/handbook/reference/registration-lifecycle.html — a paragraph on the
+    administrator's removal and figure 08 (LOCAL capture of the real app)
+  doc/handbook/subsystems/events-and-registration.html — current flow, a new
+    invariant (only an administrator deletes), code-map row; last-verified 2026-11-17
+  doc/requirements-traceability-matrix.md (+ rendered .html) — FR-166 Covered
+    (LOCAL; release pending), REGDEL.01–04 and ELREM.01–13 Landed LOCAL
+  doc/mockups/registration_entry_list.html — the administrator's view
+ADR impact: none — ADR-079 §4(c) already names an administrator removing a
+  bogus entry; the button realises it and contradicts nothing in the ADR
+Operational impact: none (no workflow, secret, schedule or migration)
+Ownership warnings (check_docs): 7 pages own changed sources by glob —
+  system-context, containers-and-data, event-status-lifecycle,
+  frontend-and-automation, codebase-map, test-and-traceability,
+  documentation-standard. Each read for a claim this change makes untrue:
+  none found, so none was edited or re-dated without a change.
+Validation: python scripts/check_docs.py --changed-from origin/main → valid
+Superseded prose archived rather than appended: not applicable</pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Issues met</p>
+    <h2>Found during planning</h2>
+    <ul>
+      <li><b>W1 · The documentation search tool is missing from this session.</b> The research for this plan read the owning pages and the source directly. It has to be back, or I read each page in full, before the documentation gate.</li>
+      <li><b>W4 · Found by CV.15:</b> signing out removed the buttons but left an open confirmation on screen. Fixed: the confirmation renders only while removal is allowed.</li>
+      <li><b>W5 · P1, found in the pixel sheet:</b> on a phone the „Usuń” button was clipped at the card's edge (its cell kept the desktop width rule, 3 px). Fixed in the phone layout; visitors never have that cell.</li>
+      <li><b>W6 · P2, found in the pixel sheet:</b> after a removal far down the list the done line was out of view and focus fell to the page. Fixed: focus moves to the done line, which brings it into view (ELREM.05 extended, seen red first).</li>
+      <li><b>W7 · The WordPress calendar mounts the same application</b>, so the setting reaches its code path. Checked: the application resets sign-in on load and opens one only on github.io or the page carrying <code>admin-entry</code>; WP.ADM.01 (<code>frontend/tests/SiteChrome.test.ts</code>) pins that the calendar page ignores <code>?admin=1</code>. Nothing to fix.</li>
+      <li><b>W8 · The organizer's download could not be exercised end to end on LOCAL</b> (no organizer key there). The deployed function reads <code>tbl_registration</code> live, with no snapshot, so a removed entry cannot reach the files.</li>
+      <li><b>W3 · The existing delete buttons in the event editor use the browser's bare confirmation box</b>, which cannot name the fencer and the event the way the signed mock does. This plan builds the confirmation inside the list instead and leaves the event editor's buttons alone, because they are outside what you asked for.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">11 · Binary</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>REGDEL.01–04 and ELREM.01–13 green, each with its red or mutation run recorded; all earlier tests green.</li>
+      <li>The public list 56 of 56 pixel-identical; the sheet of new states approved by you.</li>
+      <li>The LOCAL walk-through recorded.</li>
+      <li>The documentation gate ticked.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>After your go: CI and Release green; the public list on PROD verified unchanged.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · entry-list-admin-removes-entry · 17 Nov 2026 · rev 3 · signed off · built on LOCAL · release pending</p>
+</div>

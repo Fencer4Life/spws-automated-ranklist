@@ -153,7 +153,7 @@
          2026-09-02 looked like from the outside. The boundary keeps a calendar
          failure inside the calendar. -->
     <svelte:boundary>
-      <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} />
+      <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {isAdmin} />
       {#snippet failed(err: unknown)}
         <div class="calendar-failed" role="alert">
           <p>{t('calendar_render_failed')}</p>
