@@ -28,10 +28,10 @@ describe('Sidebar (T8.4)', () => {
     const { container } = render(Sidebar, {
       props: { ...defaultProps, open: false },
     })
+    // The closed drawer stays in the page, slid off-screen (WP.NAV.04), without .open.
     const sidebar = container.querySelector('.sidebar')
-    // Sidebar element may exist but should not have .open class
-    const openSidebar = container.querySelector('.sidebar.open')
-    expect(openSidebar).toBeNull()
+    expect(sidebar).not.toBeNull()
+    expect(sidebar!.classList.contains('open')).toBe(false)
   })
 
   // 8.28 — Sidebar shows "SPWS" brand + Ranking + Znajdź zawody items
@@ -369,6 +369,61 @@ describe('WP.NAV.02 — the drawer closes on Esc, in every mode', () => {
       expect(closedClose).not.toHaveBeenCalled()
       closed.unmount()
     }
+  })
+})
+
+// WP.NAV.05–07 — I7 (doc/plans/i7-admin-reaches-remove-on-prod-2026-11-18.html).
+// PROD administration exists only on /ranking/. Following „Znajdź zawody”
+// mounts the app afresh and ends the session, so a signed-in administrator
+// never reached the entry list's „Usuń” on PROD. Signed in, the entry opens
+// the calendar in place, as Ranking already returns to the list in place.
+describe('WP.NAV.05–07 — signed in, „Znajdź zawody” opens the calendar in place', () => {
+  const adminOnRanking = (over: Record<string, unknown> = {}) => ({
+    open: true,
+    currentView: 'admin_events' as const,
+    isAdmin: true,
+    links: SITE_LINKS,
+    onnavigate: vi.fn(),
+    onclose: vi.fn(),
+    ...over,
+  })
+
+  function clickEntry(container: HTMLElement, index: number) {
+    const a = container.querySelectorAll('.nav-list .nav-item')[index] as HTMLAnchorElement
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    a.dispatchEvent(click)
+    return { a, prevented: click.defaultPrevented }
+  }
+
+  it('WP.NAV.05: signed in, the calendar entry cancels its link and opens the calendar in place', () => {
+    const onnavigate = vi.fn()
+    const onclose = vi.fn()
+    const { container } = render(Sidebar, { props: adminOnRanking({ onnavigate, onclose }) })
+    const { a, prevented } = clickEntry(container, 1)
+    expect(a.getAttribute('href')).toBe('/znajdz-zawody/')
+    expect(prevented).toBe(true)
+    expect(onnavigate).toHaveBeenCalledWith('calendar')
+    expect(onclose).toHaveBeenCalled()
+  })
+
+  it('WP.NAV.06: signed out, the calendar entry is an ordinary link', () => {
+    const onnavigate = vi.fn()
+    const { container } = render(Sidebar, {
+      props: adminOnRanking({ isAdmin: false, currentView: 'ranklist' as const, onnavigate }),
+    })
+    const { prevented } = clickEntry(container, 1)
+    expect(prevented).toBe(false)
+    expect(onnavigate).not.toHaveBeenCalled()
+  })
+
+  it('WP.NAV.07: signed in, the calculator and the points table stay ordinary links', () => {
+    const onnavigate = vi.fn()
+    const { container } = render(Sidebar, { props: adminOnRanking({ onnavigate }) })
+    for (const index of [2, 3]) {
+      const { prevented } = clickEntry(container, index)
+      expect(prevented).toBe(false)
+    }
+    expect(onnavigate).not.toHaveBeenCalled()
   })
 })
 
