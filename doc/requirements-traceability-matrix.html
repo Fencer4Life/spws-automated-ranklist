@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="b76f9bf33a308525c9d93b473f5f1a36d565a52ec1854c5828c718b2a0a5fee4">
+<meta name="doc-source-sha256" content="07c4dea8de0a8878220bb04dbf22f42a49d00ceae74692f220a469dfb708967a">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1126,7 +1126,7 @@
 <td><strong>An administrator removes an entry from the entry list.</strong> While an administrator is signed in, each row of „Lista zgłoszonych” opened from the calendar carries a „Usuń” button. On PROD the administrator signs in on <code>weteraniszermierki.pl/ranking/?admin=1</code> and opens „Znajdź zawody” from the drawer, which shows the calendar in place (FR-149); on github.io the button acts on CERT. It asks for confirmation naming the fencer, their weapons and category, and the event; confirming deletes the registration, the row leaves the list and the tiles count down. The confirmation says the operation cannot be undone and, while registration is open, that the fencer („Zawodniczka” / „Zawodnik”) can register again before the registration deadline; after the deadline, that the deadline has passed. A failed delete leaves the row and says so; a delete the database refuses counts as failed. Visitors, the public registration page and the WordPress calendar never show the button. A fencer who changes plans tells the organizer, who asks the administrator; there is no public withdrawal, by decision. Design signed 2026-11-17 (<code>doc/plans/entry-list-admin-remove-design-2026-11-17.html</code>).</td>
 <td>UC (public entry list), FR-122, FR-123, FR-149, FR-165</td>
 <td>REGDEL.01–04, ELREM.01–13, WP.NAV.05, WP.ADM.04–05</td>
-<td>Covered (released 2026-11-18, main d6ca0435, CERT + PROD; reachable on PROD by I7, released 2026-11-18, main 3395b0de, CERT + PROD)</td>
+<td>Covered (released 2026-11-18, main d6ca0435, CERT + PROD; reachable on PROD by I7, released 2026-11-18, main 3395b0de, CERT + PROD; confirmed on PROD by the administrator 2026-11-18)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -5700,5 +5700,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b76f9bf33a308525c9d93b473f5f1a36d565a52ec1854c5828c718b2a0a5fee4</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>07c4dea8de0a8878220bb04dbf22f42a49d00ceae74692f220a469dfb708967a</code></footer>
 </div></body></html>
