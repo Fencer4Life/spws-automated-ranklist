@@ -76,7 +76,7 @@ def main() -> None:
   <h1>„Znajdź zawody” in place on /ranking/: before and after</h1>
   <p class="dek">Captured on the <b>WordPress page bodies themselves</b> (<code>doc/wordpress/ranking.html</code>, <code>znajdz-zawody.html</code>), with the published bundle built from main and from this branch and LOCAL standing in for PROD. Visitors: <b>{nd} of {len(diff)} captures pixel-identical</b>. The administrator now stays signed in and reaches „Usuń”.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>Awaiting your approval</span>
+    <span class="pill" style="color:var(--good);background:var(--good-soft)"><span class="dot" style="background:var(--good)"></span>Approved by the user in chat, 18 Nov 2026</span>
     <span class="pill">plan: i7-admin-reaches-remove-on-prod-2026-11-18.html</span>
   </div>
 
@@ -106,7 +106,7 @@ def main() -> None:
     </table></div>
     <div class="note danger"><p class="lede">Before: the defect, reproduced</p><p>The menu loads <code>/znajdz-zawody/</code>. The fresh element there resets the sign-in, so the list shows no „Usuń”.</p></div>
     {row([("admin-before/admin__desktop__2-calendar.png", "before · desktop · the calendar page, signed out", "Before: calendar page after the menu, desktop"), ("admin-before/admin__desktop__4-entry-list.png", "before · desktop · no „Usuń”", "Before: entry list without Usuń, desktop"), ("admin-before/admin__phone__4-entry-list.png", "before · phone · no „Usuń”", "Before: entry list without Usuń, phone")])}
-    <h3>After: the new states, for your approval</h3>
+    <h3>After: the new states (approved 18 Nov 2026, before any push)</h3>
     <p class="mkcap">1 · signed in on /ranking/: the drawer with the admin section</p>
     {row([("admin-after/admin__desktop__1-drawer.png", "desktop", "Drawer signed in, desktop"), ("admin-after/admin__phone__1-drawer.png", "phone", "Drawer signed in, phone")])}
     <p class="mkcap">2 · „Znajdź zawody” opened in place, using the full height (WP.ADM.05)</p>
