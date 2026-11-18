@@ -1,0 +1,114 @@
+[
+ {
+  "name": "calendar__desktop__en__drawer.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__desktop__en__page.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__desktop__pl__drawer.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__desktop__pl__page.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__phone__en__drawer.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__phone__en__page.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__phone__pl__drawer.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "calendar__phone__pl__page.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__desktop__en__drawer.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__desktop__en__page.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__desktop__pl__drawer.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__desktop__pl__page.png",
+  "size": "1280x900",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__phone__en__drawer.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__phone__en__page.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__phone__pl__drawer.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "ranking__phone__pl__page.png",
+  "size": "375x812",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ }
+]

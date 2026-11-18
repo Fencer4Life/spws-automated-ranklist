@@ -1,0 +1,40 @@
+[
+  {
+    "w": "desktop",
+    "calendarInPlace": {
+      "element": "spws-calendar",
+      "path": "/znajdz-zawody/",
+      "appClasses": [
+        "ranklist-app",
+        "site-fill"
+      ],
+      "appHeight": 900,
+      "calendarHeight": 838,
+      "viewport": 900,
+      "sideScroll": false,
+      "adminSection": 0
+    },
+    "entryRows": 1,
+    "removeButtons": 0,
+    "errors": []
+  },
+  {
+    "w": "phone",
+    "calendarInPlace": {
+      "element": "spws-calendar",
+      "path": "/znajdz-zawody/",
+      "appClasses": [
+        "ranklist-app",
+        "site-fill"
+      ],
+      "appHeight": 812,
+      "calendarHeight": 748,
+      "viewport": 812,
+      "sideScroll": false,
+      "adminSection": 0
+    },
+    "entryRows": 1,
+    "removeButtons": 0,
+    "errors": []
+  }
+]

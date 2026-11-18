@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (`chrome="site"`), and §3 is amended so that `/ranking/?admin=1` opens the PROD sign-in; see [ADR-109](109-environments-split-by-host.md) for the environment split. Amended 2026-10-06: the calendar's title is its menu name, „Znajdź zawody" / "Competition Finder", shortened only where the measured room is too small; the closed drawer is `inert`.)
+**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (`chrome="site"`), and §3 is amended so that `/ranking/?admin=1` opens the PROD sign-in; see [ADR-109](109-environments-split-by-host.md) for the environment split. Amended 2026-10-06: the calendar's title is its menu name, „Znajdź zawody" / "Competition Finder", shortened only where the measured room is too small; the closed drawer is `inert`. Amended 2026-11-18: signed in on `/ranking/`, the drawer's calendar entry opens the calendar in place, so the administrator keeps the session and reaches the entry list's „Usuń” on PROD.)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -469,3 +469,27 @@ The drawer is `inert` while closed in every mode, so its links are no longer rea
 
 - **Tests:** TITLE.01–TITLE.02, WP.BAR.02 and WP.BAR.03 (amended), WP.BAR.05, WP.NAV.04, AppShell 8.34 (amended).
 - **No WordPress page changes.** The pages load `assets/main.ce.js`, so the title changes with the release.
+
+## Amendment (2026-11-18) — signed in on `/ranking/`, the calendar entry opens the calendar in place
+
+**Status:** Accepted (the plan's Q2, signed off by the user 2026-11-18).
+**Development plan:** [`doc/plans/i7-admin-reaches-remove-on-prod-2026-11-18.html`](../plans/i7-admin-reaches-remove-on-prod-2026-11-18.html); before/after comparison: [`doc/plans/i7-admin-reaches-remove-on-prod-pixel-sheet-2026-11-18.html`](../plans/i7-admin-reaches-remove-on-prod-pixel-sheet-2026-11-18.html).
+**Relates to:** [ADR-015](015-m8-ui-design-decisions.md) §3 as amended (`?admin=1` only on `/ranking/`, unchanged), [ADR-109](109-environments-split-by-host.md) (github.io is CERT, so PROD administration exists only on `/ranking/`)
+
+### Context
+
+The entry list's „Usuń” (FR-166) shows only to a signed-in administrator, in the calendar's „Lista zgłoszonych”. On the association's site the drawer's „Znajdź zawody” was a same-tab link to `/znajdz-zawody/`. Following it mounts the app afresh, and every mount resets the sign-in (`App.svelte`, `resetAuth()` at mount). The administrator therefore arrived at the calendar as a visitor, and no signed-in path led to a real (PROD) entry. github.io offers no way round it: it runs on CERT.
+
+### Decision
+
+On `/ranking/`, while an administrator is signed in, the drawer's calendar entry opens the calendar in place instead of following its link, as the Ranking entry already returns to the list in place, because following a link mounts the app afresh and ends the session. The calculator and the points table remain links. Signed out, every entry is a same-tab link.
+
+A calendar opened in place on an element that did not start on it takes the viewport height itself (`height: 100dvh`), because only the calendar page's element gives its host that height (§7, `CalendarElement.svelte`). The calendar page's own element is untouched.
+
+Signing out while the calendar is open in place leaves the calendar on screen as a visitor's (the plan's Q1).
+
+### Consequences
+
+- **Tests:** WP.NAV.05–07 (`Sidebar.test.ts`), WP.ADM.04–05 (`SiteAdminCalendar.test.ts`).
+- **No WordPress page changes.** The pages load `assets/main.ce.js`, so the change ships with the release.
+- **Visitors see nothing new:** before and after, the Ranking and calendar page bodies are 16 of 16 pixel-identical.

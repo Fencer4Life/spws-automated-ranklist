@@ -1,0 +1,279 @@
+<meta charset="utf-8">
+<title>I7 · Removing an entry on PROD · plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Entry list · Administrator · I7 · TDD plan</p>
+  <h1>Let the administrator reach „Usuń” on PROD</h1>
+  <p class="dek">The „Usuń” button released on 18 Nov (FR-166, main d6ca0435) <b>cannot be reached for a real entry</b>. This plan fixes that. After sign-in on <code>weteraniszermierki.pl/ranking/?admin=1</code>, „Znajdź zawody” in the menu opens the calendar on the same page, so you stay signed in. Visitors see nothing new.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 18 Nov 2026 · Q1–Q3 as recommended</span>
+    <span class="pill">frontend only · no migration</span>
+    <span class="pill">amends FR-166 and FR-149</span>
+    <span class="pill">rev 2 · 18 Nov 2026</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · The issue, verified in the source</p>
+    <h2>Neither place you can sign in leads to a real entry</h2>
+    <p>Real entries live on PROD: the public registration page writes only there (<code>.github/workflows/release.yml</code>, the PROD-only <code>register.html</code> step).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where you sign in</th><th>Database</th><th>Signed in at the entry list?</th></tr></thead>
+      <tbody>
+        <tr><td>GitHub Pages admin app<br><code>…github.io/spws-automated-ranklist/?admin=1</code></td><td><span class="chip warn">CERT</span><br><code>App.svelte:597</code>: a page holding a CERT pair runs on CERT</td><td>Yes. „Usuń” works, but only on CERT's copy, never on a real entry.</td></tr>
+        <tr><td>WordPress Ranking page<br><code>weteraniszermierki.pl/ranking/?admin=1</code></td><td><span class="chip fill">PROD</span></td><td><b>No.</b> „Znajdź zawody” is a same-tab link to <code>/znajdz-zawody/</code> (<code>Sidebar.svelte:29</code>). That page mounts the app fresh, and every mount resets the sign-in (<code>App.svelte:708</code> → <code>admin-auth.svelte.ts:27</code>). You arrive as a visitor.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note danger">
+      <p class="lede">Why the build did not catch it</p>
+      <p>The LOCAL walk-through signed in on the full app, where the app and the data share one database. On PROD that surface does not exist: PROD administration happens only on the WordPress Ranking page (FR-149). I proved the feature on a surface that does not reach PROD. This plan's walk-through runs on the WordPress Ranking page body itself (§05).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Already in the code</p>
+    <h2>The pattern exists for one menu item</h2>
+    <ul>
+      <li><b>„Ranking” already stays on the page when you are signed in.</b> <code>followSiteLink</code> (<code>Sidebar.svelte:151–159</code>) cancels the link and switches the view in place, so the reload does not end the session. Test: <code>Sidebar.test.ts:337</code> (WP.NAV.01).</li>
+      <li><b>The app can already show the calendar on any element.</b> <code>navigateTo('calendar')</code> loads the calendar data (<code>App.svelte:985–995</code>), and <code>CalendarView</code> already receives <code>isAdmin</code>, so the entry list then shows „Usuń”.</li>
+      <li><b>The two WordPress page bodies style the page identically.</b> <code>doc/wordpress/ranking.html</code> and <code>znajdz-zawody.html</code> differ only in their comment and their element.</li>
+      <li><b>But the Ranking element has no height of its own.</b> The calendar is built from geometry and needs real height. <code>CalendarElement.svelte</code> gives its host <code>height: 100dvh</code>, and <code>.site-fill</code> fills that host with <code>height: 100%</code> (<code>App.svelte:1753–1763</code>). <code>RanklistElement.svelte</code> has no such rule, so a calendar shown inside it would collapse. The fix must give the calendar its height there (part B).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The fix</p>
+    <h2>Two small parts</h2>
+    <div class="op"><span class="op-tag u">A · THE MENU</span><span class="set">Sidebar.svelte · followSiteLink</span>
+      <p>When you are signed in, „Znajdź zawody” opens the calendar on the same page, the way „Ranking” already does: it cancels the link and calls <code>onnavigate('calendar')</code>. While the calendar is shown, „Znajdź zawody” is marked as the current page and „Ranking” brings the list back. Signed out, both remain ordinary links.</p>
+    </div>
+    <div class="op"><span class="op-tag u">B · THE HEIGHT</span><span class="set">App.svelte · one class, one rule</span>
+      <p>When the calendar is opened on an element that did not start on it (the Ranking page), <code>.ranklist-app</code> gets a class that sets <code>height: 100dvh</code>. The calendar page's own element starts on the calendar, never gets the class, and keeps today's rules exactly. Its pixels are proven unchanged in §05.</p>
+    </div>
+    <h3>What does not change</h3>
+    <ul>
+      <li>Visitors: every menu item on every WordPress page is the same link as today.</li>
+      <li>„Kalkulator punktów” and „Tabela punktacji”: still separate pages, and following them still ends the session. Not asked for, not touched.</li>
+      <li>The GitHub Pages app: still CERT, with „Usuń” working on CERT's copy.</li>
+      <li>The entry list, the confirmation, the database, the WordPress page bodies: nothing changes. No WordPress republish is needed, because the change ships in the bundle.</li>
+      <li>The address bar stays <code>/ranking/?admin=1</code>. Reloading brings back the sign-in and the Ranking list, as today.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Tests first</p>
+    <h2>Each seen failing before the code that makes it pass</h2>
+    <p>Acceptance IDs are registered in the RTM before any code. A test that already holds today is proven by a recorded mutation run instead.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>What it pins</th><th>File</th><th>Today</th></tr></thead>
+      <tbody>
+        <tr><td><code>WP.NAV.05</code></td><td>Signed in, „Znajdź zawody” cancels the link, opens the calendar in place and closes the drawer.</td><td><code>Sidebar.test.ts</code></td><td><span class="chip over">red</span></td></tr>
+        <tr><td><code>WP.NAV.06</code></td><td>Signed out, „Znajdź zawody” is an ordinary link: not cancelled, no in-place switch.</td><td><code>Sidebar.test.ts</code></td><td><span class="chip plain">holds · mutation</span></td></tr>
+        <tr><td><code>WP.NAV.07</code></td><td>Signed in, „Kalkulator punktów” and „Tabela punktacji” stay ordinary links.</td><td><code>Sidebar.test.ts</code></td><td><span class="chip plain">holds · mutation</span></td></tr>
+        <tr><td><code>WP.ADM.04</code></td><td>On the Ranking page, signed in, „Znajdź zawody” shows the calendar, loads its events, titles the bar „Znajdź zawody”, keeps the admin section, and hands <code>isAdmin</code> to the calendar.</td><td><code>SiteChrome.test.ts</code></td><td><span class="chip over">red</span></td></tr>
+        <tr><td><code>WP.ADM.05</code></td><td>The height class is set only on a calendar opened in place. The calendar page's element never has it, signed in or not.</td><td><code>SiteChrome.test.ts</code></td><td><span class="chip over">red</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Proof on the right surface</p>
+    <h2>The walk-through runs on the WordPress Ranking page body</h2>
+    <ol class="steps">
+      <li><b>Before/after pixel sheet, public.</b> The calendar and Ranking page bodies from <code>doc/wordpress/</code>, as a visitor, desktop and phone, Polish and English, before and after: all identical. This includes the calendar page (part B must not touch it).</li>
+      <li><b>New states, for your approval.</b> On the Ranking page body signed in: the drawer, the calendar in place (desktop and phone, the full height used), an entry list with „Usuń”, and the screen after signing out.</li>
+      <li><b>LOCAL walk-through on that same body</b>, with LOCAL as its database. A visitor registers a test entry through the form. The administrator signs in on the Ranking body with <code>?admin=1</code>, opens „Znajdź zawody” from the menu, opens the entry list and removes the entry. The database then holds nothing under that name.</li>
+      <li><b>After release, on PROD (Q3).</b> I check the visitor's view without changing anything, as on 18 Nov. The administrator's view needs your own sign-in.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Documents</p>
+    <h2>What gets updated</h2>
+    <ul>
+      <li><b>FR-166</b> names where the button is reached: signed in on <code>weteraniszermierki.pl/ranking/?admin=1</code>, then „Znajdź zawody”. <b>FR-149</b> gains the in-place calendar. RTM rows for WP.NAV.05–07 and WP.ADM.04–05.</li>
+      <li><b>ADR-090</b>: a short amendment, draft in Q2. The ADR says the drawer entries are same-tab links, and this adds a second signed-in exception.</li>
+      <li><b>Handbook</b>: <code>registration-lifecycle.html</code> and <code>events-and-registration.html</code> say how an administrator reaches „Usuń” on PROD, and that on GitHub Pages it acts on CERT.</li>
+      <li>The 18 Nov plan gains finding W9 (this issue), linking here.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Order of work</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li>RTM: register WP.NAV.05–07 and WP.ADM.04–05 as Planned.</li>
+      <li>Write the five tests; see WP.NAV.05, WP.ADM.04 and WP.ADM.05 fail for the stated reason. Record mutation runs for WP.NAV.06–07.</li>
+      <li>Part A, then part B; all five green; full Vitest and svelte-check.</li>
+      <li>Pixel sheet and LOCAL walk-through (§05), for your approval.</li>
+      <li>Documents (§06), coherence gate, graph and docs index refresh, <code>scripts/preflight.sh</code> exit 0.</li>
+      <li>Release only on your go, through the integration checkout. Then the PROD checks, and the release record (with the unpushed 18 Nov record commit 06861b69).</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Your decisions</p>
+    <h2>Three questions</h2>
+    <div class="note accent">
+      <p class="lede">Q1 · Signing out while the calendar is open on the Ranking page</p>
+      <p>The „Usuń” buttons and any open confirmation disappear at once (already pinned by CV.15). The question is which screen you then see.</p>
+      <p><b>Recommended: stay on the calendar, as a visitor.</b> Nothing jumps under you, and the calendar is a public screen anyway. The alternative is to return to the Ranking list.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Q2 · The ADR-090 amendment text</p>
+      <p>Proposed, added as a dated amendment of 2026-11-18:</p>
+      <p><em>„On /ranking/, while an administrator is signed in, the drawer's calendar entry opens the calendar in place instead of following its link, as the Ranking entry already returns to the list in place, because following a link mounts the app afresh and ends the session. The calculator and the points table remain links. Signed out, every entry is a same-tab link.”</em></p>
+      <p><b>Recommended: accept as written.</b></p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Q3 · The final proof on PROD</p>
+      <p>I cannot sign in on PROD: entering the password is yours. After release I check the visitor's view myself. Then you would sign in on <code>weteraniszermierki.pl/ranking/?admin=1</code>, choose „Znajdź zawody”, open any entry list, and confirm „Usuń” is there. To see the confirmation, press „Usuń” and then „Anuluj”, so nothing is deleted.</p>
+      <p><b>Recommended: yes, a two-minute check by you right after the release.</b></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--good)">Impact: the drawer's calendar entry opens in place for a signed-in admin on /ranking/ (I7)
+Canonical docs updated:
+  doc/adr/090-prod-surface-as-wordpress-menu-item.md (+ twin, index) — amendment 2026-11-18 (Q2 text)
+  doc/Project Specification … .md (+ .html) — Appendix C entry for ADR-090
+  doc/requirements-traceability-matrix.md (+ .html) — FR-166 names the PROD path, FR-149 the
+    in-place calendar; WP.NAV.05–07 and WP.ADM.04–05 Landed LOCAL
+  doc/handbook/reference/registration-lifecycle.html — how „Usuń” is reached on PROD
+  doc/handbook/subsystems/events-and-registration.html — the same, in the current flow
+  doc/handbook/product/product-surfaces.html — Administration: in-place entries on /ranking/
+  doc/handbook/subsystems/frontend-and-automation.html — the drawer on the association's site
+  (all four re-dated 2026-11-18)
+ADR impact: ADR-090 amended; ADR-015 §3 relates, unchanged; ADR-109 relates, unchanged
+Operational impact: none (no workflow, secret, schedule, migration or WordPress page)
+Ownership warnings (check_docs): system-context, containers-and-data, codebase-map,
+  test-and-traceability, documentation-standard — each read for a claim this change
+  makes untrue: none found
+Validation: check_docs.py valid; check-coherence.sh and check-spec-sync.sh pass</pre>
+    </div>
+    <p>Pixel sheet and walk-through: <code>doc/plans/i7-admin-reaches-remove-on-prod-pixel-sheet-2026-11-18.html</code>. Mutation runs: <code>doc/plans/i7-admin-reaches-remove-on-prod-sheet/tools/mutate.py</code> (M1 → WP.NAV.06 red, M2 → WP.NAV.07 red, M3 → WP.ADM.05 red). Found on the way: I8 (fixed), I9 (proposed separately).</p>
+  </section>
+
+  <p class="foot">plan · i7-admin-reaches-remove-on-prod · 18 Nov 2026 · rev 2 · signed off 18 Nov (Q1 stay on the calendar; Q2 amendment as written; Q3 the user checks PROD) · built on LOCAL · pixel sheet awaiting approval</p>
+</div>
