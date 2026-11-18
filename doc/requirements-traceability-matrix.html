@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="4dd58701c6b2f64fb50c17dbf796c9062604b21b2e1b7c41f3deb8194f7e4f24">
+<meta name="doc-source-sha256" content="ebfe3be3334ba5b34552470f0b35cb8aa640272a576ae5464b4795f7010064a3">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1119,14 +1119,14 @@
 <td><strong>The public entry list's tiles show the selection.</strong> While the name search or any of the weapon, category and gender filters narrows the list, each of the four tiles shows the selection against the event total („4 z 8”, “4 of 8”); the selection is exactly the rows listed. While narrowed the tiles carry a yellow dashed frame, each narrowing control is highlighted, the two weapon tiles other than a chosen weapon are dimmed, the search box carries a × that empties it, and a „Wyczyść filtry” link under the filters empties the search and resets all three filters. With nothing narrowing the list looks as before. The name search folds diacritics on both sides by the rule of <code>fold_diacritics</code> (<code>python/matcher/fuzzy_match.py</code>), so „zak” finds ŻAK. Design signed 2026-11-17 (<code>doc/plans/entry-list-selection-count-2026-11-17.html</code>).</td>
 <td>UC (public entry list), FR-123, FR-130, FR-154</td>
 <td>FOLD.01–05, ELSEL.01–17</td>
-<td>Covered (2026-11-17, LOCAL; release pending)</td>
+<td>Covered (released 2026-11-17, main 36efe10a, CERT + PROD)</td>
 </tr>
 <tr>
 <td>FR-166</td>
 <td><strong>An administrator removes an entry from the entry list.</strong> While an administrator is signed in to the admin application, each row of „Lista zgłoszonych” opened from the calendar carries a „Usuń” button. It asks for confirmation naming the fencer, their weapons and category, and the event; confirming deletes the registration, the row leaves the list and the tiles count down. The confirmation says the operation cannot be undone and, while registration is open, that the fencer („Zawodniczka” / „Zawodnik”) can register again before the registration deadline; after the deadline, that the deadline has passed. A failed delete leaves the row and says so; a delete the database refuses counts as failed. Visitors, the public registration page and the WordPress calendar never show the button. A fencer who changes plans tells the organizer, who asks the administrator; there is no public withdrawal, by decision. Design signed 2026-11-17 (<code>doc/plans/entry-list-admin-remove-design-2026-11-17.html</code>).</td>
 <td>UC (public entry list), FR-122, FR-123, FR-165</td>
 <td>REGDEL.01–04, ELREM.01–13</td>
-<td>Covered (2026-11-17, LOCAL; release pending)</td>
+<td>Covered (released 2026-11-18, main d6ca0435, CERT + PROD)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -5351,7 +5351,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list's tiles show the selection (FOLD.<em>, ELSEL.</em>)</h2>
-<p>FR-165. Design signed 2026-11-17 (<code>doc/plans/entry-list-selection-count-2026-11-17.html</code>, rev 4); acceptance IDs from <code>doc/plans/entry-list-tiles-follow-filters-tdd-plan-2026-11-17.html</code> §04, registered before any code. Each was observed RED for its stated reason before its implementation landed; ELSEL.01 and ELSEL.07 held before the change and were proven by a recorded mutation run instead (<code>doc/plans/entry-list-tiles-follow-filters-sheet/mutation-runs.md</code>). Before/after pixel sheet approved 2026-11-17 (<code>doc/plans/entry-list-tiles-follow-filters-pixel-sheet-2026-11-17.html</code>).</p>
+<p>FR-165. Design signed 2026-11-17 (<code>doc/plans/entry-list-selection-count-2026-11-17.html</code>, rev 4); acceptance IDs from <code>doc/plans/entry-list-tiles-follow-filters-tdd-plan-2026-11-17.html</code> §04, registered before any code. Each was observed RED for its stated reason before its implementation landed; ELSEL.01 and ELSEL.07 held before the change and were proven by a recorded mutation run instead (<code>doc/plans/entry-list-tiles-follow-filters-sheet/mutation-runs.md</code>). Before/after pixel sheet approved 2026-11-17 (<code>doc/plans/entry-list-tiles-follow-filters-pixel-sheet-2026-11-17.html</code>). Released 2026-11-17 (main 36efe10a, CERT + PROD).</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -5368,160 +5368,160 @@
 <td>ą ć ę ł ń ó ś ź ż fold to a c e l n o s z z.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/foldName.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>FOLD.02</td>
 <td>Upper case folds and lower-cases: ŻAK → zak, ŁOŚ → los, ĆWIK → cwik.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/foldName.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>FOLD.03</td>
 <td>Plain letters, digits, spaces and hyphens are unchanged apart from lower-casing.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/foldName.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>FOLD.04</td>
 <td>Other accented Latin letters lose their marks (ü → u, é → e, č → c), as in the Python fold.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/foldName.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>FOLD.05</td>
 <td>Text that arrives decomposed (Z + combining dot) folds as the composed letter does.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/foldName.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.01</td>
 <td>Nothing narrowing: plain totals; no selection figure, frame, dimming, highlight, × or clear link.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.02</td>
 <td>A category filter: every tile shows selection z total.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.03</td>
 <td>A search alone narrows the tiles the same way.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.04</td>
 <td>Search, weapon, category and gender together.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.05</td>
 <td>The first tile's selection always equals the number of listed rows.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.06</td>
 <td>No match: every tile shows 0 z total, with the existing empty message.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.07</td>
 <td>A search of spaces only does not narrow.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.08</td>
 <td>The tile group is a polite live region.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.09</td>
 <td>English: “of” replaces „z”, and the filters survive the language switch.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.10</td>
 <td>The frame is present only while narrowed.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.11</td>
 <td>Only the controls that narrow are highlighted, the search box included.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.12</td>
 <td>The × shows only with search text and empties the search alone.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.13</td>
 <td>The clear link shows only while narrowed and empties the search and all three filters.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.14</td>
 <td>Both new controls are buttons named in the page's language.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.15</td>
 <td>A chosen weapon dims the other two weapon tiles only.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.16</td>
 <td>The search finds names whatever the Polish letters: zak → ŻAK, los → ŁOŚ, pawel → Paweł.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 <tr>
 <td>ELSEL.17</td>
 <td>An event with no entries: tiles 0, and 0 z 0 under a filter.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-17, main 36efe10a)</td>
 </tr>
 </tbody>
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.<em>, ELREM.</em>)</h2>
-<p>FR-166. Design signed 2026-11-17 (<code>doc/plans/entry-list-admin-remove-design-2026-11-17.html</code>, rev 2); acceptance IDs from <code>doc/plans/entry-list-admin-removes-entry-tdd-plan-2026-11-17.html</code> §05, registered before any code. Each was observed RED for its stated reason before its implementation landed; REGDEL.01–02, ELREM.01, ELREM.13 and CV.16 held before the change and were proven by recorded mutation runs instead (<code>doc/plans/entry-list-admin-removes-entry-sheet/mutation-runs.md</code>). LOCAL walk-through: <code>doc/plans/entry-list-admin-removes-entry-sheet/local-walkthrough.md</code>.</p>
+<p>FR-166. Design signed 2026-11-17 (<code>doc/plans/entry-list-admin-remove-design-2026-11-17.html</code>, rev 2); acceptance IDs from <code>doc/plans/entry-list-admin-removes-entry-tdd-plan-2026-11-17.html</code> §05, registered before any code. Each was observed RED for its stated reason before its implementation landed; REGDEL.01–02, ELREM.01, ELREM.13 and CV.16 held before the change and were proven by recorded mutation runs instead (<code>doc/plans/entry-list-admin-removes-entry-sheet/mutation-runs.md</code>). LOCAL walk-through: <code>doc/plans/entry-list-admin-removes-entry-sheet/local-walkthrough.md</code>. Before/after pixel sheet approved 2026-11-18 (<code>doc/plans/entry-list-admin-removes-entry-pixel-sheet-2026-11-17.html</code>). Released 2026-11-18 (main d6ca0435; CI and Release green, CERT + PROD). PROD checked read-only the same day: visitors hold no DELETE right on <code>tbl_registration</code> and its one policy admits only <code>authenticated</code>; the served bundle carries the change; the WordPress calendar's entry list for PEW5efs-2026-2027 shows its 84 entries with no „Usuń” button.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -5538,119 +5538,119 @@
 <td>A signed-in administrator's delete of a registration removes the row.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/129_registration_admin_delete.sql</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>REGDEL.02</td>
 <td>A visitor's delete of a registration is refused and the row remains.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/129_registration_admin_delete.sql</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>REGDEL.03</td>
 <td><code>deleteRegistration</code> asks the database to delete exactly the one registration identifier.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>REGDEL.04</td>
 <td><code>deleteRegistration</code> fails when the database returns no row (a refused delete answers success with zero rows).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.01</td>
 <td>Without the administrator setting, no row carries „Usuń” and the list renders as before.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.02</td>
 <td>With the setting, every listed row carries one „Usuń” button.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.03</td>
 <td>„Usuń” opens a confirmation naming the fencer, weapons, category and event; nothing is deleted yet.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.04</td>
 <td>„Anuluj” and Escape close the confirmation; nothing is deleted.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.05</td>
 <td>Confirming deletes that row's identifier once; the row leaves the list; the done line names the fencer.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.06</td>
 <td>After a removal the tiles count down, the total and each of the fencer's weapons; while narrowed, both selection and total.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.07</td>
 <td>A failed delete leaves the row and the tiles and shows the failed line.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.08</td>
 <td>While the delete is in flight the confirm button is disabled; a double tap deletes once.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.09</td>
 <td>The sentence names „Zawodniczka” for a woman and „Zawodnik” for a man.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.10</td>
 <td>Registration closed: the second sentence is „Termin zapisów już minął.”</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.11</td>
 <td>English: every new text after the language switch.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.12</td>
 <td>The calendar's modal hands the setting to the list only while an administrator is signed in; signing out removes the buttons and an open confirmation.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationModal.test.ts</code>, <code>frontend/tests/CalendarView.test.ts</code> (CV.15–17)</td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 <tr>
 <td>ELREM.13</td>
 <td>The public custom element never passes the setting; the WordPress calendar cannot reach a sign-in (WP.ADM.01).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryListElement.test.ts</code>, <code>frontend/tests/SiteChrome.test.ts</code></td>
-<td>Landed LOCAL (2026-11-17)</td>
+<td>Released (2026-11-18, main d6ca0435)</td>
 </tr>
 </tbody>
 </table></div>
@@ -5665,5 +5665,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4dd58701c6b2f64fb50c17dbf796c9062604b21b2e1b7c41f3deb8194f7e4f24</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ebfe3be3334ba5b34552470f0b35cb8aa640272a576ae5464b4795f7010064a3</code></footer>
 </div></body></html>
