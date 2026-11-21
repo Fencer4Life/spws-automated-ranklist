@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="dc607eba7628646bd46bd69800f9457edd1db691cb7eda511e396d03bc8dfdeb">
+<meta name="doc-source-sha256" content="386b7ee8241cb771919c93c54b9992a5b3be7926bbdc2f8641965bee9db72098">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1140,7 +1140,7 @@
 <td><strong>A birth year is chosen from the years that give a category.</strong> The youngest year accepted is the event's season's later year minus 30 (the V0 rule: 1997 for 2026/27); the oldest is 120 years before today (1906 in 2026). Tapping the year box opens a decade grid on the decade of a 50-year-old (or of the year already in the box); it pages by decade, greys out years outside the range, and shows the range and the chosen year's category. Typing still works: digits only, four at most, no minus sign. A year outside the range shows a line under the box naming the range, and „Dalej” stays off. The database refuses the same years on every write path — the visitor's create and edit, an administrator's direct update and the PROD → CERT copy — reading the event's season; the form shows that refusal as the same line. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 2).</td>
 <td>ADR-079, FR-120, FR-122, FR-167</td>
 <td>RFYEAR.01–10</td>
-<td>Implemented (release 2 of 4; sheet approved 2026-11-21, awaiting release)</td>
+<td>Covered (release 2 of 4 released 2026-11-21, main 51d03181, CERT + PROD; releases 3–4 planned)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -5917,7 +5917,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season's range (RFYEAR.*)</h2>
-<p>FR-168. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 2 of 4); IDs registered before any code. Checked read-only first: no stored entry on PROD (195) or CERT (90) is outside the range (youngest 1996, oldest 1947, every event in 2026/27). Before/after pixel sheet and LOCAL walk-through approved 2026-11-21 (<code>doc/plans/registration-birth-year-release-2-pixel-sheet-2026-11-21.html</code>), with the ADR-079 amendment of that date (release 2).</p>
+<p>FR-168. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 2 of 4); IDs registered before any code. Checked read-only first: no stored entry on PROD (195) or CERT (90) is outside the range (youngest 1996, oldest 1947, every event in 2026/27). Before/after pixel sheet and LOCAL walk-through approved 2026-11-21 (<code>doc/plans/registration-birth-year-release-2-pixel-sheet-2026-11-21.html</code>), with the ADR-079 amendment of that date (release 2). Released 2026-11-21 as main 51d03181: CI's pgTAP job first failed before any test ran (Docker Hub refused the image pull, <code>toomanyrequests</code>), passed on re-run (CI run 44929549077), and Release run 44929916194 deployed CERT and PROD (migration <code>20261121000003</code> in <code>deployed_migrations.json</code>). PROD checked read-only the same day: <code>fn_registration_birth_year_bounds</code> gives 1906–1997 for 2026/27 and 1911–2002 for 2031/32 in 2031, the trigger is present, visitors cannot call the bounds function, all 195 entries are inside the range and none is listed without a category; the served bundle carries the year grid and the range line.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -5934,70 +5934,70 @@
 <td>The range is the season's later year minus 30 down to today's year minus 120, computed, never a fixed year: 2026/27 on 21 Nov 2026 gives 1906–1997, and five years on, 2031/32 on 21 Nov 2031, the form gives 1911–2002 with the grid on the 1980s.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/birthYearRange.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.02</td>
 <td>Typing keeps digits only, four at most: „-1972” → „1972”, „19a7” → „197”, „19700” → „1970”.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/birthYearRange.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.03</td>
 <td>A year outside the range („47”, 1998, 1905 for 2026/27) shows a line under the box naming the range and keeps „Dalej” off; both edges (1906, 1997) are accepted.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.04</td>
 <td>Focusing the box opens the decade grid on the decade of a 50-year-old (the 1970s for 2026/27), or on the decade of the year in the box; tapping a year fills the box and closes the grid; typing closes it too, so it never covers the next field, and a click on the box or Escape reopens or closes it (I22).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.05</td>
 <td>The grid pages by decade and stops at the decades the range reaches; years outside the range are disabled and cannot be chosen; a press on the grid keeps focus in the box, so paging never closes it (I23).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.06</td>
 <td>The chosen year's category shows in the grid and on the form; a database refusal of the year (an old cached page) shows as the same range line, not the generic error.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.07</td>
 <td><code>fn_create_registration</code> refuses a year outside the event's range with <code>REG_BIRTH_YEAR_OUT_OF_RANGE</code> and accepts both edges; the range comes from <code>fn_registration_birth_year_bounds(season end year, today)</code>, so a 2031/32 event written in 2031 accepts 2002 and refuses 2003.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/131_registration_birth_year.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.08</td>
 <td><code>fn_update_registration</code> refuses a year outside the range.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/131_registration_birth_year.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.09</td>
 <td>A direct update of the year (an administrator's) is refused outside the range; an update that leaves the year alone is unaffected.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/131_registration_birth_year.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 <tr>
 <td>RFYEAR.10</td>
 <td>The PROD → CERT copy (<code>fn_replace_event_registrations</code>) refuses a row outside the range, and the target's entries stay untouched.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/131_registration_birth_year.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 51d03181)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6012,5 +6012,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>dc607eba7628646bd46bd69800f9457edd1db691cb7eda511e396d03bc8dfdeb</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>386b7ee8241cb771919c93c54b9992a5b3be7926bbdc2f8641965bee9db72098</code></footer>
 </div></body></html>
