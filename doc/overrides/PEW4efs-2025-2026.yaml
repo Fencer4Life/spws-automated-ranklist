@@ -1,6 +1,8 @@
 # PEW4efs-2025-2026 — ADR-106 re-staging decisions of 2026-10-02 (doc/plans/adr-106-restage-review-2026-10-02.html).
 # Fencers are named, not numbered: ids differ between LOCAL, CERT and PROD (P3.OV19).
-# PEW4efs-2025-2026 R1: A — KUZMICHOVA Svitalina → KUZMICHOVA Svitlana 1971
+# PEW4efs-2025-2026 R1: A — KUZMICHOVA Svitalina → KUZMICHOVA Svitlana 1972
+# 2026-11-21: roster birth year corrected 1971 → 1972 on CERT and PROD, as she declared it
+# (plan doc/plans/registration-form-names-year-country-2026-11-21.html §02).
 identity:
 - scraped_name: KUZMICHOVA Svitalina
-  fencer: {surname: KUZMICHOVA, first_name: Svitlana, birth_year: 1971}
+  fencer: {surname: KUZMICHOVA, first_name: Svitlana, birth_year: 1972}
