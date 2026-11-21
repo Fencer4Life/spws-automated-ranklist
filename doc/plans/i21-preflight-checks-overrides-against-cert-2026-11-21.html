@@ -1,0 +1,212 @@
+<meta charset="utf-8">
+<title>I21 · Preflight checks override files against CERT · plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0 28px;align-items:start}
+.shot{margin:0;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.shot img{width:100%;height:auto;display:block;border-radius:4px}
+.shot figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Gates · Override files · I21 · Plan</p>
+  <h1>Preflight checks the override files against CERT as well as LOCAL</h1>
+  <p class="dek">On 21 Nov 2026 preflight passed, and CI then failed on the same commit, because the two check the override files against different rosters. <b>This plan makes preflight check both, so a commit that passes preflight also passes CI's check.</b> Three decisions are yours (§03); nothing is built before your sign-off.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting your sign-off</span>
+    <span class="pill">amends ADR-119 G43 A (2026-11-01)</span>
+    <span class="pill">tests OVR.DRIFT.07 (amended), OVR.DRIFT.08 (new)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · What happened</p>
+    <h2>Green preflight, red CI, on the same commit</h2>
+    <ol class="steps">
+      <li>On 21 Nov you approved correcting fencer 164's roster birth year from 1971 to 1972 on CERT and PROD. I made the change with <code>scripts/cloud-sql.sh</code>.</li>
+      <li><code>doc/overrides/PEW4efs-2025-2026.yaml</code> names that fencer by surname, given name and birth year 1971. After the correction, that key matched no fencer on CERT or PROD.</li>
+      <li>Preflight passed all 23 gates. Its override gate checks the LOCAL roster, which still said 1971.</li>
+      <li>CI's override check reads the CERT roster and failed on main <code>7615b2fd</code>. The Release run was skipped, so nothing was deployed. Main <code>1918b0ed</code> fixed the key, LOCAL and the seed record, and released.</li>
+    </ol>
+    <p>No harm reached an environment: the Release refused to run. The cost was one failed push, a Telegram alarm, and a release that preflight had called ready.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Why preflight could not see it</p>
+    <h2>Two rosters, one gate name</h2>
+    <ul>
+      <li><b>By design (G43 A, ADR-119, 2026-11-01).</b> The gate checks “the roster the run will meet: LOCAL's in preflight, CERT's in CI”. OVR.DRIFT.07 pins that split. The design assumed LOCAL and CERT hold the same roster.</li>
+      <li><b>They differ whenever a correction is made on CERT and PROD</b> and the LOCAL seed has not been exported again. That is the normal way a roster is corrected (<code>cloud-db-ops</code>), so drift is expected, not rare.</li>
+      <li><b>The gate's own name claims more than it checks.</b> Preflight prints „override files name the roster (CI: CERT)” (<code>scripts/preflight.sh:79</code>) but runs <code>--roster local</code>. A pass reads as “CI's CERT check will pass”, and on 21 Nov it did not.</li>
+      <li><b>Preflight can already read CERT.</b> <code>override_drift.transport_for("cert")</code> reads the token through the shared reader (<code>supabase_access_token</code>, <code>.env</code> first), read only. No new credential path is needed.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Decisions for you</p>
+    <h2>Three questions, each with my recommendation</h2>
+    <div class="note accent"><p class="lede">Q1 · Which rosters does preflight check?</p>
+      <p><b>A (recommended) · both, as two gates.</b> „override files name the roster (LOCAL)” and „override files name the roster (CERT, as CI)”. LOCAL is what an ingest on LOCAL meets; CERT is what CI checks. Preflight then fails exactly when CI would.</p>
+      <p><b>B · CERT only.</b> Matches CI, but drops the LOCAL check that a LOCAL rehearsal depends on.</p>
+      <p><b>C · keep LOCAL only</b> and rely on the procedure in Q3. The gate stays blind to the next CERT correction.</p></div>
+    <div class="note accent"><p class="lede">Q2 · Without the token or the network, what does the CERT gate do?</p>
+      <p><b>A (recommended) · it fails, saying why.</b> As postgrestools already does when the stack is down, a gate that could not run does not pass. <code>transport_for</code> already exits with “SUPABASE_ACCESS_TOKEN is required”; an unreachable API fails the run the same way.</p>
+      <p><b>B · it is skipped with a warning.</b> Rejected in my view: it is the quiet pass that let today's drift through.</p>
+      <p>Either way, <code>--fast</code> keeps the gate: it takes seconds and makes one read-only request.</p></div>
+    <div class="note accent"><p class="lede">Q3 · Does the roster-correction procedure change too?</p>
+      <p><b>A (recommended) · yes, one step in <code>cloud-db-ops</code>.</b> Before correcting a fencer's name or birth year on CERT or PROD, search <code>doc/overrides/</code> and the LOCAL seed (<code>supabase/seed_prod_latest.sql</code>) for that fencer, and change them in the same piece of work. The gate catches a miss; the step stops it happening.</p>
+      <p><b>B · gate only.</b></p></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Build, test first</p>
+    <h2>Order of work (with Q1 A, Q2 A, Q3 A)</h2>
+    <ol class="steps">
+      <li><b>RED.</b> Amend OVR.DRIFT.07: CI reads CERT in its own job, as today, <b>and</b> preflight runs the gate twice, <code>--roster local</code> and <code>--roster cert</code>, each under a name that says which roster it checks. New OVR.DRIFT.08: the CERT gate is not dropped by <code>--fast</code>, and an unreachable CERT fails the run, never passes it. Run both and see them fail for those reasons.</li>
+      <li><b>GREEN.</b> Two gate lines in <code>scripts/preflight.sh</code>, honestly named; an API error in <code>override_drift.run</code> exits non-zero with a one-line reason.</li>
+      <li><b>Mutation proof.</b> On LOCAL only, put a deliberately wrong birth year into a scratch copy of one override file (<code>--dir</code>) and show the CERT gate failing with the file and line, then passing on the real files. Nothing is written to CERT.</li>
+      <li><b>Procedure.</b> The Q3 step in <code>.claude/skills/cloud-db-ops/SKILL.md</code>; <code>.agents/</code> holds no copy of that skill.</li>
+      <li><b>Documents.</b> ADR-119 amendment (§05) with <code>render_adrs.py</code>; the gate's line on <code>doc/handbook/reference/workflow-catalog.html</code> and <code>codebase-map.html</code> in present tense; the RTM's OVR.DRIFT.07–08 rows.</li>
+      <li><b>Done.</b> <code>scripts/preflight.sh</code> exit 0, graph and docs index refreshed, branch <code>claude/preflight-checks-overrides-against-cert</code> described, committed as Fencer4Life. It touches no deployed file, so the Release run skips the deploys; it goes out on your go.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">05 · For your sign-off</p>
+    <h2>ADR-119 amendment draft</h2>
+    <div class="note accent"><p class="lede">ADR-119 · Amendment (2026-11-21, I21) — preflight checks the override files against CERT as well as LOCAL</p>
+      <p><b>Context.</b> G43 A checks the override files against LOCAL's roster in preflight and CERT's in CI, on the premise that the two hold the same roster. On 21 Nov 2026 a birth year corrected on CERT and PROD left an override key naming nobody on CERT; preflight passed on LOCAL's older roster and CI failed on main <code>7615b2fd</code>, skipping its Release.</p>
+      <p><b>Decision.</b> Preflight runs the gate against both rosters, as two gates named for the roster each reads. The CERT gate reads through the shared token reader, read only; without the token or the API it fails and says why, and <code>--fast</code> keeps it. CI is unchanged: its own job alone holds the token. Before a fencer's name or birth year is corrected on CERT or PROD, the override files and the LOCAL seed are searched for that fencer and changed in the same work (<code>cloud-db-ops</code>).</p>
+      <p><b>Consequences.</b> A commit that passes preflight passes CI's override check. Preflight needs the token in <code>.env</code> and the network. Tests: OVR.DRIFT.07 amended, OVR.DRIFT.08.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Left out on purpose</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li><b>Exporting the LOCAL seed again from PROD.</b> A larger change of its own; today's one corrected record already makes LOCAL agree.</li>
+      <li><b>Changing the override files to name fencers by id.</b> Ids differ between LOCAL, CERT and PROD (P3.OV19), which is why the files name fencers.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · I21 · 21 Nov 2026 · found while releasing FR-167 release 1 (main 7615b2fd → 1918b0ed)</p>
+</div>

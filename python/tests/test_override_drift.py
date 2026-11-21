@@ -5,8 +5,8 @@ doc/plans/partial-ingest-promote-results-sync-2026-10-31.html, G43 and G46.
 An identity entry pins a fencer by surname, first name and birth year. When the
 roster is corrected (LEAHEY John, 1976 → 1969), the entry silently names nobody
 until the next ingest of its event stops before it reads anything. This gate,
-in preflight (LOCAL) and CI (CERT, read only), checks every entry of every
-doc/overrides/*.yaml against the roster:
+in preflight (LOCAL and CERT, I21) and CI (CERT), read only, checks every entry
+of every doc/overrides/*.yaml against the roster:
 
   OVR.DRIFT.01  a `fencer` entry names exactly one roster fencer, by the rule
                 the ingest resolves it with (resolve_fencer_keys);
@@ -18,7 +18,11 @@ doc/overrides/*.yaml against the roster:
   OVR.DRIFT.05  a line names the file, the line and the entry, never a fencer
                 or a birth year (D12: CI's log is public);
   OVR.DRIFT.06  the command line reads LOCAL or CERT, read only, and exits 1 on
-                any drift.
+                any drift;
+  OVR.DRIFT.07  CI reads CERT in a job of its own; preflight reads LOCAL and
+                CERT, each gate named for its roster (I21);
+  OVR.DRIFT.08  --fast keeps both gates, and a roster that cannot be read fails
+                the gate with one line saying why (exit 2, I21).
 """
 
 from __future__ import annotations
@@ -213,4 +217,65 @@ def test_OVR_DRIFT_07_ci_reads_cert_and_preflight_reads_local():
     assert 'if [[ "$OVERRIDE_DRIFT" == "success" ]]; then\n  exit 0' in last["run"]
     assert "api.telegram.org" in last["run"]
     preflight = (root / "scripts/preflight.sh").read_text(encoding="utf-8")
-    assert "python -m python.pipeline.override_drift --roster local" in preflight
+    # I21 (2026-11-21, ADR-119 amendment): preflight checks both rosters, each
+    # gate named for the roster it reads, so a pass means CI's check passes too.
+    gates = [
+        ln.strip()
+        for ln in preflight.splitlines()
+        if "override_drift" in ln and ln.strip().startswith("gate ")
+    ]
+    assert gates == [
+        'gate "override files name the LOCAL roster" python -m python.pipeline.override_drift --roster local',
+        'gate "override files name the CERT roster (as CI)" python -m python.pipeline.override_drift --roster cert',
+    ]
+
+
+def _fast_blocks(lines: list[str]) -> set[int]:
+    """Indexes of preflight lines inside an `if` that tests FAST."""
+    inside: set[int] = set()
+    stack: list[bool] = []
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith("if ") or s.startswith("if["):
+            stack.append("FAST" in s or any(stack))
+        elif s == "fi" or s.startswith("fi "):
+            if stack:
+                stack.pop()
+        elif any(stack):
+            inside.add(i)
+    return inside
+
+
+def test_OVR_DRIFT_08_fast_keeps_the_cert_gate():
+    """I21 Q2 A: --fast drops pgTAP only; both override gates always run."""
+    root = Path(__file__).resolve().parents[2]
+    lines = (root / "scripts/preflight.sh").read_text(encoding="utf-8").splitlines()
+    fast = _fast_blocks(lines)
+    at = [i for i, ln in enumerate(lines) if "override_drift --roster" in ln]
+    assert len(at) == 2
+    assert not fast.intersection(at)
+
+
+@pytest.mark.parametrize("label", ["CERT", "LOCAL"])
+@pytest.mark.parametrize("kind", ["sql", "network"])
+def test_OVR_DRIFT_08_a_roster_that_cannot_be_read_fails_and_says_why(
+    tmp_path, capsys, label, kind
+):
+    """I21 Q2 A: a roster the gate could not read never passes; one line says
+    which roster and why, with no traceback and no fencer."""
+    import httpx
+
+    from python.pipeline.promotion.refresh import SqlError
+
+    _write(tmp_path, "A-2024-2025.yaml", "identity:\n" + _fencer("X Y", "LEAHEY", "John", 1969))
+    error = SqlError("Unauthorized") if kind == "sql" else httpx.ConnectError("no route")
+
+    class Down:
+        def fetch_json(self, _sql):
+            raise error
+
+    assert od.run(tmp_path, Down(), label) == 2
+    out = capsys.readouterr().out.strip()
+    assert out.startswith(f"override files: could not read the {label} roster (")
+    assert len(out.splitlines()) == 1
+    assert "LEAHEY" not in out

@@ -93,6 +93,19 @@ environments and silently invalidates the release pipeline's central check.
 If you find yourself reaching for `ALTER TABLE` here, stop and write a
 migration.
 
+## Correcting a fencer's name or birth year: carry its override keys
+
+The override files in `doc/overrides/` name fencers by surname, given name and
+birth year, because ids differ between LOCAL, CERT and PROD. Correcting any of
+those on `tbl_fencer` silently breaks every entry that names the old value. On
+2026-11-21 fencer 164's year went 1971 → 1972 on CERT and PROD; the
+PEW4efs-2025-2026 override still said 1971 and CI failed on main (I21).
+
+Before the UPDATE, search `doc/overrides/` and the LOCAL seed
+(`supabase/seed_prod_latest.sql`) for the fencer, and change them in the same
+piece of work, with LOCAL's row. Preflight's two override gates (LOCAL and CERT)
+then prove it: `python -m python.pipeline.override_drift --roster cert`.
+
 ## Writes: scope them, prove them
 
 - `SELECT` the rows the predicate matches **before** the `DELETE`/`UPDATE`, and

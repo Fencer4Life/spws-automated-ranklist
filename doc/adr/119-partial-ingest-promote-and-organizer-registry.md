@@ -327,3 +327,17 @@ The previous amendment put the past-season pass in the daily close, which runs e
 - **Tests.** CLOSE.WIN.01–02, CLOSE.SEED.01–02 and LIFE.SEASON.01–07 (`python/tests/test_past_season_close_window.py`); CLOSE.PAST.01 and .05 rewritten for the window. pgTAP 128 is unchanged: an open past-season event that a hand writes on PROD fails CI at the next push after a seed export.
 - **Known limit.** From midnight to the 04:17 UTC close on the first morning after a season ends, CI reads a seed that still holds that season's open events.
 - **Unchanged.** The close's own selection and rule for the active season; the validator; the Telegram `complete` command.
+
+## Amendment (2026-11-21, I21) — preflight checks the override files against CERT as well as LOCAL
+
+**Status:** Signed by the user in chat on 2026-11-21 ("All as recommended": Q1 A, Q2 A, Q3 A) on `doc/plans/i21-preflight-checks-overrides-against-cert-2026-11-21.html`. Built test-first.
+
+**Context.** G43 A checks the override files against LOCAL's roster in preflight and CERT's in CI, on the premise that the two hold the same roster. They differ whenever a fencer is corrected on CERT and PROD and the LOCAL seed has not been exported since, which is the normal way a roster is corrected. On 21 Nov 2026 fencer 164's birth year was corrected from 1971 to 1972 on CERT and PROD; the identity entry of `doc/overrides/PEW4efs-2025-2026.yaml` still named 1971. Preflight passed on LOCAL's older roster, under a gate named „override files name the roster (CI: CERT)”, and CI failed on main `7615b2fd`, skipping its Release; main `1918b0ed` corrected the key, LOCAL and the seed record.
+
+**Decision.**
+
+1. **Preflight checks both rosters (Q1 A).** Two gates, each named for the roster it reads: „override files name the LOCAL roster” and „override files name the CERT roster (as CI)”. The CERT gate reads through the shared token reader (`supabase_access_token`, `.env` first), read only. CI is unchanged: its `override-drift` job alone holds the token.
+2. **A roster that cannot be read fails the gate (Q2 A).** A database error, a network error or a missing container ends the run with exit 2 and one line naming the roster and the reason, never a fencer; a missing token already stops it. `--fast` keeps both gates.
+3. **A roster correction carries its override keys (Q3 A).** Before a fencer's name or birth year is corrected on CERT or PROD, `doc/overrides/` and the LOCAL seed are searched for that fencer and changed in the same work (`.claude/skills/cloud-db-ops/SKILL.md`).
+
+**Consequences.** A commit that passes preflight passes CI's override check. Preflight needs the token in `.env` and the network. Tests: OVR.DRIFT.07 amended, OVR.DRIFT.08 new (`python/tests/test_override_drift.py`). Proven on 21 Nov against CERT, read only: a scratch copy of the override files with 1971 planted back failed the CERT gate on that file and line; the real files passed.

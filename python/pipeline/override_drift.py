@@ -5,8 +5,9 @@ name and birth year (or by id). When the roster is corrected, the entry silently
 names nobody, and the next ingest of its event stops before it reads anything:
 LEAHEY John's three entries said 1976 after the roster had 1969 (G46, 1 Nov
 2026). This gate checks every entry of every file against the roster the run
-will meet, LOCAL in preflight and CERT in CI (read only; CERT holds PROD's
-master data, refreshed before every ingest):
+will meet: CERT in CI, and both LOCAL and CERT in preflight (I21, 21 Nov 2026),
+read only; CERT holds PROD's master data, refreshed before every ingest. A
+roster that cannot be read fails the gate (exit 2):
 
   a `fencer` key      names exactly one roster fencer, by the rule the ingest
                       resolves it with (overrides.roster_matches);
@@ -18,7 +19,7 @@ A file that does not parse fails it too. A line names the file, the line and the
 entry, never a fencer or a birth year: CI's log is public (D12).
 
 Usage: python -m python.pipeline.override_drift --roster local|cert
-Tests: python/tests/test_override_drift.py (OVR.DRIFT.01-06).
+Tests: python/tests/test_override_drift.py (OVR.DRIFT.01-08).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import httpx
 import yaml
 
 from python.pipeline.overrides import OverrideValidationError, load_for_event, roster_matches
@@ -120,8 +122,16 @@ def _count(n: int, one: str, many: str) -> str:
 
 def run(overrides_dir: Path, transport: Any, label: str) -> int:
     """The gate: read the roster, check every file, print every drift and one
-    summary line; 1 when anything drifted."""
-    roster = transport.fetch_json(ROSTER_SQL) or []
+    summary line; 1 when anything drifted, 2 when the roster could not be read
+    (I21: a gate that could not run never passes)."""
+    from python.pipeline.promotion.refresh import SqlError
+
+    try:
+        roster = transport.fetch_json(ROSTER_SQL) or []
+    except (SqlError, httpx.HTTPError, OSError) as e:
+        reason = (str(e).strip().splitlines() or [""])[0][:200]
+        print(f"override files: could not read the {label} roster ({type(e).__name__}: {reason})")
+        return 2
     checked, drifts = check(overrides_dir, roster)
     for d in drifts:
         print(d.text())
