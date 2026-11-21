@@ -508,6 +508,9 @@ export interface UpdateRegistrationParams {
   // actually clears the stored club. Never published by
   // vw_registration_entry_list, only by the token-gated FTL export.
   club?: string | null
+  // FR-169: the declared fencing country (three-letter code). Omitted by an
+  // old cached page; the database then keeps the stored one.
+  country?: string | null
 }
 
 export interface CreateRegistrationParams {
@@ -528,6 +531,8 @@ export interface CreateRegistrationParams {
   // RODO-accept version stamp (D5) — the write happens at RODO-accept, so this
   // is always passed by the real flow; optional here for legacy callers.
   consentVersion?: string | null
+  // FR-169: the declared fencing country (three-letter code); null stores none.
+  country?: string | null
   // Declared club (2026-09-13, ADR-080 amendment (f)), optional. Stored
   // verbatim (trimmed to NULL when blank); never published by
   // vw_registration_entry_list, only by the token-gated FTL export.
@@ -646,6 +651,8 @@ export interface RegistrationEntry {
   enum_gender: GenderType
   arr_weapons: WeaponType[]
   enum_age_category: AgeCategory | null
+  // FR-169: the declared fencing code; null for an entry made before it was asked.
+  txt_country?: string | null
 }
 
 export interface MatchCandidate {

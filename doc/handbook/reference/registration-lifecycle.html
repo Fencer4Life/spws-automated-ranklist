@@ -72,7 +72,7 @@
 <section id="declaring">
 <p class="kicker">Stage 3 · Declaring</p>
 <h2>Identity, and what is not checked</h2>
-<p>The first step collects surname, given name, gender, birth year and one to three weapons. The surname is uppercased as it is typed; the age category and the fee are computed live and shown back.</p>
+<p>The first step collects surname, given name, gender, birth year, country and one to three weapons. The surname is uppercased as it is typed; the age category and the fee are computed live and shown back.</p>
 
 <figure class="shot">
 <img src="../assets/registration/01-identity.png" alt="Step one of the registration form, filled in for KOWALSKI Jan, born 1970, épée and sabre, showing computed category V2 and a 200 PLN two-weapon fee.">
@@ -83,6 +83,7 @@
 
 <div class="danger">
 <p><b>A year inside the range is not challenged.</b> Since the birth year is part of the dedupe key for an unlinked entrant, a mistyped year that still gives a category does not correct an earlier entry, it creates a second one.</p>
+<p><b>The country is picked from a list.</b> The box opens with Polska chosen and offers the 207 fencing codes, searched by the Polish or English name, by the code, and by a few other common names (Anglia, England, Great Britain, Holandia, Holland, Czech Republic); the chosen code stands beside the name, and nothing outside the list can be stored. The entry keeps the three-letter code, which the database checks against its own copy of the list (<code>tbl_fencing_country</code>). The country is not part of the identity: re-submitting with another country updates the entry rather than creating a second one.</p>
 </div>
 
 <p>On continuing, the declared triple is looked up against the fencer master list. The match is <b>exact</b> — no fuzzy matching happens in the browser, by decision. A hit links the registration to that fencer and the entrant continues straight to consent, seeing nothing further; this is the path most entries take.</p>
@@ -113,7 +114,7 @@
 <figcaption>Step 2. Each row states what is processed and why. The notice a fencer accepts is versioned, and the accepted version is stored with the timestamp — so the text can change without making it unclear what any given person agreed to.</figcaption>
 </figure>
 
-<p>Two commitments in this notice constrain the system rather than merely describing it. The e-mail address is a one-time check and is not retained. The club is used only for start files and is <b>not</b> stored. Carrying the club through to the seed file would therefore contradict the text a fencer has already accepted, which makes it a consent-version change rather than a code change — the reason it remains open.</p>
+<p>The notice constrains the system rather than merely describing it. An e-mail address, when one is asked for, is a one-time check and is not retained. The club is stored on the registration and used only for the start files, never shown on the public list. The country is shown on the public list and written to the start files, and the notice says so. Anything processed or shown beyond what the notice lists is therefore a consent-version change rather than a code change; the current version is <code>v1.2</code>, which added the country.</p>
 </section>
 
 <section id="writing">
@@ -179,7 +180,8 @@
 <figcaption>The roster, reached from inside the flow — hence <b>← Dane do przelewu</b>, which returns to the transfer details without losing them. Counts, search and filters are derived client-side from the same projection.</figcaption>
 </figure>
 
-<p>The roster is a deliberately narrow projection: surname, given name, gender, weapons and the age category. <b>Birth year and club are excluded</b>, which is why the page says so in plain language at the bottom. Every declared registration appears; there is no payment gate.</p>
+<p>The roster is a deliberately narrow projection: surname, given name, gender, weapons, the age category and the declared country. <b>Birth year and club are excluded</b>, which is why the page says so in plain language at the bottom. Every declared registration appears; there is no payment gate.</p>
+<p>The country shows as a flag alone at the end of the line, labelled with the country's name; a code without a drawn flag (AIN, TPE) shows its letters in small type, and an entry without a country shows nothing. A &bdquo;Kraj&rdquo; filter lists the codes present and works together with the weapon, category and gender filters. The flag column and the filter appear only when at least one entry has a country, so a list without any looks exactly as it did before countries were declared.</p>
 
 <p>Rows are displayed <b>surname A–Z</b>, given name breaking a shared surname. The ordering is applied in the browser under Polish collation, fixed regardless of the interface language, because a code-unit comparison sorts Ć, Ę, Ł and Ż after Z and the surnames are Polish whatever the labels say. The projection itself is unordered; the query's registration order survives only as the final tie-break between two people sharing both names.</p>
 
@@ -210,7 +212,7 @@
 <p>A set is one mixed-pool competition per weapon plus one direct-elimination table per gender and age category present. That split is deliberately the finest one possible: the organizer is told to combine tables freely in their own software, because the results are re-split by birth year when they come back, and predicting which tables they would combine produced files whose names claimed categories they did not contain. Every file name states the event, weapon, phase, gender and category range in ASCII; the Polish title inside the file is what their software displays.</p>
 <p>The organizer fetches the files themself. One page, reached by a link that carries its own key, lists every event that has entries and has not yet happened; choosing one shows that event’s files with each file’s name, the title their software will display, how many fencers it holds and what to do with it, grouped by weapon so the set reads as three lines rather than thirty. One control bundles everything, because a single event can produce dozens of files.</p>
 <p>The files are built at the moment of download, not when the page is opened: the entry list is re-read first, so an organizer who leaves the page open all morning still receives what is current, and the page states which moment the list it holds was taken. Alongside the files the archive carries the same instructions in both languages, because the page is read at a desk days beforehand while the archive is opened at the venue, often with no usable connection.</p>
-<p>That page is served the entry list through a projection carrying no birth year and no database identity: the names, genders, weapons and age categories already published on the public entry list, plus each entrant’s position within their own sub-ranking. Its key is checked in the database rather than in the page, and a key that is absent, unknown or withdrawn yields an empty page rather than an error. It is the one public surface with a language of its own, because organizers of European-circuit events may not read Polish. This page is the only handover: the e-mail delivery planned alongside it never ran and was removed on 24 October 2026 (<a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> amendment of that date).</p>
+<p>That page is served the entry list through a projection carrying no birth year and no database identity: the names, genders, weapons and age categories already published on the public entry list, plus each entrant’s position within their own sub-ranking and declared country. The country becomes the file's <code>Nation</code>; an entrant without one is written as POL, as every file was before countries were declared. Its key is checked in the database rather than in the page, and a key that is absent, unknown or withdrawn yields an empty page rather than an error. It is the one public surface with a language of its own, because organizers of European-circuit events may not read Polish. This page is the only handover: the e-mail delivery planned alongside it never ran and was removed on 24 October 2026 (<a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> amendment of that date).</p>
 </section>
 
 <section id="after">

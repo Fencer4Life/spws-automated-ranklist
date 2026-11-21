@@ -76,6 +76,8 @@ export interface ExportEntryRow {
   int_rank: number | null
   /** Ranking points behind int_rank; orders the entries inside a tier. */
   num_rank_points?: number | null
+  /** FR-169: the entry's declared fencing code; null (or absent) writes POL. */
+  txt_country?: string | null
 }
 
 /** One row of fn_ftl_roster — the organizer's pick-list for one weapon. */
@@ -102,6 +104,8 @@ export interface SeedEntry {
    * a value the unranked tail never uses.
    */
   points?: number | null
+  /** FR-169: the entry's declared fencing code; absent writes POL. */
+  nation?: string | null
 }
 
 export interface Tireur {
@@ -110,6 +114,8 @@ export interface Tireur {
   prenom: string
   sexe: string
   classement: number
+  /** FR-169: the Tireur's Nation; absent writes POL, as every file did before. */
+  nation?: string | null
 }
 
 export type SeedFileKind = 'MIXALL' | 'DE' | 'ROSTER'
@@ -292,6 +298,7 @@ export function mixallTireurs(seedOrder: Array<[SeedEntry, string]>): Tireur[] {
       prenom: entry.firstName,
       sexe: key[0],
       classement: i + 1,
+      nation: entry.nation ?? null,
     },
     // Keyed off the raw names, not the formatted Nom: the "(N)" marker is
     // appended above, and sorting on it would interleave categories instead of
@@ -449,7 +456,9 @@ export function buildFieXml(input: FieXmlInput): string {
         // stays — the validated FIE reference files carry it — and is empty,
         // exactly as it was before ADR-080 amendment (f) added the field.
         ['Club', ''],
-        ['Nation', 'POL'],
+        // FR-169: the entry's declared country; POL when it has none, so the
+        // files of Polish entrants do not change by one byte.
+        ['Nation', t.nation || 'POL'],
         ['Licence', ''],
         ['Statut', 'N'],
         ['Classement', String(t.classement)],
@@ -480,6 +489,7 @@ function subRankingsForWeapon(rows: ExportEntryRow[]): Record<string, SeedEntry[
       // PostgREST returns NUMERIC as a string; Number() keeps the sort
       // numeric, so 99.5 cannot end up before 100 as text would.
       points: r.num_rank_points == null ? null : Number(r.num_rank_points),
+      nation: r.txt_country ?? null,
     })
   }
   for (const entries of Object.values(buckets)) entries.sort((a, b) => a.idx - b.idx)

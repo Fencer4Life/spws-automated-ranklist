@@ -1,0 +1,134 @@
+[
+  {
+    "tag": "list__desktop__pl",
+    "names": [
+      "ZZKOWALSKA Anna",
+      "ZZMULLER Hans",
+      "ZZNEUTRAL Ivan",
+      "ZZNOWAK Piotr",
+      "ZZSCHMIDT Eva",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Annemarie",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra"
+    ],
+    "flags": [
+      "Polska",
+      "Niemcy",
+      "Niemcy",
+      "Wielka Brytania",
+      "Holandia",
+      "Polska"
+    ],
+    "codes": [
+      "AIN"
+    ],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "list__desktop__en",
+    "names": [
+      "ZZKOWALSKA Anna",
+      "ZZMULLER Hans",
+      "ZZNEUTRAL Ivan",
+      "ZZNOWAK Piotr",
+      "ZZSCHMIDT Eva",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Annemarie",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra"
+    ],
+    "flags": [
+      "Poland",
+      "Germany",
+      "Germany",
+      "United Kingdom",
+      "Netherlands",
+      "Poland"
+    ],
+    "codes": [
+      "AIN"
+    ],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "list__phone__pl",
+    "names": [
+      "ZZKOWALSKA Anna",
+      "ZZMULLER Hans",
+      "ZZNEUTRAL Ivan",
+      "ZZNOWAK Piotr",
+      "ZZSCHMIDT Eva",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Annemarie",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra"
+    ],
+    "flags": [
+      "Polska",
+      "Niemcy",
+      "Niemcy",
+      "Wielka Brytania",
+      "Holandia",
+      "Polska"
+    ],
+    "codes": [
+      "AIN"
+    ],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "list__phone__en",
+    "names": [
+      "ZZKOWALSKA Anna",
+      "ZZMULLER Hans",
+      "ZZNEUTRAL Ivan",
+      "ZZNOWAK Piotr",
+      "ZZSCHMIDT Eva",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Annemarie",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra"
+    ],
+    "flags": [
+      "Poland",
+      "Germany",
+      "Germany",
+      "United Kingdom",
+      "Netherlands",
+      "Poland"
+    ],
+    "codes": [
+      "AIN"
+    ],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  }
+]

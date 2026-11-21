@@ -1,0 +1,26 @@
+[
+  {
+    "step": "1 „wiel” typed, GBR picked",
+    "box": "Wielka Brytania",
+    "code": "GBR"
+  },
+  {
+    "step": "2 submitted",
+    "confirmation": "✓ Zgłoszenie potwierdzone"
+  },
+  {
+    "step": "3 on the list",
+    "flag": "Wielka Brytania",
+    "filterChoices": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ]
+  },
+  {
+    "errors": []
+  }
+]

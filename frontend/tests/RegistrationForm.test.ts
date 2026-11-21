@@ -337,7 +337,8 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
     expect(checkbox.classList.contains('reg-invalid')).toBe(true)
   })
 
-  it('ticking the checkbox clears the invalid flag, then accept writes with consentVersion v1.1', async () => {
+  // v1.2 since FR-169 (D3): the consent screen names the country as a public detail.
+  it('ticking the checkbox clears the invalid flag, then accept writes with consentVersion v1.2', async () => {
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await toRodo(container, findByText)
     const acceptBtn = container.querySelector('button.reg-rodo-accept') as HTMLButtonElement
@@ -355,7 +356,7 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
         firstName: 'Jan',
         birthYear: 1970,
         fencerId: 42,
-        consentVersion: 'v1.1',
+        consentVersion: 'v1.2',
         club: null,
       }),
     )
@@ -1418,5 +1419,77 @@ describe('RegistrationForm — FR-168 birth year (RFYEAR.03–06)', () => {
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
     await waitFor(() => expect(container.querySelector('.reg-error')?.textContent).toContain('1906'))
     expect(container.querySelector('.reg-error')?.textContent).not.toMatch(/nie udało się zapisać/i)
+  })
+})
+
+describe('RegistrationForm — FR-169 country (RFCTRY.04, RFCTRY.27)', () => {
+  async function toRodo() {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(42)
+    const r = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await r.findByText('IV Puchar Polski Weteranów')
+    return r
+  }
+
+  it('RFCTRY.04 the form opens with „Polska POL” chosen', async () => {
+    const { container } = await toRodo()
+    expect((container.querySelector('input[name="country"]') as HTMLInputElement).value).toBe('Polska')
+    expect(container.querySelector('.cp-code')?.textContent).toBe('POL')
+  })
+
+  it('RFCTRY.04 an entrant who does not touch the box is submitted as POL', async () => {
+    const { container, findByText } = await toRodo()
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ country: 'POL' })))
+  })
+
+  it('RFCTRY.04 a picked country is submitted', async () => {
+    const { container, findByText } = await toRodo()
+    await fillIdentity(container)
+    const box = container.querySelector('input[name="country"]') as HTMLInputElement
+    await fireEvent.focus(box)
+    await fireEvent.input(box, { target: { value: 'gbr' } })
+    await fireEvent.keyDown(box, { key: 'Enter' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ country: 'GBR' })))
+  })
+
+  it('RFCTRY.27 the consent screen names the country as a public detail, and records v1.2', async () => {
+    const { container, findByText } = await toRodo()
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
+    await findByText(/RODO/)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Kraj — lista zgłoszonych i pliki startowe')
+    expect(text).toContain('Kraj jest widoczny na publicznej liście zgłoszonych.')
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ consentVersion: 'v1.2' })))
+  })
+
+  it('RFCTRY.27 in English too', async () => {
+    setLocale('en')
+    try {
+      const { container, findByText } = await toRodo()
+      await fillIdentity(container)
+      await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+      await passNameCheck(container)
+      await findByText(/GDPR|RODO/)
+      const text = container.textContent ?? ''
+      expect(text).toContain('Country — the entry list and the start files')
+      expect(text).toContain('Your country is shown on the public entry list.')
+    } finally {
+      setLocale('pl')
+    }
   })
 })

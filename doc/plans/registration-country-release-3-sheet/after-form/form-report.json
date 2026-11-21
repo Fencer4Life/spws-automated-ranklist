@@ -1,0 +1,66 @@
+[
+  {
+    "tag": "form__desktop__pl",
+    "consent": true,
+    "default": {
+      "box": "Polska",
+      "code": "POL"
+    },
+    "found": [
+      "Wielka Brytania\nGBR"
+    ],
+    "picked": {
+      "box": "Wielka Brytania",
+      "code": "GBR"
+    },
+    "errors": []
+  },
+  {
+    "tag": "form__desktop__en",
+    "consent": true,
+    "default": {
+      "box": "Poland",
+      "code": "POL"
+    },
+    "found": [
+      "United Kingdom\nGBR"
+    ],
+    "picked": {
+      "box": "United Kingdom",
+      "code": "GBR"
+    },
+    "errors": []
+  },
+  {
+    "tag": "form__phone__pl",
+    "consent": true,
+    "default": {
+      "box": "Polska",
+      "code": "POL"
+    },
+    "found": [
+      "Wielka Brytania\nGBR"
+    ],
+    "picked": {
+      "box": "Wielka Brytania",
+      "code": "GBR"
+    },
+    "errors": []
+  },
+  {
+    "tag": "form__phone__en",
+    "consent": true,
+    "default": {
+      "box": "Poland",
+      "code": "POL"
+    },
+    "found": [
+      "United Kingdom\nGBR"
+    ],
+    "picked": {
+      "box": "United Kingdom",
+      "code": "GBR"
+    },
+    "errors": []
+  }
+]

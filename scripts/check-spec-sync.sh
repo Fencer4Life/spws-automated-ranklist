@@ -126,7 +126,9 @@ if [ -f "$RTM" ]; then
   #   registration-form-names-year-country rev 10, release 1).
   # 167 since 2026-11-21: +FR-168 (a birth year inside the season's range,
   #   chosen from a decade grid). Registered as Planned before code (release 2).
-  EXPECTED=167
+  # 168 since 2026-11-21: +FR-169 (a declared country, its flag on the entry
+  #   list and a „Kraj” filter). Registered as Planned before code (release 3).
+  EXPECTED=168
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

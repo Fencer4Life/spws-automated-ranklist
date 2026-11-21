@@ -50,6 +50,7 @@ REGISTRATION_FIELDS: tuple[str, ...] = (
     "arr_weapons",
     "txt_ftl_name",
     "txt_club",
+    "txt_country",
 )
 
 

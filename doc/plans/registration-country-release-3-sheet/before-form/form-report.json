@@ -1,0 +1,22 @@
+[
+  {
+    "tag": "form__desktop__pl",
+    "consent": false,
+    "errors": []
+  },
+  {
+    "tag": "form__desktop__en",
+    "consent": false,
+    "errors": []
+  },
+  {
+    "tag": "form__phone__pl",
+    "consent": false,
+    "errors": []
+  },
+  {
+    "tag": "form__phone__en",
+    "consent": false,
+    "errors": []
+  }
+]

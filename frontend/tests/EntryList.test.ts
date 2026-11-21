@@ -780,3 +780,135 @@ describe('EntryList — RFNAME.09 a title is ignored for order and search', () =
     expect(names).toEqual([])
   })
 })
+
+describe('EntryList — FR-169 the country (RFCTRY.06–17)', () => {
+  const C: RegistrationEntry[] = [
+    { id_registration: 11, id_event: 3, txt_surname: 'KOWALSKA', txt_first_name: 'Anna', enum_gender: 'F', arr_weapons: ['FOIL'], enum_age_category: 'V1', txt_country: 'POL' },
+    { id_registration: 12, id_event: 3, txt_surname: 'MÜLLER', txt_first_name: 'Hans', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V2', txt_country: 'GER' },
+    { id_registration: 13, id_event: 3, txt_surname: 'NEUTRAL', txt_first_name: 'Ivan', enum_gender: 'M', arr_weapons: ['EPEE', 'SABRE'], enum_age_category: 'V3', txt_country: 'AIN' },
+    { id_registration: 14, id_event: 3, txt_surname: 'NOWAK', txt_first_name: 'Piotr', enum_gender: 'M', arr_weapons: ['SABRE'], enum_age_category: 'V2', txt_country: null },
+    { id_registration: 15, id_event: 3, txt_surname: 'SCHMIDT', txt_first_name: 'Eva', enum_gender: 'F', arr_weapons: ['EPEE'], enum_age_category: 'V1', txt_country: 'GER' },
+    { id_registration: 16, id_event: 3, txt_surname: 'SMITH', txt_first_name: 'John', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V0', txt_country: 'GBR' },
+  ]
+
+  async function open(rows: RegistrationEntry[] = C) {
+    mockFetchEntryList.mockResolvedValue(rows)
+    const r = render(EntryList, { props: { eventId: 3 } })
+    await r.findByText(`${rows[0].txt_surname} ${rows[0].txt_first_name}`)
+    return r
+  }
+  const rowOf = (c: HTMLElement, name: string) => [...c.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes(name)) as HTMLTableRowElement
+  const names = (c: HTMLElement) => [...c.querySelectorAll('td.el-name')].map((td) => td.textContent?.trim())
+  const country = (c: HTMLElement) => c.querySelector('select[name="countryFilter"]') as HTMLSelectElement | null
+
+  afterEach(() => setLocale('pl'))
+
+  it('RFCTRY.06 each line ends with the flag alone, labelled with the country name', async () => {
+    const { container } = await open()
+    const cells = [...rowOf(container, 'MÜLLER').querySelectorAll('td')]
+    const last = cells[cells.length - 1]
+    expect(last.classList.contains('el-flag')).toBe(true)
+    const flag = last.querySelector('.flag') as HTMLElement
+    expect(flag.getAttribute('aria-label')).toBe('Niemcy')
+    expect(flag.getAttribute('title')).toBe('Niemcy')
+    expect(last.textContent?.trim()).toBe('')
+    // No code on any line; the codes are only the „Kraj” filter's choices (RFCTRY.12).
+    expect(container.querySelector('tbody')?.textContent).not.toContain('GER')
+  })
+
+  it('RFCTRY.06 the label follows the page language', async () => {
+    setLocale('en')
+    const { container } = await open()
+    expect(rowOf(container, 'MÜLLER').querySelector('.flag')?.getAttribute('aria-label')).toBe('Germany')
+  })
+
+  it('RFCTRY.07 an entry without a country shows nothing there', async () => {
+    const { container } = await open()
+    const cell = rowOf(container, 'NOWAK').querySelector('td.el-flag') as HTMLElement
+    expect(cell.children.length).toBe(0)
+    expect(cell.textContent?.trim()).toBe('')
+  })
+
+  it('RFCTRY.08 a list where no entry has a country keeps no room for a flag', async () => {
+    const { container } = await open(ROWS)
+    expect(container.querySelector('td.el-flag')).toBeNull()
+    expect(container.querySelector('th.el-flag')).toBeNull()
+    expect(container.querySelectorAll('thead th').length).toBe(3)
+  })
+
+  it('RFCTRY.09 the flag stands after the name, the category and the weapons; the name keeps its shortening class', async () => {
+    const { container } = await open()
+    const cells = [...rowOf(container, 'SMITH').querySelectorAll('td')].map((td) => td.className.split(' ')[0])
+    expect(cells[0]).toBe('el-name')
+    expect(cells[cells.length - 1]).toBe('el-flag')
+  })
+
+  it('RFCTRY.10 a code without a drawn flag shows its letters in the flag place, labelled with its name', async () => {
+    const { container } = await open()
+    const cell = rowOf(container, 'NEUTRAL').querySelector('td.el-flag') as HTMLElement
+    const code = cell.querySelector('.el-flagcode') as HTMLElement
+    expect(code.textContent).toBe('AIN')
+    expect(code.getAttribute('aria-label')).toBe('Indywidualni Sportowcy Neutralni')
+    expect(cell.querySelector('.flag')).toBeNull()
+  })
+
+  it('RFCTRY.11 „Kraj” is offered only when an entry has a country', async () => {
+    const a = await open()
+    expect(country(a.container)).not.toBeNull()
+    a.unmount()
+    const b = await open(ROWS)
+    expect(country(b.container)).toBeNull()
+  })
+
+  it('RFCTRY.12 its choices are the codes present, in code order, codes alone', async () => {
+    const { container } = await open()
+    expect([...country(container)!.options].map((o) => o.textContent?.trim())).toEqual(['--', 'AIN', 'GBR', 'GER', 'POL'])
+  })
+
+  it('RFCTRY.13 a code lists only its entries; entries without a country leave once one is chosen', async () => {
+    const { container } = await open()
+    expect(names(container)).toContain('NOWAK Piotr')
+    await fireEvent.change(country(container)!, { target: { value: 'GER' } })
+    expect(names(container)).toEqual(['MÜLLER Hans', 'SCHMIDT Eva'])
+  })
+
+  it('RFCTRY.14 it works with the search and every other filter', async () => {
+    const { container } = await open()
+    await fireEvent.change(country(container)!, { target: { value: 'GER' } })
+    await fireEvent.change(container.querySelector('select[name="genderFilter"]') as HTMLSelectElement, { target: { value: 'F' } })
+    expect(names(container)).toEqual(['SCHMIDT Eva'])
+    await fireEvent.change(container.querySelector('select[name="genderFilter"]') as HTMLSelectElement, { target: { value: '' } })
+    await fireEvent.change(container.querySelector('select[name="weaponFilter"]') as HTMLSelectElement, { target: { value: 'EPEE' } })
+    await fireEvent.change(container.querySelector('select[name="categoryFilter"]') as HTMLSelectElement, { target: { value: 'V2' } })
+    expect(names(container)).toEqual(['MÜLLER Hans'])
+    await fireEvent.change(container.querySelector('select[name="categoryFilter"]') as HTMLSelectElement, { target: { value: '' } })
+    await fireEvent.input(container.querySelector('input[name="search"]') as HTMLInputElement, { target: { value: 'schm' } })
+    expect(names(container)).toEqual(['SCHMIDT Eva'])
+  })
+
+  it('RFCTRY.15 it follows FR-165: tiles, frame, highlight and „Wyczyść filtry”', async () => {
+    const { container } = await open()
+    const sel = country(container)!
+    await fireEvent.change(sel, { target: { value: 'GER' } })
+    expect(container.querySelector('.el-metrics')?.classList.contains('el-narrowed')).toBe(true)
+    expect(container.querySelector('.el-metric .el-v')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('2 z 6')
+    expect(sel.classList.contains('el-active')).toBe(true)
+    await fireEvent.click(container.querySelector('.el-clear-all') as HTMLButtonElement)
+    expect(sel.value).toBe('')
+    expect(names(container).length).toBe(6)
+  })
+
+  it('RFCTRY.16 with „Kraj” the filters stand as four', async () => {
+    const { container } = await open()
+    const group = container.querySelector('.el-fgroup') as HTMLElement
+    expect(group.classList.contains('el-four')).toBe(true)
+    expect(group.querySelectorAll('select').length).toBe(4)
+  })
+
+  it('RFCTRY.17 without „Kraj” the three filters stand as before', async () => {
+    const { container } = await open(ROWS)
+    const group = container.querySelector('.el-fgroup') as HTMLElement
+    expect(group.classList.contains('el-four')).toBe(false)
+    expect(group.querySelectorAll('select').length).toBe(3)
+  })
+})

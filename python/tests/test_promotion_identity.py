@@ -242,6 +242,8 @@ class TestRosterAndRegistrations:
         )
         assert idn.diff(a, b).equal
         assert "txt_email_hash" not in idn.REGISTRATION_FIELDS
+        # RFCTRY.21 (FR-169): a country that differs between PROD and CERT is a change.
+        assert "txt_country" in idn.REGISTRATION_FIELDS
         assert "uuid_edit_token" not in idn.REGISTRATION_FIELDS
         c = idn.normalise_registrations([_registration("NOWAK", "Jan", 1975, ["EPEE"], club="AZS")])
         key = idn.Identity.of("NOWAK", "Jan", 1975)

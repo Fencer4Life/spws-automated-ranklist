@@ -1,0 +1,158 @@
+[
+ {
+  "name": "form__desktop__en__1-empty.png",
+  "size": "1280x1000",
+  "diff": 152040,
+  "box": [
+   297,
+   293,
+   983,
+   734
+  ]
+ },
+ {
+  "name": "form__desktop__en__2-typed.png",
+  "size": "1280x1000",
+  "diff": 152055,
+  "box": [
+   297,
+   293,
+   983,
+   734
+  ]
+ },
+ {
+  "name": "form__desktop__en__3-name-check.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__desktop__en__4-consent.png",
+  "size": "1280x1000",
+  "diff": 122415,
+  "box": [
+   297,
+   452,
+   983,
+   852
+  ]
+ },
+ {
+  "name": "form__desktop__pl__1-empty.png",
+  "size": "1280x1000",
+  "diff": 152266,
+  "box": [
+   297,
+   293,
+   983,
+   734
+  ]
+ },
+ {
+  "name": "form__desktop__pl__2-typed.png",
+  "size": "1280x1000",
+  "diff": 152281,
+  "box": [
+   297,
+   293,
+   983,
+   734
+  ]
+ },
+ {
+  "name": "form__desktop__pl__3-name-check.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__desktop__pl__4-consent.png",
+  "size": "1280x1000",
+  "diff": 132978,
+  "box": [
+   297,
+   452,
+   983,
+   888
+  ]
+ },
+ {
+  "name": "form__phone__en__1-empty.png",
+  "size": "375x812",
+  "diff": 57668,
+  "box": [
+   23,
+   417,
+   352,
+   812
+  ]
+ },
+ {
+  "name": "form__phone__en__2-typed.png",
+  "size": "375x812",
+  "diff": 57686,
+  "box": [
+   23,
+   417,
+   352,
+   812
+  ]
+ },
+ {
+  "name": "form__phone__en__3-name-check.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__phone__en__4-consent.png",
+  "size": "375x812",
+  "diff": 40609,
+  "box": [
+   23,
+   543,
+   352,
+   812
+  ]
+ },
+ {
+  "name": "form__phone__pl__1-empty.png",
+  "size": "375x812",
+  "diff": 58509,
+  "box": [
+   23,
+   417,
+   352,
+   812
+  ]
+ },
+ {
+  "name": "form__phone__pl__2-typed.png",
+  "size": "375x812",
+  "diff": 58525,
+  "box": [
+   23,
+   417,
+   352,
+   812
+  ]
+ },
+ {
+  "name": "form__phone__pl__3-name-check.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__phone__pl__4-consent.png",
+  "size": "375x812",
+  "diff": 31986,
+  "box": [
+   23,
+   613,
+   352,
+   812
+  ]
+ }
+]

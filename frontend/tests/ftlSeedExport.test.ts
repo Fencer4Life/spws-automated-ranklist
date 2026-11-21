@@ -586,3 +586,49 @@ describe('roster files', () => {
     expect(files.some((f) => f.kind === 'ROSTER')).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------------------
+// FR-169 — Nation comes from the entry (RFCTRY.24–26)
+// ---------------------------------------------------------------------------
+describe('FR-169 Nation from the entry (RFCTRY.24–26)', () => {
+  // The same literal is asserted in python/tests/test_ftl_seed_export.py.
+  const MIXED = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE BaseCompetitionIndividuelle>\n<BaseCompetitionIndividuelle Championnat="SPWS" ID="ID1" Arme="E" Sexe="M" Domaine="N" Federation="POL" Categorie="V" TitreLong="T" Date="" DateFichierXML="2026-11-21"><Tireurs><Tireur ID="1" Nom="MÜLLER (2)" Prenom="Hans" Sexe="M" Club="" Nation="GER" Licence="" Statut="N" Classement="1" /><Tireur ID="2" Nom="NOWAK (2)" Prenom="Piotr" Sexe="M" Club="" Nation="POL" Licence="" Statut="N" Classement="2" /></Tireurs></BaseCompetitionIndividuelle>'
+
+  it('RFCTRY.24 a foreign entrant\'s Nation is the entry\'s code, end to end', () => {
+    const rows: ExportEntryRow[] = [
+      { txt_surname: 'MÜLLER', txt_first_name: 'Hans', enum_gender: 'M', enum_age_category: 'V2', enum_weapon: 'EPEE', int_order: 1, int_rank: null, txt_country: 'GER' },
+    ]
+    const files = buildEventSeedFiles(rows, 'PPW1-2026-2027', '2026-11-21')
+    expect(files.length).toBeGreaterThan(0)
+    for (const f of files) expect(f.xml).toContain('Nom="MÜLLER (2)" Prenom="Hans" Sexe="M" Club="" Nation="GER"')
+  })
+
+  it('RFCTRY.25 an entry without a country writes POL: the files match a fixture with no country field at all', () => {
+    const base: ExportEntryRow = { txt_surname: 'NOWAK', txt_first_name: 'Piotr', enum_gender: 'M', enum_age_category: 'V2', enum_weapon: 'EPEE', int_order: 1, int_rank: null }
+    const before = buildEventSeedFiles([base], 'PPW1-2026-2027', '2026-11-21')
+    const after = buildEventSeedFiles([{ ...base, txt_country: null }], 'PPW1-2026-2027', '2026-11-21')
+    const polish = buildEventSeedFiles([{ ...base, txt_country: 'POL' }], 'PPW1-2026-2027', '2026-11-21')
+    expect(after.map((f) => f.xml)).toEqual(before.map((f) => f.xml))
+    expect(polish.map((f) => f.xml)).toEqual(before.map((f) => f.xml))
+    for (const f of before) expect(f.xml).toContain('Federation="POL"')
+  })
+
+  it('RFCTRY.26 the XML for a mixed list matches the Python exporter byte for byte', () => {
+    const xml = buildFieXml({
+      rootId: 'ID1', weaponCode: 'E', genderCode: 'M', title: 'T', dateFichierXml: '2026-11-21',
+      tireurs: [
+        { id: 1, nom: 'MÜLLER (2)', prenom: 'Hans', sexe: 'M', classement: 1, nation: 'GER' },
+        { id: 2, nom: 'NOWAK (2)', prenom: 'Piotr', sexe: 'M', classement: 2 },
+      ],
+    })
+    expect(xml).toBe(MIXED)
+  })
+
+  it('RFCTRY.26 the nation travels from the seed entry to the Tireur', () => {
+    const tireurs = mixallTireurs([
+      [{ idx: 1, surname: 'MÜLLER', firstName: 'Hans', rank: null, nation: 'GER' }, 'MV2'],
+      [{ idx: 2, surname: 'NOWAK', firstName: 'Piotr', rank: null }, 'MV2'],
+    ])
+    expect(tireurs.map((x) => x.nation ?? null)).toEqual(['GER', null])
+  })
+})

@@ -75,6 +75,8 @@ class FencerEntry:
     # Ranking points, None when the fencer holds none. Orders the entries
     # INSIDE a tier (2026-09-26); the tier itself is still decided by `rank`.
     points: float | None = None
+    # FR-169: the entry's declared fencing code; None writes POL.
+    nation: str | None = None
 
 
 @dataclass
@@ -377,7 +379,9 @@ def build_fie_xml(
                 # FIE reference files carry it — and is empty, exactly as it was
                 # before ADR-080 amendment (f) added the field.
                 "Club": "",
-                "Nation": "POL",
+                # FR-169: the entry's declared country; POL when it has none, so
+                # the files of Polish entrants do not change by one byte.
+                "Nation": t.get("nation") or "POL",
                 "Licence": "",
                 "Statut": "N",
                 "Classement": str(t["classement"]),
@@ -489,6 +493,7 @@ def assemble_mixall_subrankings(
                 *to_canonical_name(reg["txt_surname"], reg["txt_first_name"]),
                 rank=_true_rank(reg),
                 points=_points(reg),
+                nation=reg.get("txt_country"),
             )
             for reg in ordered
         ]
@@ -525,6 +530,9 @@ def mixall_tireurs(
                     "prenom": entry.first_name,
                     "sexe": key[0],
                     "classement": seed,
+                    # FR-169: only an entry with a country carries one, so a
+                    # record without stays exactly as before.
+                    **({"nation": entry.nation} if entry.nation else {}),
                 },
             )
         )

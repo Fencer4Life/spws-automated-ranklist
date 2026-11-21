@@ -79,6 +79,8 @@ describe('createRegistration (FR-122, sole public write path)', () => {
       p_edit_token: null,
       // Declared club (2026-09-13, ADR-080 amendment (f)). Optional.
       p_club: null,
+      // Declared country (FR-169). Optional: an old caller stores none.
+      p_country: null,
     })
     expect(id).toBe(7)
   })
@@ -117,6 +119,14 @@ describe('createRegistration (FR-122, sole public write path)', () => {
       'fn_create_registration',
       expect.objectContaining({ p_consent_version: 'v1.0' }),
     )
+  })
+
+  it('RFCTRY.04 forwards the declared country as p_country, and none as null', async () => {
+    mockRpc.mockResolvedValue({ data: 9, error: null })
+    await createRegistration({ eventId: 3, surname: 'A', firstName: 'B', gender: 'F', birthYear: 1980, weapons: ['FOIL'], country: 'GER' })
+    expect(mockRpc).toHaveBeenLastCalledWith('fn_create_registration', expect.objectContaining({ p_country: 'GER' }))
+    await createRegistration({ eventId: 3, surname: 'A', firstName: 'B', gender: 'F', birthYear: 1980, weapons: ['FOIL'] })
+    expect(mockRpc).toHaveBeenLastCalledWith('fn_create_registration', expect.objectContaining({ p_country: null }))
   })
 
   it('throws on RPC error', async () => {

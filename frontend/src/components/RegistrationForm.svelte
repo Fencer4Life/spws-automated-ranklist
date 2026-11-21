@@ -76,6 +76,10 @@
       </div>
     </div>
 
+    <div class="reg-fld">
+      <CountryPicker bind:code={country} />
+    </div>
+
     <p class="reg-lbl reg-weapon-heading">{t('reg_weapon_choose')}</p>
     <div class="reg-grid3">
       {#each (['EPEE', 'FOIL', 'SABRE'] as const) as w}
@@ -203,9 +207,11 @@
       <div class="reg-brow"><span>{t('reg_rodo_basis_weapon')}</span><span class="reg-basis">{t('reg_rodo_basis_weapon_law')}</span></div>
       <div class="reg-brow"><span>{t('reg_rodo_basis_email')}</span><span class="reg-basis">{t('reg_rodo_basis_email_law')}</span></div>
       <div class="reg-brow"><span>{t('reg_rodo_basis_club')}</span><span class="reg-basis">{t('reg_rodo_basis_club_law')}</span></div>
+      <div class="reg-brow"><span>{t('reg_rodo_basis_country')}</span><span class="reg-basis">{t('reg_rodo_basis_country_law')}</span></div>
     </div>
     <p class="reg-muted">{t('reg_rodo_retention_note')}</p>
     <p class="reg-muted">{t('reg_rodo_by_note')}</p>
+    <p class="reg-muted">{t('reg_rodo_country_note')}</p>
     <p class="reg-lbl">{t('reg_rodo_rights_title')}</p>
     <div class="reg-rights">
       <span class="reg-rchip">{t('reg_rodo_right_access')}</span>
@@ -279,6 +285,8 @@
   import { birthYearToVcat } from '../lib/birthYearEstimate'
   import { birthYearRange, inRange, isYearRefusal } from '../lib/birthYearRange'
   import YearPicker from './YearPicker.svelte'
+  import CountryPicker from './CountryPicker.svelte'
+  import { DEFAULT_COUNTRY } from '../lib/fencingCountries'
   import { WEAPON_PL } from '../lib/orgPayment'
   import type {
     RegistrationEventInfo,
@@ -291,7 +299,8 @@
   // v1.1 (2026-09-13, ADR-079 open item 2): the club field is now actually
   // stored, which reverses what v1.0's RODO text told the fencer about it —
   // a genuine text change, not a silent schema addition.
-  const CONSENT_VERSION = 'v1.1'
+  // v1.2 (FR-169, D3): the consent screen names the country as a public detail.
+  const CONSENT_VERSION = 'v1.2'
 
   let {
     eventCode = '',
@@ -338,6 +347,8 @@
   // public entry list and the FTL seed file — so it is declared, not guessed.
   let gender = $state<GenderType | ''>('')
   let birthYear = $state<number | null>(null)
+  // FR-169: the declared fencing country, „Polska” pre-chosen (Q4 B).
+  let country = $state(DEFAULT_COUNTRY)
   let weapons = $state<WeaponType[]>([])
   let club = $state('')
   let fencerId = $state<number | null>(null)
@@ -777,6 +788,7 @@
         birthYear: birthYear as number,
         weapons,
         club: club.trim() || null,
+        country,
       })
       step = 'payment'
     } catch (e) {
@@ -816,6 +828,7 @@
         consentVersion: CONSENT_VERSION,
         editToken: token,
         club: club.trim() || null,
+        country,
       })
       registrationId = id
       editToken = token
