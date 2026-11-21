@@ -90,7 +90,10 @@ tests (`scripts/run_local_integration.py`, which fails on a skip),
 the graph's `.svelte` premise under graphify's own interpreter
 (`scripts/graphify-python.sh scripts/graphify_svelte_extract.py --check-premise`),
 and the two checks `integrate-agent-branch.sh` enforces: `git diff --check` and
-"branch, merge and release named" (above).
+"branch, merge and release named" (above). The whitespace check
+(`scripts/check-diff-whitespace.sh`) covers the commits and the staged, unstaged
+and new files they will carry, so a preflight run before the commit already
+covers it (I24).
 
 Still owed separately, because they are per-change rather than global:
 

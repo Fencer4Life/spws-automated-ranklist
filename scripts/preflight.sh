@@ -140,8 +140,10 @@ if [[ $CI_ONLY -eq 0 ]]; then
   # interpreter and fails when the interpreter is missing.
   gate "graphify svelte premise (AGENTS)" bash scripts/graphify-python.sh scripts/graphify_svelte_extract.py --check-premise
   # Trailing whitespace blocks scripts/integrate-agent-branch.sh, which runs
-  # `git diff --check` before it will merge a task branch.
-  gate "git diff --check (integrate)" bash -c 'git fetch origin main -q 2>/dev/null; git diff --check origin/main...HEAD'
+  # `git diff --check` on the branch's commits before it will merge it. Preflight
+  # runs before the commit, so it checks the commits AND the staged, unstaged and
+  # new files the commit will carry (I24).
+  gate "git diff --check (integrate)" bash -c 'git fetch origin main -q 2>/dev/null; scripts/check-diff-whitespace.sh origin/main'
   # The branch's name and description become main's merge title and explanation,
   # and GitHub titles the CI and Release runs with it; scripts/integrate-agent-
   # branch.sh refuses a branch this check fails. The check prints those titles.
