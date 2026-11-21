@@ -1,29 +1,31 @@
 {
   "version": "0.1.0",
-  "sha": "8c29d999839cbe44746e5ed31c99ddbb80468e17",
-  "created": "2026-11-21T16:20:30Z",
-  "schema_fingerprint": "47fe41b1b6d33654640e3cf45624700a",
+  "sha": "51d031814122ed6ee66ec13c5525c4d24b16ed9b",
+  "created": "2026-11-21T17:27:39Z",
+  "schema_fingerprint": "32426e20dc5baa921467cdc541fb0fb1",
   "migrations": {
-    "total": 238,
-    "new_since_last": []
+    "total": 239,
+    "new_since_last": [
+      "20261121000003_registration_birth_year_range.sql"
+    ]
   },
   "tests": {
     "pgtap": {
-      "files": 131,
-      "assertions": 1693
+      "files": 132,
+      "assertions": 1708
     },
     "pytest": {
       "files": 180
     },
     "vitest": {
-      "files": 76
+      "files": 77
     }
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-21T16:20:31Z",
-      "sha": "8c29d999839cbe44746e5ed31c99ddbb80468e17",
-      "schema_fingerprint": "47fe41b1b6d33654640e3cf45624700a"
+      "at": "2026-11-21T17:27:40Z",
+      "sha": "51d031814122ed6ee66ec13c5525c4d24b16ed9b",
+      "schema_fingerprint": "32426e20dc5baa921467cdc541fb0fb1"
     },
     "prod": {
       "at": "2026-11-21T16:21:43Z",
