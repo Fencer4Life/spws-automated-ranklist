@@ -330,7 +330,7 @@ The previous amendment put the past-season pass in the daily close, which runs e
 
 ## Amendment (2026-11-21, I21) — preflight checks the override files against CERT as well as LOCAL
 
-**Status:** Signed by the user in chat on 2026-11-21 ("All as recommended": Q1 A, Q2 A, Q3 A) on `doc/plans/i21-preflight-checks-overrides-against-cert-2026-11-21.html`. Built test-first.
+**Status:** Signed by the user in chat on 2026-11-21 ("All as recommended": Q1 A, Q2 A, Q3 A) on `doc/plans/i21-preflight-checks-overrides-against-cert-2026-11-21.html`. Built test-first, and released to CERT and PROD on 2026-11-21 (main `8c29d999`, CI run 44923641740, Release run 44923812729; no migration).
 
 **Context.** G43 A checks the override files against LOCAL's roster in preflight and CERT's in CI, on the premise that the two hold the same roster. They differ whenever a fencer is corrected on CERT and PROD and the LOCAL seed has not been exported since, which is the normal way a roster is corrected. On 21 Nov 2026 fencer 164's birth year was corrected from 1971 to 1972 on CERT and PROD; the identity entry of `doc/overrides/PEW4efs-2025-2026.yaml` still named 1971. Preflight passed on LOCAL's older roster, under a gate named „override files name the roster (CI: CERT)”, and CI failed on main `7615b2fd`, skipping its Release; main `1918b0ed` corrected the key, LOCAL and the seed record.
 

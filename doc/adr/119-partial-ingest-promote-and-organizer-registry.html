@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="119-partial-ingest-promote-and-organizer-registry.md">
-<meta name="adr-source-sha256" content="2e714f90ae39e241ecf71a77b7b3124ddb248ef1f4315669052e34e905df3b80">
+<meta name="adr-source-sha256" content="e1ab77b0a618030b97823ee1ab3bbdb6d62074aa375dbebe952d1c29be8b8ef9">
 <title>ADR-119 · Partial Ingest and Promote — Only Final Brackets, One Organizer Registry, One Engine Contract</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -360,7 +360,7 @@
 </ul>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-11-21-i21-preflight-checks-the-override-files-against-cert-as-well-as-local">Amendment (2026-11-21, I21) — preflight checks the override files against CERT as well as LOCAL</h2>
-<p><strong>Status:</strong> Signed by the user in chat on 2026-11-21 (&quot;All as recommended&quot;: Q1 A, Q2 A, Q3 A) on <code>doc/plans/i21-preflight-checks-overrides-against-cert-2026-11-21.html</code>. Built test-first.</p>
+<p><strong>Status:</strong> Signed by the user in chat on 2026-11-21 (&quot;All as recommended&quot;: Q1 A, Q2 A, Q3 A) on <code>doc/plans/i21-preflight-checks-overrides-against-cert-2026-11-21.html</code>. Built test-first, and released to CERT and PROD on 2026-11-21 (main <code>8c29d999</code>, CI run 44923641740, Release run 44923812729; no migration).</p>
 <p><strong>Context.</strong> G43 A checks the override files against LOCAL's roster in preflight and CERT's in CI, on the premise that the two hold the same roster. They differ whenever a fencer is corrected on CERT and PROD and the LOCAL seed has not been exported since, which is the normal way a roster is corrected. On 21 Nov 2026 fencer 164's birth year was corrected from 1971 to 1972 on CERT and PROD; the identity entry of <code>doc/overrides/PEW4efs-2025-2026.yaml</code> still named 1971. Preflight passed on LOCAL's older roster, under a gate named „override files name the roster (CI: CERT)”, and CI failed on main <code>7615b2fd</code>, skipping its Release; main <code>1918b0ed</code> corrected the key, LOCAL and the seed record.</p>
 <p><strong>Decision.</strong></p>
 <ol>
@@ -372,5 +372,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="118-event-details-cert-to-prod-scraper-contract.html">← ADR-118: Event Details Written on CERT Reach PROD, and Every Calendar Scraper Writes Them Under One Contract</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="120-ftl-read-cap-and-reused-session.html">→ ADR-120: FencingTimeLive Is Read Under a Daily Cap, With One Reused Session and a Name</a></nav>
-<footer class="foot">Generated from <code>119-partial-ingest-promote-and-organizer-registry.md</code> · source SHA-256 <code>2e714f90ae39e241ecf71a77b7b3124ddb248ef1f4315669052e34e905df3b80</code></footer>
+<footer class="foot">Generated from <code>119-partial-ingest-promote-and-organizer-registry.md</code> · source SHA-256 <code>e1ab77b0a618030b97823ee1ab3bbdb6d62074aa375dbebe952d1c29be8b8ef9</code></footer>
 </div></body></html>
