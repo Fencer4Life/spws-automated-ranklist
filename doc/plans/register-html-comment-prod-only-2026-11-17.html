@@ -1,0 +1,226 @@
+<meta charset="utf-8">
+<title>Correct the register.html comment: the public page reads PROD only</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Frontend · register.html · Plan · issue I6 from the entry-list release</p>
+  <h1>Correct the comment on which database the public page reads</h1>
+  <p class="dek">A comment in <code>frontend/register.html</code> says the release fills <b>both</b> the CERT and PROD addresses and that the page picks CERT first. The release fills <b>only PROD</b>, on purpose. The comment misled the live check of the entry-list release on 17 Nov. This plan corrects four comment lines and nothing else.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting your sign-off</span>
+    <span class="pill">1 file · comment only</span>
+    <span class="pill">no behaviour, data or workflow change</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Verified in the source</p>
+    <h2>What is wrong, and what is true</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">✗</span> <code>frontend/register.html</code>, lines 28–31 today</p>
+      <pre class="trace">&lt;!-- local: cert points to local Supabase, prod empty (mirrors index.html).
+     cloud: <b>GH Actions sed fills both cert+prod with cloud credentials</b> —
+     RegistrationElement/EntryListElement pick cert first, else prod (no
+     runtime env toggle is exposed on this public page, ADR-079 §6). --&gt;</pre>
+    </div>
+    <ul>
+      <li><b>The release fills only PROD.</b> <code>.github/workflows/release.yml</code> lines 147–150 blank <code>supabase-cert-url</code> and <code>supabase-cert-key</code> and write PROD's pair, under a comment (lines 135–146) that explains why: the elements resolve <code>(certUrl || prodUrl)</code>, so a filled CERT pair would send every real registration to CERT.</li>
+      <li><b>The deployed page confirms it.</b> On 17 Nov the live <code>register.html</code> on GitHub Pages carried <code>supabase-cert-url=""</code> and PROD's address.</li>
+      <li><b>The rest of the comment is true:</b> the LOCAL values, the cert-first rule in the elements, and ADR-079 §6 (no environment toggle on this page).</li>
+      <li><b><code>frontend/index.html</code> line 10 is not wrong:</b> for that page the release does fill both pairs (lines 123–126), and it has the admin toggle. It stays as it is.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The change</p>
+    <h2>The corrected comment</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> <code>frontend/register.html</code>, after</p>
+      <pre class="trace" style="border-left-color:var(--good)">&lt;!-- local: cert points to local Supabase, prod empty (mirrors index.html).
+     cloud: the release (release.yml) blanks the cert pair and fills only the
+     prod pair, so the deployed page reads PROD. RegistrationElement and
+     EntryListElement pick cert first, else prod, which is why: a filled cert
+     pair would silently send every real registration to CERT. No runtime
+     env toggle is exposed on this public page (ADR-079 §6). --&gt;</pre>
+    </div>
+    <p>Nothing else in the file changes. The attribute values below the comment stay as committed.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Test-first, honestly</p>
+    <h2>Why there is no new test, and what proves no harm</h2>
+    <p>An HTML comment has no behaviour to put under test, so there is no red to see first. A test that greps for the comment's wording would pin prose, not behaviour; the behaviour itself (PROD only on the deployed page) is already fixed by the release step and was observed live on 17 Nov. What this plan proves instead:</p>
+    <ol class="steps">
+      <li><b>The built page does not change:</b> the CE build (<code>vite build --config vite.config.ce.ts</code>) of the branch start and of the change, compared file by file. Expected: the bundle <code>assets/main.ce.js</code> and <code>index.ce.html</code> byte-identical; <code>register.html</code> differing only inside the comment, if the build keeps comments at all.</li>
+      <li><b><code>scripts/preflight.sh</code> exits 0.</b></li>
+    </ol>
+    <p>No pixel sheet: a comment is never drawn, and step 1 proves the shipped files are unchanged.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Steps</p>
+    <h2>The build and release</h2>
+    <ol class="steps">
+      <li>A new branch <code>claude/register-html-comment-prod-only</code> from <code>origin/main</code>, in this session's worktree. Its description, which only you can set, is in my chat message.</li>
+      <li>The comment edit; the build comparison of step 03.1.</li>
+      <li><code>scripts/refresh-graph.sh</code>, <code>python3 tools/docs-search/ingest.py</code>; one commit, authored as Fencer4Life, together with this plan page and the entry-list plan's release record.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>Release only on your go: integration checkout, <code>integration/main:main</code>, CI and Release watched in the foreground.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Parity</p>
+    <h2>LOCAL, CERT and PROD</h2>
+    <p>Unchanged everywhere. No code path, attribute value, workflow, secret or database is touched; LOCAL keeps its committed CERT-address values exactly as now.</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Required in every plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--accent)">Impact: none — a source comment is corrected to match release.yml
+Canonical docs affected: none — inspected: doc/handbook/reference/registration-lifecycle.html,
+  doc/handbook/operations/environments-and-release.html and ADR-079 make no
+  claim that the public page reads CERT (searched for "cert first", "fills both")
+ADR impact: none
+Operational impact: none
+Source-map / last-verified updated: not applicable
+Validation: python scripts/check_docs.py --changed-from origin/main [to run]
+Superseded prose archived rather than appended: not applicable</pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Binary</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>The comment reads as in §02; nothing else in the file differs.</li>
+      <li>The CE build comparison shows the bundle unchanged.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>After your go: CI and Release green.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · register-html-comment-prod-only · 17 Nov 2026 · rev 1 · no code written</p>
+</div>
