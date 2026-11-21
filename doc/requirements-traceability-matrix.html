@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="72f8ac4aa59af73a2c4617ce51436e0d8f2fc2dd93a6943e4afeacec64467f8e">
+<meta name="doc-source-sha256" content="d2507629b01ef6ea9dca3a94a15e00a5387950db2c676532229ed955cfbc8b5a">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -4624,14 +4624,14 @@
 <td>CI runs the gate against CERT in a job of its own, the only one holding the token, whose last step writes its summary and tells Telegram unless the gate passed; preflight runs it against LOCAL and against CERT, each gate named for the roster it reads (amended 2026-11-21, I21).</td>
 <td>pytest</td>
 <td><code>python/tests/test_override_drift.py</code></td>
-<td>Implemented (I21 amendment, awaiting release; first released 2026-11-01, main af30c76d)</td>
+<td>Covered (amended by I21, released 2026-11-21, main 8c29d999; first released 2026-11-01, main af30c76d)</td>
 </tr>
 <tr>
 <td>OVR.DRIFT.08</td>
 <td><code>--fast</code> keeps both override gates, and a roster that cannot be read (a database error, the network, a missing container) fails the gate with one line naming the roster and the reason, never a fencer (exit 2).</td>
 <td>pytest</td>
 <td><code>python/tests/test_override_drift.py</code></td>
-<td>Implemented (I21, awaiting release)</td>
+<td>Covered (released 2026-11-21, main 8c29d999)</td>
 </tr>
 <tr>
 <td>EXCLUDED.01</td>
@@ -5919,5 +5919,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>72f8ac4aa59af73a2c4617ce51436e0d8f2fc2dd93a6943e4afeacec64467f8e</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>d2507629b01ef6ea9dca3a94a15e00a5387950db2c676532229ed955cfbc8b5a</code></footer>
 </div></body></html>
