@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="cace339445badc0a116c1aa4ceb13b65bbc85ffe23dada7248b3d0f098893508">
+<meta name="doc-source-sha256" content="f41b87ae8825423e0a01b0937d470edfc22760b67befdde415a7d5488c73a398">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1147,7 +1147,7 @@
 <td><strong>A fencer declares a country, shown as a flag and filtered by code.</strong> The form offers a pick-list of fencing codes, never free text, with „Polska” pre-chosen; it searches by the Polish name, the English name or the three-letter code, and stores the code (POL, GER, GBR, SUI …) on the entry. One reviewed table pairs each fencing code with the two-letter code the flags use; country names come from the browser. On the entry list each line ends with the country's flag alone, 18 px, labelled with the country's name; a code with no drawn flag shows its three letters in small type in the flag's place (D1); an entry without a country shows nothing there, and a list where no entry has a country looks as before. A „Kraj” filter, offered only when an entry has a country, lists the codes present, in code order, and works with the search and the other filters (FR-165); four filters in one row on a desktop, two rows of two on a phone. The organizer's files write each entrant's <code>Nation</code> from the entry, POL when it has none, so files for Polish entrants do not change by one byte. The consent screen names the country as a public detail, version v1.2 (D3). Entries made before the release keep no country until an administrator sets one; the fencer master data and ranking nationality (ADR-106) are not touched. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 3).</td>
 <td>ADR-079, ADR-080, ADR-078, FR-120, FR-122, FR-123, FR-165</td>
 <td>RFCTRY.01–27</td>
-<td>Implemented (release 3 of 4; sheet approved 2026-11-21, awaiting release)</td>
+<td>Covered (release 3 of 4 released 2026-11-21, main 714dec5b, CERT + PROD; release 4 planned)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -6010,7 +6010,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</h2>
-<p>FR-169. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 3 of 4; D1 A, D3 as drawn); IDs registered before any code. RFCTRY.27 names the consent screen the plan describes in §05. Before/after pixel sheet and LOCAL walk-through approved 2026-11-21 (<code>doc/plans/registration-country-release-3-pixel-sheet-2026-11-21.html</code>), with the ADR-079 and ADR-080 amendments of that date (release 3).</p>
+<p>FR-169. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 3 of 4; D1 A, D3 as drawn); IDs registered before any code. RFCTRY.27 names the consent screen the plan describes in §05. Before/after pixel sheet and LOCAL walk-through approved 2026-11-21 (<code>doc/plans/registration-country-release-3-pixel-sheet-2026-11-21.html</code>), with the ADR-079 and ADR-080 amendments of that date (release 3). Released 2026-11-21 as main 714dec5b: CI run 44948562631 passed first time, and Release run 44948713143 deployed CERT and PROD (migrations <code>20261121000004</code> and <code>20261121000005</code> in <code>deployed_migrations.json</code>). CERT and PROD checked read-only the same day: <code>tbl_fencing_country</code> holds 207 codes, 2 without a flag; <code>fn_create_registration</code> and <code>fn_update_registration</code> each exist once, taking <code>p_country</code>; the entry-list view and <code>fn_ftl_export_entries</code> carry <code>txt_country</code>; visitors read the list but not the code table; the column refers to the code table; every stored entry (PROD 196, CERT 90) keeps no country. The served bundle carries the country box, the flag column, the „Kraj” filter and consent <code>v1.2</code>.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -6027,189 +6027,189 @@
 <td>The code table: every code is three capital letters and unique, and the table equals the database's list of codes.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/fencingCountries.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.02</td>
 <td>The differing pairs are right (GER→DE, SUI→CH, NED→NL, CRO→HR, DEN→DK, POR→PT, RSA→ZA, SLO→SI, BUL→BG, LAT→LV, GRE→GR, IRI→IR …), and every code paired with a flag has a drawn flag.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/fencingCountries.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.03</td>
 <td>The codes without a drawn flag are listed (AIN, TPE) and carry their own Polish and English names; every other name comes from the browser in the page's language.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/fencingCountries.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.04</td>
 <td>The form opens with „Polska POL” chosen, and an entrant who does not touch the box is submitted as POL.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.05</td>
 <td>The picker finds a country by Polish name, English name or code, folding accents and case („wiel”, „brit”, „gbr” → Wielka Brytania GBR); a pick sets the code; typed text that names no country is never submitted.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/CountryPicker.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.06</td>
 <td>Each line of the entry list ends with the flag alone, no code text, labelled with the country's name in the page's language.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.07</td>
 <td>An entry without a country shows nothing in that place.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.08</td>
 <td>A list where no entry has a country keeps no room for a flag and renders as before.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.09</td>
 <td>A long name still shortens with „…” on a phone and the flag never wraps.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.10</td>
 <td>D1: a code without a drawn flag shows its three letters in small type in the flag's place, labelled with its name.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.11</td>
 <td>The „Kraj” filter is offered only when an entry in the list has a country.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.12</td>
 <td>Its choices are the codes present in the list, in code order, codes alone.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.13</td>
 <td>Choosing a code lists only entries with that code; entries without a country are listed while no code is chosen and left out once one is.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.14</td>
 <td>It combines with the search and each other filter: an entry is listed only when it passes all of them.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.15</td>
 <td>It follows FR-165: the tiles read „selection z total” and are framed, the chosen filter is highlighted, and „Wyczyść filtry” empties it.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.16</td>
 <td>With „Kraj”, the filters stand four in one row on a desktop and two rows of two on a phone.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.17</td>
 <td>Without „Kraj”, the three filters stand in one row as before.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.18</td>
 <td><code>tbl_registration.txt_country</code> holds a code of <code>tbl_fencing_country</code> or nothing; an unknown code is refused.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/132_registration_country.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.19</td>
 <td><code>fn_create_registration</code> stores the country it is given; an old call without it still works and stores none.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/132_registration_country.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.20</td>
 <td><code>fn_update_registration</code> stores the country it is given; an old call without it keeps the stored one.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/132_registration_country.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.21</td>
 <td>The PROD → CERT copy carries the country (<code>fn_replace_event_registrations</code>, <code>promotion/refresh.py</code>).</td>
 <td>pgTAP, pytest</td>
 <td><code>supabase/tests/132_registration_country.sql</code>, <code>python/tests/test_promotion_refresh.py</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.22</td>
 <td>The public entry list shows the country and still no birth year or club.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/132_registration_country.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.23</td>
 <td>The organizer's export (<code>fn_ftl_export_entries</code>) returns the country.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/132_registration_country.sql</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.24</td>
 <td>In the organizer's files a foreign entrant's <code>Nation</code> is the entry's code.</td>
 <td>Vitest, pytest</td>
 <td><code>frontend/tests/ftlSeedExport.test.ts</code>, <code>python/tests/test_ftl_seed_export.py</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.25</td>
 <td>An entry without a country writes POL: a fixture of Polish entrants gives files byte-identical to today's; the file's own <code>Federation</code> stays POL.</td>
 <td>Vitest, pytest</td>
 <td><code>frontend/tests/ftlSeedExport.test.ts</code>, <code>python/tests/test_ftl_seed_export.py</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.26</td>
 <td>TypeScript and Python write the same <code>Nation</code> for the same entries, byte for byte.</td>
 <td>Vitest, pytest</td>
 <td><code>frontend/tests/ftlSeedExport.test.ts</code>, <code>python/tests/test_ftl_seed_export.py</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 <tr>
 <td>RFCTRY.27</td>
 <td>D3: the consent screen lists „Kraj — lista zgłoszonych i pliki startowe” and says the country is public on the entry list, in Polish and English, and a new entry records consent version v1.2.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented</td>
+<td>Released (2026-11-21, main 714dec5b)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6224,5 +6224,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>cace339445badc0a116c1aa4ceb13b65bbc85ffe23dada7248b3d0f098893508</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>f41b87ae8825423e0a01b0937d470edfc22760b67befdde415a7d5488c73a398</code></footer>
 </div></body></html>
