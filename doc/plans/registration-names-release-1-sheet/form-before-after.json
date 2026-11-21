@@ -1,0 +1,94 @@
+[
+ {
+  "name": "form__desktop__en__1-empty.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__desktop__en__2-typed.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__desktop__en__3-name-check.png",
+  "size": "1280x1000",
+  "diff": 8172,
+  "box": [
+   472,
+   246,
+   959,
+   286
+  ]
+ },
+ {
+  "name": "form__desktop__pl__1-empty.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__desktop__pl__2-typed.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__desktop__pl__3-name-check.png",
+  "size": "1280x1000",
+  "diff": 7472,
+  "box": [
+   514,
+   246,
+   959,
+   286
+  ]
+ },
+ {
+  "name": "form__phone__en__1-empty.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__phone__en__2-typed.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__phone__en__3-name-check.png",
+  "size": "375x812",
+  "diff": 6203,
+  "box": [
+   34,
+   276,
+   351,
+   316
+  ]
+ },
+ {
+  "name": "form__phone__pl__1-empty.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__phone__pl__2-typed.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "form__phone__pl__3-name-check.png",
+  "size": "375x812",
+  "diff": 5577,
+  "box": [
+   56,
+   276,
+   351,
+   316
+  ]
+ }
+]

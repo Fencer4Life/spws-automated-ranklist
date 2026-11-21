@@ -64,13 +64,10 @@ def fetch_evf(client: EvfApiClient, country: str) -> list[dict[str, Any]]:
     for wid, (weapon, gender) in EVF_WEAPONS.items():
         for cid, cat in EVF_CATEGORIES.items():
             try:
-                data = client._post(  # noqa: SLF001 - the client exposes no public helper
-                    "/ranking/list", model={"category_id": str(cid), "weapon_id": wid}
-                )
+                results = client.get_ranking_list(wid, cid)
             except RuntimeError as exc:
                 print(f"  EVF {weapon}/{gender}/{cat}: {exc}", file=sys.stderr)
                 continue
-            results = (data.get("data") or {}).get("results") or []
             total = len(results)
             mine = [r for r in results if str(r.get("country") or "").upper() == country.upper()]
             rows.extend(_merge_duplicates(mine, results, weapon, gender, cat, total))

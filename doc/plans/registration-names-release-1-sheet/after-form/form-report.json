@@ -1,0 +1,90 @@
+[
+  {
+    "tag": "form__desktop__pl",
+    "buttons": [
+      "Tak, zgadza się",
+      "Zamień imię i nazwisko",
+      "Popraw"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "title": {
+      "surname": "Dr. KOVÁCS",
+      "first": "Péter"
+    },
+    "reversed": {
+      "heading": "Czy pola nie są zamienione?",
+      "name": "ZZBELLANDI Annalisa",
+      "buttons": [
+        "Tak, zamień",
+        "Zostaw, jak wpisałem"
+      ]
+    },
+    "errors": []
+  },
+  {
+    "tag": "form__desktop__en",
+    "buttons": [
+      "Yes, that's correct",
+      "Swap first and last name",
+      "Correct it"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "title": {
+      "surname": "Dr. KOVÁCS",
+      "first": "Péter"
+    },
+    "reversed": {
+      "heading": "Are the two fields reversed?",
+      "name": "ZZBELLANDI Annalisa",
+      "buttons": [
+        "Yes, swap them",
+        "Leave it as I entered it"
+      ]
+    },
+    "errors": []
+  },
+  {
+    "tag": "form__phone__pl",
+    "buttons": [
+      "Tak, zgadza się",
+      "Zamień imię i nazwisko",
+      "Popraw"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "title": {
+      "surname": "Dr. KOVÁCS",
+      "first": "Péter"
+    },
+    "reversed": {
+      "heading": "Czy pola nie są zamienione?",
+      "name": "ZZBELLANDI Annalisa",
+      "buttons": [
+        "Tak, zamień",
+        "Zostaw, jak wpisałem"
+      ]
+    },
+    "errors": []
+  },
+  {
+    "tag": "form__phone__en",
+    "buttons": [
+      "Yes, that's correct",
+      "Swap first and last name",
+      "Correct it"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "title": {
+      "surname": "Dr. KOVÁCS",
+      "first": "Péter"
+    },
+    "reversed": {
+      "heading": "Are the two fields reversed?",
+      "name": "ZZBELLANDI Annalisa",
+      "buttons": [
+        "Yes, swap them",
+        "Leave it as I entered it"
+      ]
+    },
+    "errors": []
+  }
+]

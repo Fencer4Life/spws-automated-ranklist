@@ -151,6 +151,7 @@
   import LangToggle from './LangToggle.svelte'
   import { fetchEntryList, deleteRegistration } from '../lib/api'
   import { foldName } from '../lib/foldName'
+  import { surnameWithoutTitle } from '../lib/registrationName'
   import type { RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
 
   let {
@@ -215,9 +216,11 @@
   // both names.
   $effect(() => {
     fetchEntryList(eventId).then((r) => {
+      // FR-167: a title is not part of the surname — „Dr. KOVÁCS” stands
+      // under K, not D.
       rows = [...r].sort(
         (a, b) =>
-          byName.compare(a.txt_surname, b.txt_surname) ||
+          byName.compare(surnameWithoutTitle(a.txt_surname), surnameWithoutTitle(b.txt_surname)) ||
           byName.compare(a.txt_first_name, b.txt_first_name),
       )
     })
@@ -228,7 +231,7 @@
   const filteredRows = $derived.by(() => {
     const q = foldName(search.trim())
     return rows.filter((r) => {
-      if (q && !foldName(`${r.txt_surname} ${r.txt_first_name}`).includes(q)) return false
+      if (q && !foldName(`${surnameWithoutTitle(r.txt_surname)} ${r.txt_first_name}`).includes(q)) return false
       if (weaponFilter && !r.arr_weapons.includes(weaponFilter)) return false
       if (categoryFilter && r.enum_age_category !== categoryFilter) return false
       if (genderFilter && r.enum_gender !== genderFilter) return false

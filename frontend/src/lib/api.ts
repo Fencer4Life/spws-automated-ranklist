@@ -525,6 +525,27 @@ export async function fetchIdentityCandidates(
   }))
 }
 
+// FR-167 — two yes/no answers about a newcomer's typed name, from the known
+// given names (the EVF ranking's and our fencer table's). A visitor never
+// reads either list; fn_registration_name_check answers only these two.
+export interface RegistrationNameCheck {
+  surnameIsGivenName: boolean
+  givenNameKnown: boolean
+}
+
+export async function checkRegistrationName(surname: string, firstName: string): Promise<RegistrationNameCheck> {
+  const { data, error } = await getClient().rpc('fn_registration_name_check', {
+    p_surname: surname,
+    p_first_name: firstName,
+  })
+  if (error) throw error
+  const row = ((data ?? []) as { bool_surname_is_given_name: boolean; bool_given_name_known: boolean }[])[0]
+  return {
+    surnameIsGivenName: row?.bool_surname_is_given_name ?? false,
+    givenNameKnown: row?.bool_given_name_known ?? true,
+  }
+}
+
 interface RawIdentityCandidate {
   id_fencer: number
   txt_surname: string

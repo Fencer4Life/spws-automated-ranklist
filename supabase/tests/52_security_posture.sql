@@ -180,6 +180,16 @@ SELECT set_eq(
     -- SECURITY DEFINER — and anon needs EXECUTE on it only because the lookup
     -- above is SECURITY INVOKER and calls it. It publishes nothing.
     'fn_fold_name',
+    -- FR-167 (2026-11-21). fn_name_without_title takes a title (dr, prof …)
+    -- off a surname; like fn_fold_name it is a pure IMMUTABLE string function
+    -- with no table access, needed by anon only because the two lookups above
+    -- are SECURITY INVOKER and call it. fn_registration_name_check is SECURITY
+    -- DEFINER and answers two booleans about the typed name — is the surname a
+    -- known given name, is the given name known — and returns no name, no
+    -- fencer and no row of tbl_common_given_name, which anon cannot read
+    -- (RFNAME.19).
+    'fn_name_without_title',
+    'fn_registration_name_check',
     -- fn_confirm_registration_identity is the one genuinely new capability on
     -- this surface: it is SECURITY DEFINER and it can write tbl_fencer, which
     -- deliberately reverses ADR-079's read-only-birth-year invariant. It is

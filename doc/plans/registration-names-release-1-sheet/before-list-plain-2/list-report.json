@@ -1,0 +1,46 @@
+[
+  {
+    "tag": "list__desktop__pl",
+    "names": [
+      "ZZDUDA Ewa",
+      "ZZKOWALSKA Anna",
+      "ZZNOWAK Piotr",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra",
+      "ZZWOLF Eva"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "list__desktop__en",
+    "names": [
+      "ZZDUDA Ewa",
+      "ZZKOWALSKA Anna",
+      "ZZNOWAK Piotr",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra",
+      "ZZWOLF Eva"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "list__phone__pl",
+    "names": [
+      "ZZDUDA Ewa",
+      "ZZKOWALSKA Anna",
+      "ZZNOWAK Piotr",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra",
+      "ZZWOLF Eva"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "list__phone__en",
+    "names": [
+      "ZZDUDA Ewa",
+      "ZZKOWALSKA Anna",
+      "ZZNOWAK Piotr",
+      "ZZWOJCIECHOWSKA-KOWALCZYK Aleksandra",
+      "ZZWOLF Eva"
+    ],
+    "errors": []
+  }
+]

@@ -14,6 +14,8 @@
 // Format: ADR-080 §1/§2, with §1's marker placement and §4's naming as amended
 // on 2026-09-12.
 
+import { pythonTitle, surnameWithoutTitle } from './registrationName'
+
 // Fixed round-robin order for the mix-all interleave (ADR-080 §2).
 export const MIXALL_SUBRANKING_ORDER = [
   'FV0',
@@ -183,27 +185,14 @@ function compareSortKeys(a: number[], b: number[]): number {
 }
 
 /**
- * Python's str.title(), which is the rule the exporter has always used: every
- * letter that follows a non-letter starts a new word. That makes hyphens,
- * apostrophes and spaces all boundaries — "anna-maria" becomes "Anna-Maria"
- * and "d'arcy" becomes "D'Arcy". Implemented explicitly rather than with a
- * word-splitting helper because the twin has to agree with Python on real
- * names, not on the common case.
- */
-function pythonTitle(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/(^|[^\p{L}])(\p{L})/gu, (_m, before: string, letter: string) => before + letter.toUpperCase())
-}
-
-/**
  * Canonical seed/entry-list name form (ADR-080 §1): surname UPPERCASE, given
- * name Title case. This is where "STAŃCZYK MARCIN" and "LEAHEY john" are
- * fixed — on export, not in the database, because the registration is the
- * fencer's own declaration and we do not rewrite it.
+ * name Title case. A title written with the surname („Dr. KOVÁCS”) is left
+ * out, so the organizer's software sorts and matches by the surname (FR-167,
+ * ADR-080 amendment 2026-11-21). The given name's rule (pythonTitle) lives in
+ * registrationName.ts, which the registration form shares.
  */
 export function toCanonicalName(surname: string, firstName: string): [string, string] {
-  return [surname.trim().toUpperCase(), pythonTitle(firstName.trim())]
+  return [surnameWithoutTitle(surname).toUpperCase(), pythonTitle(firstName.trim())]
 }
 
 /**

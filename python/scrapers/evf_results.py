@@ -106,6 +106,15 @@ class EvfApiClient:
             raise RuntimeError(f"EVF API error ({resp.status_code}): {resp.text[:200]}")
         return resp.json()
 
+    def get_ranking_list(self, weapon_id: int, category_id: int) -> list[dict]:
+        """One EVF ranking list. weapon_id 1-3 men's foil/epee/sabre, 4-6
+        women's; category_id 1-4 (the EVF ranking has no V0 list). Rows carry
+        id, name, firstname, country, dob, points, pos."""
+        data = self._post(
+            "/ranking/list", model={"category_id": str(category_id), "weapon_id": weapon_id}
+        )
+        return (data.get("data") or {}).get("results") or []
+
     def get_events(self) -> list[dict]:
         """Get all events from the API."""
         data = self._post("/events", model="")

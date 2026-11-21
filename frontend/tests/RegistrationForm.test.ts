@@ -13,6 +13,7 @@ vi.mock('../src/lib/api', () => ({
   createRegistration: vi.fn(),
   updateRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
+  checkRegistrationName: vi.fn(),
 }))
 import {
   fetchEventForRegistration,
@@ -22,6 +23,7 @@ import {
   createRegistration,
   updateRegistration,
   fetchEntryList,
+  checkRegistrationName,
 } from '../src/lib/api'
 vi.mock('../src/lib/editToken', () => ({ newEditToken: vi.fn() }))
 import { newEditToken } from '../src/lib/editToken'
@@ -38,6 +40,7 @@ const mockCreate = vi.mocked(createRegistration)
 const mockEntryList = vi.mocked(fetchEntryList)
 const mockUpdate = vi.mocked(updateRegistration)
 const mockNewToken = vi.mocked(newEditToken)
+const mockNameCheck = vi.mocked(checkRegistrationName)
 
 const BASE_EVENT: RegistrationEventInfo = {
   id_event: 3,
@@ -85,6 +88,9 @@ beforeEach(() => {
   // a near miss override this.
   mockCandidates.mockResolvedValue([])
   mockConfirm.mockResolvedValue(1)
+  // Default: the name check sees nothing unusual (FR-167), so a newcomer gets
+  // today's name check. RFNAME.10-14 opt into the reversed-fields answer.
+  mockNameCheck.mockResolvedValue({ surnameIsGivenName: false, givenNameKnown: true })
   mockNewToken.mockReturnValue('tok-generated-0123456789abcdef')
   Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
 })
@@ -1096,11 +1102,10 @@ describe('RegistrationForm — identity resolution ladder', () => {
     await waitFor(() => expect(container.querySelector('button.reg-id-swap')).not.toBeNull())
     await fireEvent.click(container.querySelector('button.reg-id-swap') as HTMLButtonElement)
     await findByText(/RODO/)
-    // Uppercase on both: the surname box uppercases whatever is typed into it,
-    // so the given name's original casing is already gone by the time anyone
-    // can swap. That is not a defect to chase here — casing is a class-C
-    // anomaly that to_canonical_name() normalises on export.
-    expect(mockMatch).toHaveBeenLastCalledWith('NAGY', 'ORSOLYA', 1974)
+    // Both fields in the name form after the exchange (FR-167, 2026-11-21):
+    // the new surname in capitals, the new given name in title case. Before
+    // FR-167 the given name kept the surname box's capitals („ORSOLYA”).
+    expect(mockMatch).toHaveBeenLastCalledWith('NAGY', 'Orsolya', 1974)
   })
 
   // 6.41 — a failing near-miss lookup must never block an entry. Same posture
@@ -1137,5 +1142,107 @@ describe('RegistrationForm — identity resolution ladder', () => {
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
     // The fencer still reaches the payment screen: the entry stands.
     await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
+  })
+})
+
+describe('RegistrationForm — FR-167 names (RFNAME.10–16)', () => {
+  async function toNewcomerCheck(surname: string, firstName: string) {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    const r = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await r.findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(r.container, { surname, firstName, birthYear: '1974' })
+    await fireEvent.click(r.container.querySelector('button.reg-continue') as HTMLButtonElement)
+    return r
+  }
+
+  // RFNAME.10 — a given name typed into the surname box.
+  it('RFNAME.10 asks a newcomer whether the fields are reversed', async () => {
+    mockMatch.mockResolvedValue(null)
+    mockNameCheck.mockResolvedValue({ surnameIsGivenName: true, givenNameKnown: false })
+    const { container, findByText } = await toNewcomerCheck('annalisa', 'bellandi')
+    await findByText('Czy pola nie są zamienione?')
+    expect(container.querySelector('.reg-idname')?.textContent).toBe('BELLANDI Annalisa')
+    expect(mockNameCheck).toHaveBeenCalledWith('ANNALISA', 'Bellandi')
+    expect(container.querySelector('button.reg-id-reversed-swap')?.textContent).toBe('Tak, zamień')
+    expect(container.querySelector('button.reg-id-reversed-keep')?.textContent).toBe('Zostaw, jak wpisałem')
+  })
+
+  it("RFNAME.11 shows today's name check otherwise, and never asks a matched fencer", async () => {
+    mockMatch.mockResolvedValue(null)
+    mockNameCheck.mockResolvedValue({ surnameIsGivenName: true, givenNameKnown: true })
+    const { container, findByText, unmount } = await toNewcomerCheck('roman', 'teodor')
+    await findByText('ROMAN Teodor')
+    expect(container.querySelector('button.reg-id-confirm')).not.toBeNull()
+    expect(container.querySelector('button.reg-id-reversed-swap')).toBeNull()
+    unmount()
+
+    mockNameCheck.mockClear()
+    mockMatch.mockResolvedValue(42)
+    const second = await toNewcomerCheck('kowalski', 'jan')
+    await second.findByText(/RODO/)
+    expect(mockNameCheck).not.toHaveBeenCalled()
+  })
+
+  it('RFNAME.12 „Tak, zamień” swaps the fields and matches again on the swapped pair', async () => {
+    mockMatch.mockResolvedValueOnce(null).mockResolvedValueOnce(311)
+    mockNameCheck.mockResolvedValue({ surnameIsGivenName: true, givenNameKnown: false })
+    const { container, findByText } = await toNewcomerCheck('annalisa', 'bellandi')
+    await waitFor(() => expect(container.querySelector('button.reg-id-reversed-swap')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-reversed-swap') as HTMLButtonElement)
+    await findByText(/RODO/)
+    expect(mockMatch).toHaveBeenLastCalledWith('BELLANDI', 'Annalisa', 1974)
+  })
+
+  it('RFNAME.13 „Zostaw, jak wpisałem” keeps the fields and continues', async () => {
+    mockMatch.mockResolvedValue(null)
+    mockNameCheck.mockResolvedValue({ surnameIsGivenName: true, givenNameKnown: false })
+    const { container, findByText } = await toNewcomerCheck('eliahu', 'tamarov')
+    await waitFor(() => expect(container.querySelector('button.reg-id-reversed-keep')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-reversed-keep') as HTMLButtonElement)
+    await findByText(/RODO/)
+    expect(mockMatch).toHaveBeenCalledTimes(1)
+    expect(mockMatch).toHaveBeenCalledWith('ELIAHU', 'Tamarov', 1974)
+  })
+
+  it('RFNAME.14 leaving a box writes the name form, and a title stays in front across a swap', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    const surnameInput = container.querySelector('input[name="surname"]') as HTMLInputElement
+    const firstNameInput = container.querySelector('input[name="firstName"]') as HTMLInputElement
+    await fireEvent.input(surnameInput, { target: { value: 'orsolya' } })
+    await fireEvent.blur(surnameInput)
+    await fireEvent.input(firstNameInput, { target: { value: 'szabó dr.' } })
+    await fireEvent.blur(firstNameInput)
+    expect(surnameInput.value).toBe('Dr. ORSOLYA')
+    expect(firstNameInput.value).toBe('Szabó')
+
+    mockMatch.mockResolvedValue(null)
+    mockNameCheck.mockResolvedValue({ surnameIsGivenName: true, givenNameKnown: false })
+    await fillIdentity(container, { surname: 'orsolya', firstName: 'szabó dr.', birthYear: '1974' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('.reg-idname')?.textContent).toBe('Dr. SZABÓ Orsolya'))
+    expect(mockNameCheck).toHaveBeenCalledWith('Dr. ORSOLYA', 'Szabó')
+    await fireEvent.click(container.querySelector('button.reg-id-reversed-swap') as HTMLButtonElement)
+    await waitFor(() => expect(mockMatch).toHaveBeenLastCalledWith('Dr. SZABÓ', 'Orsolya', 1974))
+  })
+
+  it("RFNAME.15 marks the two name boxes for the browser's autofill", async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    expect(container.querySelector('input[name="surname"]')?.getAttribute('autocomplete')).toBe('family-name')
+    expect(container.querySelector('input[name="firstName"]')?.getAttribute('autocomplete')).toBe('given-name')
+  })
+
+  it('RFNAME.16 „Popraw” on the name check returns to the boxes with the values kept', async () => {
+    mockMatch.mockResolvedValue(null)
+    const { container, findByText } = await toNewcomerCheck('greg', 'marlow')
+    await findByText('GREG Marlow')
+    const fix = container.querySelector('button.reg-id-fix-name') as HTMLButtonElement
+    expect(fix.textContent).toBe('Popraw')
+    await fireEvent.click(fix)
+    expect((container.querySelector('input[name="surname"]') as HTMLInputElement).value).toBe('GREG')
+    expect((container.querySelector('input[name="firstName"]') as HTMLInputElement).value).toBe('Marlow')
   })
 })

@@ -55,11 +55,13 @@
     <div class="reg-grid2">
       <label class="reg-fld">
         <span class="reg-lbl">{t('reg_surname')}</span>
-        <input name="surname" value={surname} oninput={onSurnameInput} style="text-transform:uppercase" />
+        <!-- FR-167: no text-transform here. onSurnameInput already writes the
+             capitals, and a title must show in its own form („Dr. KOVÁCS”). -->
+        <input name="surname" autocomplete="family-name" value={surname} oninput={onSurnameInput} onblur={writeNameForm} />
       </label>
       <label class="reg-fld">
         <span class="reg-lbl">{t('reg_first_name')}</span>
-        <input name="firstName" bind:value={firstName} />
+        <input name="firstName" autocomplete="given-name" bind:value={firstName} onblur={writeNameForm} />
       </label>
       <label class="reg-fld">
         <span class="reg-lbl">{t('reg_gender')}</span>
@@ -116,7 +118,7 @@
       <div class="reg-idcheck">
         <p class="reg-stepline">{t('reg_swap_intro')}</p>
         <p class="reg-idname">{identityCandidates[0].surname.toUpperCase()} {identityCandidates[0].firstName}</p>
-        <p class="reg-muted">{t('reg_swap_typed', { typed: `${surname.toUpperCase()} ${firstName}` })}</p>
+        <p class="reg-muted">{t('reg_swap_typed', { typed: `${surname} ${firstName}` })}</p>
       </div>
       <div class="reg-end reg-idactions">
         <button class="reg-btn reg-continue reg-id-accept" onclick={acceptSwap}>{t('reg_swap_accept')}</button>
@@ -158,15 +160,33 @@
           {t('reg_by_other')}
         </button>
       </div>
+    {:else if identityPrompt === 'reversed'}
+      <!-- FR-167: a newcomer whose surname is a known given name and whose
+           given name is not. Asked once; either answer is believed. -->
+      <p class="reg-rodo-heading">{t('reg_reversed_title')}</p>
+      <div class="reg-idcheck">
+        <p class="reg-stepline">
+          {t('reg_reversed_intro', {
+            given: canonicalGivenName(surnameWithoutTitle(surname)),
+            surname: canonicalGivenName(firstName),
+          })}
+        </p>
+        <p class="reg-idname">{swappedNames().surname} {swappedNames().firstName}</p>
+      </div>
+      <div class="reg-end reg-idactions">
+        <button class="reg-btn reg-continue reg-id-reversed-swap" onclick={swapNewPerson}>{t('reg_reversed_swap')}</button>
+        <button class="reg-btn reg-id-reversed-keep" onclick={confirmNewPerson}>{t('reg_reversed_keep')}</button>
+      </div>
     {:else if identityPrompt === 'new_person'}
       <p class="reg-rodo-heading">{t('reg_new_title')}</p>
       <div class="reg-idcheck">
         <p class="reg-stepline">{t('reg_new_intro')}</p>
-        <p class="reg-idname">{surname.toUpperCase()} {firstName}</p>
+        <p class="reg-idname">{surname} {firstName}</p>
       </div>
       <div class="reg-end reg-idactions">
         <button class="reg-btn reg-continue reg-id-confirm" onclick={confirmNewPerson}>{t('reg_new_confirm')}</button>
         <button class="reg-btn reg-id-swap" onclick={swapNewPerson}>{t('reg_new_swap')}</button>
+        <button class="reg-btn reg-id-fix-name" onclick={backToNameBoxes}>{t('reg_new_fix')}</button>
       </div>
     {/if}
   {:else if step === 'rodo'}
@@ -251,7 +271,9 @@
     createRegistration,
     updateRegistration,
     fetchEntryList,
+    checkRegistrationName,
   } from '../lib/api'
+  import { canonicalGivenName, normaliseNames, surnameWithoutTitle } from '../lib/registrationName'
   import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
   import { WEAPON_PL } from '../lib/orgPayment'
@@ -326,7 +348,7 @@
   let isNewFencer = $state(false)
   // Which prompt the resolution ladder landed on, and the candidates behind it.
   // 'none' is the overwhelmingly common outcome and renders nothing at all.
-  type IdentityPrompt = 'none' | 'swap' | 'birth_year' | 'new_person'
+  type IdentityPrompt = 'none' | 'swap' | 'birth_year' | 'reversed' | 'new_person'
   let identityPrompt = $state<IdentityPrompt>('none')
   let identityCandidates = $state<IdentityCandidate[]>([])
   // The answer, held until the registration exists. The confirmation RPC is
@@ -447,6 +469,22 @@
     surname = (e.target as HTMLInputElement).value.toUpperCase()
   }
 
+  // FR-167 — the name form, written when a name box is left and again on
+  // „Dalej”: given name in title case, surname in capitals, any title moved in
+  // front of the surname („szabó dr.” → „Dr.” before the surname).
+  function writeNameForm() {
+    const n = normaliseNames(surname, firstName)
+    surname = n.surname
+    firstName = n.firstName
+  }
+
+  // The two fields exchanged, a title staying in front of the new surname.
+  function swappedNames(): { surname: string; firstName: string } {
+    const bare = surnameWithoutTitle(surname)
+    const titles = surname.slice(0, surname.length - bare.length).trim()
+    return normaliseNames(`${titles} ${firstName}`, bare)
+  }
+
   function onBirthYearInput(e: Event) {
     const v = (e.target as HTMLInputElement).value
     birthYear = v === '' ? null : parseInt(v, 10)
@@ -473,8 +511,9 @@
     // Not done in the input handler on purpose: that would stop the fencer from
     // typing the space inside a compound name. trg_trim_registration_names
     // closes the same gap in the database for callers that never see this form.
-    surname = surname.trim()
-    firstName = firstName.trim()
+    // FR-167: trimming is part of the name form, which also collapses doubled
+    // spaces, writes the given name's capitals and moves a title in front.
+    writeNameForm()
     // A miss is no longer a dead end: it means "not in tbl_fencer yet", which
     // is the normal state for a newcomer or for someone correcting a birth
     // year we only ever estimated. Both continue to RODO and are written with
@@ -575,7 +614,19 @@
       // already in the table, so a first-time international entrant writing
       // their name in a different order goes unnoticed. Costs nothing for
       // anyone who matched, because nobody who matched reaches this line.
-      identityPrompt = 'new_person'
+      //
+      // FR-167: before the read-back, one question when the surname box holds
+      // a known given name and the given-name box does not — the four reversed
+      // pairs PROD held on 21 Nov 2026, none of whom we knew. A failed check
+      // asks nothing: the read-back below still shows the name.
+      let reversed = false
+      try {
+        const check = await checkRegistrationName(surname, firstName)
+        reversed = check.surnameIsGivenName && !check.givenNameKnown
+      } catch {
+        reversed = false
+      }
+      identityPrompt = reversed ? 'reversed' : 'new_person'
     }
 
     await checkForExistingEntry()
@@ -639,14 +690,20 @@
     step = 'rodo'
   }
 
+  // FR-167: „Popraw” — back to the boxes, values kept, to fix a name that no
+  // list could judge („GREG Marlow”).
+  function backToNameBoxes() {
+    identityPrompt = 'none'
+    step = 'identity'
+  }
+
   async function swapNewPerson() {
-    const s = surname
-    // Uppercased on the way in, exactly as onSurnameInput does for anything
-    // typed into that box. Without this the swapped value keeps the casing it
-    // had as a given name, and the lookup goes out in a form the fencer could
-    // not have produced by typing.
-    surname = firstName.toUpperCase()
-    firstName = s
+    // Both fields in the name form after the exchange (FR-167): the new
+    // surname in capitals with any title still in front, the new given name
+    // in title case — so the lookup goes out exactly as the row will be stored.
+    const swapped = swappedNames()
+    surname = swapped.surname
+    firstName = swapped.firstName
     // The exchanged pair may well be someone we already hold — run the whole
     // ladder again rather than assuming a newcomer.
     const id = await matchRegistrationFencer(surname, firstName, birthYear as number).catch(() => null)

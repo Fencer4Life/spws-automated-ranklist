@@ -1,0 +1,20 @@
+[
+  {
+    "step": "1 typed „orsolya” + „zzszabo dr.”",
+    "boxesAfterLeaving": null,
+    "heading": "Czy pola nie są zamienione?",
+    "proposed": "Dr. ZZSZABO Orsolya"
+  },
+  {
+    "step": "2 after „Tak, zamień”: the name read back",
+    "heading": "Nie mamy Cię jeszcze w bazie",
+    "name": "Dr. ZZSZABO Orsolya"
+  },
+  {
+    "step": "3 confirmed and submitted",
+    "confirmation": "✓ Zgłoszenie potwierdzone"
+  },
+  {
+    "errors": []
+  }
+]
