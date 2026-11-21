@@ -75,8 +75,11 @@ gate "render_adrs.py --check (CI)"    python scripts/render_adrs.py --check
 gate "render_docs.py --check (CI)"    python scripts/render_docs.py --check
 gate "render_handbook_frame.py --check (CI)" python scripts/render_handbook_frame.py --check
 gate "check_docs.py (CI)"             python scripts/check_docs.py
-# G43 A: CI reads CERT's roster; here, LOCAL's (the Docker stack, PROD's mirror).
-gate "override files name the roster (CI: CERT)" python -m python.pipeline.override_drift --roster local
+# G43 A + I21 (ADR-119, 2026-11-21): LOCAL's roster (the Docker stack) and CERT's,
+# the one CI reads, so a pass here is CI's pass. CERT is read only, through the
+# shared token reader; without the token or the API the gate fails, never skips.
+gate "override files name the LOCAL roster" python -m python.pipeline.override_drift --roster local
+gate "override files name the CERT roster (as CI)" python -m python.pipeline.override_drift --roster cert
 gate "pytest (CI)"                    pytest -q
 
 # test-frontend
