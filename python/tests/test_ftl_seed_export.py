@@ -592,3 +592,93 @@ def test_build_event_seed_files_orders_a_tier_by_points_end_to_end():
     tireurs = {t.get("Nom"): t.get("Classement") for t in ET.fromstring(doc).iter("Tireur")}
     assert tireurs["SEKOWSKI (1)"] == "1"
     assert tireurs["KAMINSKA (1)"] == "2"
+
+
+# ---------------------------------------------------------------------------
+# FR-169 — Nation comes from the entry (RFCTRY.24–26)
+# ---------------------------------------------------------------------------
+# The same literal is asserted in frontend/tests/ftlSeedExport.test.ts.
+RFCTRY_MIXED = (
+    '<?xml version="1.0" encoding="UTF-8"?>\n'
+    "<!DOCTYPE BaseCompetitionIndividuelle>\n"
+    '<BaseCompetitionIndividuelle Championnat="SPWS" ID="ID1" Arme="E" Sexe="M" '
+    'Domaine="N" Federation="POL" Categorie="V" TitreLong="T" Date="" DateFichierXML="2026-11-21">'
+    '<Tireurs><Tireur ID="1" Nom="MÜLLER (2)" Prenom="Hans" Sexe="M" Club="" '
+    'Nation="GER" Licence="" Statut="N" Classement="1" />'
+    '<Tireur ID="2" Nom="NOWAK (2)" Prenom="Piotr" Sexe="M" Club="" '
+    'Nation="POL" Licence="" Statut="N" Classement="2" /></Tireurs>'
+    "</BaseCompetitionIndividuelle>"
+)
+
+
+def _reg(surname: str, first: str, country: str | None = None, key: str = "txt_country") -> dict:
+    reg = {
+        "id_fencer": None,
+        "txt_surname": surname,
+        "txt_first_name": first,
+        "enum_gender": "M",
+        "int_birth_year": 1975,
+        "arr_weapons": ["EPEE"],
+        "ts_created": "2026-11-01T00:00:00Z",
+    }
+    if key:
+        reg[key] = country
+    return reg
+
+
+def test_rfctry_24_a_foreign_entrants_nation_is_the_entrys_code():
+    """RFCTRY.24 (FR-169): the registration's country reaches the Tireur."""
+    sub = assemble_mixall_subrankings([_reg("MÜLLER", "Hans", "GER")], "EPEE", {}, 2027)
+    tireurs = mixall_tireurs(interleave_mixall(sub))
+    assert tireurs[0]["nation"] == "GER"
+    xml = build_fie_xml("ID1", "E", "M", "T", tireurs, "2026-11-21")
+    assert 'Nom="MÜLLER (2)" Prenom="Hans" Sexe="M" Club="" Nation="GER"' in xml
+
+
+def test_rfctry_25_no_country_writes_pol_byte_identical_to_today():
+    """RFCTRY.25: an entry without a country, or without the field at all, gives
+    the same bytes as before FR-169; Federation stays POL."""
+
+    def xml_for(reg: dict) -> str:
+        sub = assemble_mixall_subrankings([reg], "EPEE", {}, 2027)
+        return build_fie_xml(
+            "ID1", "E", "M", "T", mixall_tireurs(interleave_mixall(sub)), "2026-11-21"
+        )
+
+    before = xml_for(_reg("NOWAK", "Piotr", key=""))
+    assert xml_for(_reg("NOWAK", "Piotr", None)) == before
+    assert xml_for(_reg("NOWAK", "Piotr", "POL")) == before
+    assert 'Nation="POL"' in before and 'Federation="POL"' in before
+
+
+def test_rfctry_26_mixed_list_matches_the_typescript_exporter_byte_for_byte():
+    """RFCTRY.26: the literal the TypeScript twin asserts."""
+    xml = build_fie_xml(
+        "ID1",
+        "E",
+        "M",
+        "T",
+        [
+            {
+                "id": 1,
+                "nom": "MÜLLER (2)",
+                "prenom": "Hans",
+                "sexe": "M",
+                "classement": 1,
+                "nation": "GER",
+            },
+            {"id": 2, "nom": "NOWAK (2)", "prenom": "Piotr", "sexe": "M", "classement": 2},
+        ],
+        "2026-11-21",
+    )
+    assert xml == RFCTRY_MIXED
+
+
+def test_rfctry_26_the_nation_travels_from_the_entry_to_the_tireur():
+    tireurs = mixall_tireurs(
+        [
+            (FencerEntry(None, "MÜLLER", "Hans", nation="GER"), "MV2"),
+            (FencerEntry(None, "NOWAK", "Piotr"), "MV2"),
+        ]
+    )
+    assert [t.get("nation") for t in tireurs] == ["GER", None]

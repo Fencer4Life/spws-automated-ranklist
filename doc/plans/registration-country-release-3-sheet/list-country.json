@@ -1,0 +1,46 @@
+[
+ {
+  "name": "list__desktop__en.png",
+  "size": "1280x1000",
+  "diff": 20627,
+  "box": [
+   430,
+   238,
+   1012,
+   628
+  ]
+ },
+ {
+  "name": "list__desktop__pl.png",
+  "size": "1280x1000",
+  "diff": 20192,
+  "box": [
+   430,
+   236,
+   1012,
+   628
+  ]
+ },
+ {
+  "name": "list__phone__en.png",
+  "size": "375x812",
+  "diff": 48507,
+  "box": [
+   23,
+   267,
+   352,
+   727
+  ]
+ },
+ {
+  "name": "list__phone__pl.png",
+  "size": "375x812",
+  "diff": 48907,
+  "box": [
+   23,
+   265,
+   352,
+   729
+  ]
+ }
+]

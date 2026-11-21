@@ -300,6 +300,11 @@ class TestTransports:
         ):
             assert column in sql
 
+    def test_rfctry_21_the_copy_reads_the_declared_country(self):
+        """RFCTRY.21 (FR-169) — the PROD → CERT copy carries the entry's country."""
+        assert "txt_country" in rf.REGISTRATION_COLUMNS
+        assert "r.txt_country" in rf.registrations_sql("PPW1-2026-2027")
+
     def test_an_event_code_is_an_exact_code(self):
         """PROMO.REFRESH.18 — nothing but a code reaches the SQL text."""
         for bad in ("PPW1'; DROP TABLE tbl_fencer; --", "PPW1 2026", "", "PPW1%"):

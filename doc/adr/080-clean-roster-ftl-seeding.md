@@ -782,3 +782,11 @@ Tests NOMAIL.01–07 fail if any of it, or any other outbound e-mail code, retur
 **Decision.** `toCanonicalName` (`frontend/src/lib/ftlSeedExport.ts`) and `to_canonical_name` (`python/pipeline/ftl_seed_export.py`) leave a title written with the surname out of the file's surname. The title list is the registration's (dr, ddr, prof, ing, mag, mgr, dipl-ing, doc). Every name without a title is written exactly as before, byte for byte, so the scrape-back round-trip of §6 is unchanged.
 
 **Consequences.** The organizer's software sorts and matches a titled fencer by the surname; the title is not carried into results. Tests: RFNAME.27 in Vitest (`ftlSeedExport.test.ts`) and pytest (`test_ftl_seed_export.py`). FR-167.
+
+## Amendment (2026-11-21, release 3) — Nation comes from the entry
+
+**Context.** Every Tireur was written with `Nation="POL"`. Since the [ADR-079](079-event-self-registration-identity.md) amendment of 2026-11-21 (release 3) an entry declares its country, so a foreign entrant no longer needs correcting by hand in the organizer's software.
+
+**Decision.** A Tireur's `Nation` is the entry's declared code; an entry without one writes POL, so the files of Polish entrants do not change by one byte. `Federation` stays POL: the organizer is SPWS. `fn_ftl_export_entries` returns `txt_country`; `buildFieXml` (`frontend/src/lib/ftlSeedExport.ts`) and `build_fie_xml` (`python/pipeline/ftl_seed_export.py`) stay twins and assert the same mixed-list literal.
+
+**Consequences.** Every file built for an entry without a country is byte-identical to before. Tests: RFCTRY.22 (pgTAP), RFCTRY.24–26 in Vitest (`ftlSeedExport.test.ts`) and pytest (`test_ftl_seed_export.py`). FR-169.

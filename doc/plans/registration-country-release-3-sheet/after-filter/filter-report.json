@@ -1,0 +1,86 @@
+[
+  {
+    "tag": "filter__desktop__pl",
+    "names": [
+      "ZZMULLER Hans",
+      "ZZSCHMIDT Eva"
+    ],
+    "flags": [
+      "Niemcy",
+      "Niemcy"
+    ],
+    "codes": [],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "filter__desktop__en",
+    "names": [
+      "ZZMULLER Hans",
+      "ZZSCHMIDT Eva"
+    ],
+    "flags": [
+      "Germany",
+      "Germany"
+    ],
+    "codes": [],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "filter__phone__pl",
+    "names": [
+      "ZZMULLER Hans",
+      "ZZSCHMIDT Eva"
+    ],
+    "flags": [
+      "Niemcy",
+      "Niemcy"
+    ],
+    "codes": [],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "filter__phone__en",
+    "names": [
+      "ZZMULLER Hans",
+      "ZZSCHMIDT Eva"
+    ],
+    "flags": [
+      "Germany",
+      "Germany"
+    ],
+    "codes": [],
+    "filter": [
+      "--",
+      "AIN",
+      "GBR",
+      "GER",
+      "NED",
+      "POL"
+    ],
+    "errors": []
+  }
+]

@@ -34,7 +34,7 @@
         <button type="button" class="el-search-clear" aria-label={t('reg_search_clear')} onclick={() => (search = '')}>&times;</button>
       {/if}
     </div>
-    <div class="el-fgroup">
+    <div class="el-fgroup" class:el-four={hasCountry}>
       <label class="el-flabel">
         <span>{t('weapon')}</span>
         <select name="weaponFilter" class:el-active={weaponFilter !== ''} bind:value={weaponFilter}>
@@ -63,6 +63,19 @@
           <option value="M">{t('reg_filter_men')}</option>
         </select>
       </label>
+      <!-- FR-169: offered only when an entry has a country; codes alone, the
+           letters on each fencer's jacket, for the countries present. -->
+      {#if hasCountry}
+        <label class="el-flabel">
+          <span>{t('reg_filter_country')}</span>
+          <select name="countryFilter" class:el-active={countryFilter !== ''} bind:value={countryFilter}>
+            <option value="">--</option>
+            {#each presentCountries as c (c)}
+              <option value={c}>{c}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
     </div>
     {#if isNarrowed}
       <button type="button" class="el-clear-all" onclick={clearAll}>{t('reg_clear_filters')}</button>
@@ -80,6 +93,7 @@
           <th>{t('reg_col_name')}</th>
           <th class="el-narrow">{t('reg_col_category')}</th>
           <th>{t('reg_col_weapon')}</th>
+          {#if hasCountry}<th class="el-flag"></th>{/if}
           {#if canRemove}<th class="el-act"></th>{/if}
         </tr>
       </thead>
@@ -95,6 +109,17 @@
                 <span class="el-wpn el-w-{weaponCode(w)}">{weaponCode(w)}</span>
               {/each}
             </td>
+            {#if hasCountry}
+              <!-- FR-169: the flag alone, labelled with the country's name; a code
+                   with no drawn flag shows its letters (D1); no country, nothing. -->
+              <td class="el-flag">
+                {#if row.txt_country && flagIso(row.txt_country)}
+                  <CountryFlag code={flagIso(row.txt_country)} label={countryName(row.txt_country, lang)} />
+                {:else if row.txt_country}
+                  <span class="el-flagcode" role="img" aria-label={countryName(row.txt_country, lang)} title={countryName(row.txt_country, lang)}>{row.txt_country}</span>
+                {/if}
+              </td>
+            {/if}
             {#if canRemove}
               <td class="el-act">
                 <button
@@ -147,8 +172,10 @@
 
 <script lang="ts">
   import { tick } from 'svelte'
-  import { t } from '../lib/locale.svelte'
+  import { getLocale, t } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
+  import CountryFlag from './CountryFlag.svelte'
+  import { countryName, flagIso } from '../lib/fencingCountries'
   import { fetchEntryList, deleteRegistration } from '../lib/api'
   import { foldName } from '../lib/foldName'
   import { surnameWithoutTitle } from '../lib/registrationName'
@@ -195,6 +222,13 @@
   let weaponFilter = $state<WeaponType | ''>('')
   let categoryFilter = $state<AgeCategory | ''>('')
   let genderFilter = $state<GenderType | ''>('')
+  let countryFilter = $state('')
+  const lang = $derived(getLocale() === 'en' ? 'en' : 'pl')
+
+  // FR-169: the flag column and the „Kraj” filter appear only when an entry
+  // has a country, so a list without any looks exactly as before.
+  const hasCountry = $derived(rows.some((r) => !!r.txt_country))
+  const presentCountries = $derived([...new Set(rows.map((r) => r.txt_country).filter((c): c is string => !!c))].sort())
 
   // Polish collation, fixed regardless of the PL/EN toggle: the surnames are
   // Polish whatever language the labels are in, and tying the order to the
@@ -235,6 +269,7 @@
       if (weaponFilter && !r.arr_weapons.includes(weaponFilter)) return false
       if (categoryFilter && r.enum_age_category !== categoryFilter) return false
       if (genderFilter && r.enum_gender !== genderFilter) return false
+      if (countryFilter && r.txt_country !== countryFilter) return false
       return true
     })
   })
@@ -242,7 +277,7 @@
   // Anything that narrows the list: search text (spaces alone do not count)
   // or any of the three filters (FR-165).
   const isNarrowed = $derived(
-    search.trim() !== '' || weaponFilter !== '' || categoryFilter !== '' || genderFilter !== '',
+    search.trim() !== '' || weaponFilter !== '' || categoryFilter !== '' || genderFilter !== '' || countryFilter !== '',
   )
 
   // "Wyczyść filtry" (S3): the search and all three filters back to empty.
@@ -251,6 +286,7 @@
     weaponFilter = ''
     categoryFilter = ''
     genderFilter = ''
+    countryFilter = ''
   }
 
   // The tiles in their fixed order: everyone, then one per weapon.
@@ -535,6 +571,16 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
+  /* FR-169: with „Kraj”, four filters in one row on a desktop, two rows of two
+     on a phone. */
+  .el-fgroup.el-four {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media (max-width: 480px) {
+    .el-fgroup.el-four {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
   .el-flabel {
     display: flex;
     flex-direction: column;
@@ -607,6 +653,21 @@
     color: #8894a8;
     font-size: 0.78em;
     margin-top: 12px;
+  }
+
+  /* FR-169: the flag at the end of the line, 18px, never wrapping; no pill,
+     border or background. A code with no drawn flag shows its letters (D1). */
+  .el-flag {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+  }
+  .el-flagcode {
+    display: inline-block;
+    min-width: 18px;
+    font-size: 0.66em;
+    color: #8894a8;
+    letter-spacing: 0.3px;
   }
 
   /* FR-166 — the administrator's removal. Nothing below renders for a
@@ -743,6 +804,10 @@
        1% would squeeze it to a few pixels and clip the button. */
     .el-act {
       width: auto;
+    }
+    .el-flag {
+      width: auto;
+      flex: none;
     }
     .el-name {
       flex: 1 1 auto;
