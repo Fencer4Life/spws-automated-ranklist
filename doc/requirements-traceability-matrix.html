@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="9fd6c336f88c796bfb38739c8681572baaed831ba929bc50cc2d8c846086d8ab">
+<meta name="doc-source-sha256" content="69e0ec0033c641106588c892509dfeb271f9cfe1f40532bbd412da60641f30ba">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -6215,7 +6215,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight's whitespace gate sees uncommitted and new files (WSGATE.*)</h2>
-<p>NFR-15, I24. Plan signed 2026-11-21 (<code>doc/plans/i24-preflight-checks-uncommitted-whitespace-2026-11-21.html</code>, &quot;All as recommended&quot;: Q1 A, Q2 A); IDs registered before any code. Preflight checked only commits (<code>git diff --check origin/main...HEAD</code>) and runs before the commit, so a blank line at the end of a staged or new file passed it twice on 2026-11-21 and was caught only afterwards. Each test builds a throwaway repository and runs <code>scripts/check-diff-whitespace.sh</code> in it.</p>
+<p>NFR-15, I24. Plan signed 2026-11-21 (<code>doc/plans/i24-preflight-checks-uncommitted-whitespace-2026-11-21.html</code>, &quot;All as recommended&quot;: Q1 A, Q2 A); IDs registered before any code. Preflight checked only commits (<code>git diff --check origin/main...HEAD</code>) and runs before the commit, so a blank line at the end of a staged or new file passed it twice on 2026-11-21 and was caught only afterwards. Each test builds a throwaway repository and runs <code>scripts/check-diff-whitespace.sh</code> in it. Released 2026-11-21 as main 29e40f1e: CI run 44952731612 and Release run 44952895661 passed first time; the user approved PROD. No migration changed (<code>deployed_migrations.json</code> moved only its deploy stamps); main's preflight runs the new gate.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -6232,42 +6232,42 @@
 <td>A blank line at the end of a changed, unstaged file fails the gate.</td>
 <td>pytest</td>
 <td><code>python/tests/test_whitespace_gate.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-21, main 29e40f1e)</td>
 </tr>
 <tr>
 <td>WSGATE.02</td>
 <td>The same line, staged, fails the gate.</td>
 <td>pytest</td>
 <td><code>python/tests/test_whitespace_gate.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-21, main 29e40f1e)</td>
 </tr>
 <tr>
 <td>WSGATE.03</td>
 <td>The same line, committed on the branch, fails the gate, as before.</td>
 <td>pytest</td>
 <td><code>python/tests/test_whitespace_gate.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-21, main 29e40f1e)</td>
 </tr>
 <tr>
 <td>WSGATE.04</td>
 <td>A new untracked file with one fails the gate, and the message names the file.</td>
 <td>pytest</td>
 <td><code>python/tests/test_whitespace_gate.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-21, main 29e40f1e)</td>
 </tr>
 <tr>
 <td>WSGATE.05</td>
 <td>A file git ignores is not checked, and a clean worktree passes.</td>
 <td>pytest</td>
 <td><code>python/tests/test_whitespace_gate.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-21, main 29e40f1e)</td>
 </tr>
 <tr>
 <td>WSGATE.06</td>
 <td><code>scripts/preflight.sh</code> runs <code>scripts/check-diff-whitespace.sh</code> as its „git diff --check (integrate)” gate.</td>
 <td>pytest</td>
 <td><code>python/tests/test_whitespace_gate.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-21, main 29e40f1e)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6282,5 +6282,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>9fd6c336f88c796bfb38739c8681572baaed831ba929bc50cc2d8c846086d8ab</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>69e0ec0033c641106588c892509dfeb271f9cfe1f40532bbd412da60641f30ba</code></footer>
 </div></body></html>
