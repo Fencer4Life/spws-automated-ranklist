@@ -1,14 +1,11 @@
 {
   "version": "0.1.0",
-  "sha": "1918b0ed5af7183bc03394f0b3ef1154794d49b1",
-  "created": "2026-11-21T15:28:22Z",
+  "sha": "8c29d999839cbe44746e5ed31c99ddbb80468e17",
+  "created": "2026-11-21T16:20:30Z",
   "schema_fingerprint": "47fe41b1b6d33654640e3cf45624700a",
   "migrations": {
     "total": 238,
-    "new_since_last": [
-      "20261121000001_registration_names.sql",
-      "20261121000002_common_given_names_evf.sql"
-    ]
+    "new_since_last": []
   },
   "tests": {
     "pgtap": {
@@ -24,8 +21,8 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-21T15:28:24Z",
-      "sha": "1918b0ed5af7183bc03394f0b3ef1154794d49b1",
+      "at": "2026-11-21T16:20:31Z",
+      "sha": "8c29d999839cbe44746e5ed31c99ddbb80468e17",
       "schema_fingerprint": "47fe41b1b6d33654640e3cf45624700a"
     },
     "prod": {
