@@ -749,3 +749,34 @@ describe('EntryList — an administrator removes an entry (FR-166)', () => {
     expect(v.text(v.dialog())).toContain('This cannot be undone. The registration deadline has passed.')
   })
 })
+
+// RFNAME.09 (FR-167) — a title is not part of the surname for ordering or
+// searching. Before release 1 a titled surname sorted under D.
+describe('EntryList — RFNAME.09 a title is ignored for order and search', () => {
+  const TITLED: RegistrationEntry[] = [
+    { id_registration: 11, id_event: 3, txt_surname: 'WOLF', txt_first_name: 'Eva', enum_gender: 'F', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+    { id_registration: 12, id_event: 3, txt_surname: 'Dr. VERESS', txt_first_name: 'Ilona Katalin', enum_gender: 'F', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+    { id_registration: 13, id_event: 3, txt_surname: 'DUDA', txt_first_name: 'Ewa', enum_gender: 'F', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+  ]
+
+  it('orders by the surname without its title', async () => {
+    mockFetchEntryList.mockResolvedValue(TITLED)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('Dr. VERESS Ilona Katalin')
+    const names = Array.from(container.querySelectorAll('td.el-name')).map((td) => td.textContent)
+    expect(names).toEqual(['DUDA Ewa', 'Dr. VERESS Ilona Katalin', 'WOLF Eva'])
+  })
+
+  it('searches by the surname without its title', async () => {
+    mockFetchEntryList.mockResolvedValue(TITLED)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('DUDA Ewa')
+    const search = container.querySelector('input[name="search"]') as HTMLInputElement
+    await fireEvent.input(search, { target: { value: 'vere' } })
+    let names = Array.from(container.querySelectorAll('td.el-name')).map((td) => td.textContent)
+    expect(names).toEqual(['Dr. VERESS Ilona Katalin'])
+    await fireEvent.input(search, { target: { value: 'dr' } })
+    names = Array.from(container.querySelectorAll('td.el-name')).map((td) => td.textContent)
+    expect(names).toEqual([])
+  })
+})

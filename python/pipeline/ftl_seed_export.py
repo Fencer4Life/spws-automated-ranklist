@@ -137,11 +137,34 @@ def polish_sort_key(value: str) -> list[int]:
     return out
 
 
+# FR-167: a title written with the surname is a whole word from this list, with
+# or without its dot (dr, ddr, prof, ing, mag, mgr, doc, dipl-ing). The same
+# rule as frontend/src/lib/registrationName.ts and the database's
+# fn_registration_canonical_names; never the box's last word.
+_TITLE_KEYS = frozenset({"dr", "ddr", "prof", "ing", "mag", "mgr", "doc", "dipling"})
+
+
+def _is_title(word: str) -> bool:
+    key = word.lower().replace(".", "").replace("-", "")
+    return key.isascii() and key.isalpha() and key in _TITLE_KEYS
+
+
+def surname_without_title(surname: str) -> str:
+    """The surname with a title taken off either end, as the form compares it."""
+    words = surname.split()
+    while len(words) > 1 and _is_title(words[0]):
+        words.pop(0)
+    while len(words) > 1 and _is_title(words[-1]):
+        words.pop()
+    return " ".join(words)
+
+
 def to_canonical_name(surname: str, first_name: str) -> tuple[str, str]:
     """Canonical seed/entry-list/ranklist name form (ADR-080 Section 1):
     surname in UPPERCASE, given name in Title case. Fixes legacy all-caps
-    given names on export."""
-    return surname.strip().upper(), first_name.strip().title()
+    given names on export. A title written with the surname is left out
+    (FR-167, ADR-080 amendment 2026-11-21)."""
+    return surname_without_title(surname).upper(), first_name.strip().title()
 
 
 def format_nom_with_marker(surname_canon: str, vcat_digit: str) -> str:

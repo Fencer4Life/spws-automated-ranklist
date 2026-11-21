@@ -121,7 +121,10 @@ if [ -f "$RTM" ]; then
   # 165 since 2026-11-17: +FR-166 (an administrator removes an entry from the
   #   entry list). Registered as Planned before code (plan
   #   entry-list-admin-removes-entry-tdd-plan §07 step 2).
-  EXPECTED=165
+  # 166 since 2026-11-21: +FR-167 (a fencer's name in one form, titles apart,
+  #   reversed name fields caught). Registered as Planned before code (plan
+  #   registration-form-names-year-country rev 10, release 1).
+  EXPECTED=166
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

@@ -1,0 +1,578 @@
+<meta charset="utf-8">
+<title>Registration form: names, birth year, country · plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.mkrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0 6px}
+.mkcap{font:600 12px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#555;margin:0 0 6px}
+.mk{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:18px;color:#e0e0e0;font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.mk *{box-sizing:border-box}
+.mk .t{font-weight:600;color:#fff;font-size:1.05em;margin:0 0 10px}
+.mk .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}
+.mk .tile{background:#0d1b2a;border-radius:8px;padding:7px 9px;color:#fff;font-weight:600}
+.mk .tile span{display:block;font-size:.7em;color:#7fbadc;font-weight:400}
+.mk .field{background:#0d1b2a;border:1px solid #00d4ff;border-radius:8px;padding:8px 12px;color:#e0e0e0;margin:0 0 10px;font-size:.92em}
+.mk .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #1a2c4a;color:#e0e0e0;font-size:.92em}
+.mk .li .w{color:#8894a8;font-size:.85em}
+.mk .rm{color:#ff8a8a;border:1px solid #7a2e3a;border-radius:8px;padding:4px 10px;font-size:.82em;outline:2px dashed #ffd24a;outline-offset:3px}
+.mk .confirm{background:#2a1520;border:1px solid #7a2e3a;border-radius:10px;padding:12px;color:#ffd7d7;margin:0 0 12px}
+.mk .confirm b{color:#fff}
+.mk .acts{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.mk .btn{border-radius:8px;padding:9px 16px;font-weight:600;font-size:.92em}
+.mk .btn.danger{background:#e5484d;color:#fff}
+.mk .btn.quiet{color:#9fc4dc;border:1px solid #1a4a8a}
+.mk .ok{color:#4ade80;margin:12px 0 0}
+</style>
+<style>
+.mk input,.mk .inp{background:#0d1b2a;border:1px solid #1a4a8a;border-radius:8px;padding:8px 10px;color:#e0e0e0;font-size:.92em;margin:0 0 8px;display:block}
+.mk .lbl{font-size:.8em;color:#7fbadc;margin:0 0 4px}
+.mk .new{outline:2px dashed #ffd24a;outline-offset:3px}
+.mk .ask{background:#0d1b2a;border:1px solid #1a4a8a;border-radius:10px;padding:12px;margin:0 0 10px}
+.mk .yrs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:6px 0}
+.mk .yr{background:#0d1b2a;border:1px solid #1a4a8a;border-radius:6px;padding:5px 0;text-align:center;font-size:.85em}
+.mk .yr.on{background:#00d4ff;color:#0d1b2a;font-weight:700;border-color:#00d4ff}
+.mk .dec{display:flex;justify-content:space-between;align-items:center;color:#7fbadc;font-size:.85em}
+.mk .opt{display:flex;gap:8px;align-items:center;padding:7px 4px;border-top:1px solid #1a2c4a;font-size:.9em}
+.mk .dot{width:16px;height:16px;border-radius:50%;flex:none;background:linear-gradient(#fff 50%,#dc143c 50%)}
+.mk .dot.de{background:linear-gradient(#000 33%,#d00 33% 66%,#fc0 66%)}
+.mk .dot.gb{background:#012169}
+.mk .code{margin-left:auto;color:#7fbadc;font-family:ui-monospace,Menlo,monospace;font-size:.85em}
+.mk .pill{display:inline-flex;align-items:center;gap:5px;border:1px solid #1a4a8a;border-radius:999px;padding:2px 8px 2px 4px;font-size:.78em;color:#cfe3f3}
+.mk .cat{background:rgba(0,212,255,.12);color:#7fd8ff;border-radius:999px;padding:2px 8px;font-size:.78em}
+.mk .err{color:#ff9c9c;font-size:.82em;margin:-2px 0 8px}
+</style>
+<style id="rev2">
+.mk.wide{max-width:none;min-width:330px}
+.mk .lr{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid #16273f;font-size:.88em;color:#e0e0e0}
+.mk .lr.lh{font-size:.68em;color:#7fbadc;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1a4a8a}
+.mk .nm{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk .cy{flex:none;width:30px;text-align:center;line-height:0}
+.mk .ctg{flex:none;width:40px}
+.mk .wps{flex:none;width:52px}
+.mk .cty{display:inline-flex;align-items:center;gap:5px}
+.mk .fl{display:inline-block;width:14px;height:14px;flex:none}
+.mk .cc{color:#e0e0e0;font-size:.92em;letter-spacing:.3px}
+.mk .wp{display:inline-block;width:22px;text-align:center;font-size:.8em;padding:2px 0;border-radius:6px;margin-right:3px;font-weight:600}
+.mk .wE{background:rgba(96,196,89,.18);color:#9fe08c}.mk .wF{background:rgba(0,212,255,.16);color:#7fd8ff}.mk .wS{background:rgba(240,159,39,.18);color:#f0b967}
+.mk .rm,.mk .ed{flex:none;border-radius:8px;padding:3px 9px;font-size:.8em}
+.mk .rm{color:#ff8a8a;border:1px solid #7a2e3a}
+.mk .ed{color:#7fd8ff;border:1px solid #1a4a8a}
+.mk .brow{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-top:1px solid #1a2c4a;font-size:.84em;color:#e0e0e0}
+.mk .brow .law{color:#7fbadc;white-space:nowrap}
+.mk .brow.new,.mk p.new{outline:2px dashed #ffd24a;outline-offset:2px;border-radius:4px}
+.mk .mut{color:#8894a8;font-size:.8em;margin:8px 0 0}
+.mk .lock{color:#8894a8;font-size:.78em;margin:-4px 0 8px}
+.names{columns:5 130px;font-size:.86em;line-height:1.7;margin:6px 0 0}
+table td.ans{white-space:nowrap;font-weight:600}
+.names.tight{columns:auto;line-height:1.6;font-size:.82em}
+.mk .fl.big{width:18px;height:18px}
+.mk .cy .cc{font-size:.7em;color:#7fbadc;letter-spacing:0;line-height:1.2}
+.mk .fg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 6px}
+.mk .fg .inp{margin:0;font-size:.82em;padding:7px 8px}
+.mk .fg .on{border-color:#00d4ff;box-shadow:0 0 0 1px #00d4ff}
+.mk .fg p{margin:0 0 3px;font-size:.66em;color:#7fbadc;text-transform:uppercase}
+.mk .tiles .of{font-size:.6em;color:#7fbadc;font-weight:500;display:inline}
+.mk .clr{text-align:right;color:#7fd8ff;font-size:.8em;text-decoration:underline;margin:0 0 8px}
+.mk .rm{outline:none}
+.mk .inp.fx{display:flex;align-items:center;gap:6px}
+
+.mk .yr.off{opacity:.3}
+.mk .warn{color:#ffd24a}
+table td.n{white-space:nowrap}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Registration form · Plan · rev 10, rewritten</p>
+  <h1>Clean names, a safe birth year, a country, and an administrator's edit</h1>
+  <p class="dek">One coherent plan, replacing revisions 1 to 9. Four releases. Every rule in it was run against all 193 entries on PROD; what caught nothing was taken out (§09). <b>Nothing is built.</b> Four data corrections you approved come first (§02). Six decisions are still yours (§10).</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting your sign-off</span>
+    <span class="pill">four releases</span>
+    <span class="pill">FR-167 … FR-170</span>
+    <span class="pill">rev 10 · 21 Nov 2026</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Evidence</p>
+    <h2>What PROD holds today, and what the rules do with it</h2>
+    <p>Read-only, 21 Nov 2026: 193 entries across three events, 127 linked to a fencer we hold and 66 newcomers. Łomianki alone has 102 entries, 58 of them newcomers, mostly foreign. The per-entry run for Łomianki is in <code>registration-form-rules-run-lomianki-2026-11-21.html</code>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Rule in this plan</th><th>Entries it acts on</th><th>Right</th><th>Wrong</th></tr></thead>
+      <tbody>
+        <tr><td>Given name's capitals (§03)</td><td class="n">11</td><td>11</td><td>0</td></tr>
+        <tr><td>Reversed-fields question (§03)</td><td class="n">4</td><td>4</td><td>0</td></tr>
+        <tr><td>Title before the surname (§03)</td><td class="n">2</td><td>2</td><td>0</td></tr>
+        <tr><td>Birth year in range (§04)</td><td class="n">2</td><td>2</td><td>0</td></tr>
+        <tr><td>Declared year against our roster's (§06)</td><td class="n">6 of Łomianki's 44 linked</td><td colspan="2">shown to the administrator, who decides</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>No correct entry is questioned by any rule.</b></li>
+      <li><b>A linked entry already takes the roster's name</b>, so the name rules matter for newcomers.</li>
+      <li><b>The two impossible years</b> (47 and −1972) are both shown on the public list as V4 today.</li>
+      <li><b>The organizer's files</b> write <code>Nation="POL"</code> for everyone, and the TypeScript and Python builders are tested byte for byte against each other. For entrants without a country they must not change by one byte.</li>
+      <li><b>The public entry list shows name, category and weapons only.</b> A country there is a new public detail (§05, consent).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Before anything is built</p>
+    <h2>Four corrections you approved on 21 Nov, for CERT and PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Where</th><th>Row</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>PROD</td><td>entry 141</td><td>birth year 47 → <b>1979</b> (she typed her age)</td></tr>
+        <tr><td>2</td><td>PROD</td><td>entry 216</td><td>birth year −1972 → <b>1972</b>, as declared</td></tr>
+        <tr><td>3</td><td>CERT and PROD</td><td>fencer 164</td><td>roster birth year 1971 → <b>1972</b></td></tr>
+        <tr><td>4</td><td>CERT and PROD</td><td>fencer 164</td><td>roster nationality „PL” → <b>„UKR”</b></td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>Not run yet.</b> This session is in plan mode, which forbids any change. They run as soon as plan mode is off, each naming the row by its id and its current value, through <code>scripts/cloud-sql.sh</code>.</li>
+      <li><b>Checked beforehand:</b> CERT holds the same fencer, id 164, with the same values. Her 10 results in three seasons are V2 with either year. Her nationality per season is already UKR in the results table; the roster's other foreign fencers are written with three letters too (BLR, LTU).</li>
+      <li><b>Checked afterwards:</b> the public list shows entry 141 as V1 and entry 216 as V2; CERT and PROD agree on fencer 164.</li>
+      <li><b>Entry 141's name</b> (a title, the surname and two given names, all in capitals) is left for release 1, which writes it in the stored form („Dr. SURNAME Given Given”).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Release 1</p>
+    <h2>Names</h2>
+    <div class="op"><span class="op-tag u">1 · THE GIVEN NAME'S CAPITALS</span>
+      <p>When the fencer leaves the given-name box, and again on „Dalej”, the name is rewritten by the rule the organizer's files already use (<code>pythonTitle</code>, <code>ftlSeedExport.ts:196</code>): „aNNA” → „Anna”, „DZMITRY” → „Dzmitry”, „eszter zsuzsanna” → „Eszter Zsuzsanna”, „anna-maria” → „Anna-Maria”. The surname keeps today's live capitals.</p>
+      <p>The database applies the same rule to a newcomer's entry, whatever wrote it, so an old cached page cannot store „JOHN”. A linked entry keeps the roster's spelling. The 11 existing newcomers' names are corrected once by the migration.</p>
+    </div>
+    <div class="op"><span class="op-tag u">2 · A TITLE WITH THE NAME</span>
+      <div class="mkrow">
+        <div><p class="mkcap">typed: Nazwisko „dr kovács”, Imię „péter”</p>
+          <div class="mk"><p class="lbl">Nazwisko</p><div class="inp new">Dr. KOVÁCS</div><p class="lbl">Imię</p><div class="inp">Péter</div>
+          <p class="mut">on the list: <b style="color:#e0e0e0">Dr. KOVÁCS Péter</b>, placed under K</p></div></div>
+      </div>
+      <ul>
+        <li><b>Accepted from any country.</b> A short fixed list: dr, ddr, prof, ing, mag, mgr, dipl-ing, doc and their combinations, with or without the dot, at the start or the end of either box. PROD has both forms today: „DR SURNAME” and „Surname Dr.”.</li>
+        <li><b>Written one way</b>, in front of the surname: „Dr.”, „Prof. Dr.”. The surname stays in capitals.</li>
+        <li><b>Not part of the surname for anything that compares names:</b> the list's alphabetical order, the name search, the match with a known fencer and the reversed-fields question.</li>
+        <li><b>A word that only begins like a title</b> („DRAGAN”, „INGRID”, „MAGDA”) is left alone: a title is a whole word.</li>
+        <li><b>Stored in the surname field</b>, with one shared rule that splits it off wherever names are compared. No new column.</li>
+        <li><b>The organizer's files and linked entries:</b> decision D4.</li>
+      </ul>
+    </div>
+    <div class="op"><span class="op-tag u">3 · THE REVERSED-FIELDS QUESTION</span>
+      <div class="mkrow">
+        <div><p class="mkcap">typed: Nazwisko „ANNALISA”, Imię „Avancini”</p>
+          <div class="mk"><div class="ask new"><b style="color:#fff">Czy pola nie są zamienione?</b><br><span style="color:#7fbadc;font-size:.85em">„Annalisa” wygląda na imię, a „Avancini” na nazwisko.</span><br><br><b style="color:#fff;font-size:1.1em">AVANCINI Annalisa</b></div>
+          <div class="acts"><span class="btn" style="background:#00d4ff;color:#0d1b2a">Tak, zamień</span><span class="btn quiet">Zostaw, jak wpisałem</span></div></div></div>
+      </div>
+      <ul>
+        <li><b>Asked when the surname box holds a known given name and the given-name box does not.</b> Asked once, before identity matching; either answer is believed; after a swap, matching runs on the corrected pair.</li>
+        <li><b>The known given names come from two sources:</b> our fencer table, read live, and the given names of the EVF ranking, kept in one small table.</li>
+        <li><b>Measured:</b> on PROD it asks 4 entries, all truly reversed, and no other. On the EVF ranking's 2,680 fencers, 69 have a surname that is also a given name („MARTIN”, „ROMAN”) and none is asked, because their given names are known.</li>
+        <li><b>Its limit:</b> when neither word is on a list („FRED” + „ARNOLD”), nothing is asked. The read-back below is for that.</li>
+      </ul>
+    </div>
+    <div class="op"><span class="op-tag u">4 · THE KNOWN GIVEN NAMES</span>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Source</th><th>Names</th><th>Where it lives</th><th>Refresh</th></tr></thead>
+        <tbody>
+          <tr><td>Our fencer table</td><td>174 distinct on PROD</td><td>Not copied: read live from <code>tbl_fencer</code></td><td>None needed</td></tr>
+          <tr><td>EVF ranking</td><td>1,391 (24 lists, 2,680 fencers, 40 countries)</td><td>New table <code>tbl_common_given_name</code></td><td>A scheduled job, once a month</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li><b>1,451 known names in all.</b> The EVF names were read on 21 Nov through the project's own EVF client: 6 weapon-and-gender lists × 4 categories (the EVF ranking has no V0 list). The list is in the appendix.</li>
+        <li><b>Only given names are kept.</b> No surname, country, birth date or ranking place enters the table or the repository. Left out: 3 entries that are only initials, and 4 strings that occur in the EVF data more often as a surname.</li>
+        <li><b>The monthly job</b> (<code>given-names-sync.yml</code>, tool <code>python/tools/extract_evf_given_names.py</code>): 24 requests one second apart; it adds names it has not seen on CERT and PROD and never removes one; it reports the number added on Telegram and alerts if the EVF site refuses it. A new EVF name appears only when a new fencer first scores, so monthly is ample.</li>
+        <li><b>Comparison</b> ignores capitals and accents („Jose” is known through „José”). A double name is known when the whole is listed or each part is.</li>
+        <li><b>Visitors cannot read the table or the roster.</b> The form asks one function, <code>fn_registration_name_check(surname, given name)</code>, which returns two yes/no answers.</li>
+      </ul>
+    </div>
+    <div class="op"><span class="op-tag u">5 · TWO HELPS THAT NEED NO LIST</span>
+      <div class="mkrow">
+        <div><p class="mkcap">read-back, for a newcomer, before the consent screen</p>
+          <div class="mk"><div class="ask new"><span style="color:#7fbadc;font-size:.85em">Tak będzie na liście zgłoszonych:</span><br><b style="color:#fff;font-size:1.2em">FRED Arnold</b></div>
+          <div class="acts"><span class="btn" style="background:#00d4ff;color:#0d1b2a">Dalej</span><span class="btn quiet">Popraw</span></div></div></div>
+      </div>
+      <ul>
+        <li><b>The browser fills in the fencer's own name.</b> The two boxes are marked as given name and family name; today they carry no such mark (I16). Nothing typed means nothing misspelt or reversed.</li>
+        <li><b>Read-back.</b> Today's newcomer screen is reworded to show the name once, large, exactly as it will stand on the list. It is the one check that works for every language and every kind of slip.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Release 2</p>
+    <h2>Birth year</h2>
+    <div class="mkrow">
+      <div><p class="mkcap">tapping the box opens a decade grid</p>
+        <div class="mk"><p class="lbl">Rok urodzenia</p><div class="inp new" style="width:120px">1995</div>
+          <div class="ask new"><div class="dec"><span>‹</span><b style="color:#fff">1990 – 1999</b><span style="opacity:.3">›</span></div>
+          <div class="yrs"><span class="yr">1990</span><span class="yr">1991</span><span class="yr">1992</span><span class="yr">1993</span><span class="yr">1994</span><span class="yr on">1995</span><span class="yr">1996</span><span class="yr">1997</span><span class="yr off">1998</span><span class="yr off">1999</span></div>
+          <div class="dec"><span>1906 … 1997</span><span>V0</span></div></div></div></div>
+    </div>
+    <ul>
+      <li><b>The youngest year</b> is the season's later year minus 30, the V0 rule itself: 1997 for 2026/27. A year that gives no category cannot be chosen or typed.</li>
+      <li><b>The oldest year</b> is 120 years before today: 1906.</li>
+      <li><b>The grid</b> opens on the decade of a 50-year-old and pages by decade; years outside the range are greyed out.</li>
+      <li><b>Typing</b> still works: digits only, four at most, no minus sign. A year outside the range („47”) shows a line under the box and „Dalej” stays off.</li>
+      <li><b>The database refuses the same years on every write path</b>: the visitor's functions, the administrator's edit and the PROD → CERT copy. The rule sits on the table and reads the event's season.</li>
+      <li><b>Depends on §02:</b> the rule cannot go in while the two impossible years exist.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Release 3</p>
+    <h2>Country</h2>
+    <h3>The form</h3>
+    <div class="mkrow">
+      <div><p class="mkcap">as the form opens: Polska already chosen</p>
+        <div class="mk"><p class="lbl">Kraj</p><div class="inp new fx"><span class="cty"><svg class="fl" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap1"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap1)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg><span>Polska</span></span><span class="code">POL ▾</span></div></div></div>
+      <div><p class="mkcap">type to search, pick from the list</p>
+        <div class="mk"><p class="lbl">Kraj</p><div class="inp new">wiel</div>
+          <div class="ask new"><div class="opt"><svg class="fl" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap2"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap2)"><path fill="#eee" d="m0 0 8 22-8 23v23l32 54-32 54v32l32 48-32 48v32l32 54-32 54v68l22-8 23 8h23l54-32 54 32h32l48-32 48 32h32l54-32 54 32h68l-8-22 8-23v-23l-32-54 32-54v-32l-32-48 32-48v-32l-32-54 32-54V0l-22 8-23-8h-23l-54 32-54-32h-32l-48 32-48-32h-32l-54 32L68 0H0z"/><path fill="#0052b4" d="M336 0v108L444 0Zm176 68L404 176h108zM0 176h108L0 68ZM68 0l108 108V0Zm108 512V404L68 512ZM0 444l108-108H0Zm512-108H404l108 108Zm-68 176L336 404v108z"/><path fill="#d80027" d="M0 0v45l131 131h45L0 0zm208 0v208H0v96h208v208h96V304h208v-96H304V0h-96zm259 0L336 131v45L512 0h-45zM176 336 0 512h45l131-131v-45zm160 0 176 176v-45L381 336h-45z"/></g></svg>Wielka Brytania<span class="code">GBR</span></div></div>
+          <p class="lbl">search by Polish name, English name or code</p></div></div>
+    </div>
+    <ul>
+      <li><b>A pick-list, never free text.</b> Stored as the three-letter fencing code (POL, GER, GBR, SUI …) in a new column of the entry; only a code from the list is accepted.</li>
+      <li><b>One reviewed table</b> pairs each fencing code with the two-letter code the flags use (GER ↔ DE, SUI ↔ CH, NED ↔ NL …). Country names in Polish and English come from the browser itself.</li>
+      <li><b>„Polska” is pre-chosen</b>, so a foreign fencer who does not touch the box is recorded as POL. Their own edit link and the administrator's edit (release 4) correct it.</li>
+      <li><b>Entries made before this release have no country</b> until an administrator sets one.</li>
+      <li><b>Not touched:</b> the fencer master data, and nationality for rankings (ADR-106).</li>
+    </ul>
+
+    <h3>The entry list: a flag at the end of the line</h3>
+    <div class="mkrow">
+      <div><p class="mkcap">phone, 375 px</p><div class="mk wide" style="max-width:375px;min-width:0"><p class="t">Lista zgłoszonych</p><div class="lr"><span class="nm">KOWALSKA Anna</span><span class="ctg"><span class="cat">V1</span></span><span class="wps"><span class="wp wF">F</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap3"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap3)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg></span></div><div class="lr"><span class="nm">MÜLLER Hans</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap4"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap4)"><path fill="#ffda44" d="m0 345 256.7-25.5L512 345v167H0z"/><path fill="#d80027" d="m0 167 255-23 257 23v178H0z"/><path fill="#333" d="M0 0h512v167H0z"/></g></svg></span></div><div class="lr"><span class="nm">NEUTRAL Ivan</span><span class="ctg"><span class="cat">V3</span></span><span class="wps"><span class="wp wE">E</span><span class="wp wS">S</span></span><span class="cy"><span class="cc">AIN</span></span></div><div class="lr"><span class="nm">NOWAK Piotr</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wS">S</span></span><span class="cy"></span></div><div class="lr"><span class="nm">SMITH John</span><span class="ctg"><span class="cat">V0</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap5"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap5)"><path fill="#eee" d="m0 0 8 22-8 23v23l32 54-32 54v32l32 48-32 48v32l32 54-32 54v68l22-8 23 8h23l54-32 54 32h32l48-32 48 32h32l54-32 54 32h68l-8-22 8-23v-23l-32-54 32-54v-32l-32-48 32-48v-32l-32-54 32-54V0l-22 8-23-8h-23l-54 32-54-32h-32l-48 32-48-32h-32l-54 32L68 0H0z"/><path fill="#0052b4" d="M336 0v108L444 0Zm176 68L404 176h108zM0 176h108L0 68ZM68 0l108 108V0Zm108 512V404L68 512ZM0 444l108-108H0Zm512-108H404l108 108Zm-68 176L336 404v108z"/><path fill="#d80027" d="M0 0v45l131 131h45L0 0zm208 0v208H0v96h208v208h96V304h208v-96H304V0h-96zm259 0L336 131v45L512 0h-45zM176 336 0 512h45l131-131v-45zm160 0 176 176v-45L381 336h-45z"/></g></svg></span></div><div class="lr"><span class="nm">WOJCIECHOWSKA-KOWALCZYK Aleksandra</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wE">E</span><span class="wp wF">F</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap6"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap6)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg></span></div><div class="lr"><span class="nm">VAN DER BRUGGEN-SCHOONHOVEN Annemarie</span><span class="ctg"><span class="cat">V3</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap7"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap7)"><path fill="#eee" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#a2001d" d="M0 0h512v167H0z"/><path fill="#0052b4" d="M0 345h512v167H0z"/></g></svg></span></div></div></div>
+      <div><p class="mkcap">desktop</p><div class="mk wide"><p class="t">Lista zgłoszonych</p><div class="lr lh"><span class="nm">Zawodnik</span><span class="ctg">Kat.</span><span class="wps">Broń</span><span class="cy"></span></div><div class="lr"><span class="nm">KOWALSKA Anna</span><span class="ctg"><span class="cat">V1</span></span><span class="wps"><span class="wp wF">F</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap8"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap8)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg></span></div><div class="lr"><span class="nm">MÜLLER Hans</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap9"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap9)"><path fill="#ffda44" d="m0 345 256.7-25.5L512 345v167H0z"/><path fill="#d80027" d="m0 167 255-23 257 23v178H0z"/><path fill="#333" d="M0 0h512v167H0z"/></g></svg></span></div><div class="lr"><span class="nm">NEUTRAL Ivan</span><span class="ctg"><span class="cat">V3</span></span><span class="wps"><span class="wp wE">E</span><span class="wp wS">S</span></span><span class="cy"><span class="cc">AIN</span></span></div><div class="lr"><span class="nm">NOWAK Piotr</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wS">S</span></span><span class="cy"></span></div><div class="lr"><span class="nm">SMITH John</span><span class="ctg"><span class="cat">V0</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap10"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap10)"><path fill="#eee" d="m0 0 8 22-8 23v23l32 54-32 54v32l32 48-32 48v32l32 54-32 54v68l22-8 23 8h23l54-32 54 32h32l48-32 48 32h32l54-32 54 32h68l-8-22 8-23v-23l-32-54 32-54v-32l-32-48 32-48v-32l-32-54 32-54V0l-22 8-23-8h-23l-54 32-54-32h-32l-48 32-48-32h-32l-54 32L68 0H0z"/><path fill="#0052b4" d="M336 0v108L444 0Zm176 68L404 176h108zM0 176h108L0 68ZM68 0l108 108V0Zm108 512V404L68 512ZM0 444l108-108H0Zm512-108H404l108 108Zm-68 176L336 404v108z"/><path fill="#d80027" d="M0 0v45l131 131h45L0 0zm208 0v208H0v96h208v208h96V304h208v-96H304V0h-96zm259 0L336 131v45L512 0h-45zM176 336 0 512h45l131-131v-45zm160 0 176 176v-45L381 336h-45z"/></g></svg></span></div><div class="lr"><span class="nm">WOJCIECHOWSKA-KOWALCZYK Aleksandra</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wE">E</span><span class="wp wF">F</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap11"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap11)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg></span></div><div class="lr"><span class="nm">VAN DER BRUGGEN-SCHOONHOVEN Annemarie</span><span class="ctg"><span class="cat">V3</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap12"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap12)"><path fill="#eee" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#a2001d" d="M0 0h512v167H0z"/><path fill="#0052b4" d="M0 345h512v167H0z"/></g></svg></span></div></div></div>
+    </div>
+    <ul>
+      <li><b>Order on the line:</b> name, category, weapons, flag. No three-letter code; no pill, border or background.</li>
+      <li><b>The flag is 18 px</b>, the calendar's size. Its label is the country's name: shown on hover, on tap, and to a screen reader.</li>
+      <li><b>A long name</b> shortens with „…” as today; the flag never wraps.</li>
+      <li><b>An entry without a country</b> (NOWAK Piotr) shows nothing there. A list where no entry has a country looks exactly as today.</li>
+      <li><b>A country with no drawn flag</b> (NEUTRAL Ivan): decision D1.</li>
+    </ul>
+    <div class="mkrow">
+      <div><p class="mkcap">Slovakia, Slovenia, Russia, Serbia: the app's drawings at 14 px, 18 px and enlarged</p><div class="mk wide"><div class="lr lh" style="gap:0"><span style="width:28px">14</span><span style="width:32px">18</span><span style="width:70px">enlarged</span><span>code</span></div><div class="lr" style="gap:0"><svg viewBox="0 0 512 512" width="14" height="14" style="flex:none;margin-right:14px"><mask id="ap13"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap13)"><path fill="#0052b4" d="m0 160 256-32 256 32v192l-256 32L0 352z"/><path fill="#eee" d="M0 0h512v160H0z"/><path fill="#d80027" d="M0 352h512v160H0z"/><path fill="#eee" d="M64 63v217c0 104 144 137 144 137s144-33 144-137V63z"/><path fill="#d80027" d="M96 95v185a83 78 0 0 0 9 34h206a83 77 0 0 0 9-34V95z"/><path fill="#eee" d="M288 224h-64v-32h32v-32h-32v-32h-32v32h-32v32h32v32h-64v32h64v32h32v-32h64z"/><path fill="#0052b4" d="M152 359a247 231 0 0 0 56 24c12-3 34-11 56-24a123 115 0 0 0 47-45 60 56 0 0 0-34-10l-14 2a60 56 0 0 0-110 0 60 56 0 0 0-14-2c-12 0-24 4-34 10a123 115 0 0 0 47 45z"/></g></svg><svg viewBox="0 0 512 512" width="18" height="18" style="flex:none;margin-right:14px"><mask id="ap14"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap14)"><path fill="#0052b4" d="m0 160 256-32 256 32v192l-256 32L0 352z"/><path fill="#eee" d="M0 0h512v160H0z"/><path fill="#d80027" d="M0 352h512v160H0z"/><path fill="#eee" d="M64 63v217c0 104 144 137 144 137s144-33 144-137V63z"/><path fill="#d80027" d="M96 95v185a83 78 0 0 0 9 34h206a83 77 0 0 0 9-34V95z"/><path fill="#eee" d="M288 224h-64v-32h32v-32h-32v-32h-32v32h-32v32h32v32h-64v32h64v32h32v-32h64z"/><path fill="#0052b4" d="M152 359a247 231 0 0 0 56 24c12-3 34-11 56-24a123 115 0 0 0 47-45 60 56 0 0 0-34-10l-14 2a60 56 0 0 0-110 0 60 56 0 0 0-14-2c-12 0-24 4-34 10a123 115 0 0 0 47 45z"/></g></svg><svg viewBox="0 0 512 512" width="56" height="56" style="flex:none;margin-right:14px"><mask id="ap15"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap15)"><path fill="#0052b4" d="m0 160 256-32 256 32v192l-256 32L0 352z"/><path fill="#eee" d="M0 0h512v160H0z"/><path fill="#d80027" d="M0 352h512v160H0z"/><path fill="#eee" d="M64 63v217c0 104 144 137 144 137s144-33 144-137V63z"/><path fill="#d80027" d="M96 95v185a83 78 0 0 0 9 34h206a83 77 0 0 0 9-34V95z"/><path fill="#eee" d="M288 224h-64v-32h32v-32h-32v-32h-32v32h-32v32h32v32h-64v32h64v32h32v-32h64z"/><path fill="#0052b4" d="M152 359a247 231 0 0 0 56 24c12-3 34-11 56-24a123 115 0 0 0 47-45 60 56 0 0 0-34-10l-14 2a60 56 0 0 0-110 0 60 56 0 0 0-14-2c-12 0-24 4-34 10a123 115 0 0 0 47 45z"/></g></svg><span class="cc" style="margin-right:10px">SVK</span><span style="color:#8894a8">Slovakia</span></div><div class="lr" style="gap:0"><svg viewBox="0 0 512 512" width="14" height="14" style="flex:none;margin-right:14px"><mask id="ap16"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap16)"><path fill="#0052b4" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#eee" d="M0 0h512v167H0z"/><path fill="#d80027" d="M0 345h512v167H0z"/><path fill="#0052b4" d="M222.7 167v-66.8H89V167l67 82.6z"/><path fill="#eee" d="M89 167v22.2c0 51.1 66.8 66.8 66.8 66.8s66.8-15.7 66.8-66.8V167l-22.3 22.2-44.5-33.4-44.5 33.4z"/></g></svg><svg viewBox="0 0 512 512" width="18" height="18" style="flex:none;margin-right:14px"><mask id="ap17"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap17)"><path fill="#0052b4" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#eee" d="M0 0h512v167H0z"/><path fill="#d80027" d="M0 345h512v167H0z"/><path fill="#0052b4" d="M222.7 167v-66.8H89V167l67 82.6z"/><path fill="#eee" d="M89 167v22.2c0 51.1 66.8 66.8 66.8 66.8s66.8-15.7 66.8-66.8V167l-22.3 22.2-44.5-33.4-44.5 33.4z"/></g></svg><svg viewBox="0 0 512 512" width="56" height="56" style="flex:none;margin-right:14px"><mask id="ap18"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap18)"><path fill="#0052b4" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#eee" d="M0 0h512v167H0z"/><path fill="#d80027" d="M0 345h512v167H0z"/><path fill="#0052b4" d="M222.7 167v-66.8H89V167l67 82.6z"/><path fill="#eee" d="M89 167v22.2c0 51.1 66.8 66.8 66.8 66.8s66.8-15.7 66.8-66.8V167l-22.3 22.2-44.5-33.4-44.5 33.4z"/></g></svg><span class="cc" style="margin-right:10px">SLO</span><span style="color:#8894a8">Slovenia</span></div><div class="lr" style="gap:0"><svg viewBox="0 0 512 512" width="14" height="14" style="flex:none;margin-right:14px"><mask id="ap19"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap19)"><path fill="#0052b4" d="M512 170v172l-256 32L0 342V170l256-32z"/><path fill="#eee" d="M512 0v170H0V0Z"/><path fill="#d80027" d="M512 342v170H0V342Z"/></g></svg><svg viewBox="0 0 512 512" width="18" height="18" style="flex:none;margin-right:14px"><mask id="ap20"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap20)"><path fill="#0052b4" d="M512 170v172l-256 32L0 342V170l256-32z"/><path fill="#eee" d="M512 0v170H0V0Z"/><path fill="#d80027" d="M512 342v170H0V342Z"/></g></svg><svg viewBox="0 0 512 512" width="56" height="56" style="flex:none;margin-right:14px"><mask id="ap21"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap21)"><path fill="#0052b4" d="M512 170v172l-256 32L0 342V170l256-32z"/><path fill="#eee" d="M512 0v170H0V0Z"/><path fill="#d80027" d="M512 342v170H0V342Z"/></g></svg><span class="cc" style="margin-right:10px">RUS</span><span style="color:#8894a8">Russia</span></div><div class="lr" style="gap:0"><svg viewBox="0 0 512 512" width="14" height="14" style="flex:none;margin-right:14px"><mask id="ap22"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap22)"><path fill="#0052b4" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#d80027" d="M0 0h512v167H0z"/><path fill="#eee" d="M0 345h512v167H0z"/><path fill="#d80027" d="M66.2 144.7v127.7c0 72.6 94.9 95 94.9 95s94.9-22.4 94.9-95V144.7z"/><path fill="#ffda44" d="M105.4 167h111.4v-44.6l-22.3 11.2-33.4-33.4-33.4 33.4-22.3-11.2zm128.3 123.2-72.3-72.4L89 290.2l23.7 23.6 48.7-48.7 48.7 48.7z"/><path fill="#eee" d="M233.7 222.6H200a22.1 22.1 0 0 0 3-11.1 22.3 22.3 0 0 0-42-10.5 22.3 22.3 0 0 0-41.9 10.5 22.1 22.1 0 0 0 3 11.1H89a23 23 0 0 0 23 22.3h-.7c0 12.3 10 22.2 22.3 22.2 0 11 7.8 20 18.1 21.9l-17.5 39.6a72.1 72.1 0 0 0 27.2 5.3 72.1 72.1 0 0 0 27.2-5.3L171.1 289c10.3-2 18.1-11 18.1-21.9 12.3 0 22.3-10 22.3-22.2h-.8a23 23 0 0 0 23-22.3z"/></g></svg><svg viewBox="0 0 512 512" width="18" height="18" style="flex:none;margin-right:14px"><mask id="ap23"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap23)"><path fill="#0052b4" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#d80027" d="M0 0h512v167H0z"/><path fill="#eee" d="M0 345h512v167H0z"/><path fill="#d80027" d="M66.2 144.7v127.7c0 72.6 94.9 95 94.9 95s94.9-22.4 94.9-95V144.7z"/><path fill="#ffda44" d="M105.4 167h111.4v-44.6l-22.3 11.2-33.4-33.4-33.4 33.4-22.3-11.2zm128.3 123.2-72.3-72.4L89 290.2l23.7 23.6 48.7-48.7 48.7 48.7z"/><path fill="#eee" d="M233.7 222.6H200a22.1 22.1 0 0 0 3-11.1 22.3 22.3 0 0 0-42-10.5 22.3 22.3 0 0 0-41.9 10.5 22.1 22.1 0 0 0 3 11.1H89a23 23 0 0 0 23 22.3h-.7c0 12.3 10 22.2 22.3 22.2 0 11 7.8 20 18.1 21.9l-17.5 39.6a72.1 72.1 0 0 0 27.2 5.3 72.1 72.1 0 0 0 27.2-5.3L171.1 289c10.3-2 18.1-11 18.1-21.9 12.3 0 22.3-10 22.3-22.2h-.8a23 23 0 0 0 23-22.3z"/></g></svg><svg viewBox="0 0 512 512" width="56" height="56" style="flex:none;margin-right:14px"><mask id="ap24"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap24)"><path fill="#0052b4" d="m0 167 253.8-19.3L512 167v178l-254.9 32.3L0 345z"/><path fill="#d80027" d="M0 0h512v167H0z"/><path fill="#eee" d="M0 345h512v167H0z"/><path fill="#d80027" d="M66.2 144.7v127.7c0 72.6 94.9 95 94.9 95s94.9-22.4 94.9-95V144.7z"/><path fill="#ffda44" d="M105.4 167h111.4v-44.6l-22.3 11.2-33.4-33.4-33.4 33.4-22.3-11.2zm128.3 123.2-72.3-72.4L89 290.2l23.7 23.6 48.7-48.7 48.7 48.7z"/><path fill="#eee" d="M233.7 222.6H200a22.1 22.1 0 0 0 3-11.1 22.3 22.3 0 0 0-42-10.5 22.3 22.3 0 0 0-41.9 10.5 22.1 22.1 0 0 0 3 11.1H89a23 23 0 0 0 23 22.3h-.7c0 12.3 10 22.2 22.3 22.2 0 11 7.8 20 18.1 21.9l-17.5 39.6a72.1 72.1 0 0 0 27.2 5.3 72.1 72.1 0 0 0 27.2-5.3L171.1 289c10.3-2 18.1-11 18.1-21.9 12.3 0 22.3-10 22.3-22.2h-.8a23 23 0 0 0 23-22.3z"/></g></svg><span class="cc" style="margin-right:10px">SRB</span><span style="color:#8894a8">Serbia</span></div></div></div>
+    </div>
+    <p>The four are drawn differently: Slovakia and Slovenia carry their shields, Russia none, Serbia has its stripes in the other order with its arms. At 18 px the shields are small; a visitor unsure of a flag has its label and the filter below.</p>
+
+    <h3>The country filter</h3>
+    <div class="mkrow">
+      <div><p class="mkcap">weapon „Szpada” and country „GER” together: 2 of 6 entries</p><div class="mk wide"><p class="t">Lista zgłoszonych</p><div class="tiles" style="outline:2px dashed #ffd24a;outline-offset:4px;border-radius:8px"><div class="tile"><span>Zgłoszeni</span>2 <span class="of">z 6</span></div><div class="tile"><span>Szpada</span>2 <span class="of">z 4</span></div><div class="tile"><span>Floret</span>0 <span class="of">z 1</span></div><div class="tile"><span>Szabla</span>0 <span class="of">z 2</span></div></div><div class="inp" style="margin:0 0 6px;color:#8894a8">Szukaj po nazwisku</div><div class="fg"><div><p>Broń</p><div class="inp on">Szpada ▾</div></div><div><p>Kategoria</p><div class="inp ">-- ▾</div></div><div><p>Płeć</p><div class="inp ">-- ▾</div></div><div><p>Kraj</p><div class="inp on new">GER ▾</div></div></div><p class="clr">Wyczyść filtry</p><div class="lr lh"><span class="nm">Zawodnik</span><span class="ctg">Kat.</span><span class="wps">Broń</span><span class="cy"></span></div><div class="lr"><span class="nm">MÜLLER Hans</span><span class="ctg"><span class="cat">V2</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap25"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap25)"><path fill="#ffda44" d="m0 345 256.7-25.5L512 345v167H0z"/><path fill="#d80027" d="m0 167 255-23 257 23v178H0z"/><path fill="#333" d="M0 0h512v167H0z"/></g></svg></span></div><div class="lr"><span class="nm">SCHMIDT Eva</span><span class="ctg"><span class="cat">V1</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap26"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap26)"><path fill="#ffda44" d="m0 345 256.7-25.5L512 345v167H0z"/><path fill="#d80027" d="m0 167 255-23 257 23v178H0z"/><path fill="#333" d="M0 0h512v167H0z"/></g></svg></span></div></div></div>
+      <div><p class="mkcap">the filter's choices</p><div class="mk"><p class="lbl">Kraj</p><div class="inp new" style="width:110px">GER ▾</div><div class="ask"><div class="opt">--</div><div class="opt">AIN</div><div class="opt">GBR</div><div class="opt" style="color:#00d4ff">GER</div><div class="opt">POL</div></div><p class="mut">only the countries present in this list, by code</p></div></div>
+    </div>
+    <ul>
+      <li><b>A fourth filter, „Kraj”</b>, beside weapon, category and gender. An entry is listed only when it passes the search and every chosen filter.</li>
+      <li><b>Its choices are the three-letter codes alone</b>, the letters on each fencer's jacket, for the countries present in that event's list, in code order.</li>
+      <li><b>It follows FR-165 like the others:</b> the count tiles read „2 z 6”, the tiles get their dashed frame, the chosen filter is highlighted, „Wyczyść filtry” empties it.</li>
+      <li><b>Entries without a country</b> are listed while no country is chosen and left out once one is.</li>
+      <li><b>Layout:</b> four filters in one row on a desktop, two rows of two on a phone.</li>
+      <li><b>A list where no entry has a country</b> shows no „Kraj” filter and keeps today's three in one row.</li>
+    </ul>
+
+    <h3>The organizer's files</h3>
+    <ul>
+      <li>Each entrant's <code>Nation</code> comes from the entry. An entry without a country writes POL, as today, so files for Polish entrants do not change by one byte. The file's own <code>Federation="POL"</code> stays.</li>
+      <li>The pick-list file of fencers who have not entered stays as today.</li>
+    </ul>
+
+    <h3>The consent screen</h3>
+    <div class="mkrow">
+      <div><p class="mkcap">„Informacja i zgoda (RODO)”: the two additions are framed</p>
+        <div class="mk wide"><p class="t">Co przetwarzamy i na jakiej podstawie</p>
+          <div class="brow"><span>Imię, nazwisko, płeć, rok urodzenia — ranking i weryfikacja kategorii</span><span class="law">uzasadniony interes · art. 6(1)(f)</span></div>
+          <div class="brow"><span>Wybór broni i kategorii — zapis na zawody</span><span class="law">umowa · art. 6(1)(b)</span></div>
+          <div class="brow"><span>E-mail (gdy wymagany) — jednorazowa weryfikacja</span><span class="law">nie przechowujemy</span></div>
+          <div class="brow"><span>Klub — tylko do plików startowych</span><span class="law">umowa · art. 6(1)(b)</span></div>
+          <div class="brow new"><span>Kraj — lista zgłoszonych i pliki startowe</span><span class="law">umowa · art. 6(1)(b)</span></div>
+          <p class="mut">Zgłoszenie usuwamy po przetworzeniu wyników. […]</p>
+          <p class="mut">Rok urodzenia jest widoczny w szczegółach wyników, aby umożliwić weryfikację prawidłowej kategorii wiekowej.</p>
+          <p class="mut new">Kraj jest widoczny na publicznej liście zgłoszonych.</p></div></div>
+    </div>
+    <ul>
+      <li><b>What is added:</b> one line and one sentence, in Polish and English. No extra tick-box.</li>
+      <li><b>Why:</b> the country is a new public detail, so the fencer is told before entering.</li>
+      <li><b>„v1.2”</b> is stored with each new entry to record which wording the fencer saw. Earlier entries keep „v1.1”; nobody is asked again. Decision D3.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Release 4</p>
+    <h2>A signed-in administrator edits an entry</h2>
+    <p>On the route released for „Usuń” (FR-166): signed in on <code>/ranking/?admin=1</code>, ☰ → „Znajdź zawody”, the event's „Lista zgłoszonych”. A visitor sees none of this.</p>
+    <div class="mkrow">
+      <div><p class="mkcap">the list, signed in: „Edytuj” beside „Usuń”; ≠ marks a year that differs from our roster's</p><div class="mk wide"><p class="t">Lista zgłoszonych</p><div class="lr lh"><span class="nm">Zawodnik</span><span class="ctg">Kat.</span><span class="wps">Broń</span><span class="cy"></span><span style="width:118px"></span></div><div class="lr"><span class="nm">KOWALSKA Anna</span><span class="ctg"><span class="cat">V1</span></span><span class="wps"><span class="wp wF">F</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap27"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap27)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg></span><span class="ed new">Edytuj</span><span class="rm">Usuń</span></div><div class="lr"><span class="nm">NOWAK Piotr</span><span class="ctg"><span class="cat">V1</span></span><span class="wps"><span class="wp wS">S</span></span><span class="warn" style="flex:none">≠</span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap28"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap28)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg></span><span class="ed new">Edytuj</span><span class="rm">Usuń</span></div><div class="lr"><span class="nm">SMITH John</span><span class="ctg"><span class="cat">V0</span></span><span class="wps"><span class="wp wE">E</span></span><span class="cy"><svg class="fl big" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap29"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap29)"><path fill="#eee" d="m0 0 8 22-8 23v23l32 54-32 54v32l32 48-32 48v32l32 54-32 54v68l22-8 23 8h23l54-32 54 32h32l48-32 48 32h32l54-32 54 32h68l-8-22 8-23v-23l-32-54 32-54v-32l-32-48 32-48v-32l-32-54 32-54V0l-22 8-23-8h-23l-54 32-54-32h-32l-48 32-48-32h-32l-54 32L68 0H0z"/><path fill="#0052b4" d="M336 0v108L444 0Zm176 68L404 176h108zM0 176h108L0 68ZM68 0l108 108V0Zm108 512V404L68 512ZM0 444l108-108H0Zm512-108H404l108 108Zm-68 176L336 404v108z"/><path fill="#d80027" d="M0 0v45l131 131h45L0 0zm208 0v208H0v96h208v208h96V304h208v-96H304V0h-96zm259 0L336 131v45L512 0h-45zM176 336 0 512h45l131-131v-45zm160 0 176 176v-45L381 336h-45z"/></g></svg></span><span class="ed new">Edytuj</span><span class="rm">Usuń</span></div></div></div>
+      <div><p class="mkcap">the edit, for an entry linked to a fencer we hold</p>
+        <div class="mk"><p class="t">Edytuj zgłoszenie</p>
+          <p class="lbl">Nazwisko i imię</p><div class="inp" style="opacity:.6">NOWAK Piotr</div>
+          <p class="lock">Imię i nazwisko z bazy zawodników</p>
+          <p class="lbl">Płeć · Rok urodzenia</p><div class="inp new">M · 1980 <span class="warn" style="float:right">w bazie: 1984 ≠</span></div>
+          <p class="lbl">Broń</p><div class="inp">szabla</div>
+          <p class="lbl">Klub</p><div class="inp">&nbsp;</div>
+          <p class="lbl">Kraj</p><div class="inp new fx"><span class="cty"><svg class="fl" viewBox="0 0 512 512" aria-hidden="true"><mask id="ap30"><circle cx="256" cy="256" r="256" fill="#fff"/></mask><g mask="url(#ap30)"><path fill="#d80027" d="m0 256 256.4-44.3L512 256v256H0z"/><path fill="#eee" d="M0 0h512v256H0z"/></g></svg><span>Polska</span></span><span class="code">POL ▾</span></div>
+          <div class="acts"><span class="btn" style="background:#00d4ff;color:#0d1b2a">Zapisz</span><span class="btn quiet">Anuluj</span></div>
+          <p class="mut" style="color:#4ade80">after saving: ✓ Zapisano zmiany: NOWAK Piotr</p></div></div>
+    </div>
+    <ul>
+      <li><b>What can be changed:</b> decision D2. Recommended: every field the fencer declared.</li>
+      <li><b>A linked entry's name is locked</b>, because the roster's name is what the database keeps for it. A newcomer's name can be edited.</li>
+      <li><b>The roster's year beside the declared one</b> (decision D5): for a linked entry the dialog shows both, and the signed-in list marks an entry where they differ. Six of Łomianki's 44 linked entries differ, by 1 to 5 years. Which is right stays the administrator's call; this plan does not edit the roster.</li>
+      <li><b>The same rules as the form</b> hold for the administrator: the name form, the year range, the country list. A refused save keeps the dialog open with the reason.</li>
+      <li><b>An edit does not</b> link or unlink the entry, touch the consent record, the fencer's edit link or the payment, or change the fencer master data.</li>
+      <li><b>How it writes:</b> as the signed-in administrator, by the access rule that already lets „Usuń” delete. No log of who edited, as for „Usuń”.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · What changes where</p>
+    <h2>Files</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Release</th><th>Frontend</th><th>Database (one migration each)</th><th>Other</th></tr></thead>
+      <tbody>
+        <tr><td>1 Names</td><td><code>RegistrationForm.svelte</code>; new <code>lib/registrationName.ts</code> (capitals, titles; reuses <code>pythonTitle</code>); <code>EntryList.svelte</code> (order and search ignore a title); <code>api.ts</code>; locale texts</td><td>new <code>tbl_common_given_name</code>; new <code>fn_registration_name_check</code>; <code>fn_trim_registration_names</code> sets the name form and the title; the matching functions ignore a title; one-off correction of newcomers' rows</td><td>new <code>python/tools/extract_evf_given_names.py</code>; a public ranking call on the EVF client (I17); new workflow <code>given-names-sync.yml</code> and its block on the workflow catalog page</td></tr>
+        <tr><td>2 Year</td><td><code>RegistrationForm.svelte</code>; new <code>YearPicker.svelte</code>, <code>lib/birthYearRange.ts</code></td><td>a rule on <code>tbl_registration</code> refusing a year outside the season's range; the two write functions return the form's message for it</td><td>–</td></tr>
+        <tr><td>3 Country</td><td>new <code>CountryPicker.svelte</code>, <code>lib/fencingCountries.ts</code>; <code>RegistrationForm.svelte</code>, <code>EntryList.svelte</code> (flag and filter), <code>ftlSeedExport.ts</code>, <code>api.ts</code>, <code>types.ts</code>; consent text v1.2</td><td><code>tbl_registration.txt_country</code>; both write functions (new optional last argument, so an old cached page still works); <code>vw_registration_entry_list</code>; <code>fn_ftl_export_entries</code>; <code>fn_replace_event_registrations</code></td><td><code>python/pipeline/ftl_seed_export.py</code>, <code>ftl_seed_export_db.py</code>, <code>promotion/refresh.py</code>, <code>scripts/mirror-prod-local.sh</code>, the security posture check</td></tr>
+        <tr><td>4 Admin edit</td><td><code>EntryList.svelte</code>; new <code>EntryEdit.svelte</code> (reuses <code>YearPicker</code>, <code>CountryPicker</code>, <code>registrationName.ts</code>); <code>api.ts</code>; locale texts</td><td>none expected: the administrator's access rule and the rules of releases 1–3 cover it; tests prove that</td><td>–</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Tests first, proof, documents</p>
+    <h2>Each test seen failing before the code that makes it pass</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>IDs</th><th>What they pin</th><th>Layer</th></tr></thead>
+      <tbody>
+        <tr><td><code>RFNAME.01–04</code></td><td>The given name's form: lower, upper, mixed case, double, hyphen, apostrophe, accents, spaces; the surname unchanged.</td><td>Vitest</td></tr>
+        <tr><td><code>RFNAME.05–09</code></td><td>Titles: each one, with and without the dot, combined, at the start and end of each box; the written form; a word that only begins like a title; the list orders and searches without it.</td><td>Vitest</td></tr>
+        <tr><td><code>RFNAME.10–14</code></td><td>The reversed question: when it appears and when not; both answers; matching on the swapped pair; a title taken off first; a known fencer passes with no question.</td><td>Vitest</td></tr>
+        <tr><td><code>RFNAME.15–16</code></td><td>The autofill marks; the read-back shows the stored form and „Popraw” returns to the boxes.</td><td>Vitest</td></tr>
+        <tr><td><code>RFNAME.17–23</code></td><td>The database: the names table holds given names only; known names are the table plus the roster, without capitals or accents, a double name by its parts; the check returns its two values and is callable by a visitor, who cannot read the table; a newcomer's row is stored in the name form with its title, a linked row keeps the roster's; matching ignores a title; the one-off correction touches newcomers only.</td><td>pgTAP</td></tr>
+        <tr><td><code>RFNAME.24–27</code></td><td>The sync job: adds only unseen names, removes none, keeps given names only, reports its count, fails loudly when the source refuses; the workflow runs off the hour.</td><td>pytest</td></tr>
+        <tr><td><code>RFYEAR.01–06</code></td><td>The range from the season; no minus, no letters, four digits; out of range refused with its message; the grid opens, pages, greys out; the category follows.</td><td>Vitest</td></tr>
+        <tr><td><code>RFYEAR.07–10</code></td><td>Create, edit, a direct administrator's update and the copy all refuse a year outside the range; both edges accepted.</td><td>pgTAP</td></tr>
+        <tr><td><code>RFCTRY.01–05</code></td><td>The code table: codes unique, the differing pairs right, codes without a flag listed; the picker opens on Polska and searches by Polish name, English name and code.</td><td>Vitest</td></tr>
+        <tr><td><code>RFCTRY.06–10</code></td><td>The list: each line ends with the flag alone, labelled with the country's name; nothing for an entry without a country; no room kept when no entry has one; a long name still shortens; D1.</td><td>Vitest</td></tr>
+        <tr><td><code>RFCTRY.11–17</code></td><td>The filter: offered only when an entry has a country; its choices are the codes present, in order; it narrows; it combines with the search and each other filter; tiles, highlight and „Wyczyść filtry” follow; the phone layout.</td><td>Vitest</td></tr>
+        <tr><td><code>RFCTRY.18–23</code></td><td>The column's rule; create, edit and the copy store it; an old call without the argument still works; the public view shows the country and still no birth year or club; the export returns it.</td><td>pgTAP</td></tr>
+        <tr><td><code>RFCTRY.24–26</code></td><td>The organizer's files: a foreign entrant's <code>Nation</code>; an all-Polish fixture byte-identical to today's; TypeScript and Python agree byte for byte.</td><td>Vitest, pytest</td></tr>
+        <tr><td><code>RFADM.01–08</code></td><td>„Edytuj” only for a signed-in administrator; the dialog opens with the entry's values; a linked entry's name is locked; save updates the row and the list; a refused save keeps the dialog with the reason; Escape and „Anuluj” change nothing; signing out closes it.</td><td>Vitest</td></tr>
+        <tr><td><code>RFADM.09–12</code></td><td>An administrator can read and update an entry, a visitor cannot; the update leaves the link, the consent record and the edit token as they were; the name, year and country rules hold for it.</td><td>pgTAP</td></tr>
+        <tr><td><code>RFADM.13–15</code></td><td>D5: a linked entry's edit shows the roster's year; the list marks a difference only for a signed-in administrator; a newcomer's entry shows neither.</td><td>Vitest, pgTAP</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Proof, per release</h3>
+    <ol class="steps">
+      <li><b>A before/after pixel sheet</b>, two identical runs first: the form and the entry list, desktop and phone, Polish and English, visitor and signed-in administrator. Approved by you before any push.</li>
+      <li><b>A LOCAL walk-through on the real WordPress page bodies</b>, the Ranking page included for the administrator.</li>
+      <li><b>The rules run again on PROD's entries</b>, read-only, with the built code's own functions, and compared with §01.</li>
+      <li><b>Release 3:</b> the organizer's download for a real event on LOCAL, identical to today's for entries without a country.</li>
+      <li><b>After the release</b>, PROD is checked without changing anything, and an old cached page is tried against the new database.</li>
+    </ol>
+    <h3>Documents</h3>
+    <ul>
+      <li><b>FR-167</b> names, <b>FR-168</b> birth year, <b>FR-169</b> country, <b>FR-170</b> administrator's edit; FR-120, FR-122, FR-123, FR-165 and FR-166 amended; RTM rows for every ID above.</li>
+      <li><b>ADR-079 amendment</b>: the name form, titles, the known-names store and its refresh, the year range, the declared country, consent v1.2, the administrator's edit. <b>ADR-080 amendment</b>: <code>Nation</code> comes from the entry. Draft texts come with each pixel sheet, for your sign-off.</li>
+      <li>Handbook: registration lifecycle, events and registration, product surfaces, the workflow catalog.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Taken out, on the evidence</p>
+    <h2>What earlier revisions held and this plan does not build</h2>
+    <p>Each of these was run against all 193 PROD entries. Say the word and any of them comes back.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Left out</th><th>What the run showed</th></tr></thead>
+      <tbody>
+        <tr><td>My hand-written 200 Polish and 200 international names</td><td>With or without them the reversed question asks the same 4 entries. The EVF names and our roster do the work.</td></tr>
+        <tr><td>A spelling question („Czy chodziło o imię „Krzysztof”?”), also in its Polska-only form</td><td>Asked of nobody among 193 entries. For foreign fencers it would wrongly ask 5 to 9 in 100 (measured on the EVF ranking). A known fencer's name already comes from the roster.</td></tr>
+        <tr><td>The state register of Polish given names (dane.gov.pl)</td><td>Its only use was the Polish spelling question. Not downloaded.</td></tr>
+        <tr><td>Questions for both names in one box, the same word in both boxes, shapes no name has</td><td>No entry of 193 shows any of them.</td></tr>
+        <tr><td>Refusing digits and symbols in a name</td><td>No entry of 193 has one. A hard refusal also risks a real name with an unusual mark.</td></tr>
+        <tr><td>A „?” for the administrator beside a given name on no list</td><td>12 marks among 66 newcomers; 5 were worth a look, and 4 of those the reversed question now catches at entry.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Decisions</p>
+    <h2>Settled by you</h2>
+    <ul>
+      <li>Never a birth year below V0; the decade grid; „Polska” pre-chosen.</li>
+      <li>The country on the list is the flag alone, at the end of the line; the filter shows three-letter codes only and works with the other filters.</li>
+      <li>Titles are accepted from every country. The EVF names are used and refreshed monthly.</li>
+      <li>A signed-in administrator edits entries; old entries get a country that way. Four releases: names, birth year, country, administrator's edit.</li>
+      <li>The four corrections of §02.</li>
+    </ul>
+    <h2>Still yours: six</h2>
+    <div class="note accent"><p class="lede">D1 · A country with no drawn flag (§05)</p>
+      <p>A: its three letters in small type in the flag's place. B: nothing. I expect this only for the neutral athletes' code.</p>
+      <p><b>Recommended: A</b>, so such a fencer is not shown as having no country.</p></div>
+    <div class="note accent"><p class="lede">D2 · What the administrator can edit (§06)</p>
+      <p>A: every declared field. B: the country only.</p>
+      <p><b>Recommended: A.</b> The same dialog would have corrected both impossible years without a database visit.</p></div>
+    <div class="note accent"><p class="lede">D3 · The consent screen (§05)</p>
+      <p><b>Recommended: as drawn</b>: one new line, one new sentence, version v1.2.</p></div>
+    <div class="note accent"><p class="lede">D4 · Titles in two places (§03)</p>
+      <p>In the organizer's files: A the surname without the title, B with it. For a fencer we hold, whose entry takes the roster's name: A no title shown, B the typed title kept in front.</p>
+      <p><b>Recommended: A and A.</b> The files then match the organizer's own records, and the roster stays the one spelling of a known fencer.</p></div>
+    <div class="note accent"><p class="lede">D5 · The roster's year beside the declared one (§06)</p>
+      <p>A: shown in the administrator's edit, with a mark on the signed-in list where they differ. B: leave it out.</p>
+      <p><b>Recommended: A.</b> Six of 44 differ today and nothing shows it.</p></div>
+    <div class="note accent"><p class="lede">D6 · What was taken out (§09)</p>
+      <p><b>Recommended: leave all six out.</b> Name any you want back.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">11 · Order of work and open issues</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li><b>Now, once plan mode is off:</b> the four corrections of §02, each verified.</li>
+      <li><b>Before release 1:</b> fix the documentation search (I13).</li>
+      <li><b>Each release, in order 1 to 4:</b> RTM IDs registered as Planned; tests written and seen failing; build until green with svelte-check, postgrestools and the full suites; pixel sheet, walk-through and ADR draft for your approval; documents, coherence gate, graph and index refresh; <code>scripts/preflight.sh</code> exit 0; release on your go through the integration checkout; PROD checked; release recorded.</li>
+    </ol>
+    <p>Between releases 3 and 4 a foreign fencer left as „Polska” can be corrected only by their own edit link. If that gap matters, 3 and 4 can go out the same day.</p>
+    <h3>Issues met while planning</h3>
+    <ul>
+      <li><b>I11, I19, I21 · Two impossible birth years on PROD</b>, both shown as V4; my first check read only the lowest and highest year and missed the second. Corrected in §02; prevented by release 2.</li>
+      <li><b>I12 · 11 newcomers' given names are not in the name form.</b> Release 1.</li>
+      <li><b>I13 · The documentation search tool does not connect in this session.</b> Fixed before the build.</li>
+      <li><b>I14 · The roster's nationality column mixes „PL” (347) and „POL” (23).</b> Fencer 164 is corrected in §02; the rest is its own task, read by nothing in this plan.</li>
+      <li><b>I16 · The form's name boxes carry no autofill marks.</b> Release 1.</li>
+      <li><b>I17 · The EVF client has no public call for a ranking list.</b> Release 1.</li>
+      <li><b>I18 · Two PROD entries carry a title</b>, one stored in capitals and sorted under D. Release 1.</li>
+      <li><b>I20 · Six linked entries at Łomianki declare a year different from our roster's.</b> Decision D5; one is settled in §02.</li>
+    </ul>
+    <div class="note warn"><p class="lede">☐ Documentation coherence gate complete</p><p>Ticked per release, with the trace of every page updated.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">Appendix</p>
+    <h2>The EVF ranking's given names, read 21 Nov 2026</h2>
+    <h3>Borne by two or more fencers (459)</h3>
+    <p class="names tight">Adam, Adrian, Adriana, Agnieszka, Agnès, Alan, Alberto, Aleksander, Alessandra, Alessandro, Alex, Alexander, Alexandre, Alfredo, Alice, Andras, Andre, Andrea, Andreas, Andrew, Andrey, Andrzej, Andrés, Angela, Angelica, Angelika, Anita, Anja, Anna, Annalisa, Annamaria, Anne, Annette, Anthony, Antoine, Antonella, Antonello, Antonio, Artur, Astrid, Attila, Augusto, Aurélien, Axelle, Balázs, Baptiste, Barbara, Beata, Ben, Benjamin, Benoit, Bernard, Bernd, Bertrand, Bettina, Boris, Brian, Brigitte, Bruno, Béatrice, Béla, Camillo, Carlo, Carlos, Carol, Carole, Caroline, Catherine, Cecilia, Cedric, Celine, Chiara, Chris, Christian, Christiane, Christine, Christophe, Christopher, Claas, Claire, Claudia, Claudio, Clement, Corinne, Costanza, Cristian, Cristiano, Cristina, Csaba, Cyril, Cyrille, César, Daniel, Daniela, Daniele, Dariusz, David, Davide, Denis, Denise, Didier, Diego, Dirk, Diána, Dominique, Donatella, Duncan, Dóra, Edouard, Edward, Elena, Elisa, Elisabetta, Emanuele, Emilio, Emmanuel, Enrica, Enrico, Enrique, Enzo, Eric, Erik, Etienne, Eva, Ewa, Fabio, Fabrice, Fabrizio, Federica, Federico, Ferenc, Fernando, Filippo, Fiona, Florence, Florian, Francesca, Francesco, Francisco, Franck, Frank, François, Frederic, Fredrik, Fulvia, Gabriel, Gabriela, Gabriele, Gennaro, George, Gerhard, Gianfranco, Gianluca, Gianna, Giles, Gilles, Gino, Giorgio, Giovanni, Giulia, Giuliano, Giulio, Giuseppe, Goran, Graham, Gregory, Guillaume, Gyula, György, Gábor, Hans, Harald, Helen, Henning, Herve, Hristo, Hugues, Ian, Igor, Imre, Inga, Ioannis, Irina, Iris, Isabelle, Istvan, Ivan, Jacek, Jacopo, Jacqueline, Jacques, James, Jan, Jane, Janet, Janusz, Jaroslaw, Jason, Javier, Jean, Jean Francois, Jean Luc, Jean-Baptiste, Jean-Francois, Jean-Luc, Jean-Marie, Jeffrey, Jennifer, Jens, Jerzy, Jim, Joachim, Joel, Johan, Johanna, John, Jonathan, Jordi, Jorge, Jose Antonio, Jose Luis, Jose Maria, José, José Ignacio, Jozsef, Juan, Judit, Judith, Julia, Julian, Julie, Julien, Jurgen, János, Jérôme, Karen, Karsten, Kata, Katalin, Katharina, Katja, Kerstin, Kevin, Konstantin, Kristina, Krisztina, Krzysztof, Károly, Laura, Laurence, Laurent, Leonardo, Leonid, Leszek, Lilla, Linda, Lindsay, Lionel, Lisa, Loic, Lorenzo, Luca, Lucy, Luigi, László, Maciej, Magda, Manuel, Manuela, Marc, Marcin, Marco, Marek, Margaret, Maria, Marian, Mariano, Marie, Marie-Pierre, Marilyn, Marina, Mario, Marion, Mariusz, Mark, Markus, Marta, Martin, Martina, Marton, Massimo, Matteo, Matthew, Matthias, Matthieu, Maurizio, Mauro, Maxim, Michael, Michal, Michel, Michela, Michele, Miguel, Miguel Angel, Mika, Mike, Miroslav, Monica, Monika, Muriel, Nadia, Naomi, Natalia, Nathalie, Nicholas, Nick, Nicola, Nicolas, Nicole, Nigel, Nikolaos, Nina, Nino, Norbert, Ola, Olaf, Oleg, Oliver, Olivier, Orsolya, Pablo, Paola, Paolo, Pascal, Pascale, Patrice, Patrick, Paul, Paula, Pavel, Paweł, Pedro, Per, Petar, Pete, Peter, Petra, Phil, Philip, Philippe, Pia, Piero, Pierpaolo, Pierre, Pietro, Piotr, Przemysław, Pál, Radoslaw, Rafael, Rafal, Rainer, Ralph, Renaud, Ricardo, Riccardo, Richard, Rob, Robert, Roberta, Roberto, Rodrigo, Roger, Roland, Rolando, Rolf, Romain, Roman, Rory, Rubén, Sabrina, Salvatore, Sandor, Sandra, Sandrine, Sara, Sarah, Sebastian, Sergei, Serghei, Sergio, Sheila, Silke, Silvia, Simon, Simona, Simone, Stanislav, Stefan, Stefania, Stefano, Stefanos, Stephan, Stephane, Stephanie, Stephen, Steve, Susan, Susann, Susanne, Sven, Sylvie, Sébastien, Tamas, Tanja, Theo, Therese, Thierry, Thomas, Thorsten, Tibor, Tim, Tom, Tomas, Tomasz, Tony, Udo, Ugo, Ulrike, Umberto, Ursula, Ute, Valeria, Valerie, Veronica, Vicente, Viktor, Vincent, Vincenzo, Virginie, Vladimir, Véronique, Waldemar, Walter, Will, William, Wojciech, Wolfgang, Xavier, Yannick, Yves, Zbigniew, Zlatko, Zoltan, Zsolt, Zurab, Ákos, Łukasz</p>
+    <h3>Borne by one fencer (932)</h3>
+    <p class="names tight">Abdoulaye, Abdullah Oguz, Abigail, Achille, Achim, Adile, Adolf, Adolfo, Adrien, Adrienn, Agostino, Aida, Aidan, Akos Antal, Alain, Alard, Alasdair, Alastair, Alban, Alberto Maria, Aldric, Alejandro, Aleksei, Aleksi, Alena, Alexa, Alexandr, Alexandra, Alexane, Alexia, Alfonso, Ali, Aliaksandr, Alicia, Alistair, Aly, Amanda, Amaury, Ambrose, Ambrus, Amedeo, Amy, Ana, Ana Clara, Anahit, Andor, Andras Laszlo, Andrea Katalin, Andrej, Andres Marcel, Andrienn, Andrii, Andriy, András Barnabás, András Tamás, Anestis, Angel, Angelo, Angélique, Anh Quan, Aniela, Ann, Ann-Marie, Anna Mária, Anna-Lise, Anna-Maria, Annabelle, Annaick, Anne Laure, Anne Marie, Annegret, Annemarie, Annica, Annick, Ans, Antoinette, Anton, Antonio Mauro, Antonios, Antti, Araceli, Arcangelo, Arianne, Armagan, Armin, Arnaud, Arnauld, Arno, Arrigo, Arthur, Artiom, Arto, Arturo, Asta, Atanas, Athanasios, Attilio, Audra, Audrone, Aurelio, Aurelio Lucio, Aurora Yingchun, Aurélie, Austen, Avak, Aymaric, Barbel, Bartosz, Baruch, Bas, Bea, Beat, Beate, Beatriz, Becky, Bella, Benedetto, Benedicte, Bengi, Benita, Berardo, Berl, Bernadett, Bert, Berthold, Beth, Beáta Éva, Björn, Bob, Bodo, Bojan, Borislav, Borys, Botond, Branislav, Brent, Brice, Bruce, Bryan, Béla Kálmán Sandor, Bérangère, Błażej, Camille, Carl, Carl-Henrik, Carl-Johan, Carla, Carlos Ignacio, Carlos Martin, Carlos Primitivo, Carlotta, Carmelo, Carmine, Carolin, Carolina, Caron, Carsten, Catalina, Caterina, Catiuscha, Cayetano, Cecile, Ceri, Cesare, Cesare Antonio, Charlotta, Charlotte, Cherine, Chuen Tak Douglas, Cindy, Cinzia, Ciro, Clair-Antoine, Clas, Claude, Claudia Lorena, Colin, Cordt, Cornelia, Corrado, Corsini, Cosimo Antonio Fabrizio, Cosimo Danilo, Craig, Cristoforo, Csilla, Cynthia, Dale, Dalia, Damiano, Dan, Danijela, Danila, Darcy, Daria, Darko, Darrasse, Darren, Darryl, David Alain, Davy, Dawid, Dawn, Debora, Denitza, Deniz, Detlef, Dev, Deyan, Dezso, Dieter, Dimitri, Dimitrios, Dinko, Dino, Djamel, Dmitri, Doina Stefania, Domenico, Dominik, Dominika, Dona, Donald, Donna, Donát, Dora Emoke, Doris, Dorota, Dorothea, Doru, Dragana, Eddie, Ede, Edina, Edit, Eduardo, Eduardo Manuel, Edwin, Efisio, Ehsan, Elaine, Eleni, Eleonore, Eliahu, Eline, Elisabeth Skaar, Elke, Ella, Elvyra, Elżbieta, Emile, Emilia, Emiliano Mario, Emilie, Emmanuelle, Endre, Eniko, Erno, Ernst, Ervin, Erwan, Erzsébet, Esmeralda, Ester, Esther, Estibaliz, Eszter Zsuzsanna, Eufrasio, Eugenia, Eugenio Attilio, Evert, Fabienne, Fabio Massimo, Fabrizia, Farhad, Fco. Javier, Federico Olapado, Fei, Felix, Feng, Filip, Flaminia, Flavia, Flavia Bogdana, Flavio, Florent, Floris, Flos, Foungling, Frances, Francesco Saver, Frank-Helge, Franklin, Frans, Frantisek, Frauke, Frederick, Frederik, Fredrick, Friederike, Fritz Traugott, Gabor Zsigmond, Gabriella, Gabrielle, Gary, Gaspare Lorenzo, Gautier, Gavin, Gaz, Geesche, Gemma Lina Maria, Geoffrey, Georgina, Georgios, Gerald, Geraldine, Gerardo Jesus, Gerd, Gergely, Gergő, Gernot, Gerrit, Gerry, Gert, Gesche, Geza, Giacomo, Giammario, Gianni, Gilad, Gillian, Gina, Gines, Giora, Giordano, Giovan Battista, Giovanni Francesco, Giselle, Giuseppe Amedeo, Giuseppina, Giusy, Gocha, Godefroid, Gonzalo, Grazia, Graziella, Greerson, Greg, Gregorio, Grzegorz, Grégoire, Guglielmo, Guglielmo Giuliano, Gunilla, Gustav, Gwenael, Gwenc'Hlan, Gyorgyi, Gyöngyvér, Györgyné, Günther, Hajnalka, Halina, Halka, Hamid, Hans-Georg, Hans-Martin, Hansjoerg, Hartmut, Heather, Heinrich, Helena, Helge Pino, Helmar, Helmut, Henk, Henrik, Henry, Henryk, Hermann, Hildegard, Hilke, Hiromi, Holger, Howard, Hubert, Hugh, Iain, Ibolya, Ido, Ignacio, Ilaria Blandina, Ildikó Éva, Ildo, Iliana Diana, Ilias, Ineke, Ingrida, Ioan, Irene, Ireneusz, Irén, Isabel Maria, Isabella, Ivica, Ivo, Ivor, Jacobo, Jacques Alexandre, Jacques-Edern, Jaime, Jakub, Jamie, Janko, Jannine, Jauveau, Javier Eugenio, Jay, Jayne, Jean Baptiste, Jean Brice, Jean Charles, Jean Christophe, Jean Claude, Jean Claude Alexandre, Jean Louis, Jean Marc, Jean Michel, Jean Nicolas, Jean Paul, Jean Philippe, Jean Yves, Jean-Charles, Jean-Julien, Jean-Louis, Jean-Philippe, Jean-Pierre, Jean-Rene, Jean-Yves, Jeannette, Jeff, Jenny, Jerar, Jeremy, Jerker, Jessica, Jessy, Jesus, Jesus Alberto, Jillian, Joan, Joaquín, Joar, Joash, Jocelyn, Joelle Rosanna, Joerg, Joeri, Johannes, Jolyon, Jon, Jonas, Jonathon, Joppe, Jordan, Jorg, Jose Domingo, Jose Julián, Josef, Joseph, José Carlos, João Pedro, Juan Antonio, Juan Fernando, Juan Ignacio, Juan Pablo, Judith Marta, Juergen, Jukka, Juri, Jurijs, Jussi, Kalliopi, Kamena, Kamil, Karen Joy, Karin, Karina, Karine, Karl, Karol, Katalin Anna, Katarina, Kate, Katerina, Kathia, Kathleen, Kathrin, Kathryn, Katrin, Katy, Kazmer, Keith, Kenno, Kenny, Kerin, Khurshid, Kirill, Kola, Konrad, Konstantinos, Krasimir, Krystyna, Lajos, Laonor, Larisa, Lars, Lasse, Laurentiu, Lavinia, Lawrence, Lene, Leon, Leonardo Donato, Leslie, Leticia, Leó Ervin, Lia, Licia Julia, Lieven, Lino, Liqin, Liset, Livio, Loredana, Lorenzo Giacinto, Lory, Louisa, Louise, Lourdes, Lovely, Lubomir, Luc, Luca Carmelo, Lucas, Lucia, Lucie, Ludmil, Ludovic, Luigi Federico, Luigi Salvatore, Luis, Luis Jose, Luis Miguel, Lydie, Lynette, Lynn, László Csaba, László Károly, Lãzaro Vladimir, Lörinczi, Macarena, Magdalena, Magdolna Piroska, Maggie, Maija, Maire, Maki, Malgorzata, Manfred, Manlio, Marc-Paul, Marc-Stephan, Marcel, Marcello, Marco Antonio, Marco Ettore, Marcos, Marcus, Mareile, Maren, Margaretha, Margarette, Margherita, Margit, Margit Anna, Margret, Maria Adelaide, Maria Bernadett, Maria Carmen, Maria Del Mar, Maria Federica, Maria Franca, Maria Giulia, Maria Grazia, Maria Jose, Maria Noel, Maria Rita Lucia, Maria Rosario, Maria Teresa, Maria Teresa Giovanna Eliana Fr, Maria Vicenza, Marianna, Marianne, Marie Ange, Marie-Claire, Marie-Laure, Mariele, Mariette, Marijane, Marijn, Marika, Marinella, Mario Jose, Mario Riccardo, Marius Morgan, Marja, Marja-Liisa, Martyna, Marvin, Maryam, María Cruz, María Pilar, María Pía, Mathias, Mathieu, Mathilde, Mattia, Maura Maria, Mauro Cesar, Max, Max Moritz, Maxime, Maxwell, Melinda, Meng, Merja, Metodi, Michael James, Michael Robin, Michalis, Michele Susan, Michelle, Miguel José, Mihai, Mikhail, Miklós, Mikołaj, Mila, Milan, Milla, Milos, Minna, Mirella, Mirta Isabel, Misha, Moira, Mona Lisa, Monisha, Morenp, Morgan, Morgane, Mouhamadou Alpha, Mourtaza, Murielle, Myako, Mylène, Myriam, Mélanie, Müjdat, Nadiia, Nadine, Nancy, Nat, Natalie, Nathan, Nathanael, Neal, Neale, Nebojsa, Nellina, Nestor Luis, Niall, Nico, Nicole Monika, Niklas, Nikolaus, Nikolay, Nikoloz, Nils, Noelia, Norma, Nuria, Ok Kyong, Oleksii, Olga, Olha, Olli, Orestis, Ornella, Oscar, Othmar, Ottó, Par, Pasquale, Patric, Patricia, Patricia Gonzalez, Patrick André, Paul Bogdan, Paulina, Paulius, Paulo, Pedro Casimiro, Peer, Peer Uwe, Peggy, Peter-Paul, Pier Luigi, Pierluigi, Pierre-Julien, Pierre-Yves, Pilar, Piroska, Plamen, Przemyslaw Szym, Péter József, Rabea, Raffaele, Ragnhild, Rajmund, Raoul, Raphaelle, Raúl, Rebeca, Rebecca, Regimantas, Regis, Regula, Reiko, Reinhard, Renaldo, Renata, Renate, Renate Martha, Renato, Renny, René, Rick, Rickard, Roberto Andrea Enzo, Roberto Maria, Rodney, Rodolfo Gherardo, Rodolphe, Rolande, Rolf Karsten, Rolf Peter, Rosa Maria, Rosalba, Rosalind, Rosangela, Rosario, Rosario Sergio, Rose, Rosina, Rosislav, Roswitha, Rubin, Rufat, Ruslan, Russell, Ryszard, Réka, Rémy, Sabatino, Sabina, Sabine, Sabrina Eugenia, Sari, Sarkis, Sascha, Sean, Sebastiano, Sebastiano Massimo, Sef, Seija, Semjons, Serena, Serge, Sergej, Sergejs, Sergii, Sergiu, Sergiusz, Serhiy, Shafik, Shane, Sibilla, Silvio, Simeon, Sini, Sirkka-Liisa, Sirpa, Slawomir, Sofia, Soile, Sonia, Sonja, Sophie, Sorin, Soso, Spartak, Spencer, Stamatios, Steeve, Stefanie, Stefano Carlo Cesare, Steffen, Stefko, Stig, Suat, Sunny, Susana, Susanna, Suzanne, Sven-Arvid, Svend, Svetoslav, Svetozar, Svitlana, Sylvain, Szabolcs Gergo, Szabolcs Tamás, Szilard, Szilard Csaba, Szymon, Tam, Tamas D, Tamer, Tancredi, Taneli, Tanguy, Tania, Taras, Tatjana, Teemu Johannes, Teresa, Teréz, Tetiana, Teun, Thibault, Thibaut, Thiebaud, Timothy, Tina, Tiphaine, Tobias, Tomaz, Tommaso, Tommaso Maria, Tommi, Toni, Toon, Tor, Tore, Torsten, Tracey, Tristan, Ugur, Ulf, Ulrica, Ulrich, Urban, Uwe, Valentin, Valentina, Valentín Andrés, Valeri, Valter, Vanessa, Varpu, Vasileios, Vassilis, Vasyl, Velota, Venancio, Ventsislav, Vera, Verzhinia, Vesa, Viktoria, Vincenzo Antonio, Vinicio, Viola, Virág, Vitalii, Vito, Vittorio, Vivien, Vladan, Vladimiro, Vladislav, Vladyslav, Vlasta, Volodymyr, Vratislav, Walter Lee, Wanda, Wei Ning, Wendy, Werner, Wilfried, Wilhelmina Anna, William Anton, Wolfgang Walter, Wyc, Yago, Yamada, Yauheni, Yekaterina, Ynet, Yolande, Yordanka, Yuliya, Zhiyong, Ziv, Zivile, Zohra, Zornitsa, Zsuzsa, Zuzana</p>
+  </section>
+
+  <p class="foot">plan · registration-form-names-year-country · 21 Nov 2026 · rev 10, rewritten · awaiting sign-off · no code written</p>
+</div>

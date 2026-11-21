@@ -1,0 +1,215 @@
+<meta charset="utf-8">
+<title>FR-167 · Names, release 1 · pixel sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0 28px;align-items:start}
+.shot{margin:0;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.shot img{width:100%;height:auto;display:block;border-radius:4px}
+.shot figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Registration form · Names · Release 1 of 4 · Pixel sheet</p>
+  <h1>Names in one form, titles apart, reversed fields asked about</h1>
+  <p class="dek">Captured on the WordPress calendar page body (<code>doc/wordpress/znajdz-zawody.html</code>) with the bundle built from main and from this branch, LOCAL standing in for PROD. <b>Everything that should not change is pixel-identical; the four new states are below for your approval</b>, with the two ADR amendment drafts. Nothing is pushed.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaiting your approval</span>
+    <span class="pill">plan: registration-form-names-year-country-2026-11-21.html, rev 10, release 1</span>
+    <span class="pill">FR-167 · RFNAME.01–27</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Nothing else changed</p>
+    <h2>Before against after</h2>
+    <ul>
+      <li><b>Noise floor first.</b> Two runs of main's build: form 12 of 12 identical, entry list 4 of 4.</li>
+      <li><b>The form</b>, empty and with a name typed, desktop 1280 and phone 375, PL and EN: <b>8 of 12 captures identical</b> — every one except the newcomer's name check, which differs only in its button row, where „Popraw” is added (box 246–286 px on desktop).</li>
+      <li><b>The entry list without a title</b>, desktop and phone, PL and EN: <b>4 of 4 identical</b>.</li>
+      <li><b>The entry list with a titled entry</b> differs only where it should: „Dr. ZZVERESS” moves from the top of the list to its place under V.</li>
+      <li>No page errors in any run (<code>registration-names-release-1-sheet/*/form-report.json</code>, <code>list-report.json</code>).</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The new states</p>
+    <h2>For your approval</h2>
+    <p class="mkcap">1 · the newcomer's name check: „Popraw” added beside the two existing buttons</p>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/before-form/form__desktop__pl__3-name-check.png"><img src="registration-names-release-1-sheet/before-form/form__desktop__pl__3-name-check.png" alt="Before: desktop · PL" loading="lazy"></a><figcaption>before · desktop · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__desktop__pl__3-name-check.png"><img src="registration-names-release-1-sheet/after-form/form__desktop__pl__3-name-check.png" alt="After: desktop · PL" loading="lazy"></a><figcaption>after · desktop · PL</figcaption></figure></div>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/before-form/form__phone__pl__3-name-check.png"><img src="registration-names-release-1-sheet/before-form/form__phone__pl__3-name-check.png" alt="Before: phone · PL" loading="lazy"></a><figcaption>before · phone · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__phone__pl__3-name-check.png"><img src="registration-names-release-1-sheet/after-form/form__phone__pl__3-name-check.png" alt="After: phone · PL" loading="lazy"></a><figcaption>after · phone · PL</figcaption></figure></div>
+    <p class="mkcap">2 · a title written on leaving the box: „dr kovács” + „péter” → „Dr. KOVÁCS” + „Péter”</p>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__desktop__pl__4-title.png"><img src="registration-names-release-1-sheet/after-form/form__desktop__pl__4-title.png" alt="Title written, desktop" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__phone__en__4-title.png"><img src="registration-names-release-1-sheet/after-form/form__phone__en__4-title.png" alt="Title written, phone" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+    <p class="mkcap">3 · the reversed-fields question: „annalisa” + „zzbellandi”</p>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__desktop__pl__5-reversed.png"><img src="registration-names-release-1-sheet/after-form/form__desktop__pl__5-reversed.png" alt="Reversed question, desktop" loading="lazy"></a><figcaption>desktop · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__phone__pl__5-reversed.png"><img src="registration-names-release-1-sheet/after-form/form__phone__pl__5-reversed.png" alt="Reversed question, phone" loading="lazy"></a><figcaption>phone · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-form/form__phone__en__5-reversed.png"><img src="registration-names-release-1-sheet/after-form/form__phone__en__5-reversed.png" alt="Reversed question, English" loading="lazy"></a><figcaption>phone · EN</figcaption></figure></div>
+    <p class="mkcap">4 · the entry list: a titled entry stands under its surname</p>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/before-list-titled/list__desktop__pl.png"><img src="registration-names-release-1-sheet/before-list-titled/list__desktop__pl.png" alt="Before: desktop · PL" loading="lazy"></a><figcaption>before · desktop · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-list-titled/list__desktop__pl.png"><img src="registration-names-release-1-sheet/after-list-titled/list__desktop__pl.png" alt="After: desktop · PL" loading="lazy"></a><figcaption>after · desktop · PL</figcaption></figure></div>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/before-list-titled/list__phone__pl.png"><img src="registration-names-release-1-sheet/before-list-titled/list__phone__pl.png" alt="Before: phone · PL" loading="lazy"></a><figcaption>before · phone · PL</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/after-list-titled/list__phone__pl.png"><img src="registration-names-release-1-sheet/after-list-titled/list__phone__pl.png" alt="After: phone · PL" loading="lazy"></a><figcaption>after · phone · PL</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · LOCAL walk-through</p>
+    <h2>A reversed, titled newcomer, from the first box to the entry list</h2>
+    <ol class="steps">
+      <li>Typed „orsolya” in the surname box and „zzszabo dr.” in the given-name box. The form asked „Czy pola nie są zamienione?” and proposed „Dr. ZZSZABO Orsolya”.</li>
+      <li>After „Tak, zamień” the lookup ran again on the swapped pair; as a newcomer she read her name back: „Dr. ZZSZABO Orsolya”.</li>
+      <li>Confirmed and submitted: „✓ Zgłoszenie potwierdzone”. LOCAL stored and listed „Dr. ZZSZABO Orsolya”. The entry was removed afterwards; LOCAL holds 0 entries.</li>
+    </ol>
+    <div class="shots"><figure class="shot"><a href="registration-names-release-1-sheet/walk/walk-1-question.png"><img src="registration-names-release-1-sheet/walk/walk-1-question.png" alt="Walk: question" loading="lazy"></a><figcaption>the question</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/walk/walk-2-read-back.png"><img src="registration-names-release-1-sheet/walk/walk-2-read-back.png" alt="Walk: read-back" loading="lazy"></a><figcaption>the read-back</figcaption></figure><figure class="shot"><a href="registration-names-release-1-sheet/walk/walk-3-done.png"><img src="registration-names-release-1-sheet/walk/walk-3-done.png" alt="Walk: submitted" loading="lazy"></a><figcaption>submitted</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Measured on PROD and CERT, read-only</p>
+    <h2>What the release changes in the data</h2>
+    <ul>
+      <li><b>The one-off rewrite</b> (<code>fn_registration_realign_names</code>, run by the migration) changes <b>12 of PROD's 66 newcomers' entries</b>: 10 given names into title case, and 2 titles moved in front of the surname. On CERT it changes 1 entry. No two entries collide on the unmatched-entry key. Linked entries are not touched.</li>
+      <li><b>The four reversed entries already on PROD stay reversed.</b> The question works at entry; correcting stored rows is the administrator's edit in release 4.</li>
+      <li><b>The EVF names</b>: 1,392 given names, read on 21 Nov 2026, loaded by the second migration; the monthly job adds new ones.</li>
+      <li><b>On the old cached page</b> (10 minutes after a release), a newcomer's name is still written in the name form by the database; only the question and „Popraw” are missing until the page reloads.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · For your sign-off</p>
+    <h2>ADR amendment drafts</h2>
+    <div class="note accent"><p class="lede">ADR-079 · Amendment (2026-11-21) — a declared name is stored in one form, a title is kept apart, reversed fields are asked about</p>
+      <p><b>Context.</b> On 21 Nov 2026 PROD held 193 entries. Eleven newcomers' given names were not in the form the organizer's files use, two carried a title the Austrian and Hungarian way, and four newcomers had typed their given name into the surname box. The 2026-10-03 amendment kept an unlinked registration's name „as typed”.</p>
+      <p><b>Decision.</b> (1) A newcomer's name is stored in one form: surname in capitals, given name in title case by the rule the organizer's files use, spaces trimmed and collapsed. The letters remain the fencer's; only case and spacing are written. This replaces „as typed” in the 2026-10-03 amendment for unlinked registrations. The form writes it when a box is left and on „Dalej”; the trigger writes it on every write of a newcomer's row. (2) A title (dr, ddr, prof, ing, mag, mgr, dipl-ing, doc) at either end of either box is moved in front of the surname in one written form and is ignored by every name comparison. (3) When nobody matches and the surname box holds a known given name while the given-name box does not, the form asks once whether the fields are reversed; either answer is believed. Known given names are the fencer table's, read live, and the EVF ranking's, held in <code>tbl_common_given_name</code>, given names only, insert-only, refreshed monthly. A visitor receives two yes/no answers and never the lists. (4) The newcomer's name check offers „Popraw”; the name boxes carry autofill marks.</p>
+      <p><b>Not done, on evidence.</b> A spelling question: on the EVF ranking it would wrongly ask 5 to 9 in 100 correctly spelled foreign fencers. A hand-written names list: it changed no answer on PROD's 193 entries.</p>
+      <p><b>Consequences.</b> The entry list shows one form for every newcomer; a titled fencer stands under the surname; a fencer we hold is unaffected, since a linked entry takes the roster's name. FR-167; RFNAME.01–27.</p></div>
+    <div class="note accent"><p class="lede">ADR-080 · Amendment (2026-11-21) — the surname goes into the file without its title</p>
+      <p><b>Decision.</b> <code>toCanonicalName</code> (TypeScript) and <code>to_canonical_name</code> (Python) leave a title written with the surname out of the file's surname, so the organizer's software sorts and matches the fencer by the surname. Every name without a title is written exactly as before, byte for byte. Tests: RFNAME.27 in both languages.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Found on the way</p>
+    <h2>Issues</h2>
+    <ul>
+      <li><b>The read-back already existed.</b> The newcomer's screen already showed the name „as on the entry list” with a swap button, so the plan's read-back is that screen plus „Popraw”; the reversed-fields question is a variant of the same screen.</li>
+      <li><b>I13 · the documentation search</b> failed only because Docker was down when this session started; its configuration and container are correct now. Reconnecting <code>spws-docs</code> through <code>/mcp</code> restores it.</li>
+      <li><b>I16 fixed</b> (autofill marks). <b>I17 fixed</b>: the EVF client gained a public ranking call, and the ranking-positions tool uses it.</li>
+      <li><b>Real names out of the repository.</b> My first tests quoted real entrants from PROD as examples of mistakes. They now use invented names (VERESS, SZABÓ, BELLANDI, MARLOW); the earlier tests are as they were.</li>
+      <li><b>Not captured:</b> the signed-in administrator's list. Its order and search use the same code as the visitor's, pinned by RFNAME.09.</li>
+    </ul>
+  </section>
+
+  <p class="foot">pixel sheet · FR-167 release 1 · 21 Nov 2026 · tools: registration-names-release-1-sheet/tools/proof.cjs (form · list · walk), diff.py, seed-list.sql, build_sheet.py</p>
+</div>

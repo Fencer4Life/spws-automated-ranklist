@@ -54,6 +54,14 @@ def test_to_canonical_name_hyphenated_given_name_title_cased_per_segment():
     assert to_canonical_name("nowak", "anna-maria") == ("NOWAK", "Anna-Maria")
 
 
+def test_rfname_27_to_canonical_name_leaves_a_title_out_of_the_surname():
+    """RFNAME.27 (FR-167, D4 A): the organizer's files carry the surname without
+    its title. The TypeScript twin pins the same cases (ftlSeedExport.test.ts)."""
+    assert to_canonical_name("Dr. VERESS", "Ilona Katalin") == ("VERESS", "Ilona Katalin")
+    assert to_canonical_name("Prof. Dr. KOVÁCS", "Péter") == ("KOVÁCS", "Péter")
+    assert to_canonical_name("DRAGAN", "Ingrid") == ("DRAGAN", "Ingrid")
+
+
 def test_to_canonical_name_fixes_legacy_all_caps_given_name():
     # ADR-080: "normalised on export (fixes legacy all-caps given names)"
     assert to_canonical_name("SPŁAWA-NEYMAN", "MACIEJ") == ("SPŁAWA-NEYMAN", "Maciej")

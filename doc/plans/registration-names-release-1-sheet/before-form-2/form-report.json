@@ -1,0 +1,38 @@
+[
+  {
+    "tag": "form__desktop__pl",
+    "buttons": [
+      "Tak, zgadza się",
+      "Zamień imię i nazwisko"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "errors": []
+  },
+  {
+    "tag": "form__desktop__en",
+    "buttons": [
+      "Yes, that's correct",
+      "Swap first and last name"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "errors": []
+  },
+  {
+    "tag": "form__phone__pl",
+    "buttons": [
+      "Tak, zgadza się",
+      "Zamień imię i nazwisko"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "errors": []
+  },
+  {
+    "tag": "form__phone__en",
+    "buttons": [
+      "Yes, that's correct",
+      "Swap first and last name"
+    ],
+    "name": "ZZNOWICJUSZ Jan",
+    "errors": []
+  }
+]

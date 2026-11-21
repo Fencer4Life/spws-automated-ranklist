@@ -75,6 +75,15 @@ describe('toCanonicalName', () => {
     expect(toCanonicalName("o'neill", "d'arcy")).toEqual(["O'NEILL", "D'Arcy"])
   })
 
+  // RFNAME.27 (FR-167, D4 A): the organizer's files carry the surname without
+  // its title, so the organizer's software sorts and matches by the surname.
+  // The Python twin pins the same cases (test_ftl_seed_export.py).
+  it('RFNAME.27 leaves a title out of the surname', () => {
+    expect(toCanonicalName('Dr. VERESS', 'Ilona Katalin')).toEqual(['VERESS', 'Ilona Katalin'])
+    expect(toCanonicalName('Prof. Dr. KOVÁCS', 'Péter')).toEqual(['KOVÁCS', 'Péter'])
+    expect(toCanonicalName('DRAGAN', 'Ingrid')).toEqual(['DRAGAN', 'Ingrid'])
+  })
+
   it('X8.5 trims whitespace', () => {
     expect(toCanonicalName('  Kowalski  ', '  Jan  ')).toEqual(['KOWALSKI', 'Jan'])
   })
