@@ -1,0 +1,62 @@
+[
+  {
+    "tag": "form__desktop__pl",
+    "errors": [],
+    "grid": {
+      "decade": "1970 – 1979"
+    },
+    "refused": {
+      "line": "Rok spoza zakresu 1906–1997",
+      "continueDisabled": true
+    },
+    "picked": {
+      "decade": "1990 – 1999",
+      "category": "V0"
+    }
+  },
+  {
+    "tag": "form__desktop__en",
+    "errors": [],
+    "grid": {
+      "decade": "1970 – 1979"
+    },
+    "refused": {
+      "line": "Year outside 1906–1997",
+      "continueDisabled": true
+    },
+    "picked": {
+      "decade": "1990 – 1999",
+      "category": "V0"
+    }
+  },
+  {
+    "tag": "form__phone__pl",
+    "errors": [],
+    "grid": {
+      "decade": "1970 – 1979"
+    },
+    "refused": {
+      "line": "Rok spoza zakresu 1906–1997",
+      "continueDisabled": true
+    },
+    "picked": {
+      "decade": "1990 – 1999",
+      "category": "V0"
+    }
+  },
+  {
+    "tag": "form__phone__en",
+    "errors": [],
+    "grid": {
+      "decade": "1970 – 1979"
+    },
+    "refused": {
+      "line": "Year outside 1906–1997",
+      "continueDisabled": true
+    },
+    "picked": {
+      "decade": "1990 – 1999",
+      "category": "V0"
+    }
+  }
+]
