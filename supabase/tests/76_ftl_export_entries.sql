@@ -106,12 +106,20 @@ BEGIN
     -- unranked, entered first
     (v_ev, NULL, 'PGTAP76EARLY', 'Cezary', 'M', 1966,
      ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL),
-    -- 25 years old in the 2019/20 season — not a veteran, no sub-ranking
-    (v_ev, NULL, 'PGTAP76YOUNG', 'Damian', 'M', 1995,
-     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL),
     -- same weapon and category, different gender — a separate competition
     (v_ev, NULL, 'PGTAP76WOMAN', 'Ewa', 'F', 1965,
      ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL);
+
+  -- 25 years old in the 2019/20 season — not a veteran, no sub-ranking (76.9).
+  -- Since FR-168 the table refuses such a year at entry; a row stored before
+  -- that rule stays, and the export must still leave it out. The rule is
+  -- switched off for this one row only, inside this rolled-back transaction.
+  ALTER TABLE tbl_registration DISABLE TRIGGER trg_registration_birth_year_range;
+  INSERT INTO tbl_registration (id_event, id_fencer, txt_surname, txt_first_name,
+                                enum_gender, int_birth_year, arr_weapons, ts_created, txt_club)
+  VALUES (v_ev, NULL, 'PGTAP76YOUNG', 'Damian', 'M', 1995,
+          ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL);
+  ALTER TABLE tbl_registration ENABLE TRIGGER trg_registration_birth_year_range;
 
   -- The picker's own fixtures. FTLX76EVT above is in the PAST (2019), which is
   -- exactly the case 76.23 needs; the picker itself needs events that have not

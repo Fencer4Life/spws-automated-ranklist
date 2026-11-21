@@ -1017,7 +1017,9 @@ describe('RegistrationForm — identity resolution ladder', () => {
     ])
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await findByText('IV Puchar Polski Weteranów')
-    await fillIdentity(container, { surname: 'MŁYNEK', firstName: 'Janusz', birthYear: '1999' })
+    // 1990, not 1999: a declared year differs from both namesakes; 1999 is
+    // younger than V0 for 2025/26 and FR-168 keeps „Dalej” off for it.
+    await fillIdentity(container, { surname: 'MŁYNEK', firstName: 'Janusz', birthYear: '1990' })
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
     await waitFor(() => expect(container.querySelectorAll('.reg-idcheck').length).toBe(2))
     await findByText(/1951/)
@@ -1244,5 +1246,177 @@ describe('RegistrationForm — FR-167 names (RFNAME.10–16)', () => {
     await fireEvent.click(fix)
     expect((container.querySelector('input[name="surname"]') as HTMLInputElement).value).toBe('GREG')
     expect((container.querySelector('input[name="firstName"]') as HTMLInputElement).value).toBe('Marlow')
+  })
+})
+
+describe('RegistrationForm — FR-168 birth year (RFYEAR.03–06)', () => {
+  // 2026/27 on 21 Nov 2026: the range is 1906 to 1997.
+  const EVENT_2027: RegistrationEventInfo = { ...BASE_EVENT, txt_season_code: 'SPWS-2026-2027' }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-21T12:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function open() {
+    mockFetchEvent.mockResolvedValue(EVENT_2027)
+    const r = render(RegistrationForm, { props: { eventCode: 'PPW4-2026-2027' } })
+    await r.findByText('IV Puchar Polski Weteranów')
+    const year = r.container.querySelector('input[name="birthYear"]') as HTMLInputElement
+    return { ...r, year }
+  }
+  const cont = (c: HTMLElement) => c.querySelector('button.reg-continue') as HTMLButtonElement
+  const yearError = (c: HTMLElement) => c.querySelector('.reg-year-error')
+  const grid = (c: HTMLElement) => c.querySelector('.reg-yeargrid')
+  const decade = (c: HTMLElement) => c.querySelector('.reg-yeargrid-decade')?.textContent?.trim()
+  const yearButton = (c: HTMLElement, y: number) =>
+    [...c.querySelectorAll('.reg-yeargrid-year')].find((b) => b.textContent?.trim() === String(y)) as HTMLButtonElement
+
+  it('RFYEAR.03 „47” shows the range under the box once the box is left, and „Dalej” stays off', async () => {
+    const { container, year } = await open()
+    await fillIdentity(container, { birthYear: '47' })
+    await fireEvent.blur(year)
+    expect(yearError(container)?.textContent).toContain('1906')
+    expect(yearError(container)?.textContent).toContain('1997')
+    expect(cont(container).disabled).toBe(true)
+  })
+
+  it.each(['1998', '1905'])('RFYEAR.03 %s is refused as soon as four digits are typed', async (y) => {
+    const { container } = await open()
+    await fillIdentity(container, { birthYear: y })
+    expect(yearError(container)).not.toBeNull()
+    expect(cont(container).disabled).toBe(true)
+  })
+
+  it.each(['1997', '1906'])('RFYEAR.03 the edge %s is accepted', async (y) => {
+    const { container, year } = await open()
+    await fillIdentity(container, { birthYear: y })
+    await fireEvent.blur(year)
+    expect(yearError(container)).toBeNull()
+    expect(cont(container).disabled).toBe(false)
+  })
+
+  it('RFYEAR.03 a minus sign or a letter never reaches the box', async () => {
+    const { year } = await open()
+    await fireEvent.input(year, { target: { value: '-1972' } })
+    expect(year.value).toBe('1972')
+    await fireEvent.input(year, { target: { value: '19a7' } })
+    expect(year.value).toBe('197')
+    expect(year.getAttribute('inputmode')).toBe('numeric')
+    expect(year.getAttribute('maxlength')).toBe('4')
+  })
+
+  it('RFYEAR.04 focusing the box opens the grid on the decade of a 50-year-old', async () => {
+    const { container, year } = await open()
+    expect(grid(container)).toBeNull()
+    await fireEvent.focus(year)
+    expect(grid(container)).not.toBeNull()
+    expect(decade(container)).toBe('1970 – 1979')
+  })
+
+  it('RFYEAR.04 with a year in the box the grid opens on its decade; a tapped year fills the box and closes it', async () => {
+    const { container, year } = await open()
+    await fireEvent.input(year, { target: { value: '1995' } })
+    await fireEvent.focus(year)
+    expect(decade(container)).toBe('1990 – 1999')
+    expect(yearButton(container, 1995).classList.contains('on')).toBe(true)
+    await fireEvent.click(yearButton(container, 1992))
+    expect(year.value).toBe('1992')
+    expect(grid(container)).toBeNull()
+  })
+
+  it('RFYEAR.04 typing closes the grid, so it never covers the next field; a click on the box reopens it', async () => {
+    const { container, year } = await open()
+    await fireEvent.focus(year)
+    expect(grid(container)).not.toBeNull()
+    await fireEvent.input(year, { target: { value: '1' } })
+    expect(grid(container)).toBeNull()
+    await fireEvent.input(year, { target: { value: '1970' } })
+    expect(grid(container)).toBeNull()
+    await fireEvent.click(year)
+    expect(decade(container)).toBe('1970 – 1979')
+    await fireEvent.keyDown(year, { key: 'Escape' })
+    expect(grid(container)).toBeNull()
+  })
+
+  it('RFYEAR.05 pressing the grid never takes focus from the box, so paging cannot close it', async () => {
+    const { container, year } = await open()
+    await fireEvent.focus(year)
+    // fireEvent returns false when the press was default-prevented: the browser
+    // then moves no focus (Chrome would blur a pager it disables at the last
+    // decade; Safari never focuses a pressed button at all).
+    expect(await fireEvent.mouseDown(container.querySelector('.reg-yeargrid-next') as HTMLButtonElement)).toBe(false)
+    expect(await fireEvent.mouseDown(yearButton(container, 1975))).toBe(false)
+  })
+
+  it('RFYEAR.05 the grid pages by decade and stops where the range ends', async () => {
+    const { container, year } = await open()
+    await fireEvent.focus(year)
+    const next = () => container.querySelector('.reg-yeargrid-next') as HTMLButtonElement
+    const prev = () => container.querySelector('.reg-yeargrid-prev') as HTMLButtonElement
+    await fireEvent.click(next())
+    await fireEvent.click(next())
+    expect(decade(container)).toBe('1990 – 1999')
+    expect(next().disabled).toBe(true)
+    expect(yearButton(container, 1997).disabled).toBe(false)
+    expect([1998, 1999].map((y) => yearButton(container, y).disabled)).toEqual([true, true])
+    await fireEvent.click(yearButton(container, 1999))
+    expect(year.value).toBe('')
+    for (let i = 0; i < 9; i++) await fireEvent.click(prev())
+    expect(decade(container)).toBe('1900 – 1909')
+    expect(prev().disabled).toBe(true)
+    expect(yearButton(container, 1905).disabled).toBe(true)
+    expect(yearButton(container, 1906).disabled).toBe(false)
+  })
+
+  it('RFYEAR.06 the chosen year shows its category in the grid and on the form', async () => {
+    const { container, year } = await open()
+    await fireEvent.focus(year)
+    await fireEvent.click(container.querySelector('.reg-yeargrid-next') as HTMLButtonElement)
+    await fireEvent.click(container.querySelector('.reg-yeargrid-next') as HTMLButtonElement)
+    await fireEvent.click(yearButton(container, 1995))
+    expect(container.querySelector('.reg-chip')?.textContent?.trim()).toBe('V0')
+    await fireEvent.focus(year)
+    expect(container.querySelector('.reg-yeargrid-cat')?.textContent?.trim()).toBe('V0')
+    expect(container.querySelector('.reg-yeargrid-range')?.textContent?.trim()).toBe('1906 … 1997')
+  })
+
+  it('RFYEAR.01 five years on (2031/32, opened 21 Nov 2031) every number moves: 1911–2002, the grid on the 1980s', async () => {
+    vi.setSystemTime(new Date('2031-11-21T12:00:00Z'))
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_season_code: 'SPWS-2031-2032' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2031-2032' } })
+    await findByText('IV Puchar Polski Weteranów')
+    const year = container.querySelector('input[name="birthYear"]') as HTMLInputElement
+    await fireEvent.focus(year)
+    expect(decade(container)).toBe('1980 – 1989')
+    expect(container.querySelector('.reg-yeargrid-range')?.textContent?.trim()).toBe('1911 … 2002')
+    await fireEvent.click(container.querySelector('.reg-yeargrid-next') as HTMLButtonElement)
+    await fireEvent.click(container.querySelector('.reg-yeargrid-next') as HTMLButtonElement)
+    expect(decade(container)).toBe('2000 – 2009')
+    expect(yearButton(container, 2002).disabled).toBe(false)
+    expect(yearButton(container, 2003).disabled).toBe(true)
+    await fireEvent.click(yearButton(container, 2002))
+    expect(container.querySelector('.reg-chip')?.textContent?.trim()).toBe('V0')
+    await fireEvent.input(year, { target: { value: '1910' } })
+    expect(yearError(container)?.textContent).toContain('1911–2002')
+    await fireEvent.input(year, { target: { value: '1997' } })
+    expect(yearError(container)).toBeNull()
+  })
+
+  it('RFYEAR.06 a database refusal of the year shows the range line, not the generic error', async () => {
+    mockMatch.mockResolvedValue(42)
+    mockCreate.mockRejectedValue({ message: 'REG_BIRTH_YEAR_OUT_OF_RANGE: 1970 outside 1906–1997' })
+    const { container, findByText } = await open()
+    await fillIdentity(container)
+    await fireEvent.click(cont(container))
+    await passNameCheck(container)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('.reg-error')?.textContent).toContain('1906'))
+    expect(container.querySelector('.reg-error')?.textContent).not.toMatch(/nie udało się zapisać/i)
   })
 })

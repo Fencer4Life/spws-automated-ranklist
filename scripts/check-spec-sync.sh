@@ -124,7 +124,9 @@ if [ -f "$RTM" ]; then
   # 166 since 2026-11-21: +FR-167 (a fencer's name in one form, titles apart,
   #   reversed name fields caught). Registered as Planned before code (plan
   #   registration-form-names-year-country rev 10, release 1).
-  EXPECTED=166
+  # 167 since 2026-11-21: +FR-168 (a birth year inside the season's range,
+  #   chosen from a decade grid). Registered as Planned before code (release 2).
+  EXPECTED=167
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

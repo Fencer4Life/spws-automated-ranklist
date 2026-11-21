@@ -79,8 +79,10 @@
 <figcaption>Step 1. Category <b>V2</b> and the <b>200 PLN</b> two-weapon fee are derived, not entered. The club field, optional, is stored on the registration (2026-09-13) and reaches only the organizer's own downloads &mdash; it is never published on the public entry list.</figcaption>
 </figure>
 
+<p><b>The birth year is chosen from the years that give a category.</b> The youngest year accepted is the event's season's later year minus 30, the V0 rule itself; the oldest is this year minus 120 &mdash; 1906 to 1997 for 2026/27, computed every time, so 2031/32 in 2031 gives 1911 to 2002. Focusing or clicking the box opens a decade grid on the decade of the year in the box, else of a 50-year-old; it pages by decade as far as the range reaches, greys out the years outside it, and shows the range and the chosen year's category. Typing still works, digits only and four at most, and closes the grid. A year outside the range shows a line under the box naming the range, and &bdquo;Dalej&rdquo; stays off. The table refuses the same years on every write path &mdash; the visitor's create and edit, an administrator's direct update and the PROD &rarr; CERT copy &mdash; and names the range in its refusal, which the form shows as the same line (<code>trg_registration_birth_year_range</code>, <code>fn_registration_birth_year_bounds</code>; FR-168).</p>
+
 <div class="danger">
-<p><b>The birth year is not validated.</b> Continuing requires only that a number is present — there is no lower or upper bound, and the computed category is display-only, so a year that resolves to no veteran category at all still passes. Since the birth year is part of the dedupe key for an unlinked entrant, a mistyped year does not correct an earlier entry, it creates a second one. This is a known gap, not intended behaviour.</p>
+<p><b>A year inside the range is not challenged.</b> Since the birth year is part of the dedupe key for an unlinked entrant, a mistyped year that still gives a category does not correct an earlier entry, it creates a second one.</p>
 </div>
 
 <p>On continuing, the declared triple is looked up against the fencer master list. The match is <b>exact</b> — no fuzzy matching happens in the browser, by decision. A hit links the registration to that fencer and the entrant continues straight to consent, seeing nothing further; this is the path most entries take.</p>
@@ -241,7 +243,8 @@
 <tr><td>Link opened after the cutoff</td><td>The form is replaced by a closed notice; the roster stays reachable. The server refuses the write independently, so a stale page cannot get past it.</td></tr>
 <tr><td>Link opened after the event ended</td><td>The whole page reports the event as finished; neither form nor roster is offered.</td></tr>
 <tr><td>Registration not enabled for the event</td><td>Only the organizer's external link is offered, so a shared link is always safe to send.</td></tr>
-<tr><td>Birth year mistyped</td><td>Accepted. It creates a <b>second</b> entry rather than editing the first, and the create path cannot merge them. Correcting it requires the edit path, or an administrator.</td></tr>
+<tr><td>Birth year outside the season's range</td><td>Refused: the form shows the range under the box and keeps &bdquo;Dalej&rdquo; off, and the table refuses the year on every write path.</td></tr>
+<tr><td>Birth year mistyped inside the range</td><td>Accepted. It creates a <b>second</b> entry rather than editing the first, and the create path cannot merge them. Correcting it requires the edit path, or an administrator.</td></tr>
 <tr><td>Same entry submitted twice</td><td>Updated in place, latest submission wins. A soft warning is shown beforehand when a matching name is already on the roster.</td></tr>
 <tr><td>Identity lookup fails mid-flow</td><td>Treated as "no match" so the entry is never blocked; if the fencer already holds a linked row for the event, the write absorbs it rather than adding a twin.</td></tr>
 <tr><td>Correction collides with another entry</td><td>Refused with an error. Merging would destroy one of two real declarations.</td></tr>
@@ -259,7 +262,7 @@
 <p>These are open, recorded against the decision that owns them, and named here so the walkthrough cannot be read as describing a more complete system than exists.</p>
 <ul class="checklist">
 <li><b>No rate limiting anywhere.</b> The identity lookup answers per birth year, unthrottled, before any write. Any control resting on the birth year being unknown is currently worth nothing.</li>
-<li><b>The declared birth year is never challenged</b>, so a typo silently produces a second entry. The fix is to challenge only where the stored year is known rather than estimated — challenging an estimate would turn away exactly the people the system exists to learn from.</li>
+<li><b>A declared birth year inside the season's range is never challenged</b>, so a typo that still gives a category silently produces a second entry. The fix is to challenge only where the stored year is known rather than estimated — challenging an estimate would turn away exactly the people the system exists to learn from.</li>
 <li><b>Corrections leave no audit trail.</b> Revoking a handle is already possible for an administrator, but the previous value of a changed name is not recorded anywhere.</li>
 <li><b>Only the association has a default account.</b> An organizer's default payee and IBAN are stored and resolved, but nothing in the admin interface sets them — the association's were seeded by migration. An event run by any other organizer therefore cannot have registration enabled until an administrator gives that event its own account, because the database requires one to resolve. The write path is already validated; what is missing is the screen.</li>
 <li><b>The club is collected and discarded.</b> Carrying it to the seed file inverts the accepted consent text, so it is a consent-version change.</li>

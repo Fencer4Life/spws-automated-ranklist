@@ -71,10 +71,9 @@
           <option value="F">{t('reg_gender_f')}</option>
         </select>
       </label>
-      <label class="reg-fld">
-        <span class="reg-lbl">{t('reg_birth_year')}</span>
-        <input name="birthYear" type="number" inputmode="numeric" value={birthYear ?? ''} oninput={onBirthYearInput} />
-      </label>
+      <div class="reg-fld">
+        <YearPicker bind:year={birthYear} range={yearRange} {vcat} />
+      </div>
     </div>
 
     <p class="reg-lbl reg-weapon-heading">{t('reg_weapon_choose')}</p>
@@ -228,7 +227,9 @@
     </label>
     <p class="reg-muted">{t('reg_rodo_legitimate_note')}</p>
     {#if submitError}
-      <div class="reg-error">{t('reg_submit_error')}</div>
+      <div class="reg-error">
+        {yearRefused ? t('reg_year_out_of_range', { min: yearRange.min, max: yearRange.max }) : t('reg_submit_error')}
+      </div>
     {/if}
     <div class="reg-end reg-end-split">
       <button class="reg-back" onclick={backToIdentity}>&larr; {t('reg_back')}</button>
@@ -276,6 +277,8 @@
   import { canonicalGivenName, normaliseNames, surnameWithoutTitle } from '../lib/registrationName'
   import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
+  import { birthYearRange, inRange, isYearRefusal } from '../lib/birthYearRange'
+  import YearPicker from './YearPicker.svelte'
   import { WEAPON_PL } from '../lib/orgPayment'
   import type {
     RegistrationEventInfo,
@@ -367,6 +370,10 @@
     return m ? parseInt(m[1], 10) : null
   })
   const vcat = $derived(birthYearToVcat(birthYear, seasonEndYear))
+  // FR-168: only years that give a category, and not more than 120 years ago.
+  const yearRange = $derived(birthYearRange(seasonEndYear))
+  // The database refused the year (an old cached page): shown as the range line.
+  let yearRefused = $state(false)
   const fee = $derived.by(() => {
     if (!event || weapons.length === 0) return null
     if (weapons.length === 1) return event.num_entry_fee
@@ -374,7 +381,7 @@
     return event.num_entry_fee_3w
   })
   const canContinue = $derived(
-    surname.trim() !== '' && firstName.trim() !== '' && birthYear != null && weapons.length > 0 && gender !== '',
+    surname.trim() !== '' && firstName.trim() !== '' && inRange(birthYear, yearRange) && weapons.length > 0 && gender !== '',
   )
   // Transfer note. The association asks for "Imię, Nazwisko, broń, kategoria
   // wiekowa" — first name FIRST, then weapons and the age category, which the
@@ -485,10 +492,6 @@
     return normaliseNames(`${titles} ${firstName}`, bare)
   }
 
-  function onBirthYearInput(e: Event) {
-    const v = (e.target as HTMLInputElement).value
-    birthYear = v === '' ? null : parseInt(v, 10)
-  }
 
   async function submitIdentity() {
     if (!canContinue) return
@@ -776,9 +779,11 @@
         club: club.trim() || null,
       })
       step = 'payment'
-    } catch {
+    } catch (e) {
       // The RPC raises on a closed window, on a stale token, and when the
-      // corrected identity collides with another entry at the same event.
+      // corrected identity collides with another entry at the same event —
+      // and on a year outside the range (FR-168), shown as its own line.
+      yearRefused = isYearRefusal(e)
       submitError = true
     } finally {
       submitting = false
@@ -837,10 +842,12 @@
       }
 
       step = 'payment'
-    } catch {
+    } catch (e) {
       // The RPC raises on a closed registration window (D10 guard), and the
       // network can fail. Without this the fencer just sees a button that
-      // does nothing, with no way to tell a bug from a slow connection.
+      // does nothing, with no way to tell a bug from a slow connection. A
+      // year outside the range (FR-168, an old cached page) is its own line.
+      yearRefused = isYearRefusal(e)
       submitError = true
     } finally {
       submitting = false

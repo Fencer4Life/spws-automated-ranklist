@@ -494,7 +494,9 @@ BEGIN
   SELECT id_event INTO v_e FROM tbl_event WHERE txt_code = 'REG75EVT';
   SELECT id_fencer INTO v_f FROM tbl_fencer WHERE txt_surname = 'PGTAP75TWIN' AND int_birth_year = 1951;
 
-  v_r := fn_create_registration(v_e,'PGTAP75TWIN','Janusz','M',1902::SMALLINT,
+  -- 1910, not 1902: any year that differs from the roster's 1951; since
+  -- FR-168 a year more than 120 years ago is refused at entry.
+  v_r := fn_create_registration(v_e,'PGTAP75TWIN','Janusz','M',1910::SMALLINT,
            ARRAY['FOIL']::enum_weapon_type[], NULL, NULL, 'v1.0', v_tok);
   PERFORM fn_confirm_registration_identity(v_r, v_tok, v_f, 'ADOPT_DECLARED');
 

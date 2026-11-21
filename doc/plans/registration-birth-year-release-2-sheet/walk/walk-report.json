@@ -1,0 +1,22 @@
+[
+  {
+    "step": "1 the grid paged to the 1990s",
+    "decade": "1990 – 1999",
+    "disabled": [
+      "1998",
+      "1999"
+    ]
+  },
+  {
+    "step": "2 1995 picked",
+    "box": "1995",
+    "category": "V0"
+  },
+  {
+    "step": "3 submitted",
+    "confirmation": "✓ Zgłoszenie potwierdzone"
+  },
+  {
+    "errors": []
+  }
+]

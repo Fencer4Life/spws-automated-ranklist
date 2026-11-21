@@ -1,0 +1,18 @@
+[
+  {
+    "tag": "form__desktop__pl",
+    "errors": []
+  },
+  {
+    "tag": "form__desktop__en",
+    "errors": []
+  },
+  {
+    "tag": "form__phone__pl",
+    "errors": []
+  },
+  {
+    "tag": "form__phone__en",
+    "errors": []
+  }
+]
