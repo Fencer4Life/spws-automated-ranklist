@@ -1126,16 +1126,16 @@ FR-169. Plan signed 2026-11-21 (`doc/plans/registration-form-names-year-country-
 
 ## Preflight's whitespace gate sees uncommitted and new files (WSGATE.*)
 
-NFR-15, I24. Plan signed 2026-11-21 (`doc/plans/i24-preflight-checks-uncommitted-whitespace-2026-11-21.html`, "All as recommended": Q1 A, Q2 A); IDs registered before any code. Preflight checked only commits (`git diff --check origin/main...HEAD`) and runs before the commit, so a blank line at the end of a staged or new file passed it twice on 2026-11-21 and was caught only afterwards. Each test builds a throwaway repository and runs `scripts/check-diff-whitespace.sh` in it.
+NFR-15, I24. Plan signed 2026-11-21 (`doc/plans/i24-preflight-checks-uncommitted-whitespace-2026-11-21.html`, "All as recommended": Q1 A, Q2 A); IDs registered before any code. Preflight checked only commits (`git diff --check origin/main...HEAD`) and runs before the commit, so a blank line at the end of a staged or new file passed it twice on 2026-11-21 and was caught only afterwards. Each test builds a throwaway repository and runs `scripts/check-diff-whitespace.sh` in it. Released 2026-11-21 as main 29e40f1e: CI run 44952731612 and Release run 44952895661 passed first time; the user approved PROD. No migration changed (`deployed_migrations.json` moved only its deploy stamps); main's preflight runs the new gate.
 
 | ID | Requirement | Kind | Test | Status |
 |----|-------------|------|------|--------|
-| WSGATE.01 | A blank line at the end of a changed, unstaged file fails the gate. | pytest | `python/tests/test_whitespace_gate.py` | Implemented (awaiting release) |
-| WSGATE.02 | The same line, staged, fails the gate. | pytest | `python/tests/test_whitespace_gate.py` | Implemented (awaiting release) |
-| WSGATE.03 | The same line, committed on the branch, fails the gate, as before. | pytest | `python/tests/test_whitespace_gate.py` | Implemented (awaiting release) |
-| WSGATE.04 | A new untracked file with one fails the gate, and the message names the file. | pytest | `python/tests/test_whitespace_gate.py` | Implemented (awaiting release) |
-| WSGATE.05 | A file git ignores is not checked, and a clean worktree passes. | pytest | `python/tests/test_whitespace_gate.py` | Implemented (awaiting release) |
-| WSGATE.06 | `scripts/preflight.sh` runs `scripts/check-diff-whitespace.sh` as its „git diff --check (integrate)” gate. | pytest | `python/tests/test_whitespace_gate.py` | Implemented (awaiting release) |
+| WSGATE.01 | A blank line at the end of a changed, unstaged file fails the gate. | pytest | `python/tests/test_whitespace_gate.py` | Released (2026-11-21, main 29e40f1e) |
+| WSGATE.02 | The same line, staged, fails the gate. | pytest | `python/tests/test_whitespace_gate.py` | Released (2026-11-21, main 29e40f1e) |
+| WSGATE.03 | The same line, committed on the branch, fails the gate, as before. | pytest | `python/tests/test_whitespace_gate.py` | Released (2026-11-21, main 29e40f1e) |
+| WSGATE.04 | A new untracked file with one fails the gate, and the message names the file. | pytest | `python/tests/test_whitespace_gate.py` | Released (2026-11-21, main 29e40f1e) |
+| WSGATE.05 | A file git ignores is not checked, and a clean worktree passes. | pytest | `python/tests/test_whitespace_gate.py` | Released (2026-11-21, main 29e40f1e) |
+| WSGATE.06 | `scripts/preflight.sh` runs `scripts/check-diff-whitespace.sh` as its „git diff --check (integrate)” gate. | pytest | `python/tests/test_whitespace_gate.py` | Released (2026-11-21, main 29e40f1e) |
 
 ## Cross-references
 
