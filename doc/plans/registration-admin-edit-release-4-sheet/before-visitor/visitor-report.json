@@ -1,0 +1,174 @@
+[
+  {
+    "tag": "visitor__desktop__pl",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 0,
+    "removeButtons": 0,
+    "marks": [],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "tag": "visitor__desktop__en",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 0,
+    "removeButtons": 0,
+    "marks": [],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "tag": "visitor__phone__pl",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 0,
+    "removeButtons": 0,
+    "marks": [],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": true,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "tag": "visitor__phone__en",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 0,
+    "removeButtons": 0,
+    "marks": [],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": true,
+        "ellipsis": false,
+        "actionsBelow": null,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  }
+]

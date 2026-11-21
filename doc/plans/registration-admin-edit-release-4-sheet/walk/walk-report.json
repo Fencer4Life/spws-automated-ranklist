@@ -1,0 +1,101 @@
+[
+  {
+    "step": "1 signed in, the list",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 4,
+    "removeButtons": 4,
+    "marks": [
+      "ZZROSTER Maria"
+    ],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "step": "2 newcomer saved",
+    "done": "✓ Zapisano zmiany: ZZSMITH John",
+    "flag": "Irlandia"
+  },
+  {
+    "step": "3 linked: year 1965, country UKR",
+    "roster": "w bazie: 1975 → 1965",
+    "category": "Zmieni kategorię w bazie: V2 → V3; wyniki zawodnika zostaną przeliczone."
+  },
+  {
+    "step": "4 linked saved",
+    "done": "✓ Zapisano zmiany: ZZROSTER Maria",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 4,
+    "removeButtons": 4,
+    "marks": [],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  }
+]

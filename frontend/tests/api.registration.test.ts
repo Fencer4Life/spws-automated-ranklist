@@ -22,6 +22,9 @@ import {
   fetchEntryList,
   fetchEventForRegistration,
   deleteRegistration,
+  fetchAdminEntryDetails,
+  updateRegistrationAsAdmin,
+  fetchEventSeasonEndYear,
 } from '../src/lib/api'
 
 beforeEach(() => {
@@ -226,5 +229,107 @@ describe('deleteRegistration (FR-166, an administrator removes an entry)', () =>
   it('fails on a database error', async () => {
     chain({ data: null, error: { message: 'permission denied' } })
     await expect(deleteRegistration(17)).rejects.toThrow()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-170 — a signed-in administrator edits an entry (RFADM.04, RFADM.15). The
+// admin application reads tbl_registration directly, under the policy that
+// already lets „Usuń” delete (pgTAP RFADM.09–12), and saves through
+// fn_update_registration_as_admin (pgTAP RFADM.16–22).
+// ---------------------------------------------------------------------------
+describe('fetchAdminEntryDetails (FR-170, RFADM.15)', () => {
+  function chain(result: { data: unknown; error: unknown }) {
+    const eq = vi.fn().mockResolvedValue(result)
+    const select = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ select })
+    return { select, eq }
+  }
+
+  it('reads the declared year, club, country, link and the roster\'s year in one request', async () => {
+    const c = chain({
+      data: [
+        { id_registration: 4, int_birth_year: 1980, txt_club: 'AZS', txt_country: 'POL', id_fencer: 12, tbl_fencer: { int_birth_year: 1984 } },
+        { id_registration: 5, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, tbl_fencer: null },
+      ],
+      error: null,
+    })
+    const rows = await fetchAdminEntryDetails(3)
+    expect(mockFrom).toHaveBeenCalledWith('tbl_registration')
+    expect(c.select).toHaveBeenCalledWith('id_registration, int_birth_year, txt_club, txt_country, id_fencer, tbl_fencer(int_birth_year)')
+    expect(c.eq).toHaveBeenCalledWith('id_event', 3)
+    expect(rows).toEqual([
+      { id_registration: 4, int_birth_year: 1980, txt_club: 'AZS', txt_country: 'POL', id_fencer: 12, roster_birth_year: 1984 },
+      { id_registration: 5, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, roster_birth_year: null },
+    ])
+  })
+
+  it('throws on a database error', async () => {
+    chain({ data: null, error: { message: 'boom' } })
+    await expect(fetchAdminEntryDetails(3)).rejects.toThrow()
+  })
+})
+
+describe('updateRegistrationAsAdmin (FR-170, RFADM.04, RFADM.23)', () => {
+  // The save is one database function: the entry, and a linked entry's changed
+  // birth year, gender and country on the roster, in one transaction (pgTAP
+  // RFADM.16–22). Never the link, the consent record or the edit token.
+  const FIELDS = { gender: 'F' as const, birthYear: 1979, weapons: ['EPEE' as const, 'FOIL' as const], club: 'AZS', country: 'UKR' }
+
+  it('sends a newcomer\'s declared fields, names included, to the one function', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    await updateRegistrationAsAdmin(9, { ...FIELDS, surname: 'KUZMICHOVA', firstName: 'Svitlana' })
+    expect(mockRpc).toHaveBeenCalledWith('fn_update_registration_as_admin', {
+      p_id_registration: 9,
+      p_surname: 'KUZMICHOVA',
+      p_first_name: 'Svitlana',
+      p_gender: 'F',
+      p_birth_year: 1979,
+      p_weapons: ['EPEE', 'FOIL'],
+      p_club: 'AZS',
+      p_country: 'UKR',
+    })
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('sends no name for a linked entry, and an empty club or country as null', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    await updateRegistrationAsAdmin(9, { ...FIELDS, club: ' ', country: '' })
+    const args = mockRpc.mock.calls[0][1] as Record<string, unknown>
+    expect(Object.keys(args).sort()).toEqual(
+      ['p_birth_year', 'p_club', 'p_country', 'p_first_name', 'p_gender', 'p_id_registration', 'p_surname', 'p_weapons'],
+    )
+    expect(args.p_surname).toBeNull()
+    expect(args.p_first_name).toBeNull()
+    expect(args.p_club).toBeNull()
+    expect(args.p_country).toBeNull()
+  })
+
+  it('throws the database error itself, so the dialog can name the reason', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { code: '23505', message: 'duplicate key' } })
+    await expect(updateRegistrationAsAdmin(9, FIELDS)).rejects.toMatchObject({ code: '23505' })
+  })
+})
+
+describe('fetchEventSeasonEndYear (FR-170: the dialog\'s year range)', () => {
+  function chain(result: { data: unknown; error: unknown }) {
+    const maybeSingle = vi.fn().mockResolvedValue(result)
+    const eq = vi.fn().mockReturnValue({ maybeSingle })
+    const select = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ select })
+    return { select, eq }
+  }
+
+  it('reads the event\'s season and returns its later year', async () => {
+    const c = chain({ data: { txt_season_code: 'SPWS-2026-2027' }, error: null })
+    expect(await fetchEventSeasonEndYear(3)).toBe(2027)
+    expect(mockFrom).toHaveBeenCalledWith('vw_calendar')
+    expect(c.select).toHaveBeenCalledWith('txt_season_code')
+    expect(c.eq).toHaveBeenCalledWith('id_event', 3)
+  })
+
+  it('returns null for an unknown event', async () => {
+    chain({ data: null, error: null })
+    expect(await fetchEventSeasonEndYear(3)).toBeNull()
   })
 })
