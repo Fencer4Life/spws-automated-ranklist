@@ -46,7 +46,7 @@ PASS_THROUGH = (
 _FENCER_DEFAULTS = {
     "json_name_aliases": [],
     "enum_gender": None,
-    "txt_nationality": "PL",
+    "txt_nationality": "POL",  # the column default (FR-172)
     "bool_birth_year_estimated": False,
 }
 

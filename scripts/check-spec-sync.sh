@@ -131,7 +131,9 @@ if [ -f "$RTM" ]; then
   # 169 since 2026-11-22: +FR-171 (the EVF ranking's countries fill entries
   #   without one). FR-170 (release 4) is on its own branch; whichever lands
   #   second adds its one. Registered as Planned before code.
-  EXPECTED=169
+  # 170 since 2026-11-22: +FR-172 (the roster's nationality, one spelling,
+  #   kept to the EVF ranking). FR-170 (release 4) still adds its one.
+  EXPECTED=170
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

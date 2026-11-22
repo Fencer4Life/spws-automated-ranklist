@@ -20,6 +20,9 @@ from python.tools import extract_evf_given_names as job
 
 REPO = Path(__file__).resolve().parents[2]
 
+# The roster rule's read (FR-172), answered with nothing to change.
+_ROSTER = [{"j": '{"season_end": 2027, "fencers": [], "evf": [], "codes": []}'}]
+
 
 def _row(
     fid: int | str,
@@ -103,11 +106,15 @@ def test_rfname_24_the_statement_only_inserts_unseen_names() -> None:
 
 def test_rfname_24_run_sends_the_names_then_the_fencers_to_each_environment() -> None:
     """Amended by FR-171 (plan evf-ranking-country-lomianki rev 1, D1 A): each
-    environment gets the insert-only given names, then the ranked fencers."""
+    environment gets the insert-only given names, then the ranked fencers.
+    Amended by FR-172 (plan roster-nationality-from-evf rev 3, N5 A): then the
+    roster rule reads (and writes only when a fencer changes, RNAT.14)."""
     sent: list[tuple[str, str]] = []
 
     def query(ref: str, _token: str, sql: str) -> list[dict[str, Any]]:
         sent.append((ref, sql))
+        if sql.startswith("SELECT jsonb_build_object"):
+            return _ROSTER
         return [{"txt_name": "Péter"}] if "tbl_common_given_name" in sql else [{"id_evf": 1}]
 
     client = FakeClient([_row(1, "KOVÁCS", "Péter")])
@@ -118,12 +125,16 @@ def test_rfname_24_run_sends_the_names_then_the_fencers_to_each_environment() ->
         refs={"CERT": "cert-ref", "PROD": "prod-ref"},
         notify=lambda _m: None,
     )
-    assert [r for r, _ in sent] == ["cert-ref", "cert-ref", "prod-ref", "prod-ref"]
+    assert [r for r, _ in sent] == ["cert-ref"] * 3 + ["prod-ref"] * 3
     assert [s.split(" (")[0] for _, s in sent] == [
         "INSERT INTO tbl_common_given_name",
         "INSERT INTO tbl_evf_ranking_fencer",
+        "SELECT jsonb_build_object('season_end',",
     ] * 2
-    assert report == {"CERT": {"names": 1, "fencers": 1}, "PROD": {"names": 1, "fencers": 1}}
+    assert report == {
+        "CERT": {"names": 1, "fencers": 1, "roster": 0},
+        "PROD": {"names": 1, "fencers": 1, "roster": 0},
+    }
     assert sorted(set(client.calls)) == [(w, c) for w in range(1, 7) for c in range(1, 5)]
 
 
@@ -133,7 +144,9 @@ def test_rfname_24_run_sends_the_names_then_the_fencers_to_each_environment() ->
 def test_rfname_26_reports_the_number_added_per_environment() -> None:
     messages: list[str] = []
 
-    def query(ref: str, _token: str, _sql: str) -> list[dict[str, Any]]:
+    def query(ref: str, _token: str, sql: str) -> list[dict[str, Any]]:
+        if sql.startswith("SELECT jsonb_build_object"):
+            return _ROSTER  # FR-172: the roster rule's read
         return [{"txt_name": "A"}, {"txt_name": "B"}] if ref == "cert-ref" else []
 
     _ = job.run(
@@ -302,15 +315,20 @@ def test_evfctry_04_a_refused_fencer_write_alerts_and_exits_non_zero() -> None:
 
 
 def test_evfctry_04_local_writes_both_statements_to_local_only() -> None:
+    """Amended by FR-172 (N5 A): LOCAL's roster rule runs too."""
     sent: list[str] = []
-    report = job.run_local(
-        FakeClient([_row(1, "KOVÁCS", "Péter")]), lambda sql: sent.append(sql) or []
-    )
+
+    def query(sql: str) -> list[dict[str, Any]]:
+        sent.append(sql)
+        return _ROSTER if sql.startswith("SELECT jsonb_build_object") else []
+
+    report = job.run_local(FakeClient([_row(1, "KOVÁCS", "Péter")]), query)
     assert [s.split(" (")[0] for s in sent] == [
         "INSERT INTO tbl_common_given_name",
         "INSERT INTO tbl_evf_ranking_fencer",
+        "SELECT jsonb_build_object('season_end',",
     ]
-    assert report == {"LOCAL": {"names": 0, "fencers": 0}}
+    assert report == {"LOCAL": {"names": 0, "fencers": 0, "roster": 0}}
 
 
 def test_evfctry_02_each_row_takes_its_lists_gender_and_category() -> None:

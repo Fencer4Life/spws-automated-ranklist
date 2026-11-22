@@ -27,7 +27,13 @@ from typing import Any
 from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
 from python.matcher.pipeline import _VCAT_ORDER, estimate_birth_year, reconciled_birth_year
 from python.pipeline.age_split import birth_year_to_vcat
-from python.pipeline.international_admission import REJECTED, STORED, admit, fold_federation
+from python.pipeline.international_admission import (
+    REJECTED,
+    STORED,
+    admit,
+    fold_federation,
+    roster_nationality,
+)
 from python.pipeline.overrides import OverrideValidationError, resolve_fencer_keys
 from python.pipeline.types import (
     HaltError,
@@ -789,7 +795,7 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
                 "txt_first_name": first_name,
                 "int_birth_year": by,
                 "bool_birth_year_estimated": by_estimated,
-                "txt_nationality": nat or "PL",
+                "txt_nationality": roster_nationality(nat),
             }
             if bracket_gender:
                 payload["enum_gender"] = bracket_gender
@@ -803,7 +809,7 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
                     "txt_first_name": first_name,
                     "int_birth_year": by,
                     "bool_birth_year_estimated": by_estimated,
-                    "txt_nationality": nat or "PL",
+                    "txt_nationality": roster_nationality(nat),
                     "enum_gender": bracket_gender,
                     "json_name_aliases": [],
                 }
@@ -814,7 +820,7 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
                     "scraped_name": r.fencer_name,
                     "txt_surname": surname,
                     "txt_first_name": first_name,
-                    "nationality": nat or "PL",
+                    "nationality": roster_nationality(nat),
                     "vcat": vcat,
                     "birth_year": by,
                     "estimated": by_estimated,

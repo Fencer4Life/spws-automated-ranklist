@@ -69,6 +69,33 @@ ROSTER_SQL = (
 )
 SEQUENCE_SQL = "SELECT last_value AS j FROM tbl_fencer_id_fencer_seq"
 
+# An administrator's season nationality (ADR-106 §3, FR-172). The results
+# trigger rebuilds every SOURCE row when the seed's results load; an ADMIN row
+# exists nowhere else, so it is exported and written after the results.
+ADMIN_NATIONALITY_SQL = (
+    "SELECT n.id_fencer, s.txt_code AS season_code, n.txt_country "
+    "FROM tbl_fencer_nationality n JOIN tbl_season s USING (id_season) "
+    "WHERE n.enum_source = 'ADMIN' ORDER BY n.id_fencer, s.txt_code"
+)
+
+
+def admin_nationality_lines(rows: list[dict]) -> list[str]:
+    """The seed's lines for the administrator's season nationalities."""
+    if not rows:
+        return []
+    values = ", ".join(
+        f"({int(r['id_fencer'])}, (SELECT id_season FROM tbl_season WHERE txt_code = "
+        f"'{esc(r['season_code'])}'), '{esc(r['txt_country'])}', 'ADMIN')"
+        for r in rows
+    )
+    return [
+        f"-- tbl_fencer_nationality ({len(rows)} administrator's row"
+        f"{'' if len(rows) == 1 else 's'}; the results rebuild the others)",
+        "INSERT INTO tbl_fencer_nationality (id_fencer, id_season, txt_country, enum_source) "
+        f"VALUES {values} ON CONFLICT (id_fencer, id_season) DO UPDATE SET "
+        "txt_country = EXCLUDED.txt_country, id_result_first = NULL, enum_source = 'ADMIN';",
+    ]
+
 
 # ---------------------------------------------------------------------------
 # Management API
@@ -556,6 +583,11 @@ def export_monolithic(ref: str, token: str) -> str:
     # Phase 6 drops the table entirely. Old seed files that still contain
     # COPY tbl_match_candidate sections must be regenerated with this version
     # before being restored — see open risk #6 in the rebuild plan master.
+
+    admin = admin_nationality_lines(q(ADMIN_NATIONALITY_SQL))
+    if admin:
+        lines.append("")
+        lines.extend(admin)
 
     lines.append(f"\n-- Total: {total_tournaments} tournaments, {total_results} results")
     return "\n".join(lines) + "\n"

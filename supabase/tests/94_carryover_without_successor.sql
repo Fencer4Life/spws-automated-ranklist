@@ -68,7 +68,7 @@ SELECT is_empty(
 
 -- A fencer's result in the Criterium-like event, through the drilldown function.
 INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-VALUES ('CARRYNS', 'Test', 'PL', 1964, 'M');
+VALUES ('CARRYNS', 'Test', 'POL', 1964, 'M');
 INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category,
                             dt_tournament, int_participant_count)
 SELECT id_event, 'PEW97efs-V3-M-SABRE-2025-2026', 'PEW', 'SABRE', 'M', 'V3', DATE '2026-07-05', 14

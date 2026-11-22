@@ -146,7 +146,7 @@ BEGIN
   -- grows a category-aware assertion.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
                           int_birth_year, enum_gender)
-  SELECT 'SC-FENCER-' || i, 'Tester', 'PL',
+  SELECT 'SC-FENCER-' || i, 'Tester', 'POL',
          EXTRACT(YEAR FROM (SELECT dt_end FROM tbl_season WHERE id_season = v_season))::INT - 55,
          'M'
   FROM generate_series(1, 5) AS i;
@@ -355,7 +355,7 @@ DECLARE
   v_tourn INT;
 BEGIN
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality)
-  VALUES ('TESTOWY', 'Extra', 'PL') RETURNING id_fencer INTO v_fencer;
+  VALUES ('TESTOWY', 'Extra', 'POL') RETURNING id_fencer INTO v_fencer;
 
   SELECT id_tournament INTO v_tourn FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
 

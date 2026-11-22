@@ -54,7 +54,7 @@ UPDATE tbl_season SET int_carryover_days = (CURRENT_DATE - DATE '2026-05-10') + 
 
 -- Born 1984: V1 in 2026/27.
 INSERT INTO tbl_fencer (id_fencer, txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-VALUES (98401, 'CARRYRS', 'Test', 'PL', 1984, 'M');
+VALUES (98401, 'CARRYRS', 'Test', 'POL', 1984, 'M');
 
 INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category,
                             dt_tournament, int_participant_count)

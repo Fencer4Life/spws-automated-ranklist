@@ -36,7 +36,7 @@ BEGIN
   SELECT id_season INTO v_s26 FROM tbl_season WHERE txt_code = 'SPWS-2025-2026';
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RB-F', 'Test', 'PL', 1970, 'M') RETURNING id_fencer INTO v_f;
+  VALUES ('RB-F', 'Test', 'POL', 1970, 'M') RETURNING id_fencer INTO v_f;
 
   -- The same event name in two seasons: a prefix would match both.
   FOR i IN 1..2 LOOP

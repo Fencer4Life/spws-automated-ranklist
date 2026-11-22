@@ -44,15 +44,15 @@ SELECT e.id_event, v.tc, 'PPW', v.w::enum_weapon_type, 'M', 'V1', e.dt_start, 10
 
 -- Born 1984: V1 in 2025/26 and in 2026/27.
 INSERT INTO tbl_fencer (id_fencer, txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-VALUES (98501, 'TIEONE',  'Test', 'PL', 1984, 'M'),
-       (98502, 'TIEZULU', 'Test', 'PL', 1984, 'M'),
-       (98503, 'TIEALFA', 'Test', 'PL', 1984, 'M'),
-       (98504, 'TIEFOUR', 'Test', 'PL', 1984, 'M'),
-       (98505, 'TRIOA',   'Test', 'PL', 1984, 'M'),
-       (98506, 'TRIOB',   'Test', 'PL', 1984, 'M'),
-       (98507, 'TRIOC',   'Test', 'PL', 1984, 'M'),
-       (98508, 'TRIOD',   'Test', 'PL', 1984, 'M'),
-       (98509, 'TRIOE',   'Test', 'PL', 1984, 'M');
+VALUES (98501, 'TIEONE',  'Test', 'POL', 1984, 'M'),
+       (98502, 'TIEZULU', 'Test', 'POL', 1984, 'M'),
+       (98503, 'TIEALFA', 'Test', 'POL', 1984, 'M'),
+       (98504, 'TIEFOUR', 'Test', 'POL', 1984, 'M'),
+       (98505, 'TRIOA',   'Test', 'POL', 1984, 'M'),
+       (98506, 'TRIOB',   'Test', 'POL', 1984, 'M'),
+       (98507, 'TRIOC',   'Test', 'POL', 1984, 'M'),
+       (98508, 'TRIOD',   'Test', 'POL', 1984, 'M'),
+       (98509, 'TRIOE',   'Test', 'POL', 1984, 'M');
 
 -- Sabre: 9040, 9035, 9035, 9020 in both seasons. Foil 2026/27: 9003, 9001 × 3, 9000.50.
 INSERT INTO tbl_result (id_tournament, id_fencer, int_place, enum_fencer_age_category,

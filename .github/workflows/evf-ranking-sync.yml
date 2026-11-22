@@ -1,4 +1,4 @@
-name: EVF Ranking Sync (given names + ranked fencers → CERT + PROD)
+name: EVF Ranking Sync (given names + ranked fencers + roster countries → CERT, then PROD)
 
 # FR-167. The registration form asks a newcomer whether the two name fields
 # are reversed when the surname box holds a known given name and the given-name
@@ -13,14 +13,22 @@ name: EVF Ranking Sync (given names + ranked fencers → CERT + PROD)
 # an entry without a country is filled (python/tools/fill_registration_country.py).
 # Never points, place or birth date (python/tools/extract_evf_given_names.py).
 #
+# FR-172. Then each environment's roster is kept to the ranking: a roster fencer
+# with exactly one EVF match (folded name, gender, the category its birth year
+# gives) takes EVF's country, never OTH (python/tools/unify_roster_nationality.py).
+# Every change is reported on Telegram. A nationality change queues no
+# recompute (nothing that scores reads it).
+#
 # WHY MONTHLY. A new EVF name appears only when a new fencer first scores at a
 # circuit event; a name missing for a few weeks costs at most one question that
 # the fencer dismisses. Each run asks the EVF site 24 times, one second apart.
 #
-# WHY BOTH ENVIRONMENTS FROM ONE RUN. The table is reference data, not results:
-# it does not go through promote, and the same insert-only statement is safe to
-# send to each. The run reports one Telegram line with the count per
-# environment, and alerts if the EVF site refuses or returns no list.
+# WHY TWO JOBS. Since FR-172 the job writes tbl_fencer, which ingest (CERT) and
+# promote (PROD) read and write. Each environment's run therefore holds that
+# environment's write lane (cert-write, prod-write), CERT first; PROD runs only
+# after CERT succeeded. Each job reads the EVF ranking itself and reports one
+# Telegram message for its environment, and alerts if the EVF site refuses,
+# returns no list, or the environment refuses a statement.
 
 on:
   schedule:
@@ -32,13 +40,14 @@ permissions:
   contents: read
 
 jobs:
-  sync:
-    name: EVF given names + ranked fencers → CERT + PROD
+  cert:
+    name: EVF ranking → CERT
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     concurrency:
-      group: evf-ranking-sync
+      group: cert-write
       cancel-in-progress: false
+      queue: max
     steps:
       - uses: actions/checkout@v5
 
@@ -47,20 +56,20 @@ jobs:
           python-version: '3.11'
 
       # httpx for the EVF API and the Management API; beautifulsoup4 and
-      # openpyxl because python.scrapers loads its parsers on import.
+      # openpyxl because python.scrapers loads its parsers on import; rapidfuzz
+      # for the matcher's name folding (the roster rule, FR-172).
       - name: Install dependencies
-        run: pip install httpx beautifulsoup4 openpyxl
+        run: pip install httpx beautifulsoup4 openpyxl rapidfuzz
 
       # The tool reports its own result and its own failure on Telegram.
-      - name: Read the EVF ranking's given names and ranked fencers into CERT and PROD
+      - name: Read the EVF ranking into CERT and keep its roster's countries
         id: sync
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
-          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python -m python.tools.extract_evf_given_names
+        run: python -m python.tools.extract_evf_given_names --env cert
 
       # A failed install before the sync leaves it no chance to alert (WFALERT.01).
       - name: Notify setup failure
@@ -72,4 +81,43 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=EVF ranking sync FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null
+            --data-urlencode "text=EVF ranking sync (CERT) FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null
+
+  prod:
+    name: EVF ranking → PROD
+    needs: cert
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: prod-write
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4 openpyxl rapidfuzz
+
+      - name: Read the EVF ranking into PROD and keep its roster's countries
+        id: sync
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m python.tools.extract_evf_given_names --env prod
+
+      - name: Notify setup failure
+        if: failure() && steps.sync.outcome != 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=EVF ranking sync (PROD) FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null

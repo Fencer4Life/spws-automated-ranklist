@@ -1,7 +1,7 @@
 # ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md). Amended 2026-11-22 by FR-172 (draft awaiting sign-off; see the Amendment of that date).
 **Date:** 2026-06-14
 **Relates to:** ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change *sources*; ADR-041 (edge-function dispatch),
@@ -214,3 +214,12 @@ The CERT ingest now ends with its own drain, as promote does on PROD. After the 
 ## Amendment (2026-11-01, [ADR-119](119-partial-ingest-promote-and-organizer-registry.md) §4) — the drains of a sync cycle
 
 A cycle of the results sync drains CERT's queue inside its ingest job, as §3's amendment placed it, and PROD's inside the called promote. A quiet cycle writes nothing, so it queues nothing.
+
+
+## Amendment (2026-11-22, FR-172, draft awaiting sign-off) — a nationality change queues no recompute
+
+Plan `doc/plans/roster-nationality-from-evf-2026-11-22.html` (rev 3, N8 A, signed by the user in chat on 2026-11-22). It supersedes the Decision's „BY / merge / **nationality**” for the column trigger: `fn_fencer_change_enqueue` queues a fencer's events on a birth-year change only.
+
+**Why.** Nothing that scores, places or ranks reads `tbl_fencer.txt_nationality`; its readers are Stage 0's name match, promote's identity copy and the EVF parity check. A recompute scores every result of an event again with the scoring code as it stands today, whatever its season (`plugins/recompute.py`), so the 25 nationality changes of FR-172 would have rescored 51 events of closed seasons on PROD (2023/24: 16, 2024/25: 16, 2025/26: 19) and 3 of 2026/27, to no purpose. A locked season's scores change only through the privileged, audited revision ([ADR-097](097-scoring-governance-lock-and-privileged-revision.md)).
+
+**What stays.** A birth-year change and a merge still queue (they move results between categories). Test 44.8 is amended: a nationality change queues nothing (RNAT.08, migration `20261122000002_roster_nationality_from_evf.sql`).
