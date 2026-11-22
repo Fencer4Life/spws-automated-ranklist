@@ -43,6 +43,8 @@ const head = { eventName: 'PEW5 Łomianki', eventCode: 'PEW5', dates: '12–13 g
 const headEn = { ...head, dates: '12–13 December 2026', asOf: '22 November 2026, 14:05' }
 const full = { '1': 70, '2': 110, '3': 150, fallback_2: false, fallback_3: false }
 const missing = { '1': 70, '2': 140, '3': 210, fallback_2: true, fallback_3: true }
+// Łomianki's shape: 75 over two weapons is 37,5 a weapon, 100 over three is 33,33.
+const shares = { '1': 50, '2': 75, '3': 100, fallback_2: false, fallback_3: false }
 
 const cases: Record<string, { raw: RevenueReportRaw; lang: 'pl' | 'en' }> = {
   'full-pl': { raw: sample(12, full), lang: 'pl' },
@@ -51,6 +53,7 @@ const cases: Record<string, { raw: RevenueReportRaw; lang: 'pl' | 'en' }> = {
   'big-pl': { raw: sample(105, full), lang: 'pl' },
   'big-en': { raw: sample(105, full), lang: 'en' },
   'empty-pl': { raw: sample(0, full), lang: 'pl' },
+  'shares-pl': { raw: sample(12, shares), lang: 'pl' },
 }
 const expected: Record<string, unknown> = {}
 const raws: Record<string, unknown> = {}

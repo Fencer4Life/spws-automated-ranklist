@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="079-event-self-registration-identity.md">
-<meta name="adr-source-sha256" content="b38558314c50b0b2a11174ec06ff842a11b1d114e7fb94ab70e6cf3450bc0acb">
+<meta name="adr-source-sha256" content="59e3facaf8c5ed7031debe6f67659477671ac440daa3a1964f64d53a07c5955f">
 <title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -28,7 +28,7 @@
 <ul>
 <li><em>Declared, not paid (R1).</em> The report counts the fees the entries declared. Every surface says so: „na podstawie zgłoszeń, nie wpłat”. It never claims a payment.</li>
 <li><em>One fee rule, in the database (R1, R2).</em> <code>fn_registration_fee(weapons, fee, fee_2w, fee_3w)</code> gives the tier price when the event sets one, else the one-weapon fee times the weapons, else nothing; 0 or more than 3 weapons give nothing. The report applies it to every entry; the answer says which tiers were filled by the rule, and the page and the file say so in a note with the count of entries priced that way.</li>
-<li><em>Equal shares (R3).</em> The fee of an entry in several weapons is split equally between its weapons for the weapon × gender table; nothing is rounded until it is shown, so the cells add up to the total exactly.</li>
+<li><em>Equal shares (R3).</em> The fee of an entry in several weapons is split equally between its weapons for the weapon × gender table; nothing is rounded until it is shown, so the cells add up to the total exactly. Money is shown in whole amounts, because fees are whole; only such a share shows its fraction, up to two places („37,5 EUR”), so what is shown still adds up (change of 2026-11-22, <code>doc/plans/event-revenue-forecast-no-decimals-2026-11-22.html</code>).</li>
 <li><em>What a key holder reads (R4–R6).</em> <code>fn_event_revenue_report(event, key)</code> answers only the holder of the event's live key (ADR-095 amendment of the same date) and NULL to any other key. With the key it returns the currency (PLN when the event states none), the three tier fees and, per entry, the registration id, the name as the entry list shows it, gender, the category the public list computes, the weapons and the fee: never a birth year, club, e-mail hash, edit token, country or fencer id (REVFC.08). Everything else on the page — totals by tier and by weapon and gender — is computed from that answer by one pure module (<code>frontend/src/lib/revenueReport.ts</code>) that the page and the spreadsheet both read.</li>
 <li><em>The page and the file are one design (Q1 = A, R7–R9).</em> <code>register.html?event=…&amp;view=revenue&amp;k=&lt;key&gt;</code> mounts <code>&lt;spws-revenue-report&gt;</code>: a light document with the entry list's PL/EN switch. It offers a printable <code>.ods</code> written by <code>frontend/src/lib/revenueReportOds.ts</code> with <code>fflate</code>, with two tabs: the forecast on one A4 page, and the entries (the same table the page shows, its header repeated on every printed page). Every total in the file is a live formula that also stores its value, so an organiser who changes a fee sees every total follow. Printing the page gives basically what printing the file gives: A4 with 15 mm margins, the summary alone on page 1, the entries from page 2 with their header on every page and the file's column widths and total row, and the file's footer (event · title and „stan na …” · page X of Y) where the browser prints page-margin boxes (Chrome, Edge). A third tab, a roster to tick, was built and removed the same day on the user's word: the entries tab is that roster (change plan <code>doc/plans/event-revenue-forecast-entries-tab-2026-11-22.html</code>, rev 2).</li>
 </ul>
@@ -774,5 +774,5 @@ ADR-050/070–074 (ingestion pipeline).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
-<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>b38558314c50b0b2a11174ec06ff842a11b1d114e7fb94ab70e6cf3450bc0acb</code></footer>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>59e3facaf8c5ed7031debe6f67659477671ac440daa3a1964f64d53a07c5955f</code></footer>
 </div></body></html>

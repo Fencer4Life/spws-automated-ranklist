@@ -104,10 +104,14 @@ export function buildRevenueModel(raw: RevenueReportRaw): RevenueModel {
   }
 }
 
-/** Two decimals always, in the language of the page. */
+/**
+ * Fees are whole amounts, so money shows no decimals. The one value that can
+ * be fractional is an equal share (75 over two weapons): it shows its fraction,
+ * up to two places, so what is shown still adds up to the total shown.
+ */
 export function formatMoney(value: number, lang: 'pl' | 'en'): string {
   return new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'pl-PL', {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value)
 }
