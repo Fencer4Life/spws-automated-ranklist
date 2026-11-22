@@ -41,7 +41,7 @@ def a4(ps: list[tuple[float, float, str]]) -> bool:
     return all(abs(w - 595.3) < 1.5 and abs(h - 841.9) < 1.5 for w, h, _ in ps)
 
 
-for case in ("full-pl", "full-en", "big-pl", "big-en", "empty-pl"):
+for case in ("full-pl", "full-en", "big-pl", "big-en", "empty-pl", "shares-pl"):
     lang = case.split("-")[1]
     w = WORDS[lang]
     chrome = pages(OUT / "chrome" / f"{case}.pdf")

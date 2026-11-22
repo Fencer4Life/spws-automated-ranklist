@@ -159,6 +159,7 @@ def main() -> None:
     printed.append(side("full-pl", "12 entries, Polish"))
     printed.append(side("full-en", "12 entries, English"))
     printed.append(side("big-pl", "105 entries, Polish"))
+    printed.append(side("shares-pl", "Fees 50 / 75 / 100: shares that are not whole (37,5 and 33,33)"))
     missing = fig(copy(ods / "pdf" / "missing-pl-forecast-p1.png", "ods-missing-pl-forecast.png"), "The file: missing tiers, the formula 2 × C11 and its note")
     empty = fig(copy(ods / "chrome" / "empty-pl-p2.png", "print-page-empty-p2.png"), "The page, no entries: page 2")
     empty_f = fig(copy(ods / "pdf" / "empty-pl-entries-p1.png", "print-file-empty-entries.png"), "The file, no entries: tab 2")

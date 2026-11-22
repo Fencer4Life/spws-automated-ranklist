@@ -425,9 +425,11 @@ function entriesSheet(x: Ctx): string {
 // --- the parts ----------------------------------------------------------------
 function contentXml(x: Ctx): string {
   const sheets = forecastSheet(x) + entriesSheet(x)
+  // Money has no fixed decimals: fees are whole amounts. Up to two places
+  // show only for an equal share that is not whole.
   const money = ` ${xml(x.model.currency)}`
   const numberStyles =
-    `<number:number-style style:name="N-money"><number:number number:decimal-places="2" number:min-decimal-places="2" number:min-integer-digits="1" number:grouping="true"/><number:text>${money}</number:text></number:number-style>` +
+    `<number:number-style style:name="N-money"><number:number number:decimal-places="2" number:min-decimal-places="0" number:min-integer-digits="1" number:grouping="true"/><number:text>${money}</number:text></number:number-style>` +
     '<number:number-style style:name="N-int"><number:number number:decimal-places="0" number:min-integer-digits="1"/></number:number-style>' +
     '<number:number-style style:name="N-tick"><number:text>✓</number:text></number:number-style>'
   return (

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue forecast · money without decimals</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  /* This sheet's pictures. */
+  figure{margin:0}
+  figure img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#0b1220}
+  figcaption{font-size:15px;color:var(--faint);margin:6px 0 0;font-family:var(--mono)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px;margin:20px 0}
+  .pair{margin:30px 0;padding-top:16px;border-top:1px solid var(--line)}
+  .pairhead{font-weight:800;margin:0 0 10px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .foot{font-family:var(--mono);font-size:13px;color:var(--faint);margin-top:60px}
+  details{margin:14px 0}
+  summary{cursor:pointer;font-weight:700}
+  .cols3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;align-items:start}
+  @media (max-width:640px){.cols{grid-template-columns:1fr}.wrap{padding:36px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">FR-176 · change after release · 22 Nov 2026</p>
+  <h1>Money without decimal places</h1>
+  <p class="dek">Your word: remove the two decimal places; fees are whole amounts. <b>Nothing is changed yet.</b> The decimals were there because the signed plan fixed „always 2 decimals” for every money figure. One case needs your decision first.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>main 8f9ee544 · FR-176 released</span>
+    <span class="pill"><span class="dot"></span>SIGNED by the user in chat 2026-11-22 („Sign off A, release”)</span>
+  </div>
+
+  <section>
+    <p class="kicker">01 · What changes</p>
+    <h2>Whole amounts everywhere</h2>
+    <ul>
+      <li><b>The page</b> (screen and print): „5750 EUR”, „50 EUR”, „11 910 EUR” instead of „5750,00 EUR”.</li>
+      <li><b>The .ods</b>, both tabs: the money format loses its fixed decimals. Checked in LibreOffice before writing this page: „70 EUR”, „1 480 EUR”, no trailing comma.</li>
+      <li>Fees, tier totals, the entries' fees and every grand total are sums of whole fees, so they are always whole.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · One question</p>
+    <h2>Q1 · A share that is not a whole amount</h2>
+    <p>The table „Według broni i płci” splits the fee of a multi-weapon entry equally between its weapons (R3). On PROD today Łomianki charges 50 / 75 / 100 EUR: a two-weapon entry puts <b>37,50</b> into each of its two weapons, a three-weapon entry <b>33,33</b> into each of three. Only this table's cells can be fractional; its grand total is whole.</p>
+    <div class="note accent"><p class="lede">Recommendation: A</p>
+    <p><b>A</b> — whole amounts show no decimals; a share that is not whole shows its fraction („37,5 EUR”, „33,33 EUR”). What you see always adds up to the total you see. One format does both, on the page and in the file.</p>
+    <p><b>B</b> — no decimals anywhere: shares are rounded for display („38 EUR”). The values stay exact underneath, so totals are right, but a column can look off by one or two: 38 + 38 shown above a total of 75.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The build</p>
+    <h2>Tests first, then the code</h2>
+    <div class="tablewrap"><table><thead><tr><th>Where</th><th>Change</th></tr></thead><tbody>
+      <tr><td><code>revenueReport.test.ts</code>, <code>revenueReport.ts</code></td><td>REVFC.16: <code>formatMoney</code> gives no decimals for a whole amount (and per Q1 for a fraction). Seen failing first.</td></tr>
+      <tr><td><code>RevenueReportPage.test.ts</code></td><td>REVFC.17–19, 32: the expected texts without „,00”; the print's fit lengths follow.</td></tr>
+      <tr><td><code>revenueReportOds.test.ts</code>, <code>revenueReportOds.ts</code></td><td>REVFC.24: the money style has no fixed decimals (A: up to two when needed; B: none).</td></tr>
+      <tr><td>Proofs</td><td>LibreOffice (all formula checks again) and Chrome's print beside it; the picture sheet rebuilt; entry list, registration form and visitor's card proven identical to main again.</td></tr>
+      <tr><td>Documents</td><td>RTM wording of REVFC.16/17/24, the ADR-079 amendment's one sentence on money, handbook unchanged in substance.</td></tr>
+    </tbody></table></div>
+    <p>Unchanged: the registration form's own quote, the calendar card's fee line, the database (it returns numbers, not texts). Then preflight, commit, and, on your word in the same sign-off, release as before (CI and Release watched, the read-only checks). The Łomianki comparison and the release record follow.</p>
+  </section>
+  <p class="foot">change plan · FR-176 · 22 Nov 2026 · amends doc/plans/event-revenue-forecast-2026-11-22.html rev 3 (section 03 formatMoney, section 04 „Money format”) on the user's word · no code written</p>
+
+</div>
+</body>
+</html>

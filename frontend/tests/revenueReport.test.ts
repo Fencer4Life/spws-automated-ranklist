@@ -133,14 +133,18 @@ describe('REVFC.16 — missing tiers, no fee, money, link', () => {
   it('hasFees is true with a one-weapon fee', () => {
     expect(buildRevenueModel(raw()).hasFees).toBe(true)
   })
-  it('formatMoney always has two decimals, in the language of the page', () => {
-    expect(formatMoney(7950, 'en')).toBe('7,950.00')
-    expect(formatMoney(70, 'en')).toBe('70.00')
-    expect(formatMoney(0.5, 'en')).toBe('0.50')
-    // pl-PL uses a comma and groups from five digits (CLDR's minimum grouping)
-    expect(formatMoney(70, 'pl')).toBe('70,00')
-    expect(formatMoney(7950, 'pl')).toBe('7950,00')
-    expect(formatMoney(12345.5, 'pl').replace(/\s/g, ' ')).toBe('12 345,50')
+  it('formatMoney shows a whole amount without decimals, and a share that is not whole with its fraction', () => {
+    // fees are whole amounts (change plan event-revenue-forecast-no-decimals, Q1 = A)
+    expect(formatMoney(7950, 'en')).toBe('7,950')
+    expect(formatMoney(70, 'en')).toBe('70')
+    expect(formatMoney(0, 'en')).toBe('0')
+    expect(formatMoney(70, 'pl')).toBe('70')
+    expect(formatMoney(7950, 'pl')).toBe('7950')
+    expect(formatMoney(11910, 'pl').replace(/\s/g, ' ')).toBe('11 910')
+    // an equal share: 75 over two weapons, 100 over three
+    expect(formatMoney(37.5, 'pl')).toBe('37,5')
+    expect(formatMoney(100 / 3, 'pl')).toBe('33,33')
+    expect(formatMoney(37.5, 'en')).toBe('37.5')
   })
   it('reportUrl names the event, the view and the key', () => {
     expect(reportUrl('https://x.test/register.html', 'PEW5', KEY))

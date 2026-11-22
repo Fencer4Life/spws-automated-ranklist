@@ -69,17 +69,17 @@ describe('REVFC.17 — the report', () => {
     expect(testid('rev-as-of').textContent).toBe('Stan na 22 listopada 2026, 14:05 · na podstawie zgłoszeń, nie wpłat')
     expect(testid('rev-fig-entries').textContent).toBe('4')
     expect(testid('rev-fig-starts').textContent).toBe('7')
-    expect(testid('rev-fig-revenue').textContent).toBe('400,00 EUR')
+    expect(testid('rev-fig-revenue').textContent).toBe('400 EUR')
     const tiers = testid('rev-tiers').querySelectorAll('tbody tr')
-    expect(cellsOf(tiers[0])).toEqual(['1 broń', '2', '70,00 EUR', '140,00 EUR'])
-    expect(cellsOf(tiers[2])).toEqual(['3 bronie', '1', '150,00 EUR', '150,00 EUR'])
-    expect(cellsOf(testid('rev-tiers').querySelector('tfoot tr')!)).toEqual(['Razem', '4', '', '400,00 EUR'])
+    expect(cellsOf(tiers[0])).toEqual(['1 broń', '2', '70 EUR', '140 EUR'])
+    expect(cellsOf(tiers[2])).toEqual(['3 bronie', '1', '150 EUR', '150 EUR'])
+    expect(cellsOf(testid('rev-tiers').querySelector('tfoot tr')!)).toEqual(['Razem', '4', '', '400 EUR'])
     const weapons = testid('rev-weapons').querySelectorAll('tbody tr')
-    expect(cellsOf(weapons[0])).toEqual(['Szpada', '2', '120,00 EUR', '1', '55,00 EUR', '175,00 EUR'])
-    expect(cellsOf(testid('rev-weapons').querySelector('tfoot tr')!)).toEqual(['Razem', '4', '220,00 EUR', '3', '180,00 EUR', '400,00 EUR'])
+    expect(cellsOf(weapons[0])).toEqual(['Szpada', '2', '120 EUR', '1', '55 EUR', '175 EUR'])
+    expect(cellsOf(testid('rev-weapons').querySelector('tfoot tr')!)).toEqual(['Razem', '4', '220 EUR', '3', '180 EUR', '400 EUR'])
     const entries = testid('rev-entries').querySelectorAll('tbody.rr-rows tr')
     expect(entries).toHaveLength(4)
-    expect(cellsOf(entries[0])).toEqual(['1', 'KOWALSKI Jan', 'M', 'V2', '✓', '✓', '', '2', '110,00 EUR'])
+    expect(cellsOf(entries[0])).toEqual(['1', 'KOWALSKI Jan', 'M', 'V2', '✓', '✓', '', '2', '110 EUR'])
     expect(cellsOf(entries[1])[2]).toBe('K')
   })
 
@@ -89,9 +89,24 @@ describe('REVFC.17 — the report', () => {
     expect(await screen.findByText('Revenue forecast')).toBeTruthy()
     // ICU writes an English range with thin spaces around the dash
     expect(screen.getByText(/^12\s–\s13 December 2026 · Łomianki$/)).toBeTruthy()
-    expect(testid('rev-fig-revenue').textContent).toBe('400.00 EUR')
-    expect(cellsOf(testid('rev-tiers').querySelectorAll('tbody tr')[1])).toEqual(['2 weapons', '1', '110.00 EUR', '110.00 EUR'])
+    expect(testid('rev-fig-revenue').textContent).toBe('400 EUR')
+    expect(cellsOf(testid('rev-tiers').querySelectorAll('tbody tr')[1])).toEqual(['2 weapons', '1', '110 EUR', '110 EUR'])
     expect(cellsOf(testid('rev-entries').querySelectorAll('tbody.rr-rows tr')[1])[2]).toBe('F')
+  })
+})
+
+describe('REVFC.17 — a share that is not a whole amount keeps its fraction', () => {
+  it('75 over two weapons is 37,5 in each; the totals stay whole', async () => {
+    mockReport.mockResolvedValue(raw({
+      fees: { '1': 50, '2': 75, '3': 100, fallback_2: false, fallback_3: false },
+      entries: [{ id_registration: 1, txt_surname: 'KOWALSKI', txt_first_name: 'Jan', enum_gender: 'M', enum_age_category: 'V2', arr_weapons: ['EPEE', 'FOIL'], num_fee: 75 }],
+    }))
+    render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Prognoza przychodu')
+    expect(testid('rev-fig-revenue').textContent).toBe('75 EUR')
+    const weapons = testid('rev-weapons').querySelectorAll('tbody tr')
+    expect(cellsOf(weapons[0])).toEqual(['Szpada', '0', '0 EUR', '1', '37,5 EUR', '37,5 EUR'])
+    expect(cellsOf(testid('rev-weapons').querySelector('tfoot tr')!)).toEqual(['Razem', '0', '0 EUR', '2', '75 EUR', '75 EUR'])
   })
 })
 
@@ -119,7 +134,7 @@ describe('REVFC.18 — link not active, not found, no entries', () => {
     render(RevenueReport, { eventCode: 'PEW5', token: KEY })
     expect(await screen.findByText('Brak zgłoszeń.')).toBeTruthy()
     expect(testid('rev-fig-entries').textContent).toBe('0')
-    expect(testid('rev-fig-revenue').textContent).toBe('0,00 EUR')
+    expect(testid('rev-fig-revenue').textContent).toBe('0 EUR')
   })
 })
 
@@ -144,7 +159,7 @@ describe('REVFC.19 — the notes', () => {
     expect(await screen.findByText('Wydarzenie nie ma ustawionej opłaty: prognoza pokazuje tylko liczby.')).toBeTruthy()
     expect(testid('rev-fig-entries').textContent).toBe('4')
     expect(testid('rev-fig-revenue').textContent).toBe('—')
-    expect(document.body.textContent).not.toMatch(/EUR\s*$|\d,\d\d EUR/)
+    expect(document.body.textContent).not.toMatch(/\d EUR/)
   })
 })
 
@@ -194,7 +209,7 @@ describe('REVFC.32 — the page prints like the file', () => {
     await screen.findByText('Prognoza przychodu')
     const total = testid('rev-entries').querySelectorAll('tbody.rr-total tr')
     expect(total).toHaveLength(1)
-    expect(cellsOf(total[0])).toEqual(['', 'Razem', '', '', '', '', '', '7', '400,00 EUR'])
+    expect(cellsOf(total[0])).toEqual(['', 'Razem', '', '', '', '', '', '7', '400 EUR'])
     // not a tfoot: a browser repeats a tfoot on every printed page
     expect(testid('rev-entries').querySelector('tfoot')).toBeNull()
   })
@@ -238,15 +253,15 @@ describe('REVFC.32 — the page prints like the file', () => {
     await screen.findByText('Prognoza przychodu')
     const fit = (el: Element) => [(el as HTMLElement).style.getPropertyValue('--mm'), (el as HTMLElement).style.getPropertyValue('--chars')]
     const total = testid('rev-entries').querySelector('tbody.rr-total tr')!.querySelectorAll('td')
-    expect(fit(total[8])).toEqual(['22', '10']) // „400,00 EUR”
+    expect(fit(total[8])).toEqual(['22', '7']) // „400 EUR”
     const tierTotal = testid('rev-tiers').querySelector('tfoot tr')!.querySelectorAll('td')
-    expect(fit(tierTotal[3])).toEqual(['24', '10'])
+    expect(fit(tierTotal[3])).toEqual(['24', '7'])
     const tierFee = testid('rev-tiers').querySelector('tbody tr')!.querySelectorAll('td')
-    expect(fit(tierFee[2])).toEqual(['32', '9']) // „70,00 EUR”
+    expect(fit(tierFee[2])).toEqual(['32', '6']) // „70 EUR”
     const weaponRow = testid('rev-weapons').querySelector('tbody tr')!.querySelectorAll('td')
-    expect([fit(weaponRow[2]), fit(weaponRow[4]), fit(weaponRow[5])]).toEqual([['32', '10'], ['32', '9'], ['24', '10']])
+    expect([fit(weaponRow[2]), fit(weaponRow[4]), fit(weaponRow[5])]).toEqual([['32', '7'], ['32', '6'], ['24', '7']])
     const entry = testid('rev-entries').querySelector('tbody.rr-rows tr')!.querySelectorAll('td')
-    expect(fit(entry[8])).toEqual(['22', '10'])
+    expect(fit(entry[8])).toEqual(['22', '7'])
     expect(testid('rev-entries').querySelectorAll('td.fit')).toHaveLength(5)
   })
 

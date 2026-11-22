@@ -22,7 +22,7 @@ const ROW = calendarRow({ txt_code: 'PEW5', txt_name: 'PEW5 Łomianki', dt_start
 ;(async () => {
   const b = await chromium.launch()
   console.log('chromium', b.version())
-  for (const name of ['full-pl', 'full-en', 'big-pl', 'big-en', 'empty-pl']) {
+  for (const name of ['full-pl', 'full-en', 'big-pl', 'big-en', 'empty-pl', 'shares-pl']) {
     const { raw, lang } = raws[name]
     for (const browserFooter of [false, true]) {
       if (browserFooter && name !== 'full-pl') continue

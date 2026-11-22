@@ -281,13 +281,14 @@ describe('REVFC.24 — design and print', () => {
     expect(attr(props(content, title, 'style:text-properties'), 'fo:font-size')).toBe('20pt')
     expect(attr(props(content, title, 'style:text-properties'), 'style:font-name')).toBe('Georgia')
   })
-  it('money has two decimals, grouping and the currency code', () => {
+  it('money has no fixed decimals (up to two for a share that is not whole), grouping and the currency code', () => {
     const { content } = loadContent()
     const [f] = sheets(content)
     const money = styleEl(content, cellAt(f, 'C11').getAttribute('table:style-name')).getAttribute('style:data-style-name')
     const ns = Array.from(content.getElementsByTagName('number:number-style')).find((n) => n.getAttribute('style:name') === money)!
     const n = ns.getElementsByTagName('number:number')[0]
-    expect(n.getAttribute('number:min-decimal-places')).toBe('2')
+    expect(n.getAttribute('number:min-decimal-places')).toBe('0')
+    expect(n.getAttribute('number:decimal-places')).toBe('2')
     expect(n.getAttribute('number:grouping')).toBe('true')
     expect(ns.getElementsByTagName('number:text')[0].textContent).toBe(' EUR')
   })
