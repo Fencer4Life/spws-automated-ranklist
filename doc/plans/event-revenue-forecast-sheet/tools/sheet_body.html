@@ -3,12 +3,12 @@
   <p class="dek">Built to the signed plan (rev 3, Q1 = A) and to your change of the same day (rev 2 of the change plan, Q1 = A): <b>the spreadsheet has two tabs, the summary and the entries; the roster tab is gone; printing the page gives the same paper as printing the file.</b> Everything that must not change is identical to main (@@SAME@@ of @@TOTAL@@ images, 0 pixels). Nothing is pushed.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>branch claude/event-revenue-forecast</span>
-    <span class="pill warn"><span class="dot"></span>awaiting your sign-off: this sheet and two ADR drafts</span>
+    <span class="pill"><span class="dot"></span>approved by the user 2026-11-22 („Approve, release”), with both ADR amendments</span>
   </div>
 
   <section>
     <p class="kicker">01 · What you decide</p>
-    <h2>Three sign-offs before the push</h2>
+    <h2>Three sign-offs before the push (all given 2026-11-22)</h2>
     <ol class="steps">
       <li><b>This sheet.</b> The new look (sections 03, 05, 06), the page and the file on paper side by side (04), and the proof that nothing else changed (02).</li>
       <li><b>The ADR-079 amendment of 2026-11-22 (FR-176), status Draft.</b> Declared, not paid; the fee rule in the database (<code>fn_registration_fee</code>); equal shares; what a key holder reads. <a href="../adr/079-event-self-registration-identity.html">ADR-079</a>.</li>
@@ -96,7 +96,7 @@
     <ul>
       <li><code>scripts/preflight.sh</code>: <b>All gates passed</b>. Vitest 1,643 tests in 88 files, with no unhandled error and no jsdom notice. pytest 2,994 passed. pgTAP total 1,918 (46 of them REVFC in <code>141_event_revenue_report.sql</code>). postgrestools: 171 files, 0 findings. svelte-check: 0 errors, 0 warnings. The visitor allowlist holds 39 names, the same in both files.</li>
       <li>Every REVFC test was seen failing before its code, except where its nature prevents it. „Saving sends nothing about the key” (REVFC.27), the visitor's card without a pill and an event without our registration (REVFC.28) passed before the code, as an absence does. The element test in <code>RevenueReportElement.test.ts</code> was written after the element; REVFC.30's register.html test was seen failing first. For your change, the two-tab tests and every REVFC.32 test were seen failing before the code.</li>
-      <li><b>Not done, on purpose:</b> no push and no integration. The ADR drafts are not Accepted. CERT and PROD hold neither the table nor the functions; preflight's own read-only checks were the only contact. The release steps of the plan's section 09 wait for your word.</li>
+      <li><b>Approved and released on your word of 2026-11-22</b> („Approve, release”): both ADR amendments marked Accepted, the branch integrated and pushed to main, CI and Release watched, then CERT and PROD checked read-only (the release record names the commits and runs).</li>
     </ul>
   </section>
 

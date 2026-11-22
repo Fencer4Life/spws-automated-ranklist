@@ -1,6 +1,6 @@
 # ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service
 
-**Status:** Draft (proposed 2026-09-13; awaiting sign-off). **Amendment drafted 2026-11-22 (FR-176, Draft — awaiting sign-off):** a second kind of key, per event, for the revenue forecast.
+**Status:** Draft (proposed 2026-09-13; awaiting sign-off). **Amended 2026-11-22 (FR-176, signed off 2026-11-22; the amendment is in force though the ADR's own 2026-09-13 decision stays a draft):** a second kind of key, per event, for the revenue forecast.
 **Date:** 2026-09-13
 **Amends:** [ADR-080](080-clean-roster-ftl-seeding.md) §(h) — corrects the slug it cites (`/pliki-startowe/?k=<uuid>` was drafted but never published) to the real path, and replaces its one-line "gives us something to rotate when a link goes astray — one `UPDATE`" with the full, worked procedure below.
 **Relates to:** [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (the capability-link pattern this token follows, unchanged by this decision), [ADR-083](083-server-enforced-authorization.md) (the `auth.role() = 'authenticated'` grant convention this reuses), [ADR-093](093-registration-as-birth-year-source.md) (`IdentityProposals.svelte`, the UI precedent cited in §7)
@@ -8,7 +8,7 @@
 
 ## Amendment (2026-11-22, FR-176 — a second kind of key: the event's revenue forecast)
 
-**Status:** Draft (proposed 2026-11-22; awaiting sign-off). Plan `doc/plans/event-revenue-forecast-2026-11-22.html` (rev 3, signed 2026-11-22); ADR-079's amendment of the same date says what the key opens.
+**Status:** Accepted (signed off by the user 2026-11-22, „Approve, release”, with the picture sheet `doc/plans/event-revenue-forecast-sheet-2026-11-22.html`). Plan `doc/plans/event-revenue-forecast-2026-11-22.html` (rev 3, signed 2026-11-22); ADR-079's amendment of the same date says what the key opens.
 
 **Decision.** The revenue forecast is opened by its own key, kept in `tbl_event_report_token` (`uuid_token`, `id_event`, `ts_created`, `ts_revoked`). Unlike the FTL export token, it is:
 
