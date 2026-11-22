@@ -1304,4 +1304,22 @@ describe('EntryList — the ranking place (FR-175)', () => {
     await waitFor(() => expect(v.editDialog()).toBeNull())
     await waitFor(() => expect(mockRanks).toHaveBeenCalledTimes(2))
   })
+
+  // ELRANK.21 (plan doc/plans/entry-list-rank-column-centred-2026-11-22.html,
+  // signed 22 Nov 2026): the „#” column, header and cells, is centred on
+  // desktop and on a phone. Read from the component's stylesheet, as the
+  // phone-layout tests above do; the picture sheet measures it in a browser.
+  it('ELRANK.21: the „#” column is centred on desktop and on a phone', async () => {
+    const v = await renderRanked()
+    await v.three()
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    let desktop: CSSStyleDeclaration | null = null
+    for (const sheet of Array.from(document.styleSheets)) {
+      for (const rule of Array.from(sheet.cssRules)) {
+        if (rule instanceof CSSStyleRule && /^\.el-rank\.svelte-[\w-]+$/.test(rule.selectorText)) desktop = rule.style
+      }
+    }
+    expect(desktop?.textAlign).toBe('center')
+    expect(phoneRule(/^\.el-rank\.svelte-[\w-]+$/)?.justifyContent).toBe('center')
+  })
 })

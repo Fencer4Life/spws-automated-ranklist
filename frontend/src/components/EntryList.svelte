@@ -793,11 +793,12 @@
     font-size: 0.78em;
     margin-top: 12px;
   }
-  /* FR-175: the ranking place, first in the line, only while it is shown. */
+  /* FR-175: the ranking place, first in the line, only while it is shown;
+     centred, header and cells (ELRANK.21). */
   .el-rank {
     width: 1%;
     white-space: nowrap;
-    text-align: right;
+    text-align: center;
     font-weight: 700;
     color: #ffd76a;
   }
@@ -990,11 +991,11 @@
       width: auto;
       flex: none;
     }
-    /* FR-175: the place keeps one width down the list, right-aligned. */
+    /* FR-175: the place keeps one width down the list, centred (ELRANK.21). */
     .el-rank {
       flex: none;
       min-width: 2.2em;
-      justify-content: flex-end;
+      justify-content: center;
     }
     /* I25: a block, not the cells' inline-flex: a browser draws „…” only in
        a block, so a name that does not fit ends in „…” instead of a cut
