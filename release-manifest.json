@@ -1,21 +1,21 @@
 {
   "version": "0.1.0",
-  "sha": "f3f57bcaf01d0903e20c70c27482a2f8ff155f18",
-  "created": "2026-11-22T07:41:01Z",
-  "schema_fingerprint": "7935202253f9e4174f47ec7a7d737c37",
+  "sha": "7a3429c58b01c9cb4d9a07639b787b30954dc345",
+  "created": "2026-11-22T08:01:15Z",
+  "schema_fingerprint": "a2d787483930364fcd8863191f1607f7",
   "migrations": {
-    "total": 243,
+    "total": 244,
     "new_since_last": [
       "20261122000003_registration_admin_edit_roster.sql"
     ]
   },
   "tests": {
     "pgtap": {
-      "files": 136,
-      "assertions": 1754
+      "files": 137,
+      "assertions": 1763
     },
     "pytest": {
-      "files": 182
+      "files": 183
     },
     "vitest": {
       "files": 80
@@ -23,9 +23,9 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-22T07:41:02Z",
-      "sha": "f3f57bcaf01d0903e20c70c27482a2f8ff155f18",
-      "schema_fingerprint": "7935202253f9e4174f47ec7a7d737c37"
+      "at": "2026-11-22T08:01:17Z",
+      "sha": "7a3429c58b01c9cb4d9a07639b787b30954dc345",
+      "schema_fingerprint": "a2d787483930364fcd8863191f1607f7"
     },
     "prod": {
       "at": "2026-11-22T07:42:36Z",
