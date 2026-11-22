@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-11-22T00:11:04Z",
-    "last_sha": "fc63f0f5386b8607fcb4c8d489c043f63310f5d8",
+    "last_updated": "2026-11-22T07:41:02Z",
+    "last_sha": "f3f57bcaf01d0903e20c70c27482a2f8ff155f18",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -244,13 +244,14 @@
       "20261121000003_registration_birth_year_range.sql",
       "20261121000004_registration_country.sql",
       "20261121000005_registration_country_paths.sql",
-      "20261122000001_evf_ranking_fencer.sql"
+      "20261122000001_evf_ranking_fencer.sql",
+      "20261122000003_registration_admin_edit_roster.sql"
     ],
-    "schema_fingerprint": "a48bd5286d08c5f19d5ecea9ad8e6865"
+    "schema_fingerprint": "7935202253f9e4174f47ec7a7d737c37"
   },
   "prod": {
-    "last_updated": "2026-11-22T00:12:22Z",
-    "last_sha": "fc63f0f5386b8607fcb4c8d489c043f63310f5d8",
+    "last_updated": "2026-11-22T07:42:36Z",
+    "last_sha": "f3f57bcaf01d0903e20c70c27482a2f8ff155f18",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -493,8 +494,9 @@
       "20261121000003_registration_birth_year_range.sql",
       "20261121000004_registration_country.sql",
       "20261121000005_registration_country_paths.sql",
-      "20261122000001_evf_ranking_fencer.sql"
+      "20261122000001_evf_ranking_fencer.sql",
+      "20261122000003_registration_admin_edit_roster.sql"
     ],
-    "schema_fingerprint": "a48bd5286d08c5f19d5ecea9ad8e6865"
+    "schema_fingerprint": "7935202253f9e4174f47ec7a7d737c37"
   }
 }

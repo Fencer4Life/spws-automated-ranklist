@@ -1,0 +1,59 @@
+[
+  {
+    "tag": "dialog__desktop__pl",
+    "newcomer": {
+      "surname": "ZZSMITH",
+      "locked": false,
+      "year": "1990",
+      "club": "London FC",
+      "country": "Wielka Brytania"
+    },
+    "refused": "Takie zgłoszenie już istnieje.",
+    "linked": {
+      "locked": true,
+      "note": "Imię i nazwisko z bazy zawodników",
+      "roster": "w bazie: 1975 ≠",
+      "change": "w bazie: 1975 → 1965",
+      "category": "Zmieni kategorię w bazie: V2 → V3; wyniki zawodnika zostaną przeliczone."
+    },
+    "errors": []
+  },
+  {
+    "tag": "dialog__desktop__en",
+    "newcomer": {
+      "surname": "ZZSMITH",
+      "locked": false,
+      "year": "1990",
+      "club": "London FC",
+      "country": "United Kingdom"
+    },
+    "refused": "Such an entry already exists.",
+    "linked": {
+      "locked": true,
+      "note": "Name from the fencer roster",
+      "roster": "on the roster: 1975 ≠",
+      "change": "on the roster: 1975 → 1965",
+      "category": "Changes the category on the roster: V2 → V3; the fencer's results will be recalculated."
+    },
+    "errors": []
+  },
+  {
+    "tag": "dialog__phone__pl",
+    "newcomer": {
+      "surname": "ZZSMITH",
+      "locked": false,
+      "year": "1990",
+      "club": "London FC",
+      "country": "Wielka Brytania"
+    },
+    "refused": "Takie zgłoszenie już istnieje.",
+    "linked": {
+      "locked": true,
+      "note": "Imię i nazwisko z bazy zawodników",
+      "roster": "w bazie: 1975 ≠",
+      "change": "w bazie: 1975 → 1965",
+      "category": "Zmieni kategorię w bazie: V2 → V3; wyniki zawodnika zostaną przeliczone."
+    },
+    "errors": []
+  }
+]

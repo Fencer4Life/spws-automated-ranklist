@@ -30,6 +30,8 @@ import type {
   UpdateRegistrationParams,
   RegistrationEntry,
   RegistrationEventInfo,
+  AdminEntryDetail,
+  AdminEntryUpdate,
   IdentityCandidate,
   IdentityCandidateKind,
   ConfirmIdentityParams,
@@ -694,6 +696,60 @@ export async function deleteRegistration(id: number): Promise<void> {
     .select('id_registration')
   if (error) throw error
   if (!data || data.length !== 1) throw new Error(`Registration ${id} was not removed`)
+}
+
+// FR-170 — a signed-in administrator edits an entry. Like the removal above it
+// reads and writes tbl_registration directly, under the table's one policy:
+// a signed-in administrator may read and update every row, a visitor sees none
+// (pgTAP RFADM.09–12). The rules of the form hold because they are the table's
+// own triggers: the name form, the roster's name for a linked entry, the
+// season's year range and the country's code.
+
+// The declared year, club, country and link, with the linked fencer's roster
+// year, in one request (D5).
+export async function fetchAdminEntryDetails(eventId: number): Promise<AdminEntryDetail[]> {
+  const { data, error } = await getClient()
+    .from('tbl_registration')
+    .select('id_registration, int_birth_year, txt_club, txt_country, id_fencer, tbl_fencer(int_birth_year)')
+    .eq('id_event', eventId)
+  if (error) throw error
+  type Row = Omit<AdminEntryDetail, 'roster_birth_year'> & { tbl_fencer: { int_birth_year: number | null } | null }
+  return ((data ?? []) as unknown as Row[]).map(({ tbl_fencer, ...r }) => ({
+    ...r,
+    roster_birth_year: tbl_fencer?.int_birth_year ?? null,
+  }))
+}
+
+// One database function saves the entry and, for a linked entry, copies what
+// this save changed (birth year, gender, country) to the roster in the same
+// transaction (fn_update_registration_as_admin, pgTAP RFADM.16–22). Only the
+// declared fields: never the link, the consent record or the edit token; a
+// linked entry sends no name, because the roster's name is kept. The
+// database's own error is thrown as it is, so the dialog can name the reason.
+export async function updateRegistrationAsAdmin(id: number, u: AdminEntryUpdate): Promise<void> {
+  const { error } = await getClient().rpc('fn_update_registration_as_admin', {
+    p_id_registration: id,
+    p_surname: u.surname ?? null,
+    p_first_name: u.firstName ?? null,
+    p_gender: u.gender,
+    p_birth_year: u.birthYear,
+    p_weapons: u.weapons,
+    p_club: u.club.trim() === '' ? null : u.club,
+    p_country: u.country === '' ? null : u.country,
+  })
+  if (error) throw error
+}
+
+// The event's season's later year, for the dialog's year range (FR-168).
+export async function fetchEventSeasonEndYear(eventId: number): Promise<number | null> {
+  const { data, error } = await getClient()
+    .from('vw_calendar')
+    .select('txt_season_code')
+    .eq('id_event', eventId)
+    .maybeSingle()
+  if (error || !data) return null
+  const m = (data as { txt_season_code: string }).txt_season_code.match(/(\d{4})$/)
+  return m ? parseInt(m[1], 10) : null
 }
 
 // P2.2 (D7) — the standalone registration page resolves its event by

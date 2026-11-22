@@ -1,7 +1,7 @@
 # ADR-072: Master-data-change-triggered idempotent recompute (CDC queue + debounce)
 
 **Status:** Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
-[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md). Amended 2026-11-22 by FR-172 (draft awaiting sign-off; see the Amendment of that date).
+[archive/legacy-2026-07/ingestion_pipeline_NEW_design.md](../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md) §6 / §8. **Implemented** — see [development_history](../archive/legacy-2026-07/development_history.md). Amended 2026-11-22 by FR-172 (accepted: signed off by the user in chat on 2026-11-22; see the Amendment of that date).
 **Date:** 2026-06-14
 **Relates to:** ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change *sources*; ADR-041 (edge-function dispatch),
@@ -216,7 +216,7 @@ The CERT ingest now ends with its own drain, as promote does on PROD. After the 
 A cycle of the results sync drains CERT's queue inside its ingest job, as §3's amendment placed it, and PROD's inside the called promote. A quiet cycle writes nothing, so it queues nothing.
 
 
-## Amendment (2026-11-22, FR-172, draft awaiting sign-off) — a nationality change queues no recompute
+## Amendment (2026-11-22, FR-172) — a nationality change queues no recompute
 
 Plan `doc/plans/roster-nationality-from-evf-2026-11-22.html` (rev 3, N8 A, signed by the user in chat on 2026-11-22). It supersedes the Decision's „BY / merge / **nationality**” for the column trigger: `fn_fencer_change_enqueue` queues a fencer's events on a birth-year change only.
 
