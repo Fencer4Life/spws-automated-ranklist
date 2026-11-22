@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-11-22T08:23:38Z",
-    "last_sha": "a578536cbc6ecc5c5586239877e307439b7f31a1",
+    "last_updated": "2026-11-22T09:31:50Z",
+    "last_sha": "fbfe20f7bad552980d2564ca4e08d0d1152aa4ad",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -246,9 +246,10 @@
       "20261121000005_registration_country_paths.sql",
       "20261122000001_evf_ranking_fencer.sql",
       "20261122000002_roster_nationality_from_evf.sql",
-      "20261122000003_registration_admin_edit_roster.sql"
+      "20261122000003_registration_admin_edit_roster.sql",
+      "20261122000004_fold_name_all_letters.sql"
     ],
-    "schema_fingerprint": "a2d787483930364fcd8863191f1607f7"
+    "schema_fingerprint": "2aaf64fde65981ddf8b2ec45fa9dbf2f"
   },
   "prod": {
     "last_updated": "2026-11-22T08:31:34Z",
