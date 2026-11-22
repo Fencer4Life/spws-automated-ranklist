@@ -28,6 +28,7 @@ from pathlib import Path
 
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
+from python.pipeline.international_admission import roster_nationality
 from python.pipeline.review_cli import Fetcher, ReviewSession
 from python.pipeline.stages import _is_international_intake
 
@@ -1062,7 +1063,7 @@ def _append_event_to_seed(db, event_code: str) -> int:
         seen_fencers.add(key)
         by = f.get("int_birth_year")
         gender = f.get("enum_gender")
-        nationality = f.get("txt_nationality") or "PL"
+        nationality = roster_nationality(f.get("txt_nationality"))
         lines.append(
             f"INSERT INTO tbl_fencer (txt_surname, txt_first_name, "
             f"int_birth_year, enum_gender, txt_nationality) VALUES ("

@@ -85,6 +85,13 @@ def fold_federation(country: str | None) -> str | None:
     return code if _FEDERATION.fullmatch(code) else None
 
 
+def roster_nationality(country: str | None) -> str:
+    """A new roster fencer's ``txt_nationality`` (FR-172): the source's
+    three-letter code, PL folded to POL; POL when the source printed none or
+    something that is not a code. The column admits three capitals only."""
+    return fold_federation(country) or "POL"
+
+
 def _words(text: str) -> list[str]:
     return fold_diacritics(canonicalize_scraped_name(text)).upper().split()
 

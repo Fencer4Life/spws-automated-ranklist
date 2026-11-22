@@ -1,8 +1,10 @@
-"""RFNAME.24–27 (FR-167): the monthly read of the EVF ranking's given names.
+"""RFNAME.24–27 (FR-167) and EVFCTRY.02–05 (FR-171): the monthly read of the EVF ranking.
 
 The job reads the 24 EVF ranking lists (6 weapon-and-gender lists × 4
-categories), keeps the given names only, and inserts the ones not yet held into
-tbl_common_given_name on CERT and PROD. It never deletes or updates a name.
+categories). It inserts the given names not yet held into tbl_common_given_name
+(never deleting or updating one), and since FR-171 keeps each ranked fencer's
+EVF id, names, gender, category and country in tbl_evf_ranking_fencer, on CERT
+and PROD.
 """
 
 from __future__ import annotations
@@ -18,9 +20,18 @@ from python.tools import extract_evf_given_names as job
 
 REPO = Path(__file__).resolve().parents[2]
 
+# The roster rule's read (FR-172), answered with nothing to change.
+_ROSTER = [{"j": '{"season_end": 2027, "fencers": [], "evf": [], "codes": []}'}]
+
 
 def _row(
-    fid: int, name: str, first: str, country: str = "HUN", dob: str | None = "1970-01-01"
+    fid: int | str,
+    name: str,
+    first: str,
+    country: str = "HUN",
+    dob: str | None = "1970-01-01",
+    gender: str = "M",
+    cat: int = 2,
 ) -> dict[str, Any]:
     return {
         "id": fid,
@@ -30,6 +41,9 @@ def _row(
         "dob": dob,
         "points": 10.0,
         "pos": 1,
+        "gender": gender,
+        "cat": cat,
+        "weapon": 2,
     }
 
 
@@ -90,12 +104,18 @@ def test_rfname_24_the_statement_only_inserts_unseen_names() -> None:
     assert not re.search(r"\b(DELETE|UPDATE|TRUNCATE|DROP)\b", sql, re.IGNORECASE)
 
 
-def test_rfname_24_run_sends_one_insert_per_environment_and_nothing_else() -> None:
+def test_rfname_24_run_sends_the_names_then_the_fencers_to_each_environment() -> None:
+    """Amended by FR-171 (plan evf-ranking-country-lomianki rev 1, D1 A): each
+    environment gets the insert-only given names, then the ranked fencers.
+    Amended by FR-172 (plan roster-nationality-from-evf rev 3, N5 A): then the
+    roster rule reads (and writes only when a fencer changes, RNAT.14)."""
     sent: list[tuple[str, str]] = []
 
     def query(ref: str, _token: str, sql: str) -> list[dict[str, Any]]:
         sent.append((ref, sql))
-        return [{"txt_name": "Péter"}]
+        if sql.startswith("SELECT jsonb_build_object"):
+            return _ROSTER
+        return [{"txt_name": "Péter"}] if "tbl_common_given_name" in sql else [{"id_evf": 1}]
 
     client = FakeClient([_row(1, "KOVÁCS", "Péter")])
     report = job.run(
@@ -105,9 +125,16 @@ def test_rfname_24_run_sends_one_insert_per_environment_and_nothing_else() -> No
         refs={"CERT": "cert-ref", "PROD": "prod-ref"},
         notify=lambda _m: None,
     )
-    assert [r for r, _ in sent] == ["cert-ref", "prod-ref"]
-    assert all(s.startswith("INSERT INTO tbl_common_given_name") for _, s in sent)
-    assert report == {"CERT": 1, "PROD": 1}
+    assert [r for r, _ in sent] == ["cert-ref"] * 3 + ["prod-ref"] * 3
+    assert [s.split(" (")[0] for _, s in sent] == [
+        "INSERT INTO tbl_common_given_name",
+        "INSERT INTO tbl_evf_ranking_fencer",
+        "SELECT jsonb_build_object('season_end',",
+    ] * 2
+    assert report == {
+        "CERT": {"names": 1, "fencers": 1, "roster": 0},
+        "PROD": {"names": 1, "fencers": 1, "roster": 0},
+    }
     assert sorted(set(client.calls)) == [(w, c) for w in range(1, 7) for c in range(1, 5)]
 
 
@@ -117,7 +144,9 @@ def test_rfname_24_run_sends_one_insert_per_environment_and_nothing_else() -> No
 def test_rfname_26_reports_the_number_added_per_environment() -> None:
     messages: list[str] = []
 
-    def query(ref: str, _token: str, _sql: str) -> list[dict[str, Any]]:
+    def query(ref: str, _token: str, sql: str) -> list[dict[str, Any]]:
+        if sql.startswith("SELECT jsonb_build_object"):
+            return _ROSTER  # FR-172: the roster rule's read
         return [{"txt_name": "A"}, {"txt_name": "B"}] if ref == "cert-ref" else []
 
     _ = job.run(
@@ -130,6 +159,7 @@ def test_rfname_26_reports_the_number_added_per_environment() -> None:
     assert len(messages) == 1
     assert "CERT: 2" in messages[0]
     assert "PROD: 0" in messages[0]
+    assert "fencers" in messages[0]
 
 
 def test_rfname_26_a_refusal_alerts_and_exits_non_zero() -> None:
@@ -164,14 +194,157 @@ def test_rfname_26_empty_lists_are_a_failure_not_zero_names() -> None:
 # RFNAME.27 — the workflow: monthly, off the hour, both environments.
 # ---------------------------------------------------------------------------
 def test_rfname_27_the_workflow_runs_monthly_off_the_hour_on_both_environments() -> None:
+    """Amended by FR-171 (EVFCTRY.05): renamed evf-ranking-sync.yml for what it reads."""
+    assert not (REPO / ".github/workflows/given-names-sync.yml").exists()
     wf = yaml.safe_load(
-        (REPO / ".github/workflows/given-names-sync.yml").read_text(encoding="utf-8")
+        (REPO / ".github/workflows/evf-ranking-sync.yml").read_text(encoding="utf-8")
     )
     triggers = wf.get("on") or wf.get(True)
     crons = [s["cron"] for s in triggers["schedule"]]
     assert len(crons) == 1
     minute, _hour, dom, month, dow = crons[0].split()
     assert minute not in ("0", "*") and dom.isdigit() and month == "*" and dow == "*"
-    text = (REPO / ".github/workflows/given-names-sync.yml").read_text(encoding="utf-8")
+    text = (REPO / ".github/workflows/evf-ranking-sync.yml").read_text(encoding="utf-8")
     assert "SUPABASE_CERT_REF" in text and "SUPABASE_PROD_REF" in text
     assert "python -m python.tools.extract_evf_given_names" in text
+
+
+# ---------------------------------------------------------------------------
+# EVFCTRY.02 — what is kept of each ranked fencer (FR-171).
+# ---------------------------------------------------------------------------
+def test_evfctry_02_keeps_id_names_gender_category_and_country_only() -> None:
+    fencers = job.ranking_fencers(
+        [
+            _row(
+                "00000000-0000-4000-8000-000000000007",
+                "MÜLLER",
+                "Hans",
+                country="GER",
+                gender="M",
+                cat=3,
+            ),
+            _row(
+                "00000000-0000-4000-8000-000000000007",
+                "MÜLLER",
+                "Hans",
+                country="GER",
+                gender="M",
+                cat=3,
+            ),  # a second weapon list
+            _row(
+                "00000000-0000-4000-8000-000000000009",
+                "ROSSI",
+                "Anna",
+                country="OTH",
+                gender="F",
+                cat=1,
+            ),
+        ]
+    )
+    assert fencers == [
+        {
+            "id": "00000000-0000-4000-8000-000000000007",
+            "surname": "MÜLLER",
+            "first_name": "Hans",
+            "gender": "M",
+            "category": 3,
+            "country": "GER",
+        },
+        {
+            "id": "00000000-0000-4000-8000-000000000009",
+            "surname": "ROSSI",
+            "first_name": "Anna",
+            "gender": "F",
+            "category": 1,
+            "country": "OTH",
+        },
+    ]
+
+
+def test_evfctry_02_no_points_place_or_birth_date_reach_the_statement() -> None:
+    sql = job.build_fencer_upsert_sql(
+        job.ranking_fencers(
+            [_row("00000000-0000-4000-8000-000000000007", "MÜLLER", "Hans", dob="1961-04-05")]
+        )
+    )
+    assert "1961" not in sql
+    assert "10.0" not in sql
+    assert "('00000000-0000-4000-8000-000000000007', 'MÜLLER', 'Hans', 'M', 2, 'HUN')" in sql
+
+
+# ---------------------------------------------------------------------------
+# EVFCTRY.03 — insert or update by EVF id; never delete.
+# ---------------------------------------------------------------------------
+def test_evfctry_03_the_statement_upserts_by_evf_id_and_never_deletes() -> None:
+    sql = job.build_fencer_upsert_sql(
+        job.ranking_fencers(
+            [_row("00000000-0000-4000-8000-000000000007", "O'NEIL", "Seán", country="IRL")]
+        )
+    )
+    assert sql.startswith(
+        "INSERT INTO tbl_evf_ranking_fencer (id_evf, txt_surname, txt_first_name, enum_gender, int_category, txt_country) VALUES"
+    )
+    assert "'O''NEIL'" in sql
+    assert "ON CONFLICT (id_evf) DO UPDATE SET" in sql
+    assert "ts_read = now()" in sql
+    assert "RETURNING id_evf" in sql
+    assert not re.search(r"\b(DELETE|TRUNCATE|DROP)\b", sql, re.IGNORECASE)
+
+
+# ---------------------------------------------------------------------------
+# EVFCTRY.04 — both counts reported per environment; a refusal alerts; --local.
+# ---------------------------------------------------------------------------
+def test_evfctry_04_a_refused_fencer_write_alerts_and_exits_non_zero() -> None:
+    messages: list[str] = []
+
+    def query(_ref: str, _token: str, sql: str) -> list[dict[str, Any]]:
+        if "tbl_evf_ranking_fencer" in sql:
+            raise RuntimeError("permission denied")
+        return []
+
+    with pytest.raises(SystemExit) as exc:
+        _ = job.run(
+            FakeClient([_row(1, "X", "Anna")]),
+            query,
+            token="t",
+            refs={"CERT": "c"},
+            notify=messages.append,
+        )
+    assert exc.value.code != 0
+    assert messages and "FAILED" in messages[0] and "CERT" in messages[0]
+
+
+def test_evfctry_04_local_writes_both_statements_to_local_only() -> None:
+    """Amended by FR-172 (N5 A): LOCAL's roster rule runs too."""
+    sent: list[str] = []
+
+    def query(sql: str) -> list[dict[str, Any]]:
+        sent.append(sql)
+        return _ROSTER if sql.startswith("SELECT jsonb_build_object") else []
+
+    report = job.run_local(FakeClient([_row(1, "KOVÁCS", "Péter")]), query)
+    assert [s.split(" (")[0] for s in sent] == [
+        "INSERT INTO tbl_common_given_name",
+        "INSERT INTO tbl_evf_ranking_fencer",
+        "SELECT jsonb_build_object('season_end',",
+    ]
+    assert report == {"LOCAL": {"names": 0, "fencers": 0, "roster": 0}}
+
+
+def test_evfctry_02_each_row_takes_its_lists_gender_and_category() -> None:
+    """Live EVF rows carry no gender or category (seen 22 Nov: id, name,
+    firstname, country, dob, points, pos); both are the list's own."""
+    bare = {
+        "id": "00000000-0000-4000-8000-000000000007",
+        "name": "KOVÁCS",
+        "firstname": "Eva",
+        "country": "HUN",
+        "dob": None,
+        "points": 1.0,
+        "pos": 1,
+    }
+    rows = job.read_ranking(FakeClient([bare]))
+    tags = sorted({(r["gender"], r["cat"]) for r in rows})
+    assert tags == [(g, c) for g in ("F", "M") for c in range(1, 5)]
+    assert all(r["gender"] == ("M" if r["weapon"] <= 3 else "F") for r in rows)
+    assert "gender" not in bare and "cat" not in bare  # the client's rows are not changed in place

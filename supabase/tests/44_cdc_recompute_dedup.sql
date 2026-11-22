@@ -4,7 +4,7 @@
 -- NEW ingestion pipeline build, milestone 5.
 --
 -- Tests 44.1–44.11: queue/watermark schema, column-aware enqueue trigger
--- (BY/nationality -> enqueue; name -> nothing), dedup coalescing, and
+-- (BY -> enqueue; name or nationality -> nothing, FR-172), dedup coalescing, and
 -- fn_merge_fencers (re-point + fold aliases + delete dup + enqueue both sides).
 -- =============================================================================
 
@@ -53,11 +53,11 @@ BEGIN
   -- BY 2055 in season ending 2100 -> age 45 -> V1 (matches the tournaments).
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality,
                           json_name_aliases)
-       VALUES ('MERGE', 'Adam', 2055, 'PL', '["MERGE Adam"]'::jsonb)
+       VALUES ('MERGE', 'Adam', 2055, 'POL', '["MERGE Adam"]'::jsonb)
     RETURNING id_fencer INTO v_fa;
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality,
                           json_name_aliases)
-       VALUES ('MERGE', 'Adamus', 2055, 'PL', '["MERGE Adamus"]'::jsonb)
+       VALUES ('MERGE', 'Adamus', 2055, 'POL', '["MERGE Adamus"]'::jsonb)
     RETURNING id_fencer INTO v_fb;
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
        VALUES ('TRIG', 'Cee', 2055) RETURNING id_fencer INTO v_fc;
@@ -121,13 +121,15 @@ SELECT is(
   (SELECT count(*)::int FROM tbl_recompute_queue), 0,
   '44.7: a name change enqueues nothing (FK is durable)');
 
--- ---- 44.8 trigger fires on a nationality change --------------------------
+-- ---- 44.8 a nationality change queues nothing ----------------------------
+-- Amended by FR-172 (RNAT.08, plan roster-nationality-from-evf rev 3, N8 A):
+-- nothing that scores reads tbl_fencer.txt_nationality, so a change of it must
+-- not rescore the fencer's events (closed seasons included).
 DELETE FROM tbl_recompute_queue;
 UPDATE tbl_fencer SET txt_nationality = 'GER' WHERE txt_surname = 'TRIGREN';
 SELECT is(
-  (SELECT count(*)::int FROM tbl_recompute_queue q
-   JOIN tbl_event e ON e.id_event = q.id_event WHERE e.txt_code = 'CDC44E1'),
-  1, '44.8: a nationality change enqueues the affected event');
+  (SELECT count(*)::int FROM tbl_recompute_queue), 0,
+  '44.8 (RNAT.08): a nationality change enqueues nothing');
 
 -- ---- 44.9 / 44.10 / 44.11 fn_merge_fencers --------------------------------
 DELETE FROM tbl_recompute_queue;

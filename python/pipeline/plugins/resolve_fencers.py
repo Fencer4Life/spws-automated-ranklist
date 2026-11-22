@@ -31,7 +31,7 @@ from python.matcher.fuzzy_match import find_best_match
 from python.matcher.pipeline import estimate_birth_year
 from python.pipeline.age_split import birth_year_to_vcat
 from python.pipeline.core.contract import Context, PluginKind, Services
-from python.pipeline.international_admission import fold_federation
+from python.pipeline.international_admission import fold_federation, roster_nationality
 from python.pipeline.overrides import resolve_fencer_keys
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import get_pctx
@@ -462,7 +462,7 @@ class ResolveFencers(BasePlugin):
             "txt_first_name": first_name,
             "int_birth_year": by,
             "bool_birth_year_estimated": estimated,
-            "txt_nationality": nat or "PL",
+            "txt_nationality": roster_nationality(nat),
         }
         if gender:
             payload["enum_gender"] = gender
@@ -474,7 +474,7 @@ class ResolveFencers(BasePlugin):
                 "txt_first_name": first_name,
                 "int_birth_year": by,
                 "bool_birth_year_estimated": estimated,
-                "txt_nationality": nat or "PL",
+                "txt_nationality": roster_nationality(nat),
                 "enum_gender": gender,
                 "json_name_aliases": [],
             }
@@ -494,7 +494,7 @@ class ResolveFencers(BasePlugin):
                 "scraped_name": r.fencer_name,
                 "txt_surname": surname,
                 "txt_first_name": first_name,
-                "nationality": nat or "PL",
+                "nationality": roster_nationality(nat),
                 "vcat": vcat,
                 "birth_year": by,
                 "estimated": estimated,

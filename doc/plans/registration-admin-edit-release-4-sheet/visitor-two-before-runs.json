@@ -1,0 +1,26 @@
+[
+ {
+  "name": "visitor__desktop__en.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "visitor__desktop__pl.png",
+  "size": "1280x1000",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "visitor__phone__en.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ },
+ {
+  "name": "visitor__phone__pl.png",
+  "size": "375x812",
+  "diff": 0,
+  "box": null
+ }
+]

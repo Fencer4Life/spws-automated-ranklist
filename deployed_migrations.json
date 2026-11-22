@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-11-21T21:45:09Z",
-    "last_sha": "29e40f1e9a5847d4d8f585edbd9ad9aaf75a6406",
+    "last_updated": "2026-11-22T08:01:17Z",
+    "last_sha": "7a3429c58b01c9cb4d9a07639b787b30954dc345",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -243,13 +243,16 @@
       "20261121000002_common_given_names_evf.sql",
       "20261121000003_registration_birth_year_range.sql",
       "20261121000004_registration_country.sql",
-      "20261121000005_registration_country_paths.sql"
+      "20261121000005_registration_country_paths.sql",
+      "20261122000001_evf_ranking_fencer.sql",
+      "20261122000002_roster_nationality_from_evf.sql",
+      "20261122000003_registration_admin_edit_roster.sql"
     ],
-    "schema_fingerprint": "49b7408b3b02637e10b5ca9302cfc377"
+    "schema_fingerprint": "a2d787483930364fcd8863191f1607f7"
   },
   "prod": {
-    "last_updated": "2026-11-21T21:47:59Z",
-    "last_sha": "29e40f1e9a5847d4d8f585edbd9ad9aaf75a6406",
+    "last_updated": "2026-11-22T08:07:11Z",
+    "last_sha": "7a3429c58b01c9cb4d9a07639b787b30954dc345",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -491,8 +494,11 @@
       "20261121000002_common_given_names_evf.sql",
       "20261121000003_registration_birth_year_range.sql",
       "20261121000004_registration_country.sql",
-      "20261121000005_registration_country_paths.sql"
+      "20261121000005_registration_country_paths.sql",
+      "20261122000001_evf_ranking_fencer.sql",
+      "20261122000002_roster_nationality_from_evf.sql",
+      "20261122000003_registration_admin_edit_roster.sql"
     ],
-    "schema_fingerprint": "49b7408b3b02637e10b5ca9302cfc377"
+    "schema_fingerprint": "a2d787483930364fcd8863191f1607f7"
   }
 }

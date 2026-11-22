@@ -60,15 +60,15 @@ BEGIN
 
   -- Create 3 test fencers
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('TESTOWSKI', 'Jan', 1970, 'PL')
+  VALUES ('TESTOWSKI', 'Jan', 1970, 'POL')
   RETURNING id_fencer INTO v_fencer1;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('TESTOWA', 'Anna', 1972, 'PL')
+  VALUES ('TESTOWA', 'Anna', 1972, 'POL')
   RETURNING id_fencer INTO v_fencer2;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('TESTOWY', 'Piotr', 1968, 'PL')
+  VALUES ('TESTOWY', 'Piotr', 1968, 'POL')
   RETURNING id_fencer INTO v_fencer3;
 END;
 $setup$;
@@ -559,7 +559,7 @@ BEGIN
 
   -- Create fencer for the test
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('CARRYOVER', 'Test', 1970, 'PL')
+  VALUES ('CARRYOVER', 'Test', 1970, 'POL')
   RETURNING id_fencer INTO v_fencer;
 
   -- Previous season: PPW4-CARRY-PREV event, COMPLETED, with a result

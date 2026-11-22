@@ -182,12 +182,12 @@ BEGIN
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
                           int_birth_year, enum_gender)
   VALUES
-    ('VW-V2-ALPHA',    'Tester', 'PL', v_end_year - 55, 'M'),
-    ('VW-V3-CROSSCAT', 'Tester', 'PL', v_end_year - 65, 'M'),
-    ('VW-V2-SPARSE',   'Tester', 'PL', v_end_year - 55, 'M'),
-    ('VW-V2-BRAVO',    'Tester', 'PL', v_end_year - 55, 'M'),
-    ('VW-V2-UNSCORED', 'Tester', 'PL', v_end_year - 55, 'M'),
-    ('VW-V1-SOLO',     'Tester', 'PL', v_end_year - 45, 'M');
+    ('VW-V2-ALPHA',    'Tester', 'POL', v_end_year - 55, 'M'),
+    ('VW-V3-CROSSCAT', 'Tester', 'POL', v_end_year - 65, 'M'),
+    ('VW-V2-SPARSE',   'Tester', 'POL', v_end_year - 55, 'M'),
+    ('VW-V2-BRAVO',    'Tester', 'POL', v_end_year - 55, 'M'),
+    ('VW-V2-UNSCORED', 'Tester', 'POL', v_end_year - 55, 'M'),
+    ('VW-V1-SOLO',     'Tester', 'POL', v_end_year - 45, 'M');
 
   SELECT id_fencer INTO v_fencer_a FROM tbl_fencer WHERE txt_surname = 'VW-V2-ALPHA';
   SELECT id_fencer INTO v_fencer_b FROM tbl_fencer WHERE txt_surname = 'VW-V3-CROSSCAT';
@@ -261,7 +261,7 @@ BEGIN
   -- ADR-034: male fencers in F tournaments are dropped, so use a female fencer
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('VW-FEMALE', 'Tester', 'PL', v_end_year - 55, 'F')
+  VALUES ('VW-FEMALE', 'Tester', 'POL', v_end_year - 55, 'F')
   RETURNING id_fencer INTO v_fencer_i;
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
     (v_fencer_i, v_fem1, 1, 150.00, NOW());
@@ -300,7 +300,7 @@ BEGIN
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
                           int_birth_year, enum_gender)
-  VALUES ('VW-INTL-ONLY', 'Tester', 'PL', v_end_year - 55, 'M')
+  VALUES ('VW-INTL-ONLY', 'Tester', 'POL', v_end_year - 55, 'M')
   RETURNING id_fencer INTO v_fencer_g;
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -313,7 +313,7 @@ BEGIN
   -- -----------------------------------------------------------------------
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality,
                           int_birth_year, enum_gender)
-  VALUES ('VW-ZERO-DOM', 'Tester', 'PL', v_end_year - 55, 'M')
+  VALUES ('VW-ZERO-DOM', 'Tester', 'POL', v_end_year - 55, 'M')
   RETURNING id_fencer INTO v_fencer_h;
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score, ts_points_calc) VALUES
@@ -619,7 +619,7 @@ BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year)
-  VALUES ('LEGACY-TEST', 'Fencer', 'PL', 1969)
+  VALUES ('LEGACY-TEST', 'Fencer', 'POL', 1969)
   RETURNING id_fencer INTO v_fencer_leg;
 
   INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)

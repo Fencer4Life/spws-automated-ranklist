@@ -62,10 +62,10 @@ BEGIN
   INSERT INTO nat_ids VALUES ('t_ppw', v_t);
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('NAT-KULKA', 'Test', 'PL', 1979, 'M') RETURNING id_fencer INTO v_f;
+  VALUES ('NAT-KULKA', 'Test', 'POL', 1979, 'M') RETURNING id_fencer INTO v_f;
   INSERT INTO nat_ids VALUES ('kulka', v_f);
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('NAT-KOLLAR', 'Test', 'PL', 1950, 'M') RETURNING id_fencer INTO v_f;
+  VALUES ('NAT-KOLLAR', 'Test', 'POL', 1950, 'M') RETURNING id_fencer INTO v_f;
   INSERT INTO nat_ids VALUES ('kollar', v_f);
 END $fx$;
 

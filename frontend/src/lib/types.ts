@@ -655,6 +655,31 @@ export interface RegistrationEntry {
   txt_country?: string | null
 }
 
+// FR-170 — what a signed-in administrator reads about an entry beyond the
+// public list: the declared year, club and country, the link, and the linked
+// fencer's roster year (null for a newcomer).
+export interface AdminEntryDetail {
+  id_registration: number
+  int_birth_year: number
+  txt_club: string | null
+  txt_country: string | null
+  id_fencer: number | null
+  roster_birth_year: number | null
+}
+
+// FR-170 — the declared fields an administrator saves. The names are left out
+// for a linked entry, whose name is the roster's. An empty club or country is
+// stored as none.
+export interface AdminEntryUpdate {
+  surname?: string
+  firstName?: string
+  gender: GenderType
+  birthYear: number
+  weapons: WeaponType[]
+  club: string
+  country: string
+}
+
 export interface MatchCandidate {
   id_match: number
   id_result: number

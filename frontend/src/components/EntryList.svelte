@@ -85,6 +85,9 @@
   {#if removedName}
     <p class="el-remove-done" role="status" tabindex="-1" bind:this={doneEl}>{t('reg_remove_done', { name: removedName })}</p>
   {/if}
+  {#if savedName}
+    <p class="el-remove-done el-edit-done" role="status" tabindex="-1" bind:this={savedEl}>{t('reg_admin_edit_done', { name: savedName })}</p>
+  {/if}
 
   {#if filteredRows.length > 0}
     <table>
@@ -99,7 +102,7 @@
       </thead>
       <tbody>
         {#each filteredRows as row (row.id_registration)}
-          <tr>
+          <tr class:el-adminrow={canRemove}>
             <td class="el-name">{row.txt_surname} {row.txt_first_name}</td>
             <td>
               {#if row.enum_age_category}<span class="el-cat">{row.enum_age_category}</span>{/if}
@@ -122,6 +125,17 @@
             {/if}
             {#if canRemove}
               <td class="el-act">
+                <!-- FR-170 (D5): ≠ where the declared year differs from the
+                     roster's; „Edytuj” once the entry's details are read. -->
+                {#if yearDiffers(row)}
+                  <span class="el-yeardiff" role="img" aria-label={t('reg_admin_edit_year_differs')} title={t('reg_admin_edit_year_differs')}>≠</span>
+                {/if}
+                <button
+                  type="button"
+                  class="el-edit"
+                  disabled={!details.has(row.id_registration)}
+                  aria-label={t('reg_admin_edit_row', { name: fullName(row) })}
+                  onclick={() => askEdit(row)}>{t('reg_admin_edit')}</button>
                 <button
                   type="button"
                   class="el-remove"
@@ -143,6 +157,17 @@
        and handles Escape itself, because the calendar's modal stops key events
        from reaching the window. Shown only while removal is allowed, so
        signing out also closes a confirmation left open. -->
+  <!-- FR-170: the administrator's edit. Shown only while removal is allowed,
+       so signing out also closes a dialog left open. -->
+  {#if editing && canRemove && details.get(editing.id_registration)}
+    <EntryEdit
+      entry={editing}
+      detail={details.get(editing.id_registration)!}
+      {seasonEndYear}
+      onsaved={edited}
+      oncancel={() => (editing = null)} />
+  {/if}
+
   {#if pending && canRemove}
     <div class="el-confirm-backdrop" role="presentation" onclick={cancelRemove}>
       <div
@@ -176,10 +201,16 @@
   import LangToggle from './LangToggle.svelte'
   import CountryFlag from './CountryFlag.svelte'
   import { countryName, flagIso } from '../lib/fencingCountries'
-  import { fetchEntryList, deleteRegistration } from '../lib/api'
+  import EntryEdit from './EntryEdit.svelte'
+  import {
+    fetchEntryList,
+    deleteRegistration,
+    fetchAdminEntryDetails,
+    fetchEventSeasonEndYear,
+  } from '../lib/api'
   import { foldName } from '../lib/foldName'
   import { surnameWithoutTitle } from '../lib/registrationName'
-  import type { RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
+  import type { AdminEntryDetail, RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
 
   let {
     eventId,
@@ -248,16 +279,19 @@
   // in fetchEntryList is deliberately kept: Array.prototype.sort is stable, so
   // registration order survives as the final tie-break for two fencers sharing
   // both names.
+  // FR-167: a title is not part of the surname — „Dr. KOVÁCS” stands under
+  // K, not D. Also used to reload the list after an administrator's edit.
+  async function loadRows(): Promise<void> {
+    const r = await fetchEntryList(eventId)
+    rows = [...r].sort(
+      (a, b) =>
+        byName.compare(surnameWithoutTitle(a.txt_surname), surnameWithoutTitle(b.txt_surname)) ||
+        byName.compare(a.txt_first_name, b.txt_first_name),
+    )
+  }
+
   $effect(() => {
-    fetchEntryList(eventId).then((r) => {
-      // FR-167: a title is not part of the surname — „Dr. KOVÁCS” stands
-      // under K, not D.
-      rows = [...r].sort(
-        (a, b) =>
-          byName.compare(surnameWithoutTitle(a.txt_surname), surnameWithoutTitle(b.txt_surname)) ||
-          byName.compare(a.txt_first_name, b.txt_first_name),
-      )
-    })
+    void loadRows()
   })
 
   // Both sides folded (foldName): a visitor without Polish keys types "zak"
@@ -374,6 +408,56 @@
     } finally {
       removing = false
     }
+  }
+
+  // ---- FR-170: an administrator edits an entry ----------------------------
+
+  // What only a signed-in administrator reads: each entry's declared year,
+  // club, country and link, and the roster's year (D5). Never read for a
+  // visitor, whose list must stay exactly as before.
+  let details = $state(new Map<number, AdminEntryDetail>())
+  let seasonEndYear = $state<number | null>(null)
+  let editing = $state<RegistrationEntry | null>(null)
+  let savedName = $state('')
+  let savedEl = $state<HTMLElement | null>(null)
+
+  async function loadDetails(): Promise<void> {
+    const d = await fetchAdminEntryDetails(eventId)
+    details = new Map(d.map((x) => [x.id_registration, x]))
+  }
+
+  $effect(() => {
+    if (!canRemove) {
+      editing = null
+      return
+    }
+    void loadDetails().catch(() => {})
+    void fetchEventSeasonEndYear(eventId).then((y) => (seasonEndYear = y))
+  })
+
+  // D5: a linked entry whose declared year is not the roster's.
+  function yearDiffers(r: RegistrationEntry): boolean {
+    const d = details.get(r.id_registration)
+    return !!d && d.id_fencer != null && d.roster_birth_year != null && d.roster_birth_year !== d.int_birth_year
+  }
+
+  function askEdit(r: RegistrationEntry) {
+    editing = r
+    savedName = ''
+    removedName = ''
+  }
+
+  // The database confirmed the save: the list and the details are read again,
+  // so every row shows what the database now holds (the name form, the
+  // category), and the done line names the entry as stored.
+  async function edited() {
+    const id = editing?.id_registration
+    editing = null
+    await Promise.all([loadRows(), loadDetails().catch(() => {})])
+    const r = rows.find((x) => x.id_registration === id)
+    savedName = r ? fullName(r) : ''
+    await tick()
+    savedEl?.focus()
   }
 
   function weaponCode(w: WeaponType): string {
@@ -692,6 +776,33 @@
     border-color: #ff8a8a;
     background: rgba(255, 138, 138, 0.08);
   }
+  /* FR-170 — „Edytuj” beside „Usuń”, in the list's own blue; the ≠ mark in
+     the same amber as the dialog's. Nothing here renders for a visitor. */
+  .el-edit {
+    background: transparent;
+    color: #7fd8ff;
+    border: 1px solid #1a4a8a;
+    border-radius: 8px;
+    padding: 4px 10px;
+    min-height: 32px;
+    margin-right: 6px;
+    font-size: 0.82em;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .el-edit:hover {
+    border-color: #7fd8ff;
+    background: rgba(127, 216, 255, 0.08);
+  }
+  .el-edit:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .el-yeardiff {
+    color: #f5b942;
+    font-weight: 700;
+    margin-right: 8px;
+  }
   .el-remove-done {
     color: #4ade80;
     font-size: 0.9em;
@@ -809,7 +920,11 @@
       width: auto;
       flex: none;
     }
+    /* I25: a block, not the cells' inline-flex: a browser draws „…” only in
+       a block, so a name that does not fit ends in „…” instead of a cut
+       letter. */
     .el-name {
+      display: block;
       flex: 1 1 auto;
       min-width: 0;
       font-weight: 600;
@@ -817,6 +932,21 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    /* I25 A: a signed-in row wraps, so ≠, „Edytuj” and „Usuń” sit on a line
+       of their own under the name and the name keeps the row's width. A
+       visitor's row has no actions and stays one line. */
+    tr.el-adminrow {
+      flex-wrap: wrap;
+    }
+    .el-adminrow .el-act {
+      flex-basis: 100%;
+      justify-content: flex-start;
+    }
+    /* In a wrapping row the name starts from no width and takes what the
+       chips leave, so a long name never pushes them off its line. */
+    .el-adminrow .el-name {
+      flex-basis: 0;
     }
   }
 </style>

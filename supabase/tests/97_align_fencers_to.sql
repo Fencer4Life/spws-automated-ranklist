@@ -119,7 +119,7 @@ UPDATE al_prod SET j = j || '{"int_birth_year": 1975, "bool_birth_year_estimated
  WHERE (j->>'id_fencer')::INT = 96008;
 INSERT INTO al_prod
 SELECT jsonb_build_object('id_fencer', 96005, 'txt_surname', 'ALIGNE', 'txt_first_name', 'Edward',
-                          'int_birth_year', 1969, 'txt_nationality', 'PL', 'bool_birth_year_estimated', false,
+                          'int_birth_year', 1969, 'txt_nationality', 'POL', 'bool_birth_year_estimated', false,
                           'enum_gender', 'M', 'json_name_aliases', '["ALIGNH HUBI"]'::jsonb,
                           'json_revoked_aliases', '[]'::jsonb, 'json_user_confirmed_aliases', '[]'::jsonb,
                           'ts_created', now(), 'ts_updated', now());

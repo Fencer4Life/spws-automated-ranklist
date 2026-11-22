@@ -45,7 +45,7 @@ SELECT is(
   'TT.MULT.03 every stored tournament multiplier equals its season''s type multiplier');
 
 INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-VALUES ('TTMULT', 'Test', 'PL', 1970, 'M');
+VALUES ('TTMULT', 'Test', 'POL', 1970, 'M');
 INSERT INTO tbl_result (id_tournament, id_fencer, int_place)
 SELECT t.id_tournament, f.id_fencer, 1
   FROM tbl_tournament t, tbl_fencer f
