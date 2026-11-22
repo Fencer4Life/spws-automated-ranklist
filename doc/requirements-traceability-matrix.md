@@ -1197,6 +1197,16 @@ FR-170. Plan signed 2026-11-21 (`doc/plans/registration-form-names-year-country-
 | RFADM.24 | Before „Zapisz”, a linked entry's dialog shows the roster's year it will get („w bazie: 1975 → 1965”) and, when the category changes, „Zmieni kategorię w bazie: V2 → V3; …”; a newcomer, an unchanged year or a year equal to the roster's shows neither. | Vitest | `frontend/tests/EntryEdit.test.ts` | Released (2026-11-22, main f3f57bca) |
 | RFADM.25 | I25: on a phone a name too long for its row ends in „…”, keeps its chips on its line, and a signed-in row puts its actions on a line of their own. | Vitest | `frontend/tests/EntryList.test.ts` | Released (2026-11-22, main f3f57bca) |
 
+## Name folding repaired: every accented letter folds to its base (I27, RFAC.31–33)
+
+Part A of plan `doc/plans/registration-name-list-under-surname-2026-11-22.html` (rev 1, signed 2026-11-22). No new requirement: it repairs the folding that ADR-093's identity lookup and FR-167's name check already rely on. `fn_fold_name` (migration `20260925000001`) had lost three letters from its letter table, so its two strings were 70 and 72 letters long and every letter after Ę folded to the wrong one (measured on PROD: ę unfolded, ó → N, ś → O, Á → Z). A name typed with its accents still matched; typed without them it did not. Migration `20261122000004_fold_name_all_letters.sql` folds by NFD, as `frontend/src/lib/foldName.ts` and the Python matcher do, and writes `tbl_common_given_name`'s stored keys again.
+
+| ID | Requirement | Kind | Test | Status |
+|----|-------------|------|------|--------|
+| RFAC.31 | Every Polish letter and every accented letter found in our data folds to its base letter, in capitals. | pgTAP | `supabase/tests/137_fold_name_all_letters.sql` | Implemented (awaiting release) |
+| RFAC.32 | A name typed without accents folds like the same name with them; spaces and hyphens fold as before. | pgTAP | `supabase/tests/137_fold_name_all_letters.sql` | Implemented (awaiting release) |
+| RFAC.33 | The stored given-name keys follow the repaired folding, and a known given name typed without its accents is known. | pgTAP | `supabase/tests/137_fold_name_all_letters.sql` | Implemented (awaiting release) |
+
 ## Preflight's whitespace gate sees uncommitted and new files (WSGATE.*)
 
 NFR-15, I24. Plan signed 2026-11-21 (`doc/plans/i24-preflight-checks-uncommitted-whitespace-2026-11-21.html`, "All as recommended": Q1 A, Q2 A); IDs registered before any code. Preflight checked only commits (`git diff --check origin/main...HEAD`) and runs before the commit, so a blank line at the end of a staged or new file passed it twice on 2026-11-21 and was caught only afterwards. Each test builds a throwaway repository and runs `scripts/check-diff-whitespace.sh` in it. Released 2026-11-21 as main 29e40f1e: CI run 44952731612 and Release run 44952895661 passed first time; the user approved PROD. No migration changed (`deployed_migrations.json` moved only its deploy stamps); main's preflight runs the new gate.
