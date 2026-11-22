@@ -1,0 +1,46 @@
+[
+ {
+  "name": "admin__desktop__en.png",
+  "size": "1280x1000",
+  "diff": 9834,
+  "box": [
+   694,
+   321,
+   937,
+   535
+  ]
+ },
+ {
+  "name": "admin__desktop__pl.png",
+  "size": "1280x1000",
+  "diff": 10414,
+  "box": [
+   719,
+   318,
+   952,
+   535
+  ]
+ },
+ {
+  "name": "admin__phone__en.png",
+  "size": "375x812",
+  "diff": 26360,
+  "box": [
+   23,
+   417,
+   352,
+   741
+  ]
+ },
+ {
+  "name": "admin__phone__pl.png",
+  "size": "375x812",
+  "diff": 26524,
+  "box": [
+   23,
+   417,
+   352,
+   743
+  ]
+ }
+]

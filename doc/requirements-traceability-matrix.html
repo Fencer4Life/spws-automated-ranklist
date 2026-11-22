@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="167fb5f804aca29f69ac9b612a686128111bfc7a58c785027aaad9e297de4ed8">
+<meta name="doc-source-sha256" content="db3604723b7d088512615d94271747c7e3892f8c2b6233c673938e3b13b75029">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1161 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1194 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1148,6 +1148,13 @@
 <td>ADR-079, ADR-080, ADR-078, FR-120, FR-122, FR-123, FR-165</td>
 <td>RFCTRY.01–27</td>
 <td>Covered (release 3 of 4 released 2026-11-21, main 714dec5b, CERT + PROD; release 4 planned)</td>
+</tr>
+<tr>
+<td>FR-170</td>
+<td><strong>A signed-in administrator edits an entry.</strong> On the entry list reached from the admin calendar (the route of FR-166's „Usuń”), each row carries „Edytuj” beside „Usuń”; a visitor sees neither. The dialog opens with the entry's declared surname, given name, gender, birth year, weapons, club and country, and saves every one of them (D2 A). A linked entry's name is locked, because the roster's name is what the database keeps for it. For a linked entry the dialog shows the roster's birth year beside the declared one, and the signed-in list marks an entry where they differ with ≠ (D5 A); a newcomer's entry shows neither. The form's rules hold for the administrator: the name form, the year range, the country list. A refused save keeps the dialog open with the reason. An edit never links or unlinks the entry and never touches the consent record or the fencer's edit link. For a linked entry only, what the save changed reaches the roster in the same transaction: the birth year, marked as confirmed; the gender; the country as the event season's <code>ADMIN</code> row in <code>tbl_fencer_nationality</code>, never <code>tbl_fencer.txt_nationality</code>; the club stays the entry's own (R1–R3 A, the user's addition of 22 Nov). Before „Zapisz” the dialog shows the roster's new year and any category change. One SECURITY DEFINER function, <code>fn_update_registration_as_admin</code>, signed-in users only, writes both. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 4); sheet <code>doc/plans/registration-admin-edit-release-4-pixel-sheet-2026-11-21.html</code> approved 22 Nov (I25 A, R1–R3 A).</td>
+<td>ADR-079, ADR-093, FR-166, FR-167, FR-168, FR-169</td>
+<td>RFADM.01–25</td>
+<td>Planned (release 4 of 4)</td>
 </tr>
 <tr>
 <td>FR-171</td>
@@ -6293,6 +6300,197 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</h2>
+<p>FR-170. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 4 of 4; D2 A, D5 A); IDs registered before any code. Checked on LOCAL first: <code>tbl_registration</code>'s one policy („Admin all registrations”) lets a signed-in user read and update every column and gives a visitor no row; the name-form, roster-name and year-range triggers fire on update; the country refers to <code>tbl_fencing_country</code>; <code>tbl_fencer</code>'s birth year is readable. So no migration is expected, and RFADM.09–12 prove it. On 22 Nov the user added that a linked entry's correction also reaches the roster (sheet §05, R1–R3 A) and approved I25 A; that brought migration <code>20261122000003</code> (<code>fn_update_registration_as_admin</code>), through which the dialog now saves, and RFADM.16–25, registered with the sheet before their code.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Kind</th>
+<th>Test</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RFADM.01</td>
+<td>„Edytuj” shows beside „Usuń” on every row only while an administrator is signed in (<code>canRemove</code>); a visitor's list has no action column, as before.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.02</td>
+<td>The dialog opens with the entry's declared values: surname, given name, gender, birth year, weapons, club and country.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.03</td>
+<td>A linked entry's surname and given name are locked, with the note that they come from the fencer roster; a newcomer's are editable.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.04</td>
+<td>„Zapisz” sends only the declared fields, never the link, the consent or the edit token; a linked entry's save sends no name.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/api.registration.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.05</td>
+<td>A save that the database confirms closes the dialog, reloads the list and shows „Zapisano zmiany: <name>”; an update that returns no row counts as a failure.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.06</td>
+<td>A refused save keeps the dialog and the typed values, with the reason: the year's range line for a year refusal, „Takie zgłoszenie już istnieje” for a duplicate entry, the general failure otherwise.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.07</td>
+<td>Escape, „Anuluj” and a click on the backdrop close the dialog and change nothing.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.08</td>
+<td>Signing out (the list loses <code>canRemove</code>) closes an open dialog.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.09</td>
+<td>A signed-in administrator can read an entry's declared birth year, club, country and link, and update the declared fields; a visitor can do neither.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.10</td>
+<td>An administrator's update leaves the link, the consent version and time, and the edit token as they were.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.11</td>
+<td>The rules hold for an administrator's update: a newcomer's name takes the name form, a linked entry keeps the roster's name, a year outside the range is refused, an unknown country is refused.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.12</td>
+<td>Renaming a newcomer into another newcomer's identity in the same event is refused, and both entries stay as they were.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.13</td>
+<td>D5: a linked entry's dialog shows the roster's birth year beside the declared one, with ≠ when they differ.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.14</td>
+<td>D5: the signed-in list marks an entry whose declared year differs from the roster's; equal years, a newcomer and a visitor's list show no mark.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.15</td>
+<td>D5: the administrator reads the roster's year with the entry in one request (<code>fetchAdminEntryDetails</code>), and a newcomer's entry has none.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/api.registration.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.16</td>
+<td>A changed birth year of a linked entry reaches the roster, marked as confirmed, the entry holds it, and every event the fencer has a result in is queued for recompute.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.17</td>
+<td>A field the save did not change is not copied: saving a club leaves the roster's year as it is although the declared year differs; the club never reaches the roster.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.18</td>
+<td>A newcomer's edit changes the entry only and the entry stays unlinked.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.19</td>
+<td>A changed gender of a linked entry reaches the roster.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.20</td>
+<td>A changed country lands in the event season's <code>ADMIN</code> row of <code>tbl_fencer_nationality</code>; <code>tbl_fencer.txt_nationality</code> is not written.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.21</td>
+<td>A refused save (a country that is not a fencing country) writes neither the entry nor the roster.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.22</td>
+<td>A visitor cannot call <code>fn_update_registration_as_admin</code>.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.23</td>
+<td><code>updateRegistrationAsAdmin</code> saves through <code>fn_update_registration_as_admin</code>, sending a newcomer's names, empty club and country as none, and reports a refusal.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/api.registration.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.24</td>
+<td>Before „Zapisz”, a linked entry's dialog shows the roster's year it will get („w bazie: 1975 → 1965”) and, when the category changes, „Zmieni kategorię w bazie: V2 → V3; …”; a newcomer, an unchanged year or a year equal to the roster's shows neither.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>RFADM.25</td>
+<td>I25: on a phone a name too long for its row ends in „…”, keeps its chips on its line, and a signed-in row puts its actions on a line of their own.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EntryList.test.ts</code></td>
+<td>Planned</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight's whitespace gate sees uncommitted and new files (WSGATE.*)</h2>
 <p>NFR-15, I24. Plan signed 2026-11-21 (<code>doc/plans/i24-preflight-checks-uncommitted-whitespace-2026-11-21.html</code>, &quot;All as recommended&quot;: Q1 A, Q2 A); IDs registered before any code. Preflight checked only commits (<code>git diff --check origin/main...HEAD</code>) and runs before the commit, so a blank line at the end of a staged or new file passed it twice on 2026-11-21 and was caught only afterwards. Each test builds a throwaway repository and runs <code>scripts/check-diff-whitespace.sh</code> in it. Released 2026-11-21 as main 29e40f1e: CI run 44952731612 and Release run 44952895661 passed first time; the user approved PROD. No migration changed (<code>deployed_migrations.json</code> moved only its deploy stamps); main's preflight runs the new gate.</p>
 <div class="tablewrap"><table>
@@ -6361,5 +6559,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>167fb5f804aca29f69ac9b612a686128111bfc7a58c785027aaad9e297de4ed8</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>db3604723b7d088512615d94271747c7e3892f8c2b6233c673938e3b13b75029</code></footer>
 </div></body></html>

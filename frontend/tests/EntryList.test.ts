@@ -9,8 +9,17 @@ import { setLocale } from '../src/lib/locale.svelte'
 vi.mock('../src/lib/api', () => ({
   fetchEntryList: vi.fn(),
   deleteRegistration: vi.fn(),
+  fetchAdminEntryDetails: vi.fn(),
+  fetchEventSeasonEndYear: vi.fn(),
+  updateRegistrationAsAdmin: vi.fn(),
 }))
-import { fetchEntryList, deleteRegistration } from '../src/lib/api'
+import {
+  fetchEntryList,
+  deleteRegistration,
+  fetchAdminEntryDetails,
+  fetchEventSeasonEndYear,
+  updateRegistrationAsAdmin,
+} from '../src/lib/api'
 import EntryList from '../src/components/EntryList.svelte'
 import type { RegistrationEntry } from '../src/lib/types'
 
@@ -24,6 +33,10 @@ const ROWS: RegistrationEntry[] = [
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // FR-170: the signed-in list also reads each entry's details and the
+  // event's season; by default there are none to show.
+  vi.mocked(fetchAdminEntryDetails).mockResolvedValue([])
+  vi.mocked(fetchEventSeasonEndYear).mockResolvedValue(2027)
 })
 
 describe('EntryList', () => {
@@ -910,5 +923,183 @@ describe('EntryList — FR-169 the country (RFCTRY.06–17)', () => {
     const group = container.querySelector('.el-fgroup') as HTMLElement
     expect(group.classList.contains('el-four')).toBe(false)
     expect(group.querySelectorAll('select').length).toBe(3)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-170 — a signed-in administrator edits an entry (RFADM.01, 05, 08, 14).
+// The dialog itself is pinned in EntryEdit.test.ts.
+// ---------------------------------------------------------------------------
+const mockDetails = vi.mocked(fetchAdminEntryDetails)
+const mockUpdate = vi.mocked(updateRegistrationAsAdmin)
+
+// ŻAK Adam a newcomer; NOWAK Piotr linked, the roster says another year;
+// KOWAL Jan linked, the same year.
+const DETAILS = [
+  { id_registration: 1, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, roster_birth_year: null },
+  { id_registration: 6, int_birth_year: 1980, txt_club: 'AZS', txt_country: null, id_fencer: 12, roster_birth_year: 1984 },
+  { id_registration: 3, int_birth_year: 1972, txt_club: null, txt_country: null, id_fencer: 13, roster_birth_year: 1972 },
+]
+
+async function renderEdit(props: Record<string, unknown> = {}) {
+  mockDetails.mockResolvedValue(DETAILS)
+  const v = await renderRem(props)
+  await waitFor(() => expect(mockDetails).toHaveBeenCalledWith(3))
+  const editOf = (name: string) => {
+    const row = Array.from(v.c.querySelectorAll('tbody tr')).find(
+      (tr) => tr.querySelector('td.el-name')?.textContent?.trim() === name,
+    )
+    return row?.querySelector('button.el-edit') as HTMLButtonElement
+  }
+  const markOf = (name: string) => {
+    const row = Array.from(v.c.querySelectorAll('tbody tr')).find(
+      (tr) => tr.querySelector('td.el-name')?.textContent?.trim() === name,
+    )
+    return row?.querySelector('.el-yeardiff') ?? null
+  }
+  const editDialog = () => v.c.querySelector('[role="dialog"]') as HTMLElement | null
+  return { ...v, editOf, markOf, editDialog }
+}
+
+describe('EntryList — an administrator edits an entry (FR-170)', () => {
+  afterEach(() => setLocale('pl'))
+
+  // RFADM.01
+  it('gives every row „Edytuj” beside „Usuń” only while an administrator is signed in', async () => {
+    const v = await renderEdit()
+    const rows = v.c.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(8)
+    rows.forEach((tr) => {
+      // classList[0]: Svelte adds its own scoping class after the component's.
+      const acts = Array.from(tr.querySelectorAll('td.el-act button')).map((b) => b.classList[0])
+      expect(acts).toEqual(['el-edit', 'el-remove'])
+    })
+    const edit = v.editOf('ŻAK Adam')
+    expect(edit.textContent?.trim()).toBe('Edytuj')
+    expect(edit.getAttribute('aria-label')).toBe('Edytuj zgłoszenie: ŻAK Adam')
+  })
+
+  it('a visitor\'s list has no „Edytuj” and reads no entry details', async () => {
+    const v = await renderSel()
+    expect(v.c.querySelector('button.el-edit')).toBeNull()
+    expect(v.c.querySelector('.el-yeardiff')).toBeNull()
+    expect(mockDetails).not.toHaveBeenCalled()
+  })
+
+  // RFADM.05
+  it('opens the dialog for that entry, and a confirmed save reloads the list and names the fencer', async () => {
+    mockUpdate.mockResolvedValue(undefined)
+    const v = await renderEdit()
+    await fireEvent.click(v.editOf('ŻAK Adam'))
+    expect(v.editDialog()).not.toBeNull()
+    expect((v.c.querySelector('[role="dialog"] input[name="surname"]') as HTMLInputElement).value).toBe('ŻAK')
+    // The database answers with the stored form; the list shows what it holds.
+    mockFetchEntryList.mockResolvedValue(SEL.map((r) => (r.id_registration === 1 ? { ...r, txt_surname: 'ŻAKOWSKI' } : r)))
+    await fireEvent.click(v.c.querySelector('button.ee-save') as HTMLButtonElement)
+    await waitFor(() => expect(v.editDialog()).toBeNull())
+    expect(mockUpdate).toHaveBeenCalledTimes(1)
+    expect(mockUpdate.mock.calls[0][0]).toBe(1)
+    await waitFor(() => expect(v.text(v.c.querySelector('.el-edit-done'))).toBe('✓ Zapisano zmiany: ŻAKOWSKI Adam'))
+    expect(mockFetchEntryList).toHaveBeenCalledTimes(2)
+    expect(v.editOf('ŻAKOWSKI Adam')).toBeDefined()
+    await waitFor(() => expect(document.activeElement).toBe(v.c.querySelector('.el-edit-done')))
+  })
+
+  it('a refused save keeps the dialog and the list as they were', async () => {
+    mockUpdate.mockRejectedValue(new Error('refused'))
+    const v = await renderEdit()
+    await fireEvent.click(v.editOf('ŻAK Adam'))
+    await fireEvent.click(v.c.querySelector('button.ee-save') as HTMLButtonElement)
+    await waitFor(() => expect(v.c.querySelector('.ee-error')).not.toBeNull())
+    expect(v.editDialog()).not.toBeNull()
+    expect(mockFetchEntryList).toHaveBeenCalledTimes(1)
+    expect(v.c.querySelector('.el-edit-done')).toBeNull()
+  })
+
+  it('„Anuluj” closes the dialog and changes nothing', async () => {
+    const v = await renderEdit()
+    await fireEvent.click(v.editOf('NOWAK Piotr'))
+    await fireEvent.click(v.c.querySelector('button.ee-cancel') as HTMLButtonElement)
+    expect(v.editDialog()).toBeNull()
+    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockFetchEntryList).toHaveBeenCalledTimes(1)
+  })
+
+  // RFADM.08
+  it('signing out closes an open dialog', async () => {
+    const v = await renderEdit()
+    await fireEvent.click(v.editOf('ŻAK Adam'))
+    expect(v.editDialog()).not.toBeNull()
+    await v.rerender({ canRemove: false })
+    await waitFor(() => expect(v.editDialog()).toBeNull())
+    expect(v.c.querySelector('button.el-edit')).toBeNull()
+  })
+
+  // RFADM.14
+  it('marks an entry whose declared year differs from the roster\'s, and only that one', async () => {
+    const v = await renderEdit()
+    await waitFor(() => expect(v.markOf('NOWAK Piotr')).not.toBeNull())
+    const mark = v.markOf('NOWAK Piotr')!
+    expect(mark.textContent?.trim()).toBe('≠')
+    expect(mark.getAttribute('aria-label')).toBe('Rok urodzenia różni się od bazy zawodników')
+    expect(v.markOf('KOWAL Jan')).toBeNull()
+    expect(v.markOf('ŻAK Adam')).toBeNull()
+    expect(v.c.querySelectorAll('.el-yeardiff')).toHaveLength(1)
+  })
+
+  it('speaks English', async () => {
+    setLocale('en')
+    mockUpdate.mockResolvedValue(undefined)
+    const v = await renderEdit()
+    expect(v.editOf('ŻAK Adam').textContent?.trim()).toBe('Edit')
+    expect(v.editOf('ŻAK Adam').getAttribute('aria-label')).toBe('Edit entry: ŻAK Adam')
+    await waitFor(() => expect(v.markOf('NOWAK Piotr')?.getAttribute('aria-label')).toBe('The birth year differs from the fencer roster'))
+    await fireEvent.click(v.editOf('ŻAK Adam'))
+    await fireEvent.click(v.c.querySelector('button.ee-save') as HTMLButtonElement)
+    await waitFor(() => expect(v.text(v.c.querySelector('.el-edit-done'))).toBe('✓ Changes saved: ŻAK Adam'))
+  })
+})
+
+// I25 A (release 4 sheet §04, approved 22 Nov 2026) — a phone row draws „…”
+// for a name that does not fit, and a signed-in row puts its actions on a
+// line of their own under the name. jsdom lays nothing out, so these read the
+// phone rules from the component's own stylesheet; the 375 px captures measure
+// the result in a real browser.
+function phoneRule(selector: RegExp): CSSStyleDeclaration | null {
+  for (const sheet of Array.from(document.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes('max-width: 480px')) continue
+      for (const inner of Array.from(rule.cssRules)) {
+        if (inner instanceof CSSStyleRule && selector.test(inner.selectorText)) return inner.style
+      }
+    }
+  }
+  return null
+}
+
+describe('EntryList — I25 a phone row with a long name', () => {
+  it('the name cell is a block on a phone, so the browser draws „…”', async () => {
+    await renderRem({ canRemove: false })
+    const s = phoneRule(/^\.el-name\.svelte-[\w-]+$/)
+    expect(s?.display).toBe('block')
+    expect(s?.textOverflow).toBe('ellipsis')
+  })
+
+  it('a signed-in row wraps on a phone, its actions on a line of their own', async () => {
+    const v = await renderRem()
+    const rows = Array.from(v.c.querySelectorAll('tbody tr'))
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.every((tr) => tr.classList.contains('el-adminrow'))).toBe(true)
+    expect(phoneRule(/^tr\.el-adminrow\.svelte-[\w-]+$/)?.flexWrap).toBe('wrap')
+    const act = phoneRule(/^\.el-adminrow\.svelte-[\w-]+ \.el-act(\.svelte-[\w-]+|:where\(\.svelte-[\w-]+\))$/)
+    expect(act?.flexBasis).toBe('100%')
+    // The name starts from no width and takes what the chips leave, so a long
+    // name never pushes the category, weapon and flag off its line.
+    expect(phoneRule(/^\.el-adminrow\.svelte-[\w-]+ \.el-name(\.svelte-[\w-]+|:where\(\.svelte-[\w-]+\))$/)?.flexBasis).toBe('0px')
+  })
+
+  it('a visitor\'s row stays one line', async () => {
+    const v = await renderRem({ canRemove: false })
+    expect(v.c.querySelector('tbody tr.el-adminrow')).toBeNull()
   })
 })

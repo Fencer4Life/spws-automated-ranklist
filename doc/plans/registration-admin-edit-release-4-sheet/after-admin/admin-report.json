@@ -1,0 +1,182 @@
+[
+  {
+    "tag": "admin__desktop__pl",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 4,
+    "removeButtons": 4,
+    "marks": [
+      "ZZROSTER Maria"
+    ],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "tag": "admin__desktop__en",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 4,
+    "removeButtons": 4,
+    "marks": [
+      "ZZROSTER Maria"
+    ],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": false,
+        "ellipsis": false,
+        "actionsBelow": false,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "tag": "admin__phone__pl",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 4,
+    "removeButtons": 4,
+    "marks": [
+      "ZZROSTER Maria"
+    ],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": true,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  },
+  {
+    "tag": "admin__phone__en",
+    "names": [
+      "ZZNOWICKA Ewa",
+      "ZZROSTER Maria",
+      "ZZSMITH John",
+      "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan"
+    ],
+    "editButtons": 4,
+    "removeButtons": 4,
+    "marks": [
+      "ZZROSTER Maria"
+    ],
+    "rows": [
+      {
+        "name": "ZZNOWICKA Ewa",
+        "cut": false,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZROSTER Maria",
+        "cut": false,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZSMITH John",
+        "cut": false,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      },
+      {
+        "name": "ZZVAN DER BRUGGEN-SCHOONHOVEN Maximiliaan",
+        "cut": true,
+        "ellipsis": true,
+        "actionsBelow": true,
+        "chipsOnNameLine": true
+      }
+    ],
+    "errors": []
+  }
+]

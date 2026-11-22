@@ -13,6 +13,10 @@ vi.mock('../src/lib/api', () => ({
   createRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
   deleteRegistration: vi.fn(),
+  // FR-170: a signed-in list also reads each entry's details and the season.
+  fetchAdminEntryDetails: vi.fn(async () => []),
+  fetchEventSeasonEndYear: vi.fn(async () => 2027),
+  updateRegistrationAsAdmin: vi.fn(),
 }))
 import { fetchEventForRegistration, fetchEntryList } from '../src/lib/api'
 import RegistrationModal from '../src/components/RegistrationModal.svelte'
