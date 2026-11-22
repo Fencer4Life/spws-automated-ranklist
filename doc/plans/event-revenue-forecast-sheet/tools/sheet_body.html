@@ -1,0 +1,96 @@
+  <p class="eyebrow">FR-176 · picture sheet · 22 Nov 2026</p>
+  <h1>The event revenue forecast</h1>
+  <p class="dek">Built to the signed plan (rev 3, Q1 = A). <b>Everything that must not change is identical to main (@@SAME@@ of @@TOTAL@@ images, 0 pixels).</b> New: the report page, the printed .ods, a link block in the event form and a pill on a signed-in administrator's event card. Nothing is pushed.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>branch claude/event-revenue-forecast</span>
+    <span class="pill warn"><span class="dot"></span>awaiting your sign-off: this sheet and two ADR drafts</span>
+  </div>
+
+  <section>
+    <p class="kicker">01 · What you decide</p>
+    <h2>Three sign-offs before the push</h2>
+    <ol class="steps">
+      <li><b>This sheet.</b> The new look (sections 03–06) and the proof that nothing else changed (02).</li>
+      <li><b>The ADR-079 amendment of 2026-11-22 (FR-176), status Draft.</b> Declared, not paid; the fee rule in the database (<code>fn_registration_fee</code>); equal shares; what a key holder reads. <a href="../adr/079-event-self-registration-identity.html">ADR-079</a>.</li>
+      <li><b>The ADR-095 amendment of 2026-11-22 (FR-176), status Draft.</b> A second kind of key: per event, created and replaced by the administrator, stamped <code>ts_revoked</code> when replaced; the FTL key unchanged. <a href="../adr/095-ftl-export-token-lifecycle.html">ADR-095</a>.</li>
+    </ol>
+    <div class="note accent"><p class="lede">Recommendation</p><p>Approve all three, then give the word to release. The build follows the plan; section 07 lists where it differs from the plan's text and why. Two of those differences are for you to confirm: the roster column headed „Wpłata potw.” (I34) and the guarded division in the weapon × gender formulas.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Must not change</p>
+    <h2>Identical to main: @@SAME@@ of @@TOTAL@@</h2>
+    <p>Main (62513ca1) and this branch were built for production (<code>vite.config.ce.ts</code>) and photographed by the same scripts with software drawing. Each build was captured twice and the two runs match: entry list @@N_EL@@ of @@N_EL@@, pages @@N_PG_MAIN@@ (main) and @@N_PG_BRANCH@@ (branch), event form @@N_FM@@, card @@N_CD@@. Any difference below is therefore the change itself. All data is invented and no database is read.</p>
+    <div class="tablewrap"><table><thead><tr><th>Surface</th><th>Images</th><th>Main vs branch</th></tr></thead><tbody>
+@@ROWS_SAME@@
+    </tbody></table></div>
+    <p>The entry list counts all six FR-175 states on both surfaces, at desktop (1280) and phone (375) widths, in Polish and English. One copy of each surface is shown below; main and the branch are the same pixels.</p>
+    <div class="grid">
+@@FIGS_SAME@@
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The report page</p>
+    <h2>A light document, the same blocks and words as the sheet</h2>
+    <p><code>register.html?event=…&amp;view=revenue&amp;k=&lt;key&gt;</code> shows a white card, at most 900 px wide, on a light grey page, with the entry list's PL/EN switch and „Pobierz .ods”. The blocks follow the spreadsheet: the head, three figures, the two tables, the notes, then the entries. On a phone the tables scroll sideways inside the card, and none of the 16 captures scrolls the page sideways.</p>
+@@REPORT@@
+  </section>
+
+  <section>
+    <p class="kicker">04 · The .ods, printed by LibreOffice</p>
+    <h2>Three sheets on A4, beside the page</h2>
+    <p>These are the PDF pages LibreOffice printed from the file, as written by <code>buildRevenueOds</code>. <code>tools/ods_check.sh</code> proves the formulas, not just their text. It overwrites every stored formula value with −1, lets LibreOffice recalculate on load, and reads the results back. <b>All 1,004 checks pass</b>: every total on all three sheets for six samples, no error cell in an empty sheet, typing „x” into two roster boxes counts 2 and adds their fees, the forecast fits one page, the 105-entry roster takes 4 pages, and every page is A4. The headless LibreOffice runs in English, so these prints show „1,360.00 EUR”; a Polish LibreOffice shows „1 360,00 EUR”.</p>
+@@PRINTED@@
+  </section>
+
+  <section>
+    <p class="kicker">05 · The event form</p>
+    <h2>One block after the entry-list link</h2>
+    <p>„Link do prognozy przychodu (dla organizatora)” comes in three states. Each pair below is mapped row by row against main: rows above the block are identical in place, and every row below is identical, shifted by exactly the block's height. On desktop, after a whole-pixel shift, a handful of pixels inside native controls far from the block (the date input's calendar icon, the select's arrow) differ by at most 2/255. That is how the software rasteriser anti-aliases a native widget at another height; on a phone the same pairs are exact. The first build also left the block a fraction of a pixel tall, because of native buttons at 13.333 px. Its three controls are now 22 px. The block takes no width of its own (I32): the input may shrink, the buttons wrap, and the hint uses <code>contain: inline-size</code> with whole-pixel line heights.</p>
+    <div class="tablewrap"><table><thead><tr><th>State</th><th>Width</th><th>Inserted</th><th>Row map</th></tr></thead><tbody>
+@@ROWS_FORM@@
+    </tbody></table></div>
+@@PAIRS_FORM@@
+  </section>
+
+  <section>
+    <p class="kicker">06 · The event card</p>
+    <h2>„Prognoza przychodu” for a signed-in administrator only</h2>
+    <p>The card is mounted from the branch with an invented event that uses our registration. A signed-in administrator's card has the pill after „Lista zgłoszonych”. Clicking it opens a tab at once, finds the event's key (or creates one) and points the tab at the report. The visitor's card has no pill and is identical to main (section 02).</p>
+    <div class="cols">
+@@CARDS@@
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Found while building</p>
+    <h2>Issues, each fixed here, and where the build differs from the plan</h2>
+    <ul>
+      <li><b>I33: the allowlist sync check read a fixed window.</b> <code>scripts/check-anon-allowlist-sync.sh</code> took the 140 lines above label 52.7. With this justification added, the list starts 150 lines up, so the check misread it. It now reads from the list's own <code>ARRAY[</code>, at any length.</li>
+      <li><b>I34: „Wpłata potwierdzona” did not fit.</b> In 18 mm it broke mid-word in LibreOffice („potwierdz / ona”). The header is now „Wpłata potw.”, as in the plan's own A4 mock, at 9 pt. The English header stays „Payment confirmed” and fits. <i>For you to confirm.</i></li>
+      <li><b>I35: the entries total printed as „###”.</b> The plan fixes the column widths to fill A4, and a bold four-figure sum with its currency did not fit 22 mm. Every money cell now shrinks to fit (REVFC.24).</li>
+      <li><b>I36: no test covered register.html's view switch.</b> The plan said to extend the existing one, but there was none. <code>frontend/tests/registerHtml.test.ts</code> now runs the page's own script for every view (REVFC.30).</li>
+      <li><b>I37: two test files differing only in case.</b> The plan names both <code>revenueReport.test.ts</code> (the module) and <code>RevenueReport.test.ts</code> (the page). On macOS, writing the second overwrote the first. The page's tests are <code>RevenueReportPage.test.ts</code>, and the RTM says so.</li>
+      <li><b>I38: <code>t()</code> filled only the first occurrence of a placeholder.</b> The missing-tier note names its number twice and came out as „przyjęto {n} ×”. <code>tIn</code> now fills every occurrence (<code>locale-interpolation.test.ts</code>, seen failing first).</li>
+      <li><b>I39: the Sidebar tests logged jsdom navigation notices.</b> Three „Not implemented: navigation” lines appeared on every run. The WP.NAV tests now read whether the component cancelled the link, then hold the navigation back. Their assertions are unchanged.</li>
+      <li><b>I40: the revenue figure overflowed on a phone.</b> „3100,00 PLN” at 24 px ran past its third of the card. On a phone it is now 17 px and may wrap before the currency (section 03).</li>
+      <li><b>I41: a worker worktree has no <code>.venv</code> and no <code>.env</code>.</b> Preflight's Python gates found no <code>python</code>. The cloud checks then read the environment's stale token, and the RAG re-index at session start failed for the same reason. All are untracked files of the primary checkout. They were linked into this worktree (gitignored, nothing committed), and preflight then passed. The cause, the session-start hook not linking them, is still open: proposed as a follow-up.</li>
+      <li><b>The division in the weapon × gender formulas is guarded.</b> The plan's <code>…*I/H</code> divides by zero for the empty row of an event without entries: LibreOffice gave an error, not 0. The divisor is now <code>(H+(H=0))</code>, which equals H for every real entry (REVFC.23, and no error cell in the LibreOffice proof). <i>For you to confirm.</i></li>
+      <li><b>The report page paints its own background.</b> register.html's body is dark navy for the other views. For <code>view=revenue</code> it is now the report's light grey, without the dark frame (Q1 = A; REVFC.30 checks both).</li>
+      <li><b>Wording lives in one place.</b> The .ods reads the same <code>rev_*</code> keys in <code>pl.json</code>/<code>en.json</code> as the page, so their words cannot drift apart.</li>
+      <li><b>„1 360,00” versus „1360,00”.</b> On the page, Polish money follows the browser's rule, which groups from five digits („7950,00”, „12 345,00”). LibreOffice groups from four. The numbers are equal, and only the spacing differs.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Gates</p>
+    <h2>Where it stands</h2>
+    <ul>
+      <li><code>scripts/preflight.sh</code>: <b>All gates passed</b>. Vitest 1,647 tests in 88 files, with no unhandled error and no jsdom notice. pytest 2,994 passed. pgTAP total 1,918 (46 of them REVFC in <code>141_event_revenue_report.sql</code>). postgrestools: 171 files, 0 findings. svelte-check: 0 errors, 0 warnings. The visitor allowlist holds 39 names, the same in both files.</li>
+      <li>Every REVFC test was seen failing before its code, except where its nature prevents it. „Saving sends nothing about the key” (REVFC.27), the visitor's card without a pill and an event without our registration (REVFC.28) passed before the code, as an absence does. The element test in <code>RevenueReportElement.test.ts</code> was written after the element; REVFC.30's register.html test was seen failing first.</li>
+      <li><b>Not done, on purpose:</b> no push and no integration. The ADR drafts are not Accepted. CERT and PROD hold neither the table nor the functions; preflight's own read-only checks were the only contact. The release steps of the plan's section 09 wait for your word.</li>
+    </ul>
+  </section>
+
+  <p class="foot">picture sheet · FR-176 · 22 Nov 2026 · generated by event-revenue-forecast-sheet/tools/build_sheet.py from capture.cjs, entry-list-ranking-place-sheet/tools/capture.cjs and ods_check.sh · plan doc/plans/event-revenue-forecast-2026-11-22.html rev 3</p>

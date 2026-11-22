@@ -40,6 +40,7 @@ import type {
   IdentityProposal,
   FtlExportEvent,
   EntryRank,
+  RevenueReportRaw,
 } from './types'
 import type { ExportEntryRow, RosterRow } from './ftlSeedExport'
 
@@ -762,6 +763,37 @@ export async function updateEventShowSeed(id: number, show: boolean): Promise<vo
     .update({ bool_show_seed: show })
     .eq('id_event', id)
   if (error) throw error
+}
+
+// FR-176 — the event revenue forecast. The report is answered only to the
+// holder of the event's live key, checked inside fn_event_revenue_report (the
+// bundle is public, so a check here would be decoration). NULL, an error, or a
+// database that does not have the function yet (the pages are published before
+// PROD's migration) all read as „link not active”, never a broken page.
+export async function fetchRevenueReport(eventId: number, token: string): Promise<RevenueReportRaw | null> {
+  const { data, error } = await getClient().rpc('fn_event_revenue_report', { p_id_event: eventId, p_token: token })
+  if (error || !data) return null
+  return data as RevenueReportRaw
+}
+
+// The event's live report key, read by a signed-in administrator (the table's
+// one policy; a visitor cannot read it). None or an error: null.
+export async function fetchEventReportToken(eventId: number): Promise<string | null> {
+  const { data, error } = await getClient()
+    .from('tbl_event_report_token')
+    .select('uuid_token')
+    .eq('id_event', eventId)
+    .is('ts_revoked', null)
+    .maybeSingle()
+  if (error || !data) return null
+  return (data as { uuid_token: string }).uuid_token
+}
+
+// Creates the event's key, or replaces it (the old one stops working).
+export async function issueEventReportToken(eventId: number): Promise<string> {
+  const { data, error } = await getClient().rpc('fn_issue_event_report_token', { p_id_event: eventId })
+  if (error) throw error
+  return data as string
 }
 
 // FR-166 — an administrator removes one entry from the entry list. The table's

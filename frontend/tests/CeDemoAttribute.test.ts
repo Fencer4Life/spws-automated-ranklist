@@ -14,8 +14,9 @@ import '../src/ce/CalendarElement.svelte'
 import '../src/ce/RegistrationElement.svelte'
 import '../src/ce/EntryListElement.svelte'
 import '../src/ce/FtlExportElement.svelte'
+import '../src/ce/RevenueReportElement.svelte'
 
-const TAGS = ['spws-ranklist', 'spws-calendar', 'spws-registration', 'spws-entry-list', 'spws-ftl-export']
+const TAGS = ['spws-ranklist', 'spws-calendar', 'spws-registration', 'spws-entry-list', 'spws-ftl-export', 'spws-revenue-report']
 
 afterEach(() => {
   document.body.replaceChildren()

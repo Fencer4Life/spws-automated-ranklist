@@ -658,6 +658,8 @@ export interface RegistrationEventInfo {
   txt_payee: string | null
   txt_iban: string | null
   txt_payment_source: 'EVENT' | 'ORGANIZER' | 'NONE'
+  // The place, as vw_calendar names it (FR-176's report head reads it).
+  txt_location?: string | null
 }
 
 // A row of the public roster view (vw_registration_entry_list) — deliberately
@@ -775,4 +777,27 @@ export interface Filters {
   gender: GenderType
   category: AgeCategory
   mode: RankingMode
+}
+
+// FR-176 — fn_event_revenue_report's JSON: the fees an event's entries declared,
+// never a birth year, club, e-mail hash, edit token, country or fencer id.
+export interface RevenueReportRaw {
+  ts_generated: string
+  currency: string
+  fees: {
+    '1': number | null
+    '2': number | null
+    '3': number | null
+    fallback_2: boolean
+    fallback_3: boolean
+  }
+  entries: {
+    id_registration: number
+    txt_surname: string
+    txt_first_name: string
+    enum_gender: GenderType
+    enum_age_category: AgeCategory | null
+    arr_weapons: WeaponType[]
+    num_fee: number | null
+  }[]
 }

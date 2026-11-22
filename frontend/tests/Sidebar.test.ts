@@ -388,11 +388,20 @@ describe('WP.NAV.05–07 — signed in, „Znajdź zawody” opens the calendar 
     ...over,
   })
 
+  // Whether the component cancelled the link is read once its handlers have
+  // run; then the link is held back, because jsdom cannot follow it and logs
+  // „Not implemented: navigation” when it tries (I39).
   function clickEntry(container: HTMLElement, index: number) {
     const a = container.querySelectorAll('.nav-list .nav-item')[index] as HTMLAnchorElement
     const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    let prevented = false
+    const settle = (e: Event) => {
+      prevented = e.defaultPrevented
+      e.preventDefault()
+    }
+    window.addEventListener('click', settle, { once: true })
     a.dispatchEvent(click)
-    return { a, prevented: click.defaultPrevented }
+    return { a, prevented }
   }
 
   it('WP.NAV.05: signed in, the calendar entry cancels its link and opens the calendar in place', () => {

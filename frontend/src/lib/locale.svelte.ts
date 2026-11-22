@@ -35,7 +35,8 @@ export function tIn(
   let str = locales[locale][key] ?? key
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
-      str = str.replace(`{${k}}`, String(v))
+      // every occurrence: a text may name the same value twice (I38)
+      str = str.replaceAll(`{${k}}`, String(v))
     }
   }
   return str

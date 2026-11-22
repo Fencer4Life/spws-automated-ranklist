@@ -10,8 +10,13 @@ vi.mock('../src/lib/api', () => ({
   setEventSourceOverride: vi.fn(() => Promise.resolve()),
   reingestEvent: vi.fn(() => Promise.resolve({ ok: true })),
   fetchEventShowSeed: vi.fn(() => Promise.resolve(false)),
+  // FR-176: no report key by default.
+  fetchEventReportToken: vi.fn(() => Promise.resolve(null)),
+  issueEventReportToken: vi.fn(),
 }))
-import { requestDispatch, setEventSourceOverride, fetchEventShowSeed } from '../src/lib/api'
+import { requestDispatch, setEventSourceOverride, fetchEventShowSeed, fetchEventReportToken, issueEventReportToken } from '../src/lib/api'
+const mockFetchReportToken = vi.mocked(fetchEventReportToken)
+const mockIssueReportToken = vi.mocked(issueEventReportToken)
 const mockRequestDispatch = vi.mocked(requestDispatch)
 const mockSetSourceOverride = vi.mocked(setEventSourceOverride)
 const mockFetchShowSeed = vi.mocked(fetchEventShowSeed)
@@ -1645,5 +1650,135 @@ describe('EventManager — show the ranking place (FR-175)', () => {
     expect(box(container)).toBeNull()
     await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
     expect(onupdateshowseed).not.toHaveBeenCalled()
+  })
+})
+
+describe('EventManager — the revenue forecast link (FR-176)', () => {
+  // The first mock event (id 10, PPW-WRO-2025-01) with our registration stored on or off.
+  // Both keys are invented.
+  const KEY_A = '11111111-2222-4333-8444-555555555555'
+  const KEY_B = '66666666-7777-4888-8999-000000000000'
+  function revProps(registrationOn: boolean, extra: Record<string, unknown> = {}) {
+    return {
+      events: MOCK_EVENTS.map((e, i) => (i === 0 ? { ...e, bool_use_spws_registration: registrationOn } : e)),
+      seasons: MOCK_SEASONS,
+      organizers: MOCK_ORGANIZERS,
+      tournaments: MOCK_TOURNAMENTS,
+      selectedSeasonId: 1,
+      isAdmin: true,
+      oncreate: vi.fn(),
+      onupdate: vi.fn(),
+      onupdatestatus: vi.fn(),
+      ...extra,
+    }
+  }
+  const settle = () => new Promise((r) => setTimeout(r, 0))
+  const q = (c: HTMLElement, f: string) => c.querySelector(`[data-field="${f}"]`) as HTMLElement | null
+  const urlFor = (key: string) => `${new URL('register.html', window.location.href).href}?event=PPW-WRO-2025-01&view=revenue&k=${key}`
+
+  async function open(registrationOn: boolean, extra: Record<string, unknown> = {}) {
+    const r = render(EventManager, { props: revProps(registrationOn, extra) })
+    await fireEvent.click(r.container.querySelector('[data-field="edit-btn"]')!)
+    await settle()
+    return r.container
+  }
+
+  beforeEach(() => {
+    mockFetchReportToken.mockReset()
+    mockFetchReportToken.mockResolvedValue(null)
+    mockIssueReportToken.mockReset()
+  })
+
+  // REVFC.26
+  it('REVFC.26: the block sits right after the entry-list link, inactive while our registration is not stored on', async () => {
+    const c = await open(false)
+    const block = q(c, 'form-revenue-link')!
+    expect(block).not.toBeNull()
+    const listLabel = q(c, 'form-entry-list-url')!.closest('label')!
+    expect(listLabel.nextElementSibling).toBe(block)
+    expect(block.textContent).toContain('Link do prognozy przychodu (dla organizatora)')
+    expect(block.textContent).toContain('Dostępne po włączeniu i zapisaniu rejestracji SPWS.')
+    expect(q(c, 'form-revenue-create')).toBeNull()
+    expect(mockFetchReportToken).not.toHaveBeenCalled()
+    // ticking the box without saving does not make it active
+    await fireEvent.click(q(c, 'form-use-spws-registration')!)
+    expect(q(c, 'form-revenue-create')).toBeNull()
+  })
+
+  it('REVFC.26: „Utwórz link” issues a key and shows the link', async () => {
+    mockIssueReportToken.mockResolvedValue(KEY_A)
+    const c = await open(true)
+    expect(mockFetchReportToken).toHaveBeenCalledWith(10)
+    expect(q(c, 'form-revenue-url')).toBeNull()
+    await fireEvent.click(q(c, 'form-revenue-create')!)
+    await settle()
+    expect(mockIssueReportToken).toHaveBeenCalledWith(10)
+    expect((q(c, 'form-revenue-url') as HTMLInputElement).value).toBe(urlFor(KEY_A))
+    expect((q(c, 'form-revenue-url') as HTMLInputElement).readOnly).toBe(true)
+  })
+
+  it('REVFC.26: an existing key is shown when the form opens', async () => {
+    mockFetchReportToken.mockResolvedValue(KEY_A)
+    const c = await open(true)
+    expect((q(c, 'form-revenue-url') as HTMLInputElement).value).toBe(urlFor(KEY_A))
+    expect(q(c, 'form-revenue-create')).toBeNull()
+    expect(q(c, 'form-revenue-link')!.textContent).toContain('Każdy, kto ma ten link, widzi prognozę.')
+  })
+
+  it('REVFC.26: a failed call shows its message in the block', async () => {
+    mockIssueReportToken.mockRejectedValue(new Error('REPORT_NEEDS_SPWS_REGISTRATION'))
+    const c = await open(true)
+    await fireEvent.click(q(c, 'form-revenue-create')!)
+    await settle()
+    expect(q(c, 'form-revenue-error')!.textContent).toContain('REPORT_NEEDS_SPWS_REGISTRATION')
+  })
+
+  // REVFC.27
+  it('REVFC.27: „Kopiuj” copies the link and says so', async () => {
+    mockFetchReportToken.mockResolvedValue(KEY_A)
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const c = await open(true)
+    await fireEvent.click(q(c, 'form-revenue-copy')!)
+    await settle()
+    expect(writeText).toHaveBeenCalledWith(urlFor(KEY_A))
+    expect(q(c, 'form-revenue-copy')!.textContent?.trim()).toBe('Skopiowano')
+  })
+
+  it('REVFC.27: „Otwórz” points at the link in a new tab', async () => {
+    mockFetchReportToken.mockResolvedValue(KEY_A)
+    const c = await open(true)
+    const a = q(c, 'form-revenue-open') as HTMLAnchorElement
+    expect(a.getAttribute('href')).toBe(urlFor(KEY_A))
+    expect(a.getAttribute('target')).toBe('_blank')
+    expect(a.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
+  it('REVFC.27: „Nowy link” asks, and replaces the link only on yes', async () => {
+    mockFetchReportToken.mockResolvedValue(KEY_A)
+    mockIssueReportToken.mockResolvedValue(KEY_B)
+    const c = await open(true)
+    vi.mocked(confirm).mockReturnValueOnce(false)
+    await fireEvent.click(q(c, 'form-revenue-new')!)
+    await settle()
+    expect(confirm).toHaveBeenLastCalledWith('Poprzedni link przestanie działać. Utworzyć nowy?')
+    expect(mockIssueReportToken).not.toHaveBeenCalled()
+    expect((q(c, 'form-revenue-url') as HTMLInputElement).value).toBe(urlFor(KEY_A))
+    vi.mocked(confirm).mockReturnValueOnce(true)
+    await fireEvent.click(q(c, 'form-revenue-new')!)
+    await settle()
+    expect(mockIssueReportToken).toHaveBeenCalledWith(10)
+    expect((q(c, 'form-revenue-url') as HTMLInputElement).value).toBe(urlFor(KEY_B))
+  })
+
+  it('REVFC.27: saving the form sends nothing about the key', async () => {
+    mockFetchReportToken.mockResolvedValue(KEY_A)
+    const onupdate = vi.fn()
+    const c = await open(true, { onupdate })
+    await fireEvent.click(q(c, 'form-save-btn')!)
+    expect(onupdate).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(onupdate.mock.calls[0])).not.toContain(KEY_A)
+    expect(JSON.stringify(onupdate.mock.calls[0])).not.toContain('view=revenue')
+    expect(mockIssueReportToken).not.toHaveBeenCalled()
   })
 })

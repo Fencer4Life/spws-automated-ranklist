@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event revenue forecast · build plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink)}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.rec{color:var(--good);background:var(--good-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .mock{border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);padding:22px 24px;margin:20px 0}
+  .mock h4{font-family:var(--serif);font-size:24px;margin:0 0 2px}
+  .mock .sub{color:var(--faint);font-size:15px;margin:0 0 14px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}
+  .tile{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
+  .tile .k{font-size:13px;color:var(--faint);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+  .tile .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .btn{display:inline-block;font-size:15px;font-weight:700;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);margin-right:6px}
+  .btn.pri{background:var(--accent);color:#fff;border-color:transparent}
+  .field{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+  .field .url{flex:1 1 280px;font-family:var(--mono);font-size:14px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:640px){.wrap{padding:36px 16px 80px}}
+  pre{overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.5;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:16px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Build plan · rev 3 · 22 Nov 2026 · FR-176</p>
+  <h1>Event revenue forecast</h1>
+  <p class="dek">The build plan for what you signed on 22 Nov („all as recommended”, R1–R10): a report of declared fees per event, opened with a per-event key in the link, created and copied by a signed-in administrator, with a designed, printable .ods. <b>Written so a cheaper model can build it step by step. Nothing is built.</b> Rev 2 adds a third tab to the spreadsheet: the printable roster with check and payment boxes (section 04, sheet 3; test REVFC.31). Rev 3 fixes that tab's print design for A4.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>SIGNED by the user in chat 2026-11-22 („Sign off, Q1 A”), rev 3</span>
+    <span class="pill"><span class="dot"></span>business part: event-revenue-forecast-brainstorm-2026-11-22.html rev 1</span>
+  </div>
+
+  <section>
+    <p class="kicker">00 · One question</p>
+    <h2>Q1 · The report page is light, not dark — answered: A</h2>
+    <p>The brainstorm said the page „follows the look of the entry list”, which is dark navy. You also asked that the printed spreadsheet resemble the page. A dark page cannot resemble a sheet printed on white paper. </p>
+    <div class="note good"><p class="lede">Decided 2026-11-22: A</p><p><b>A</b> — the report page is a light document: white card, navy accent (<code>#12467E</code>), the same palette, fonts, block order and wording as the .ods, so page, sheet and print are one design. It keeps the entry list's PL/EN switch. <b>B</b> — dark page like the entry list, light sheet; they would share only the numbers.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">01 · For the builder</p>
+    <h2>House rules (binding)</h2>
+    <ul>
+      <li><b>Order:</b> every test is written first and seen failing for the right reason, then the code. Register FR-176 and the REVFC IDs in the RTM before any code.</li>
+      <li><b>Where:</b> a new branch <code>claude/event-revenue-forecast</code> from <code>origin/main</code>, in its own worktree. Never work in the primary or the integration checkout. Before preflight set the branch description (a title ≤ 72 characters, a blank line, at least two sentences).</li>
+      <li><b>LOCAL database</b> is the Docker stack only: <code>docker exec supabase_db_SPWSranklist psql -U postgres …</code>. Never a bare <code>supabase db reset</code>. Apply the new migration to LOCAL with <code>docker cp</code> + <code>psql -f</code> before running <code>postgrestools check</code> (it type-checks against LOCAL).</li>
+      <li><b>CERT / PROD:</b> read-only, only through <code>scripts/cloud-sql.sh</code>, a file starting with <code>SELECT</code> or <code>WITH</code>. Never write test data there. No FencingTime request of any kind.</li>
+      <li><b>Tests use invented people only</b> (public repository). Never print or store a key, token or credential in a file, a commit or chat; the report key in tests is a made-up UUID.</li>
+      <li><b>Frontend commands run from <code>frontend/</code></b> (<code>npx vitest run</code>, <code>npx svelte-check --threshold warning</code>). Python: <code>.venv/bin/python</code>.</li>
+      <li><b>Zero findings everywhere:</b> <code>postgrestools check</code> on every touched .sql, svelte-check, ruff/basedpyright on any .py, no unhandled errors in Vitest. Fix causes; never loosen a gate. Number every defect you meet (next free: I33) in the picture sheet and fix it in this work.</li>
+      <li><b>Change only what this plan names.</b> Existing exports (<code>frontend/src/lib/export.ts</code>), the registration form's quote, the entry list and the FTL page stay as they are.</li>
+      <li><b>Before each commit:</b> <code>./scripts/refresh-graph.sh</code> (if it says „refused to shrink”: <code>./scripts/refresh-graph.sh --full-code</code>, then the plain run again) and <code>python3 tools/docs-search/ingest.py</code>. Stage explicit paths. Commits are authored as Fencer4Life.</li>
+      <li><b>Done</b> means <code>scripts/preflight.sh</code> prints „All gates passed”. Then stop and report: the user approves the picture sheet and the ADR drafts before any push, and gives the word to release. A push to main deploys PROD's pages at once.</li>
+    </ul>
+    <h3>Facts verified on main <code>7888cc35</code></h3>
+    <ul>
+      <li>Free IDs: <b>FR-176</b>, <b>REVFC.*</b>, pgTAP file <b>141</b>, migration after <code>20261122000007</code>. <code>scripts/check-spec-sync.sh</code>: <code>EXPECTED=174</code> → 175. Spec pgTAP total: 1872.</li>
+      <li>Fee rule today, browser only: <code>frontend/src/components/RegistrationForm.svelte</code> lines 393–398 (1 weapon → <code>num_entry_fee</code>, 2 → <code>num_entry_fee_2w</code>, 3 → <code>num_entry_fee_3w</code>); currency <code>txt_entry_fee_currency</code>, empty means PLN (line 427).</li>
+      <li>Entries: <code>tbl_registration</code> (<code>id_event, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons</code>…). Category as the public view computes it: <code>fn_age_category(r.int_birth_year::int, EXTRACT(year FROM s.dt_end)::int)</code> (<code>vw_registration_entry_list</code>).</li>
+      <li>Key precedent to copy the shape of: <code>tbl_ftl_export_token</code> and its RLS/grants in <code>supabase/migrations/20260912000004_ftl_export_entries.sql</code> lines 49–70; lifecycle in ADR-095.</li>
+      <li><code>frontend/register.html</code> lines 46–75 choose the custom element by <code>?view=</code> (<code>list</code> → <code>spws-entry-list</code>, <code>export</code> → <code>spws-ftl-export</code>). Elements are registered in <code>frontend/src/main.ce.ts</code>; the pattern to copy is <code>frontend/src/ce/EntryListElement.svelte</code>.</li>
+      <li>Admin form section: <code>frontend/src/components/EventManager.svelte</code>, „Rejestracja SPWS”, the entry-list field at <code>data-field="form-entry-list-url"</code>; its link is built in <code>onToggleSpwsRegistration()</code> from <code>assetUrl('register.html')</code>.</li>
+      <li>Card pills: <code>frontend/src/components/EventCard.svelte</code>, the <code>entry-list-link</code> block (about line 357). <code>CalendarView.svelte</code> has <code>isAdmin</code> (line 105) and renders <code>&lt;EventCard&gt;</code> at line 10. The public <code>&lt;spws-calendar&gt;</code> never passes <code>isAdmin</code>.</li>
+      <li>Visitor allowlist, two files that must agree: the array before 52.7 in <code>supabase/tests/52_security_posture.sql</code> and the heredoc in <code>scripts/check-security-posture.sh</code>; check with <code>bash scripts/check-anon-allowlist-sync.sh</code> (38 names today).</li>
+      <li>SheetJS (<code>xlsx</code>) writes values only. LibreOffice is installed at <code>/Applications/LibreOffice.app/Contents/MacOS/soffice</code> (not on CI).</li>
+      <li>Lesson from FR-175 (I32): a long text inside the „Rejestracja SPWS” section widened it and reflowed the whole form. Anything added there must not set the section's width (<code>contain: inline-size</code> or <code>min-width: 0</code>), and the picture sheet must prove it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Step 1</p>
+    <h2>Database: tests, then the migration</h2>
+    <p>New file <code>supabase/tests/141_event_revenue_report.sql</code> (first line the same <code>-- pgt-ignore-all lint/safety: …</code> as test 140; one <code>BEGIN … ROLLBACK</code>; fixtures as in test 140: <code>fn_create_season</code>, <code>fn_create_event</code>, a payment account before <code>bool_use_spws_registration = TRUE</code>, and after role tests reset the claim with <code>DO $$ BEGIN PERFORM set_config('request.jwt.claims', '{}', TRUE); END $$;</code>). Tests REVFC.01–10 (section 08). Then the migration <code>supabase/migrations/&lt;date&gt;000001_event_revenue_report.sql</code>, no wrapping transaction, <code>SET lock_timeout = '2s';</code> first:</p>
+<pre>-- FR-176: the report key. One live key per event; replaced, never deleted.
+CREATE TABLE IF NOT EXISTS tbl_event_report_token (
+  uuid_token UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id_event   INT NOT NULL REFERENCES tbl_event (id_event) ON DELETE CASCADE,
+  ts_created TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ts_revoked TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_event_report_token_live
+  ON tbl_event_report_token (id_event) WHERE ts_revoked IS NULL;
+ALTER TABLE tbl_event_report_token ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admin reads event report tokens" ON tbl_event_report_token;
+CREATE POLICY "Admin reads event report tokens" ON tbl_event_report_token
+  FOR SELECT USING (auth.role() = 'authenticated');
+REVOKE ALL ON TABLE tbl_event_report_token FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE tbl_event_report_token TO authenticated, service_role;
+
+-- The one fee rule (R1, R2). NULL when nothing can be quoted.
+CREATE OR REPLACE FUNCTION fn_registration_fee(
+  p_weapons INT, p_fee NUMERIC, p_fee_2w NUMERIC, p_fee_3w NUMERIC)
+RETURNS NUMERIC LANGUAGE sql IMMUTABLE SET search_path = public AS $$
+  SELECT CASE p_weapons
+           WHEN 1 THEN p_fee
+           WHEN 2 THEN COALESCE(p_fee_2w, p_fee * 2)
+           WHEN 3 THEN COALESCE(p_fee_3w, p_fee * 3)
+         END;
+$$;
+REVOKE ALL ON FUNCTION fn_registration_fee(INT, NUMERIC, NUMERIC, NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_registration_fee(INT, NUMERIC, NUMERIC, NUMERIC) TO authenticated, service_role;
+
+-- A signed-in administrator creates the event's key, or replaces it.
+CREATE OR REPLACE FUNCTION fn_issue_event_report_token(p_id_event INT)
+RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_token UUID;
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'authenticated' THEN
+    RAISE EXCEPTION 'REPORT_TOKEN_ADMIN_ONLY' USING ERRCODE = '42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM tbl_event e
+                  WHERE e.id_event = p_id_event AND e.bool_use_spws_registration) THEN
+    RAISE EXCEPTION 'REPORT_NEEDS_SPWS_REGISTRATION';
+  END IF;
+  UPDATE tbl_event_report_token SET ts_revoked = now()
+   WHERE id_event = p_id_event AND ts_revoked IS NULL;
+  INSERT INTO tbl_event_report_token (id_event) VALUES (p_id_event)
+  RETURNING uuid_token INTO v_token;
+  RETURN v_token;
+END; $$;
+REVOKE ALL ON FUNCTION fn_issue_event_report_token(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_issue_event_report_token(INT) TO authenticated, service_role;
+
+-- What the report page reads. NULL for a key that is not this event's live key.
+CREATE OR REPLACE FUNCTION fn_event_revenue_report(p_id_event INT, p_token UUID)
+RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE v JSONB;
+BEGIN
+  IF p_token IS NULL OR NOT EXISTS (
+       SELECT 1 FROM tbl_event_report_token t
+        WHERE t.uuid_token = p_token AND t.id_event = p_id_event AND t.ts_revoked IS NULL) THEN
+    RETURN NULL;
+  END IF;
+  SELECT jsonb_build_object(
+    'ts_generated', now(),
+    'currency', COALESCE(NULLIF(btrim(e.txt_entry_fee_currency), ''), 'PLN'),
+    'fees', jsonb_build_object(
+      '1', fn_registration_fee(1, e.num_entry_fee, e.num_entry_fee_2w, e.num_entry_fee_3w),
+      '2', fn_registration_fee(2, e.num_entry_fee, e.num_entry_fee_2w, e.num_entry_fee_3w),
+      '3', fn_registration_fee(3, e.num_entry_fee, e.num_entry_fee_2w, e.num_entry_fee_3w),
+      'fallback_2', e.num_entry_fee_2w IS NULL, 'fallback_3', e.num_entry_fee_3w IS NULL),
+    'entries', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'id_registration', r.id_registration,
+               'txt_surname', r.txt_surname, 'txt_first_name', r.txt_first_name,
+               'enum_gender', r.enum_gender,
+               'enum_age_category', fn_age_category(r.int_birth_year::INT, EXTRACT(year FROM s.dt_end)::INT),
+               'arr_weapons', to_jsonb(r.arr_weapons),
+               'num_fee', fn_registration_fee(cardinality(r.arr_weapons), e.num_entry_fee, e.num_entry_fee_2w, e.num_entry_fee_3w))
+             ORDER BY r.id_registration)
+        FROM tbl_registration r WHERE r.id_event = e.id_event), '[]'::jsonb))
+    INTO v
+    FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season
+   WHERE e.id_event = p_id_event;
+  RETURN v;
+END; $$;
+REVOKE ALL ON FUNCTION fn_event_revenue_report(INT, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_event_revenue_report(INT, UUID) TO anon, authenticated, service_role;</pre>
+    <ul>
+      <li>Add <code>COMMENT ON</code> for the table and each function (what it is, FR-176, „never a birth year”). Confirm the exact column names on LOCAL (<code>\d tbl_event</code>) before writing; if <code>auth.role()</code> is not how sibling admin functions check the caller, copy theirs (look at <code>fn_update_registration_as_admin</code> or the function behind FR-170).</li>
+      <li><b>Allowlist:</b> add <code>fn_event_revenue_report</code> to both allowlist files with its justification (the key is checked inside; names, gender, category and weapons are already public; the fees are public in <code>vw_calendar</code>; the function adds only the sum; never a birth year, club, e-mail hash, edit token or fencer id; STABLE). <code>fn_issue_event_report_token</code> and <code>fn_registration_fee</code> must <b>not</b> be visitor-callable (REVFC.10).</li>
+      <li>One JSON answer instead of rows, on purpose: <code>NULL</code> = „link not active”, <code>entries: []</code> = a live key with no entries yet. The page must tell these apart.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Step 2</p>
+    <h2>The numbers: one pure module</h2>
+    <p>New <code>frontend/src/lib/revenueReport.ts</code>, no Svelte, no network. The page and the spreadsheet both read its result, so they cannot disagree. Tests first in <code>frontend/tests/revenueReport.test.ts</code> (REVFC.13–16).</p>
+<pre>// types.ts
+export interface RevenueReportRaw {            // fn_event_revenue_report's JSON
+  ts_generated: string
+  currency: string
+  fees: { '1': number | null; '2': number | null; '3': number | null; fallback_2: boolean; fallback_3: boolean }
+  entries: { id_registration: number; txt_surname: string; txt_first_name: string; enum_gender: GenderType
+             enum_age_category: AgeCategory | null; arr_weapons: WeaponType[]; num_fee: number | null }[]
+}
+
+// revenueReport.ts
+export const WEAPONS: WeaponType[] = ['EPEE', 'FOIL', 'SABRE']
+export interface RevenueModel {
+  generatedAt: string; currency: string
+  hasFees: boolean                              // fees['1'] != null
+  tiers: { weapons: 1 | 2 | 3; entries: number; fee: number | null; total: number; fallback: boolean }[]   // always 3 rows
+  byWeapon: { weapon: WeaponType; F: { starts: number; revenue: number }; M: { starts: number; revenue: number }; total: number }[]  // always 3 rows
+  totals: { entries: number; starts: number; revenue: number; F: { starts: number; revenue: number }; M: { starts: number; revenue: number } }
+  entries: { id: number; name: string; gender: GenderType; category: AgeCategory | null; weapons: WeaponType[]; fee: number | null }[]
+  fallbackEntries: { two: number; three: number }   // entries priced by the R2 rule
+}
+export function buildRevenueModel(raw: RevenueReportRaw): RevenueModel
+export function formatMoney(value: number, lang: 'pl' | 'en'): string   // always 2 decimals: Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+export function reportUrl(registerPage: string, eventCode: string, token: string): string
+// = `${registerPage}?event=${encodeURIComponent(eventCode)}&amp;view=revenue&amp;k=${token}`</pre>
+    <ul>
+      <li><b>Share (R3):</b> an entry's fee divided by its number of weapons, <b>not rounded</b>; each of its weapons adds that share to its weapon × gender cell. Round only when a number is shown. The cells then add up to the total exactly (test with fee 100 and three weapons).</li>
+      <li><b>Entries order:</b> as the entry list: <code>new Intl.Collator('pl', { sensitivity: 'base' })</code> on <code>surnameWithoutTitle(txt_surname)</code> (from <code>lib/registrationName</code>), then the given name. <code>name</code> = <code>`${txt_surname} ${txt_first_name}`</code>.</li>
+      <li>A tier with no entries still has its row (0 entries, its fee, total 0). An entry whose fee is null counts in entries and starts and adds 0 revenue.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Step 3</p>
+    <h2>The spreadsheet, designed</h2>
+    <p>New dependency in <code>frontend/</code>: <code>npm install fflate@0.8.2</code> (commit <code>package.json</code> and the lockfile). New <code>frontend/src/lib/revenueReportOds.ts</code>:</p>
+<pre>export function buildRevenueOds(model: RevenueModel, head: OdsHead, lang: 'pl' | 'en'): Uint8Array
+export interface OdsHead { eventName: string; eventCode: string; dates: string; place: string; asOf: string }
+export function odsFileName(eventCode: string, generatedAt: string, lang: 'pl' | 'en'): string
+// 'prognoza-przychodu-&lt;CODE&gt;-&lt;yyyy-mm-dd&gt;.ods' / 'revenue-forecast-…'</pre>
+    <p>An .ods is a zip of XML files. Write exactly these five, in this order, with <code>zipSync</code>; the first must be stored uncompressed (<code>{ level: 0 }</code>), which is what makes programs recognise the file:</p>
+    <div class="tablewrap"><table><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+      <tr><td><code>mimetype</code></td><td>the text <code>application/vnd.oasis.opendocument.spreadsheet</code>, no newline; stored, first</td></tr>
+      <tr><td><code>META-INF/manifest.xml</code></td><td>lists <code>/</code> (that media type, <code>manifest:version="1.2"</code>), <code>content.xml</code>, <code>styles.xml</code>, <code>meta.xml</code> (<code>text/xml</code>)</td></tr>
+      <tr><td><code>meta.xml</code></td><td>title (the report title + event name), <code>meta:generator</code> „SPWS Ranklist”, creation date = <code>generatedAt</code></td></tr>
+      <tr><td><code>styles.xml</code></td><td>fonts, the page layout and the footer (below)</td></tr>
+      <tr><td><code>content.xml</code></td><td>fonts, cell/column/row/number styles, the three sheets</td></tr>
+    </tbody></table></div>
+    <p>Root elements carry <code>office:version="1.2"</code> and the namespaces <code>office, style, text, table, fo, number, svg, of</code> (<code>urn:oasis:names:tc:opendocument:xmlns:…:1.0</code>; <code>fo</code> = <code>…:xsl-fo-compatible:1.0</code>, <code>number</code> = <code>…:datastyle:1.0</code>, <code>svg</code> = <code>…:svg-compatible:1.0</code>, <code>of</code> = <code>…:of:1.2</code>). Every text goes through one <code>xml()</code> escape (<code>&amp; &lt; &gt; " '</code>). Build the XML with small helper functions (<code>cell()</code>, <code>row()</code>), not one long string.</p>
+
+    <h3>Palette and type (the page uses the same)</h3>
+    <div class="tablewrap"><table><thead><tr><th>Role</th><th>Value</th></tr></thead><tbody>
+      <tr><td>Accent (title, section titles, header fill, total rule)</td><td><code>#12467E</code></td></tr>
+      <tr><td>Soft fill (the three figures)</td><td><code>#DBE7F5</code></td></tr>
+      <tr><td>Total-row fill</td><td><code>#DCE2EC</code></td></tr>
+      <tr><td>Stripe on the entries sheet (every second row)</td><td><code>#F3F6FA</code></td></tr>
+      <tr><td>Hairlines</td><td><code>0.5pt solid #C9D1DC</code></td></tr>
+      <tr><td>Text / secondary / notes</td><td><code>#0F1319</code> / <code>#414B59</code> / <code>#6B7482</code></td></tr>
+      <tr><td>Title font</td><td>„Georgia” (font-face with <code>svg:font-family="Georgia, 'Liberation Serif', serif"</code>), bold</td></tr>
+      <tr><td>Everything else</td><td>„Arial” (<code>svg:font-family="Arial, 'Liberation Sans', sans-serif"</code>), 10pt</td></tr>
+    </tbody></table></div>
+
+    <h3>Sheet 1 — „Prognoza” / “Forecast” (one printed page)</h3>
+    <p>Six columns, 180 mm in all (the printable width of A4 with 15 mm margins): A 44 · B 24 · C 32 · D 24 · E 32 · F 24 mm.</p>
+    <div class="tablewrap"><table><thead><tr><th>Row</th><th>Cells</th><th>Style</th></tr></thead><tbody>
+      <tr><td>1</td><td>A1:F1 merged: „Prognoza przychodu” / “Revenue forecast”</td><td>Georgia 20pt bold, accent; row 11 mm</td></tr>
+      <tr><td>2</td><td>A2:F2 merged: the event's name</td><td>Arial 13pt bold</td></tr>
+      <tr><td>3</td><td>A3:F3 merged: dates · place</td><td>10pt, secondary</td></tr>
+      <tr><td>4</td><td>A4:F4 merged: „Stan na {date, time} · na podstawie zgłoszeń, nie wpłat” / “As of … · based on entries, not payments”</td><td>9pt italic, notes colour; bottom hairline</td></tr>
+      <tr><td>5</td><td>empty</td><td>row 4 mm</td></tr>
+      <tr><td>6</td><td>A6:B6, C6:D6, E6:F6 merged: „Zgłoszonych” · „Startów” · „Przychód ({currency})”</td><td>8pt bold capitals, secondary, soft fill, centred, hairline box (top, left, right)</td></tr>
+      <tr><td>7</td><td>the three figures: <code>=B14</code> · <code>=B21+D21</code> · <code>=D14</code></td><td>16pt bold, soft fill, centred, hairline box (bottom, left, right); row 10 mm; the third as money</td></tr>
+      <tr><td>8</td><td>empty</td><td>row 6 mm</td></tr>
+      <tr><td>9</td><td>A9:F9 merged: „Według liczby broni” / “By number of weapons”</td><td>11pt bold, accent; bottom border 1pt accent</td></tr>
+      <tr><td>10</td><td>A–D: „Zgłoszenie” · „Osób” · „Opłata” · „Razem”</td><td>header: white bold on accent fill; numbers' headers right-aligned</td></tr>
+      <tr><td>11–13</td><td>„1 broń” / „2 bronie” / „3 bronie” · B <code>=COUNTIF(H-range;n)</code> · C the fee · D <code>=B*C</code></td><td>body, hairline under each row; C and D money</td></tr>
+      <tr><td>14</td><td>„Razem” · <code>=SUM(B11:B13)</code> · (empty) · <code>=SUM(D11:D13)</code></td><td>total: bold, total fill, top border 1pt accent</td></tr>
+      <tr><td>15</td><td>empty</td><td>row 6 mm</td></tr>
+      <tr><td>16</td><td>A16:F16 merged: „Według broni i płci” / “By weapon and gender”</td><td>as row 9</td></tr>
+      <tr><td>17</td><td>„Broń” · „Kobiety · starty” · „Kobiety · przychód” · „Mężczyźni · starty” · „Mężczyźni · przychód” · „Razem”</td><td>header, text wraps; row 9 mm</td></tr>
+      <tr><td>18–20</td><td>Szpada / Floret / Szabla · B, D starts · C, E revenue · F <code>=C+E</code></td><td>body; C, E, F money</td></tr>
+      <tr><td>21</td><td>„Razem” · <code>=SUM(…18:…20)</code> in B–F</td><td>total</td></tr>
+      <tr><td>22</td><td>A22:F22 merged: „Opłata zgłoszenia w kilku broniach jest dzielona po równo między te bronie.” / “The fee of an entry in several weapons is split equally between them.”</td><td>8pt, notes colour, wraps</td></tr>
+      <tr><td>23, 24</td><td>only when used: „Brak ceny za 2 bronie w ustawieniach wydarzenia: przyjęto 2 × opłata za 1 broń (zgłoszeń: N).” (and the same for 3); when the event has no fee at all, one line: „Wydarzenie nie ma ustawionej opłaty: prognoza pokazuje tylko liczby.”</td><td>as row 22</td></tr>
+    </tbody></table></div>
+
+    <h3>Sheet 2 — „Zgłoszenia” / “Entries”</h3>
+    <p>Nine columns, 180 mm: A „Lp.” 10 · B „Nazwisko i imię” 62 · C „Płeć” 12 · D „Kat.” 12 · E „Szpada” 16 · F „Floret” 16 · G „Szabla” 16 · H „Broni” 14 · I „Opłata” 22. Row 1 is the header (same header style) inside <code>&lt;table:table-header-rows&gt;</code>, so it repeats on every printed page. One row per entry, alphabetical, every second row striped. Gender is „K”/„M” (Polish) or „F”/„M” (English). A weapon the entry fences holds the number <code>1</code>, shown as „✓” by a number style whose only content is that text, centred; other weapon cells are empty. H <code>=COUNT(E:G of the row)</code>. I <code>=CHOOSE(H; Prognoza C11; C12; C13)</code>, money. A last total row: „Razem” in B, <code>=SUM</code> in H and I, total style.</p>
+
+    <h3>Sheet 3 — „Lista” / “Roster” (added in rev 2, your request of 22 Nov)</h3>
+    <p>The full roster, alphabetical (the same order and rows as sheet 2), made to be printed and ticked by hand at the desk. Seven columns, 180 mm; rows 7 mm high so a pen fits; every cell boxed with hairlines; its print design follows the table.</p>
+    <div class="tablewrap"><table><thead><tr><th>Col</th><th>Header (PL / EN)</th><th>Width</th><th>Content</th></tr></thead><tbody>
+      <tr><td>A</td><td>„✓” / “✓” (check)</td><td>14 mm</td><td>empty box, for the organiser's tick</td></tr>
+      <tr><td>B</td><td>„NAZWISKO Imię” / “SURNAME Name”</td><td>70 mm</td><td>the entry's name as on the entry list</td></tr>
+      <tr><td>C</td><td>„1 broń” / “1 weapon”</td><td>18 mm</td><td rowspan="3">the number 1 in the column of the entry's weapon count, shown as „✓”, centred; the other two empty</td></tr>
+      <tr><td>D</td><td>„2 bronie” / “2 weapons”</td><td>18 mm</td></tr>
+      <tr><td>E</td><td>„3 bronie” / “3 weapons”</td><td>18 mm</td></tr>
+      <tr><td>F</td><td>„Opłata” / “Fee”</td><td>24 mm</td><td>money; <code>of:=[$'Zgłoszenia'.I{row}]</code>, so it follows a changed fee</td></tr>
+      <tr><td>G</td><td>„Wpłata potwierdzona” / “Payment confirmed”</td><td>18 mm</td><td>empty box, to tick by hand or type into; header wraps</td></tr>
+    </tbody></table></div>
+    <p>Last row, total style: „Razem” in B; <code>=SUM</code> of C, D and E (entries per tier); <code>=SUM</code> of F. Under it one line the organiser can use on screen: „Wpłaty potwierdzone:” with <code>of:=COUNTA([.G2:.GN])</code> entries and <code>of:=SUMIF([.G2:.GN];"&lt;&gt;";[.F2:.FN])</code> as money: anything typed in column G counts that entry as paid. Column A is never counted. The report page does not change: this sheet exists only in the file.</p>
+
+    <h3>Sheet 3 on paper: A4 portrait (rev 3)</h3>
+    <div class="mock" style="background:#fff;color:#0F1319;max-width:640px">
+      <p style="margin:0;font-family:Georgia,serif;font-weight:700;font-size:19px;color:#12467E">Lista zgłoszonych · PEW5 Łomianki</p>
+      <p style="margin:0 0 8px;font-size:12px;color:#6B7482">12–13 grudnia 2026 · stan na 22 listopada 2026, 14:05</p>
+      <table style="min-width:0;font-size:12px;border:1px solid #C9D1DC"><thead><tr style="background:#12467E;color:#fff"><th style="background:#12467E;color:#fff;padding:5px 6px;text-align:center">✓</th><th style="background:#12467E;color:#fff;padding:5px 6px">NAZWISKO Imię</th><th style="background:#12467E;color:#fff;padding:5px 6px;text-align:center">1 broń</th><th style="background:#12467E;color:#fff;padding:5px 6px;text-align:center">2 bronie</th><th style="background:#12467E;color:#fff;padding:5px 6px;text-align:center">3 bronie</th><th style="background:#12467E;color:#fff;padding:5px 6px;text-align:right">Opłata</th><th style="background:#12467E;color:#fff;padding:5px 6px;text-align:center">Wpłata potw.</th></tr></thead><tbody>
+        <tr><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC">ĆWIK Robert</td><td style="padding:5px 6px;border:1px solid #C9D1DC;text-align:center">✓</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC;text-align:right">70,00 EUR</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td></tr>
+        <tr><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC">GOŁĄB Tomasz</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC;text-align:center">✓</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC;text-align:right">110,00 EUR</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td></tr>
+        <tr><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC">KOS Jerzy</td><td style="padding:5px 6px;border:1px solid #C9D1DC;text-align:center">✓</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td><td style="padding:5px 6px;border:1px solid #C9D1DC;text-align:right">70,00 EUR</td><td style="padding:5px 6px;border:1px solid #C9D1DC"></td></tr>
+      </tbody></table>
+      <p style="margin:8px 0 0;font-size:11px;color:#6B7482;display:flex;justify-content:space-between"><span>PEW5 Łomianki</span><span>Lista zgłoszonych · stan na 22 listopada 2026</span><span>Strona 1 z 4</span></p>
+    </div>
+    <ul>
+      <li><b>Paper:</b> A4 portrait, 210 × 297 mm, all margins 15 mm: 180 mm of width, which the seven columns fill exactly, so nothing is scaled and nothing spills onto a second page sideways. Centred horizontally.</li>
+      <li><b>Page head, repeated on every page:</b> two rows inside <code>&lt;table:table-header-rows&gt;</code>. Row 1 (9 mm): A1:G1 merged, „Lista zgłoszonych · {event name}” in Georgia 13pt bold accent, with the dates and „stan na …” after it in 9pt notes colour. Row 2 (10 mm): the column headers, white bold on accent, centred, wrapping; „NAZWISKO Imię” left, „Opłata” right. Entries start in row 3 (so every range above that says „2” starts at 3 on this sheet).</li>
+      <li><b>Rows:</b> 7 mm high, 10pt, text centred vertically, a hairline box around every cell, no stripes (it is written on). Columns A and G are empty boxes. About 34 entries fit a page; a page break never splits a row (rows are single-line: the name cell does not wrap, a very long name shrinks to fit: <code>style:shrink-to-fit="true"</code>).</li>
+      <li><b>End:</b> the total row, then the „Wpłaty potwierdzone” line; both stay together (<code>fo:keep-with-next</code> is not available for rows, so nothing is forced: if they fall alone on a last page that is accepted).</li>
+      <li><b>Print range:</b> the sheet's <code>table:print-ranges</code> is A1:G{last row}, so an accidental note typed far to the right does not add pages. The page footer is the shared one: event · title and date · „Strona X z Y”.</li>
+      <li><b>Proof:</b> the LibreOffice PDF of this sheet for a 105-entry sample goes on the picture sheet; the tool asserts its page count (4 for 105 entries) and that the PDF's page size is A4.</li>
+    </ul>
+
+    <h3>Formulas are live, with their values stored</h3>
+    <p>An organiser who changes a fee in C11–C13 sees every total follow. Each formula cell carries both <code>table:formula</code> and the computed value from the model (<code>office:value-type="float" office:value="…"</code>), so a viewer that does not recalculate shows the same numbers. OpenFormula syntax: <code>of:=SUM([.B11:.B13])</code>; the other sheet always quoted: <code>[$'Zgłoszenia'.$H$2:.$H$N]</code> (N = last entry row, at least 2).</p>
+    <div class="tablewrap"><table><thead><tr><th>Cell</th><th>Formula (Polish sheet names; N = last entry row)</th></tr></thead><tbody>
+      <tr><td>B11 (B12, B13)</td><td><code>of:=COUNTIF([$'Zgłoszenia'.$H$2:.$H$N];1)</code> (2, 3)</td></tr>
+      <tr><td>C12, C13 when the tier is not set</td><td><code>of:=2*[.C11]</code>, <code>of:=3*[.C11]</code>; otherwise the plain fee</td></tr>
+      <tr><td>D11</td><td><code>of:=[.B11]*[.C11]</code></td></tr>
+      <tr><td>B18 (women, épée starts)</td><td><code>of:=SUMPRODUCT(([$'Zgłoszenia'.$C$2:.$C$N]="K")*([$'Zgłoszenia'.$E$2:.$E$N]=1))</code></td></tr>
+      <tr><td>C18 (women, épée revenue)</td><td><code>of:=SUMPRODUCT(([$'Zgłoszenia'.$C$2:.$C$N]="K")*([$'Zgłoszenia'.$E$2:.$E$N]=1)*[$'Zgłoszenia'.$I$2:.$I$N]/[$'Zgłoszenia'.$H$2:.$H$N])</code></td></tr>
+      <tr><td>D18, E18</td><td>the same with „M”; rows 19, 20 with columns F, G of the entries sheet</td></tr>
+      <tr><td>I2 (entries sheet)</td><td><code>of:=CHOOSE([.H2];[$'Prognoza'.$C$11];[$'Prognoza'.$C$12];[$'Prognoza'.$C$13])</code></td></tr>
+    </tbody></table></div>
+    <p>With no entries the entries sheet has its header and the total row only; ranges use row 2 (empty) and every figure is 0. With no fee at all, C11–C13 are empty and the money cells show 0,00.</p>
+
+    <h3>Print setup (<code>styles.xml</code>)</h3>
+    <ul>
+      <li>One <code>style:page-layout</code>: A4 portrait (<code>fo:page-width="210mm" fo:page-height="297mm" style:print-orientation="portrait"</code>), all margins 15 mm, <code>style:table-centering="horizontal"</code>. No scaling: the columns are sized to the printable width.</li>
+      <li>One <code>style:master-page</code> „Report” using it, no header (<code>style:display="false"</code>), a footer in 8pt notes colour: left the event's name, centre the report title and „stan na …”, right „Strona” <code>&lt;text:page-number/&gt;</code> „z” <code>&lt;text:page-count/&gt;</code> (“Page … of …”).</li>
+      <li>All three sheets' table styles name <code>style:master-page-name="Report"</code>. No grid lines are printed (the default).</li>
+    </ul>
+    <h3>Money format</h3>
+    <p>One <code>number:number-style</code>: two decimals, grouping on, followed by a space and the currency code as text (PLN, EUR, GBP…): 7 950,00 EUR in a Polish LibreOffice. Counts use a plain integer style. Values are written unrounded.</p>
+
+    <h3>Tests and the proof by LibreOffice</h3>
+    <ul>
+      <li>Vitest <code>frontend/tests/revenueReportOds.test.ts</code> (REVFC.21–25): unzip the bytes with <code>unzipSync</code>, parse the XML with <code>DOMParser</code>, and check structure, values, formulas, styles and page setup. REVFC.21 also reads the raw first bytes: the first zip entry is named <code>mimetype</code> and its compression method is 0.</li>
+      <li>A local tool (not CI, LibreOffice is not there): <code>doc/plans/event-revenue-forecast-sheet/tools/ods_check.sh</code> writes a sample .ods from invented data (a small Node script importing the module through Vitest's runner or <code>npx tsx</code>), then runs <code>soffice --headless --convert-to pdf</code> and <code>--convert-to xlsx</code>. Read the .xlsx back with SheetJS and assert every recalculated total on all three sheets equals the model (and that typing „x” into two cells of the roster's column G gives 2 and the sum of their fees): this proves the formulas, not just their text. The PDF pages go on the picture sheet. <b>Do this before polishing anything else</b>: if LibreOffice shows a repair dialog or a wrong value, the XML is wrong.</li>
+      <li>If „✓” by number style does not render in LibreOffice, fall back to the text „✓” in a string cell and <code>COUNTA</code>/<code>&lt;&gt;""</code> in the formulas, and note it as a numbered issue.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Step 4</p>
+    <h2>The report page</h2>
+    <ul>
+      <li><b>api.ts</b> (tests first in <code>frontend/tests/api.registration.test.ts</code>, REVFC.11–12):
+<pre>export async function fetchRevenueReport(eventId: number, token: string): Promise&lt;RevenueReportRaw | null&gt;
+//   rpc('fn_event_revenue_report', { p_id_event: eventId, p_token: token }); an error or null → null
+export async function fetchEventReportToken(eventId: number): Promise&lt;string | null&gt;
+//   from('tbl_event_report_token').select('uuid_token').eq('id_event', eventId).is('ts_revoked', null).maybeSingle(); error → null
+export async function issueEventReportToken(eventId: number): Promise&lt;string&gt;
+//   rpc('fn_issue_event_report_token', { p_id_event: eventId }); throws on error</pre>
+        A database without the function yet (the pages are published before PROD's migration) answers an error: that reads as „link not active”, never a broken page.</li>
+      <li><b>Component</b> <code>frontend/src/components/RevenueReport.svelte</code>, props <code>{ eventCode: string; token: string }</code>. It reads the event with <code>fetchEventForRegistration(eventCode)</code> (name, dates, place), then <code>fetchRevenueReport</code>, then <code>buildRevenueModel</code>. States: loading · event not found (<code>reg_event_not_found</code>) · „link not active” (null answer or no token) · the report. Blocks in the sheet's order with the same words: title, event, dates · place, „stan na … · na podstawie zgłoszeń, nie wpłat”, the three figures, the tier table, the weapon × gender table, the notes, then the entries table (R4). <code>LangToggle</code> top right and a primary button „Pobierz .ods” / “Download .ods” that builds the file from the model already on screen after re-reading the report (so the file is of that minute) and saves it with a Blob and a temporary <code>&lt;a download&gt;</code>.</li>
+      <li><b>Look (Q1 A):</b> white card max 900 px on a light grey page, the palette and fonts of section 04, tables with the same header fill, hairlines, total row and striped entries. Phone: tables scroll sideways inside the card; no horizontal page scroll. <code>@media print</code>: hide the switch and the button, no shadows, A4 margins. Dates with <code>Intl.DateTimeFormat</code> (<code>pl-PL</code> / <code>en-GB</code>, <code>Europe/Warsaw</code>), as <code>FtlExport.svelte</code> does.</li>
+      <li><b>Element</b> <code>frontend/src/ce/RevenueReportElement.svelte</code>, tag <code>spws-revenue-report</code>, copied from <code>EntryListElement.svelte</code> (the Supabase attributes, <code>event</code>, <code>demo</code>, synchronous <code>initClient</code>); it takes the key from a <code>k</code> attribute, else from <code>?k=</code> in the address. Register it in <code>main.ce.ts</code>. In <code>frontend/register.html</code> add <code>view === 'revenue' ? 'spws-revenue-report'</code> and give that element the same attributes the entry list gets. Find the existing test that covers the <code>view</code> switch (search the tests for <code>spws-ftl-export</code>) and extend it (REVFC.30).</li>
+      <li><b>Texts</b> in <code>pl.json</code> and <code>en.json</code>, keys <code>rev_*</code>: title, as-of line, the three figure labels, both section titles, all column headers, „1 broń / 2 bronie / 3 bronie”, „Razem”, the three notes, „Lista zgłoszeń”, download button, „Ten link nie jest aktywny. Poproś administratora o nowy.” / “This link is not active. Ask the administrator for a new one.”, „Brak zgłoszeń.” Polish wording exactly as in section 04.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Step 5</p>
+    <h2>The administrator's link</h2>
+    <h3>A · The event form (<code>EventManager.svelte</code>), tests REVFC.26–27</h3>
+    <ul>
+      <li>Right after the <code>form-entry-list-url</code> label, a block <code>data-field="form-revenue-link"</code> with the label „Link do prognozy przychodu (dla organizatora)”.</li>
+      <li>It is active only when the <b>stored</b> event has our registration on (<code>event.bool_use_spws_registration</code>, not the unsaved box); otherwise a muted line „Dostępne po włączeniu i zapisaniu rejestracji SPWS.”</li>
+      <li>When the form opens for an existing event: <code>fetchEventReportToken(id)</code> (guard against the form having moved to another event, as <code>fetchEventShowSeed</code> does). No key: one button „Utwórz link” (<code>form-revenue-create</code>) → <code>issueEventReportToken</code>. With a key: a read-only input (<code>form-revenue-url</code>) holding <code>reportUrl(base, code, token)</code> where <code>base</code> is built exactly as in <code>onToggleSpwsRegistration()</code>, and three buttons: „Kopiuj” (<code>navigator.clipboard.writeText</code>, the label turns to „Skopiowano” for 2 s), „Otwórz” (an <code>&lt;a target="_blank" rel="noopener noreferrer"&gt;</code>), „Nowy link” (asks <code>confirm(t('rev_link_replace_confirm'))</code>: „Poprzedni link przestanie działać. Utworzyć nowy?”, then issues).</li>
+      <li>Under it a hint: „Każdy, kto ma ten link, widzi prognozę. „Nowy link” unieważnia poprzedni.” A failed call shows its message in the block; nothing else in the form changes, and saving the form does not touch the key.</li>
+      <li>The block must not widen the section (I32): the input has <code>min-width: 0; width: 100%</code>, the buttons wrap, the hint has <code>contain: inline-size</code> and a whole-pixel line height.</li>
+    </ul>
+    <h3>B · The card (<code>EventCard.svelte</code>, <code>CalendarView.svelte</code>), tests REVFC.28–29</h3>
+    <ul>
+      <li><code>EventCard</code> gets two optional props: <code>isAdmin = false</code> and <code>onopenrevenue?: (event) =&gt; void</code>. After the entry-list pill, when <code>isAdmin &amp;&amp; event.bool_use_spws_registration</code>: a pill of kind <code>revenue-link</code>, label <code>t('rev_pill')</code> („Prognoza przychodu” / “Revenue forecast”), <code>href="#"</code>, whose click calls <code>onopenrevenue</code>.</li>
+      <li><code>CalendarView</code> passes <code>isAdmin</code> and a handler: open a blank tab <b>at once</b> in the click (<code>const w = window.open('', '_blank')</code>; browsers block a tab opened after waiting), then <code>fetchEventReportToken</code>, or <code>issueEventReportToken</code> when there is none, then <code>w.location.href = reportUrl(…)</code>; on failure close the tab and show the error the way the view shows other errors.</li>
+      <li>The public calendar never passes <code>isAdmin</code>: a test renders the card without it and finds no pill.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Step 6</p>
+    <h2>Picture sheet, documents, gates</h2>
+    <ul>
+      <li><b>Picture sheet</b> <code>doc/plans/event-revenue-forecast-sheet-&lt;date&gt;.html</code>, tools under <code>doc/plans/event-revenue-forecast-sheet/tools/</code>, reusing the release tools in <code>doc/plans/entry-list-ranking-place-sheet/tools/</code> (<code>capture.cjs</code>, <code>capture_form.cjs</code> with its form harness, <code>rowmap.py</code>, <code>build_sheet.py</code>). Main against the branch, each build captured twice and proven stable. Must be <b>pixel-identical to main</b>: the entry list (all six states), the registration form's first step, the visitor's event card. <b>New look, shown</b>: the report page (desktop, phone, PL, EN; a full event, an event with a missing tier, no entries, the „link not active” page); the event form with the block in its three states (row map: identical above, identical below by the inserted height); the signed-in card with the pill; and the <b>printed .ods as PDF pages</b> from LibreOffice (all three sheets) beside the report page, PL and EN.</li>
+      <li><b>ADR drafts</b> (status „Draft (proposed &lt;date&gt;; awaiting sign-off)”; author the .md, then <code>python3 scripts/render_adrs.py</code>; never edit the .html): an amendment to <b>ADR-079</b> (FR-176: the report, declared not paid, the fee rule in the database, equal shares, what a key holder reads) and to <b>ADR-095</b> (a second kind of key: per event, created and replaced by the administrator in the form; replaced by stamping <code>ts_revoked</code>; the FTL key is unchanged). Alternatives to record: reuse the FTL key (rejected: opens every event), SheetJS (values only), a no-show scenario (an invented percentage).</li>
+      <li><b>RTM:</b> row FR-176 („An organiser reads an event's declared revenue from a link with a key…”, traces FR-122, FR-123, ADR-079, ADR-095; tests REVFC.01–31) and a section „Event revenue forecast (REVFC.*)”. <code>EXPECTED=175</code>. <b>Spec:</b> pgTAP total 1872 + the assertions of test 141; Appendix C rows of ADR-079 and ADR-095. Render with <code>python3 scripts/render_docs.py</code>.</li>
+      <li><b>Handbook</b>, present tense: <code>reference/registration-lifecycle.html</code> (a paragraph on the forecast and its link), <code>subsystems/events-and-registration.html</code> (implementation-map rows: the table, the three functions, <code>revenueReport.ts</code>, <code>revenueReportOds.ts</code>, the component and element), <code>reference/security-posture.html</code> (39 functions; a row for <code>fn_event_revenue_report</code>), <code>product/product-surfaces.html</code> if it lists the public pages. Run <code>python3 scripts/check_docs.py</code>.</li>
+      <li><b>Gates:</b> <code>scripts/preflight.sh</code> all green. Commit („Event revenue forecast: a report of declared fees, by link”). Stop and report.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · The tests</p>
+    <h2>REVFC.01–31</h2>
+    <div class="tablewrap"><table><thead><tr><th>ID</th><th>What it proves</th><th>Where</th></tr></thead><tbody>
+      <tr><td>REVFC.01</td><td>The key table has exactly its four columns and row security; a visitor cannot read it; a signed-in administrator can read, and cannot insert, update or delete directly.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.02</td><td>An event holds at most one live key (a second live row is refused).</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.03</td><td>Issuing returns a key; issuing again returns another and stamps the first as replaced, keeping its row; an event without our registration and an unknown event are refused; a visitor cannot call it.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.04</td><td>The fee rule: set tiers give the tier; a missing tier gives the one-weapon fee × weapons; no one-weapon fee gives nothing; 0 or 4 weapons give nothing.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.05</td><td>The report answers NULL for no key, an unknown key, a replaced key, and another event's live key.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.06</td><td>With the live key: one entry per registration with its weapons, gender, category and fee by the rule.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.07</td><td>The answer carries the three tier fees, which were filled by the rule, and the currency (PLN when the event states none).</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.08</td><td>An entry in the answer has exactly its seven keys: no birth year, club, e-mail hash, edit token, country or fencer id.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.09</td><td>A live key and no entries gives an empty list, not NULL.</td><td>pgTAP 141</td></tr>
+      <tr><td>REVFC.10</td><td>A visitor may call the report and neither of the other two functions; the allowlist (52.7) holds 39 names in both files.</td><td>pgTAP 141, 52</td></tr>
+      <tr><td>REVFC.11</td><td><code>fetchRevenueReport</code> sends the event and the key and returns the answer; an error or NULL returns null.</td><td>Vitest · api.registration.test.ts</td></tr>
+      <tr><td>REVFC.12</td><td><code>fetchEventReportToken</code> reads the live key (null on none or an error); <code>issueEventReportToken</code> returns the new key and throws on a refusal.</td><td>Vitest · api.registration.test.ts</td></tr>
+      <tr><td>REVFC.13</td><td>The tier table: entries, fee and total per tier, three rows always, totals.</td><td>Vitest · revenueReport.test.ts</td></tr>
+      <tr><td>REVFC.14</td><td>Weapon × gender: starts and equal shares; every cell total and the grand total add up exactly (fee 100, three weapons).</td><td>Vitest · revenueReport.test.ts</td></tr>
+      <tr><td>REVFC.15</td><td>The entries are in the entry list's order (Polish letters, a title ignored), each with its fee.</td><td>Vitest · revenueReport.test.ts</td></tr>
+      <tr><td>REVFC.16</td><td>Entries priced by the missing-tier rule are counted; an event without a fee gives counts and no money (<code>hasFees</code> false); <code>formatMoney</code> and <code>reportUrl</code>.</td><td>Vitest · revenueReport.test.ts</td></tr>
+      <tr><td>REVFC.17</td><td>The page shows the head, the three figures, both tables and the entries, in Polish and English, money with two decimals and the currency.</td><td>Vitest · RevenueReport.test.ts</td></tr>
+      <tr><td>REVFC.18</td><td>No key or a NULL answer shows „link not active” and no number; an unknown event shows „not found”; a live key without entries shows the report with zeros and „Brak zgłoszeń.”</td><td>Vitest · RevenueReport.test.ts</td></tr>
+      <tr><td>REVFC.19</td><td>The notes: the equal-share line always; the missing-tier line with its count only when used; the no-fee line instead of money.</td><td>Vitest · RevenueReport.test.ts</td></tr>
+      <tr><td>REVFC.20</td><td>The download re-reads the report and builds the file from that model, named by event, date and language.</td><td>Vitest · RevenueReport.test.ts</td></tr>
+      <tr><td>REVFC.21</td><td>The file is a zip whose first entry is <code>mimetype</code>, stored, with the spreadsheet type; the manifest lists the four parts.</td><td>Vitest · revenueReportOds.test.ts</td></tr>
+      <tr><td>REVFC.22</td><td><code>content.xml</code> is well-formed; three sheets named by language, in the order forecast, entries, roster; every stored value equals the model.</td><td>Vitest · revenueReportOds.test.ts</td></tr>
+      <tr><td>REVFC.23</td><td>The formulas of section 04 stand in their cells, with ranges ending at the last entry row.</td><td>Vitest · revenueReportOds.test.ts</td></tr>
+      <tr><td>REVFC.24</td><td>Design and print: column widths add to 180 mm on all three sheets; the header and total styles carry their fills and borders; A4 portrait with 15 mm margins; the footer has the page number and count; the entries and roster headers repeat.</td><td>Vitest · revenueReportOds.test.ts</td></tr>
+      <tr><td>REVFC.25</td><td>Names with <code>&amp;</code>, <code>&lt;</code> and quotes are escaped; a missing tier writes its formula and note; no entries and no fee still give a valid file.</td><td>Vitest · revenueReportOds.test.ts</td></tr>
+      <tr><td>REVFC.26</td><td>The form's block: inactive without stored registration; „Utwórz link” issues a key and shows the link; an existing key is shown when the form opens.</td><td>Vitest · EventManager.test.ts</td></tr>
+      <tr><td>REVFC.27</td><td>„Kopiuj” copies the link; „Otwórz” points at it in a new tab; „Nowy link” asks, and only on yes replaces the link; saving the form sends nothing about the key.</td><td>Vitest · EventManager.test.ts</td></tr>
+      <tr><td>REVFC.28</td><td>The card shows the pill only for a signed-in administrator at an event with our registration; a visitor's card has none.</td><td>Vitest · EventCard / CalendarView tests</td></tr>
+      <tr><td>REVFC.29</td><td>The pill opens the report's address in a new tab, with the existing key, or a new one when there is none.</td><td>Vitest · CalendarView.test.ts</td></tr>
+      <tr><td>REVFC.30</td><td><code>register.html?view=revenue</code> mounts <code>spws-revenue-report</code> with the event and the key; other views mount what they did.</td><td>Vitest · the existing register.html test</td></tr>
+      <tr><td>REVFC.31</td><td>The roster sheet: seven columns in the stated order with their headers; one row per entry in the entries sheet's order; the tick in exactly the column of its weapon count; the fee refers to the entries sheet; columns A and G are empty boxes; the total row and the „Wpłaty potwierdzone” line carry their formulas; rows are 7 mm high; the two head rows repeat on each page; the print range is A1:G of the last row; the name cell shrinks to fit.</td><td>Vitest · revenueReportOds.test.ts</td></tr>
+    </tbody></table></div>
+    <p>Existing tests that mock <code>../src/lib/api</code> and render <code>EventManager</code>, <code>CalendarView</code> or <code>EventCard</code> need the three new functions in their mocks (default: no key). Run the whole suite and leave no „unhandled” error, as with FR-175.</p>
+  </section>
+
+  <section>
+    <p class="kicker">09 · After your go</p>
+    <h2>Release and proof</h2>
+    <ol>
+      <li>You approve the picture sheet and the two ADR drafts; they are marked Accepted and re-rendered.</li>
+      <li>Integrate (<code>scripts/integrate-agent-branch.sh</code> in the integration checkout), check the merged tree equals the tested branch, push <code>integration/main:main</code>; CI and Release watched to the end in the foreground.</li>
+      <li>Read-only on CERT and PROD: the table and functions exist; no key rows; a visitor may call only the report; the report answers NULL for a made-up key.</li>
+      <li>You create the link for Łomianki on PROD's admin page and open it; I compare its three figures with a read-only count of the entries and fees on PROD, then open the downloaded .ods in LibreOffice.</li>
+      <li>Release record (RTM rows → Released) on your word.</li>
+    </ol>
+  </section>
+
+  <p class="foot">build plan · event revenue forecast (FR-176) · 22 Nov 2026 · rev 3 (roster tab added and designed for A4 print on the user's word) · business part signed 22 Nov (event-revenue-forecast-brainstorm-2026-11-22.html, R1–R10 A) · Q1 = A, signed 22 Nov 2026 · no code written · read for this plan on main 7888cc35: RegistrationForm.svelte, register.html, EntryListElement.svelte, main.ce.ts, EventManager.svelte, EventCard.svelte, CalendarView.svelte, export.ts, package.json, api.ts, migration 20260912000004, tbl_registration and vw_registration_entry_list on LOCAL, tests 52 and 140</p>
+</div>
+</body>
+</html>

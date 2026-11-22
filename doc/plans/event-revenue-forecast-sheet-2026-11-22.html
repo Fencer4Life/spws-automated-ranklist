@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue forecast · picture sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  /* This sheet's pictures. */
+  figure{margin:0}
+  figure img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#0b1220}
+  figcaption{font-size:15px;color:var(--faint);margin:6px 0 0;font-family:var(--mono)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px;margin:20px 0}
+  .pair{margin:30px 0;padding-top:16px;border-top:1px solid var(--line)}
+  .pairhead{font-weight:800;margin:0 0 10px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .foot{font-family:var(--mono);font-size:13px;color:var(--faint);margin-top:60px}
+  details{margin:14px 0}
+  summary{cursor:pointer;font-weight:700}
+  .cols3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;align-items:start}
+  @media (max-width:640px){.cols{grid-template-columns:1fr}.wrap{padding:36px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">FR-176 · picture sheet · 22 Nov 2026</p>
+  <h1>The event revenue forecast</h1>
+  <p class="dek">Built to the signed plan (rev 3, Q1 = A). <b>Everything that must not change is identical to main (52 of 52 images, 0 pixels).</b> New: the report page, the printed .ods, a link block in the event form and a pill on a signed-in administrator's event card. Nothing is pushed.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>branch claude/event-revenue-forecast</span>
+    <span class="pill warn"><span class="dot"></span>awaiting your sign-off: this sheet and two ADR drafts</span>
+  </div>
+
+  <section>
+    <p class="kicker">01 · What you decide</p>
+    <h2>Three sign-offs before the push</h2>
+    <ol class="steps">
+      <li><b>This sheet.</b> The new look (sections 03–06) and the proof that nothing else changed (02).</li>
+      <li><b>The ADR-079 amendment of 2026-11-22 (FR-176), status Draft.</b> Declared, not paid; the fee rule in the database (<code>fn_registration_fee</code>); equal shares; what a key holder reads. <a href="../adr/079-event-self-registration-identity.html">ADR-079</a>.</li>
+      <li><b>The ADR-095 amendment of 2026-11-22 (FR-176), status Draft.</b> A second kind of key: per event, created and replaced by the administrator, stamped <code>ts_revoked</code> when replaced; the FTL key unchanged. <a href="../adr/095-ftl-export-token-lifecycle.html">ADR-095</a>.</li>
+    </ol>
+    <div class="note accent"><p class="lede">Recommendation</p><p>Approve all three, then give the word to release. The build follows the plan; section 07 lists where it differs from the plan's text and why. Two of those differences are for you to confirm: the roster column headed „Wpłata potw.” (I34) and the guarded division in the weapon × gender formulas.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Must not change</p>
+    <h2>Identical to main: 52 of 52</h2>
+    <p>Main (62513ca1) and this branch were built for production (<code>vite.config.ce.ts</code>) and photographed by the same scripts with software drawing. Each build was captured twice and the two runs match: entry list 48 of 48, pages 4 (main) and 20 (branch), event form 6, card 4. Any difference below is therefore the change itself. All data is invented and no database is read.</p>
+    <div class="tablewrap"><table><thead><tr><th>Surface</th><th>Images</th><th>Main vs branch</th></tr></thead><tbody>
+<tr><td>Entry list: standalone page and calendar modal, six states</td><td>48 of 48</td><td><span class="chip never">identical · 0 px</span></td></tr>
+<tr><td>Registration form, first step</td><td>2 of 2</td><td><span class="chip never">identical · 0 px</span></td></tr>
+<tr><td>The visitor&#x27;s event card on the public calendar</td><td>2 of 2</td><td><span class="chip never">identical · 0 px</span></td></tr>
+    </tbody></table></div>
+    <p>The entry list counts all six FR-175 states on both surfaces, at desktop (1280) and phone (375) widths, in Polish and English. One copy of each surface is shown below; main and the branch are the same pixels.</p>
+    <div class="grid">
+<figure><img src="event-revenue-forecast-sheet/images/same-entry-list-desktop.png" alt="Entry list · desktop · identical to main" loading="lazy"><figcaption>Entry list · desktop · identical to main</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/same-entry-list-phone.png" alt="Entry list · phone · identical to main" loading="lazy"><figcaption>Entry list · phone · identical to main</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/same-reg-desktop.png" alt="Registration, step 1 · desktop · identical to main" loading="lazy"><figcaption>Registration, step 1 · desktop · identical to main</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/same-reg-phone.png" alt="Registration, step 1 · phone · identical to main" loading="lazy"><figcaption>Registration, step 1 · phone · identical to main</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/same-card-desktop.png" alt="Visitor&#x27;s card · desktop · identical to main (no pill)" loading="lazy"><figcaption>Visitor's card · desktop · identical to main (no pill)</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/same-card-phone.png" alt="Visitor&#x27;s card · phone · identical to main (no pill)" loading="lazy"><figcaption>Visitor's card · phone · identical to main (no pill)</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The report page</p>
+    <h2>A light document, the same blocks and words as the sheet</h2>
+    <p><code>register.html?event=…&amp;view=revenue&amp;k=&lt;key&gt;</code> shows a white card, at most 900 px wide, on a light grey page, with the entry list's PL/EN switch and „Pobierz .ods”. The blocks follow the spreadsheet: the head, three figures, the two tables, the notes, then the entries. On a phone the tables scroll sideways inside the card, and none of the 16 captures scrolls the page sideways.</p>
+<div class="pair"><p class="pairhead">Every tier set (200 / 250 / 300 PLN), 14 entries</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/report__desktop__pl__1-full.png" alt="desktop · Polish" loading="lazy"><figcaption>desktop · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__desktop__en__1-full.png" alt="desktop · English" loading="lazy"><figcaption>desktop · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__pl__1-full.png" alt="phone · Polish" loading="lazy"><figcaption>phone · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__en__1-full.png" alt="phone · English" loading="lazy"><figcaption>phone · English</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">No price for two weapons: 2 × 200 PLN, with its note</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/report__desktop__pl__2-missing-tier.png" alt="desktop · Polish" loading="lazy"><figcaption>desktop · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__desktop__en__2-missing-tier.png" alt="desktop · English" loading="lazy"><figcaption>desktop · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__pl__2-missing-tier.png" alt="phone · Polish" loading="lazy"><figcaption>phone · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__en__2-missing-tier.png" alt="phone · English" loading="lazy"><figcaption>phone · English</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">A live key, no entries yet</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/report__desktop__pl__3-no-entries.png" alt="desktop · Polish" loading="lazy"><figcaption>desktop · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__desktop__en__3-no-entries.png" alt="desktop · English" loading="lazy"><figcaption>desktop · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__pl__3-no-entries.png" alt="phone · Polish" loading="lazy"><figcaption>phone · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__en__3-no-entries.png" alt="phone · English" loading="lazy"><figcaption>phone · English</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">A replaced or wrong key: „link not active”</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/report__desktop__pl__4-not-active.png" alt="desktop · Polish" loading="lazy"><figcaption>desktop · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__desktop__en__4-not-active.png" alt="desktop · English" loading="lazy"><figcaption>desktop · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__pl__4-not-active.png" alt="phone · Polish" loading="lazy"><figcaption>phone · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/report__phone__en__4-not-active.png" alt="phone · English" loading="lazy"><figcaption>phone · English</figcaption></figure></div></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · The .ods, printed by LibreOffice</p>
+    <h2>Three sheets on A4, beside the page</h2>
+    <p>These are the PDF pages LibreOffice printed from the file, as written by <code>buildRevenueOds</code>. <code>tools/ods_check.sh</code> proves the formulas, not just their text. It overwrites every stored formula value with −1, lets LibreOffice recalculate on load, and reads the results back. <b>All 1,004 checks pass</b>: every total on all three sheets for six samples, no error cell in an empty sheet, typing „x” into two roster boxes counts 2 and adds their fees, the forecast fits one page, the 105-entry roster takes 4 pages, and every page is A4. The headless LibreOffice runs in English, so these prints show „1,360.00 EUR”; a Polish LibreOffice shows „1 360,00 EUR”.</p>
+<div class="pair"><p class="pairhead">Polish: the page and the three printed sheets</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/beside-page-pl.png" alt="The page · Polish" loading="lazy"><figcaption>The page · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-full-pl-forecast.png" alt="Printed .ods · forecast · Polish" loading="lazy"><figcaption>Printed .ods · forecast · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-full-pl-entries.png" alt="Printed .ods · entries · Polish" loading="lazy"><figcaption>Printed .ods · entries · Polish</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-full-pl-roster.png" alt="Printed .ods · roster · Polish" loading="lazy"><figcaption>Printed .ods · roster · Polish</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">English: the page and the three printed sheets</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/beside-page-en.png" alt="The page · English" loading="lazy"><figcaption>The page · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-full-en-forecast.png" alt="Printed .ods · forecast · English" loading="lazy"><figcaption>Printed .ods · forecast · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-full-en-entries.png" alt="Printed .ods · entries · English" loading="lazy"><figcaption>Printed .ods · entries · English</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-full-en-roster.png" alt="Printed .ods · roster · English" loading="lazy"><figcaption>Printed .ods · roster · English</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">Two edge cases</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/ods-missing-pl-forecast.png" alt="Missing tiers: the formula 2 × C11 and its note" loading="lazy"><figcaption>Missing tiers: the formula 2 × C11 and its note</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-empty-pl-forecast.png" alt="No entries: zeros, no error cells" loading="lazy"><figcaption>No entries: zeros, no error cells</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">The roster for 105 entries: four A4 pages, the head on each</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/ods-big-roster-p1.png" alt="105 entries · roster · page 1 of 4" loading="lazy"><figcaption>105 entries · roster · page 1 of 4</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-big-roster-p2.png" alt="105 entries · roster · page 2 of 4" loading="lazy"><figcaption>105 entries · roster · page 2 of 4</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-big-roster-p3.png" alt="105 entries · roster · page 3 of 4" loading="lazy"><figcaption>105 entries · roster · page 3 of 4</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/ods-big-roster-p4.png" alt="105 entries · roster · page 4 of 4" loading="lazy"><figcaption>105 entries · roster · page 4 of 4</figcaption></figure></div></div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · The event form</p>
+    <h2>One block after the entry-list link</h2>
+    <p>„Link do prognozy przychodu (dla organizatora)” comes in three states. Each pair below is mapped row by row against main: rows above the block are identical in place, and every row below is identical, shifted by exactly the block's height. On desktop, after a whole-pixel shift, a handful of pixels inside native controls far from the block (the date input's calendar icon, the select's arrow) differ by at most 2/255. That is how the software rasteriser anti-aliases a native widget at another height; on a phone the same pairs are exact. The first build also left the block a fraction of a pixel tall, because of native buttons at 13.333 px. Its three controls are now 22 px. The block takes no width of its own (I32): the input may shrink, the buttons wrap, and the hint uses <code>contain: inline-size</code> with whole-pixel line heights.</p>
+    <div class="tablewrap"><table><thead><tr><th>State</th><th>Width</th><th>Inserted</th><th>Row map</th></tr></thead><tbody>
+<tr><td>Our registration stored on, no key yet: „Utwórz link”</td><td>desktop</td><td>+92 px</td><td><span class="chip warn">rows 0–495 identical in place; below, identical 92 px lower except 28 pixels in 7 rows, at most 2/255 in one colour channel (anti-aliasing of native controls)</span></td></tr>
+<tr><td>Our registration stored on, a key: the link, „Kopiuj”, „Otwórz”, „Nowy link”</td><td>desktop</td><td>+128 px</td><td><span class="chip warn">rows 0–495 identical in place; below, identical 128 px lower except 4 pixels in 1 rows, at most 2/255 in one colour channel (anti-aliasing of native controls)</span></td></tr>
+<tr><td>Our registration not stored on: the muted line</td><td>desktop</td><td>+48 px</td><td><span class="chip never">rows 0–495 identical in place; every row below identical 48 px lower</span></td></tr>
+<tr><td>Our registration stored on, no key yet: „Utwórz link”</td><td>phone</td><td>+92 px</td><td><span class="chip never">rows 0–1099 identical in place; every row below identical 92 px lower</span></td></tr>
+<tr><td>Our registration stored on, a key: the link, „Kopiuj”, „Otwórz”, „Nowy link”</td><td>phone</td><td>+128 px</td><td><span class="chip never">rows 0–1099 identical in place; every row below identical 128 px lower</span></td></tr>
+<tr><td>Our registration not stored on: the muted line</td><td>phone</td><td>+64 px</td><td><span class="chip never">rows 0–1099 identical in place; every row below identical 64 px lower</span></td></tr>
+    </tbody></table></div>
+<div class="pair"><p class="pairhead">Our registration stored on, no key yet: „Utwórz link” · desktop</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/form-main-desktop-a-registration-on-no-key.png" alt="Before (main)" loading="lazy"><figcaption>Before (main)</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/form-branch-desktop-a-registration-on-no-key.png" alt="After (this branch)" loading="lazy"><figcaption>After (this branch)</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">Our registration stored on, a key: the link, „Kopiuj”, „Otwórz”, „Nowy link” · desktop</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/form-main-desktop-b-registration-on-key.png" alt="Before (main)" loading="lazy"><figcaption>Before (main)</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/form-branch-desktop-b-registration-on-key.png" alt="After (this branch)" loading="lazy"><figcaption>After (this branch)</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">Our registration not stored on: the muted line · desktop</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/form-main-desktop-c-registration-off.png" alt="Before (main)" loading="lazy"><figcaption>Before (main)</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/form-branch-desktop-c-registration-off.png" alt="After (this branch)" loading="lazy"><figcaption>After (this branch)</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">Our registration stored on, no key yet: „Utwórz link” · phone</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/form-main-phone-a-registration-on-no-key.png" alt="Before (main)" loading="lazy"><figcaption>Before (main)</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/form-branch-phone-a-registration-on-no-key.png" alt="After (this branch)" loading="lazy"><figcaption>After (this branch)</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">Our registration stored on, a key: the link, „Kopiuj”, „Otwórz”, „Nowy link” · phone</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/form-main-phone-b-registration-on-key.png" alt="Before (main)" loading="lazy"><figcaption>Before (main)</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/form-branch-phone-b-registration-on-key.png" alt="After (this branch)" loading="lazy"><figcaption>After (this branch)</figcaption></figure></div></div>
+<div class="pair"><p class="pairhead">Our registration not stored on: the muted line · phone</p><div class="cols"><figure><img src="event-revenue-forecast-sheet/images/form-main-phone-c-registration-off.png" alt="Before (main)" loading="lazy"><figcaption>Before (main)</figcaption></figure><figure><img src="event-revenue-forecast-sheet/images/form-branch-phone-c-registration-off.png" alt="After (this branch)" loading="lazy"><figcaption>After (this branch)</figcaption></figure></div></div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · The event card</p>
+    <h2>„Prognoza przychodu” for a signed-in administrator only</h2>
+    <p>The card is mounted from the branch with an invented event that uses our registration. A signed-in administrator's card has the pill after „Lista zgłoszonych”. Clicking it opens a tab at once, finds the event's key (or creates one) and points the tab at the report. The visitor's card has no pill and is identical to main (section 02).</p>
+    <div class="cols">
+<figure><img src="event-revenue-forecast-sheet/images/cardh__desktop__pl__admin.png" alt="desktop · signed-in administrator: the pill" loading="lazy"><figcaption>desktop · signed-in administrator: the pill</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/cardh__desktop__pl__visitor.png" alt="desktop · visitor: no pill" loading="lazy"><figcaption>desktop · visitor: no pill</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/cardh__phone__pl__admin.png" alt="phone · signed-in administrator: the pill" loading="lazy"><figcaption>phone · signed-in administrator: the pill</figcaption></figure>
+<figure><img src="event-revenue-forecast-sheet/images/cardh__phone__pl__visitor.png" alt="phone · visitor: no pill" loading="lazy"><figcaption>phone · visitor: no pill</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Found while building</p>
+    <h2>Issues, each fixed here, and where the build differs from the plan</h2>
+    <ul>
+      <li><b>I33: the allowlist sync check read a fixed window.</b> <code>scripts/check-anon-allowlist-sync.sh</code> took the 140 lines above label 52.7. With this justification added, the list starts 150 lines up, so the check misread it. It now reads from the list's own <code>ARRAY[</code>, at any length.</li>
+      <li><b>I34: „Wpłata potwierdzona” did not fit.</b> In 18 mm it broke mid-word in LibreOffice („potwierdz / ona”). The header is now „Wpłata potw.”, as in the plan's own A4 mock, at 9 pt. The English header stays „Payment confirmed” and fits. <i>For you to confirm.</i></li>
+      <li><b>I35: the entries total printed as „###”.</b> The plan fixes the column widths to fill A4, and a bold four-figure sum with its currency did not fit 22 mm. Every money cell now shrinks to fit (REVFC.24).</li>
+      <li><b>I36: no test covered register.html's view switch.</b> The plan said to extend the existing one, but there was none. <code>frontend/tests/registerHtml.test.ts</code> now runs the page's own script for every view (REVFC.30).</li>
+      <li><b>I37: two test files differing only in case.</b> The plan names both <code>revenueReport.test.ts</code> (the module) and <code>RevenueReport.test.ts</code> (the page). On macOS, writing the second overwrote the first. The page's tests are <code>RevenueReportPage.test.ts</code>, and the RTM says so.</li>
+      <li><b>I38: <code>t()</code> filled only the first occurrence of a placeholder.</b> The missing-tier note names its number twice and came out as „przyjęto {n} ×”. <code>tIn</code> now fills every occurrence (<code>locale-interpolation.test.ts</code>, seen failing first).</li>
+      <li><b>I39: the Sidebar tests logged jsdom navigation notices.</b> Three „Not implemented: navigation” lines appeared on every run. The WP.NAV tests now read whether the component cancelled the link, then hold the navigation back. Their assertions are unchanged.</li>
+      <li><b>I40: the revenue figure overflowed on a phone.</b> „3100,00 PLN” at 24 px ran past its third of the card. On a phone it is now 17 px and may wrap before the currency (section 03).</li>
+      <li><b>I41: a worker worktree has no <code>.venv</code> and no <code>.env</code>.</b> Preflight's Python gates found no <code>python</code>. The cloud checks then read the environment's stale token, and the RAG re-index at session start failed for the same reason. All are untracked files of the primary checkout. They were linked into this worktree (gitignored, nothing committed), and preflight then passed. The cause, the session-start hook not linking them, is still open: proposed as a follow-up.</li>
+      <li><b>The division in the weapon × gender formulas is guarded.</b> The plan's <code>…*I/H</code> divides by zero for the empty row of an event without entries: LibreOffice gave an error, not 0. The divisor is now <code>(H+(H=0))</code>, which equals H for every real entry (REVFC.23, and no error cell in the LibreOffice proof). <i>For you to confirm.</i></li>
+      <li><b>The report page paints its own background.</b> register.html's body is dark navy for the other views. For <code>view=revenue</code> it is now the report's light grey, without the dark frame (Q1 = A; REVFC.30 checks both).</li>
+      <li><b>Wording lives in one place.</b> The .ods reads the same <code>rev_*</code> keys in <code>pl.json</code>/<code>en.json</code> as the page, so their words cannot drift apart.</li>
+      <li><b>„1 360,00” versus „1360,00”.</b> On the page, Polish money follows the browser's rule, which groups from five digits („7950,00”, „12 345,00”). LibreOffice groups from four. The numbers are equal, and only the spacing differs.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Gates</p>
+    <h2>Where it stands</h2>
+    <ul>
+      <li><code>scripts/preflight.sh</code>: <b>All gates passed</b>. Vitest 1,647 tests in 88 files, with no unhandled error and no jsdom notice. pytest 2,994 passed. pgTAP total 1,918 (46 of them REVFC in <code>141_event_revenue_report.sql</code>). postgrestools: 171 files, 0 findings. svelte-check: 0 errors, 0 warnings. The visitor allowlist holds 39 names, the same in both files.</li>
+      <li>Every REVFC test was seen failing before its code, except where its nature prevents it. „Saving sends nothing about the key” (REVFC.27), the visitor's card without a pill and an event without our registration (REVFC.28) passed before the code, as an absence does. The element test in <code>RevenueReportElement.test.ts</code> was written after the element; REVFC.30's register.html test was seen failing first.</li>
+      <li><b>Not done, on purpose:</b> no push and no integration. The ADR drafts are not Accepted. CERT and PROD hold neither the table nor the functions; preflight's own read-only checks were the only contact. The release steps of the plan's section 09 wait for your word.</li>
+    </ul>
+  </section>
+
+  <p class="foot">picture sheet · FR-176 · 22 Nov 2026 · generated by event-revenue-forecast-sheet/tools/build_sheet.py from capture.cjs, entry-list-ranking-place-sheet/tools/capture.cjs and ods_check.sh · plan doc/plans/event-revenue-forecast-2026-11-22.html rev 3</p>
+
+</div>
+</body>
+</html>

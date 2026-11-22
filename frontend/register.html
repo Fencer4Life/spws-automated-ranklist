@@ -54,6 +54,7 @@
       var tag =
         view === 'list' ? 'spws-entry-list'
         : view === 'export' ? 'spws-ftl-export'
+        : view === 'revenue' ? 'spws-revenue-report'
         : 'spws-registration';
       var el = document.createElement(tag);
       el.setAttribute('event', eventCode);
@@ -65,6 +66,15 @@
         // itself, so this is belt and braces for a host page that mounts the
         // element with its own attributes instead.
         el.setAttribute('token', params.get('k') || '');
+      }
+      if (tag === 'spws-revenue-report') {
+        // view=revenue is the organiser's revenue forecast (FR-176). ?k=<uuid> is
+        // the event's report key, checked inside the database function.
+        el.setAttribute('k', params.get('k') || '');
+        // The report is a light document (plan Q1 = A): the page around it is
+        // its own light grey, not the dark frame of the other views.
+        document.body.style.background = '#eef1f5';
+        document.body.style.padding = '0';
       }
       el.setAttribute('supabase-cert-url', root.getAttribute('supabase-cert-url') || '');
       el.setAttribute('supabase-cert-key', root.getAttribute('supabase-cert-key') || '');

@@ -122,6 +122,10 @@ describe('TR.02 — every key family built at runtime is complete', () => {
     { shape: 'ftl_w_*', keys: unionOf('lib/types.ts', 'WeaponType').map((w) => `ftl_w_${w}`), why: 'FTL weapon groups' },
     { shape: 'export_method_*', keys: unionOf('lib/scoring.ts', 'ScoreMethod').map((m) => `export_method_${m}`), why: 'export column' },
     { shape: 'sc_rules_warn_pool_*', keys: unionOf('lib/ranking-rules.ts', 'Pool').map((p) => `sc_rules_warn_pool_${p}`), why: 'admin rules warning' },
+    // FR-176 — the revenue forecast page (and its .ods, which reads the same keys).
+    { shape: 'rev_tier_*', keys: range(1, 3).map((n) => `rev_tier_${n}`), why: 'revenue forecast, entries by number of weapons' },
+    { shape: 'rev_w_*', keys: unionOf('lib/types.ts', 'WeaponType').map((w) => `rev_w_${w}`), why: 'revenue forecast weapons' },
+    { shape: 'rev_g_*', keys: unionOf('lib/types.ts', 'GenderType').map((g) => `rev_g_${g}`), why: 'revenue forecast gender letter' },
   ]
 
   /** Every key a call site builds at runtime, as its shape. */
@@ -181,6 +185,7 @@ describe('TR.03 — a value identical in PL and EN needs a reason', () => {
     season_skel_badge_created: 'a status code',
     event_status_created: 'a status code',
     reg_iban_label: CODE,
+    rev_g_M: 'the letter for a man, M in both languages',
     country_AT: SAME_NAME,
     country_LI: SAME_NAME,
     country_EE: SAME_NAME,

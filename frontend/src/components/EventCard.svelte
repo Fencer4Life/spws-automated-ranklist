@@ -194,6 +194,8 @@
     today = todayIso(),
     onopenregistration,
     onopenentrylist,
+    isAdmin = false,
+    onopenrevenue,
   }: {
     event: CalendarEvent
     isNextUpcoming?: boolean
@@ -201,6 +203,10 @@
     /** ADR-079 §7 — open RegistrationModal instead of navigating. */
     onopenregistration?: (event: CalendarEvent) => void
     onopenentrylist?: (event: CalendarEvent) => void
+    /** FR-176 — a signed-in administrator; the public calendar never sets it. */
+    isAdmin?: boolean
+    /** FR-176 — open the event's revenue forecast (CalendarView finds the key). */
+    onopenrevenue?: (event: CalendarEvent) => void
   } = $props()
 
   let copied = $state(false)
@@ -362,6 +368,21 @@
         onclick: (e: MouseEvent) => {
           e.preventDefault()
           onopenentrylist?.(event)
+        },
+      })
+    }
+
+    // FR-176 — the organiser's revenue forecast, for a signed-in administrator
+    // at an event with our registration. The key is found (or created) by the
+    // handler, so the pill has no address of its own.
+    if (isAdmin && event.bool_use_spws_registration) {
+      out.push({
+        kind: 'revenue-link',
+        label: t('rev_pill'),
+        href: '#',
+        onclick: (e: MouseEvent) => {
+          e.preventDefault()
+          onopenrevenue?.(event)
         },
       })
     }

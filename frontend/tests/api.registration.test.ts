@@ -30,6 +30,9 @@ import {
   fetchEntryRanks,
   fetchEventShowSeed,
   updateEventShowSeed,
+  fetchRevenueReport,
+  fetchEventReportToken,
+  issueEventReportToken,
 } from '../src/lib/api'
 
 beforeEach(() => {
@@ -437,5 +440,59 @@ describe('fetchEventShowSeed / updateEventShowSeed (FR-175, ELRANK.08)', () => {
 
     eq.mockResolvedValue({ error: { message: 'permission denied' } })
     await expect(updateEventShowSeed(9, false)).rejects.toMatchObject({ message: 'permission denied' })
+  })
+})
+
+// FR-176 — the event revenue forecast. The key in these tests is invented.
+const REPORT_KEY = '11111111-2222-4333-8444-555555555555'
+
+describe('fetchRevenueReport (FR-176, REVFC.11)', () => {
+  it('sends the event and the key and returns the answer', async () => {
+    const answer = { ts_generated: '2026-11-22T13:05:00Z', currency: 'PLN', fees: { '1': 70, '2': 110, '3': 150, fallback_2: false, fallback_3: false }, entries: [] }
+    mockRpc.mockResolvedValue({ data: answer, error: null })
+    expect(await fetchRevenueReport(9, REPORT_KEY)).toEqual(answer)
+    expect(mockRpc).toHaveBeenCalledWith('fn_event_revenue_report', { p_id_event: 9, p_token: REPORT_KEY })
+  })
+
+  it('reads an error or NULL as no report (a database without the function yet included)', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'function fn_event_revenue_report does not exist' } })
+    expect(await fetchRevenueReport(9, REPORT_KEY)).toBeNull()
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    expect(await fetchRevenueReport(9, REPORT_KEY)).toBeNull()
+  })
+})
+
+describe('fetchEventReportToken / issueEventReportToken (FR-176, REVFC.12)', () => {
+  function readChain(result: { data: unknown; error: unknown }) {
+    const maybeSingle = vi.fn().mockResolvedValue(result)
+    const is = vi.fn().mockReturnValue({ maybeSingle })
+    const eq = vi.fn().mockReturnValue({ is })
+    const select = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ select })
+    return { select, eq, is }
+  }
+
+  it('reads the event\'s live key', async () => {
+    const c = readChain({ data: { uuid_token: REPORT_KEY }, error: null })
+    expect(await fetchEventReportToken(9)).toBe(REPORT_KEY)
+    expect(mockFrom).toHaveBeenCalledWith('tbl_event_report_token')
+    expect(c.select).toHaveBeenCalledWith('uuid_token')
+    expect(c.eq).toHaveBeenCalledWith('id_event', 9)
+    expect(c.is).toHaveBeenCalledWith('ts_revoked', null)
+  })
+
+  it('reads none or an error as no key', async () => {
+    readChain({ data: null, error: null })
+    expect(await fetchEventReportToken(9)).toBeNull()
+    readChain({ data: null, error: { message: 'boom' } })
+    expect(await fetchEventReportToken(9)).toBeNull()
+  })
+
+  it('issues a key, and throws on a refusal', async () => {
+    mockRpc.mockResolvedValue({ data: REPORT_KEY, error: null })
+    expect(await issueEventReportToken(9)).toBe(REPORT_KEY)
+    expect(mockRpc).toHaveBeenCalledWith('fn_issue_event_report_token', { p_id_event: 9 })
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'REPORT_NEEDS_SPWS_REGISTRATION' } })
+    await expect(issueEventReportToken(9)).rejects.toMatchObject({ message: 'REPORT_NEEDS_SPWS_REGISTRATION' })
   })
 })

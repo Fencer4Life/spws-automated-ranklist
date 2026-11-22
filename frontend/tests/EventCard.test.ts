@@ -694,3 +694,29 @@ describe('EventCard — organizer comes from the row', () => {
     expect(logo.getAttribute('alt')).toBe('SPWS')
   })
 })
+
+// FR-176 — the revenue forecast pill, for a signed-in administrator only.
+describe('EventCard — the revenue forecast pill (REVFC.28)', () => {
+  const spws = { txt_code: 'PPW4-2026-2027', dt_start: '2026-09-19', bool_use_spws_registration: true,
+    url_entry_list: 'https://list.test' }
+  it('shows the pill after the entry-list pill for an administrator at an event with our registration', async () => {
+    const onopenrevenue = vi.fn()
+    const c = card(spws, { isAdmin: true, onopenrevenue })
+    const pill = c.querySelector('.revenue-link') as HTMLAnchorElement
+    expect(pill).not.toBeNull()
+    expect(pill.textContent?.trim()).toBe('Prognoza przychodu →')
+    expect(pill.getAttribute('href')).toBe('#')
+    const kinds = [...c.querySelectorAll('.pills .pl')].map((p) => p.classList[1])
+    expect(kinds.indexOf('revenue-link')).toBe(kinds.indexOf('entry-list-link') + 1)
+    await fireEvent.click(pill)
+    expect(onopenrevenue).toHaveBeenCalledTimes(1)
+    expect(onopenrevenue.mock.calls[0][0].txt_code).toBe('PPW4-2026-2027')
+  })
+  it('a visitor\'s card has none', () => {
+    expect(card(spws).querySelector('.revenue-link')).toBeNull()
+    expect(card(spws, { isAdmin: false }).querySelector('.revenue-link')).toBeNull()
+  })
+  it('an event without our registration has none, even for an administrator', () => {
+    expect(card({ ...spws, bool_use_spws_registration: false }, { isAdmin: true }).querySelector('.revenue-link')).toBeNull()
+  })
+})
