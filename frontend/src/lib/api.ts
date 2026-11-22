@@ -39,6 +39,7 @@ import type {
   ConfirmIdentityParams,
   IdentityProposal,
   FtlExportEvent,
+  EntryRank,
 } from './types'
 import type { ExportEntryRow, RosterRow } from './ftlSeedExport'
 
@@ -729,6 +730,38 @@ export async function fetchEntryList(eventId: number): Promise<RegistrationEntry
     .order('id_registration', { ascending: true })
   if (error) throw error
   return (data ?? []) as RegistrationEntry[]
+}
+
+// FR-175 — each start's place in the organiser's ranking, for the entry list.
+// Empty for an event whose administrator has not ticked the box. A database
+// that does not have the function yet (the page is published before PROD's
+// migration is approved) answers an error: that reads as "no ranks", never as
+// a broken list (ELRANK.07).
+export async function fetchEntryRanks(eventId: number): Promise<EntryRank[]> {
+  const { data, error } = await getClient().rpc('fn_registration_entry_ranks', { p_id_event: eventId })
+  if (error) return []
+  return (data ?? []) as EntryRank[]
+}
+
+// FR-175 — the administrator's switch, read and written like the event's status
+// (updateEventStatus): the table's own policy lets only a signed-in
+// administrator write (ELRANK.06, ELRANK.08).
+export async function fetchEventShowSeed(id: number): Promise<boolean> {
+  const { data, error } = await getClient()
+    .from('tbl_event')
+    .select('bool_show_seed')
+    .eq('id_event', id)
+    .maybeSingle()
+  if (error || !data) return false
+  return (data as { bool_show_seed: boolean }).bool_show_seed === true
+}
+
+export async function updateEventShowSeed(id: number, show: boolean): Promise<void> {
+  const { error } = await getClient()
+    .from('tbl_event')
+    .update({ bool_show_seed: show })
+    .eq('id_event', id)
+  if (error) throw error
 }
 
 // FR-166 — an administrator removes one entry from the entry list. The table's

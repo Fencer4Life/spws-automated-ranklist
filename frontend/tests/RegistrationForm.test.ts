@@ -13,6 +13,8 @@ vi.mock('../src/lib/api', () => ({
   createRegistration: vi.fn(),
   updateRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
+  // FR-175: no ranks, as for an event whose box is not ticked.
+  fetchEntryRanks: vi.fn(() => Promise.resolve([])),
   checkRegistrationName: vi.fn(),
   fetchNameSuggestions: vi.fn(),
   setRegistrationNameSource: vi.fn(),

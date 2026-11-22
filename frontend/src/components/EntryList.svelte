@@ -93,6 +93,7 @@
     <table>
       <thead>
         <tr>
+          {#if showRank}<th class="el-rank">#</th>{/if}
           <th>{t('reg_col_name')}</th>
           <th class="el-narrow">{t('reg_col_category')}</th>
           <th>{t('reg_col_weapon')}</th>
@@ -101,8 +102,12 @@
         </tr>
       </thead>
       <tbody>
-        {#each filteredRows as row (row.id_registration)}
+        {#each shownRows as row (row.id_registration)}
           <tr class:el-adminrow={canRemove}>
+            {#if showRank}
+              {@const place = rankOf.get(row.id_registration)?.int_rank}
+              <td class="el-rank" class:el-rank-none={place == null}>{place ?? '–'}</td>
+            {/if}
             <td class="el-name">{row.txt_surname} {row.txt_first_name}</td>
             <td>
               {#if row.enum_age_category}<span class="el-cat">{row.enum_age_category}</span>{/if}
@@ -152,6 +157,9 @@
   {/if}
 
   <p class="el-legend">{t('reg_weapon_legend')}</p>
+  {#if showRank}
+    <p class="el-legend el-rank-legend">{rankLegend}</p>
+  {/if}
 
   <!-- FR-166: the administrator's confirmation. It takes focus when it opens
        and handles Escape itself, because the calendar's modal stops key events
@@ -204,13 +212,14 @@
   import EntryEdit from './EntryEdit.svelte'
   import {
     fetchEntryList,
+    fetchEntryRanks,
     deleteRegistration,
     fetchAdminEntryDetails,
     fetchEventSeasonEndYear,
   } from '../lib/api'
   import { foldName } from '../lib/foldName'
   import { surnameWithoutTitle } from '../lib/registrationName'
-  import type { AdminEntryDetail, RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
+  import type { AdminEntryDetail, EntryRank, RegistrationEntry, WeaponType, GenderType, AgeCategory } from '../lib/types'
 
   let {
     eventId,
@@ -249,6 +258,8 @@
   } = $props()
 
   let rows = $state<RegistrationEntry[]>([])
+  // FR-175 — each start's place in the organiser's ranking (fn_event_seed_ranks).
+  let ranks = $state<EntryRank[]>([])
   let search = $state('')
   let weaponFilter = $state<WeaponType | ''>('')
   let categoryFilter = $state<AgeCategory | ''>('')
@@ -288,6 +299,9 @@
         byName.compare(surnameWithoutTitle(a.txt_surname), surnameWithoutTitle(b.txt_surname)) ||
         byName.compare(a.txt_first_name, b.txt_first_name),
     )
+    // FR-175: read with the list, so an edit that reloads one reloads both.
+    // Empty unless the event's box is ticked; a failure is "no ranks".
+    ranks = await fetchEntryRanks(eventId).catch(() => [])
   }
 
   $effect(() => {
@@ -306,6 +320,47 @@
       if (countryFilter && r.txt_country !== countryFilter) return false
       return true
     })
+  })
+
+  // FR-175 — the place of each listed entry on the ONE ranking list the three
+  // filters name. Empty unless weapon, category and gender are all chosen. The
+  // gender needs no check here: filteredRows already holds only that gender.
+  // A rank row of another category is not used (ELRANK.16).
+  const rankOf = $derived.by(() => {
+    const m = new Map<number, EntryRank>()
+    if (!weaponFilter || !categoryFilter || !genderFilter) return m
+    for (const r of ranks) {
+      if (r.enum_weapon === weaponFilter && r.enum_age_category === categoryFilter) m.set(r.id_registration, r)
+    }
+    return m
+  })
+
+  // The column shows only when the ranking covers at least one listed entry's
+  // start: the box ticked, three filters chosen, and not V0 at an EVF event.
+  const showRank = $derived(filteredRows.some((r) => rankOf.has(r.id_registration)))
+
+  // Ranked entries first, in seed order; the rest after them in the alphabet
+  // they already stand in (Array.prototype.sort is stable). The tiles keep
+  // counting filteredRows: the same rows, in another order.
+  const shownRows = $derived.by(() => {
+    if (!showRank) return filteredRows
+    const key = (r: RegistrationEntry) => rankOf.get(r.id_registration)?.int_seed_order ?? Number.POSITIVE_INFINITY
+    return [...filteredRows].sort((a, b) => key(a) - key(b))
+  })
+
+  // The line under the list: which ranking, and for EVF's when it was read.
+  const rankLegend = $derived.by(() => {
+    if (!showRank) return ''
+    const info = [...rankOf.values()][0]
+    if (info.txt_ranking === 'SPWS') return t('reg_rank_legend_spws')
+    if (!info.ts_ranking_read) return t('reg_rank_legend_evf_nodate')
+    const date = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'pl-PL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Europe/Warsaw',
+    }).format(new Date(info.ts_ranking_read))
+    return t('reg_rank_legend_evf', { date })
   })
 
   // Anything that narrows the list: search text (spaces alone do not count)
@@ -738,6 +793,21 @@
     font-size: 0.78em;
     margin-top: 12px;
   }
+  /* FR-175: the ranking place, first in the line, only while it is shown. */
+  .el-rank {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    font-weight: 700;
+    color: #ffd76a;
+  }
+  .el-rank-none {
+    color: #8894a8;
+    font-weight: 400;
+  }
+  .el-rank-legend {
+    margin-top: 4px;
+  }
 
   /* FR-169: the flag at the end of the line, 18px, never wrapping; no pill,
      border or background. A code with no drawn flag shows its letters (D1). */
@@ -919,6 +989,12 @@
     .el-flag {
       width: auto;
       flex: none;
+    }
+    /* FR-175: the place keeps one width down the list, right-aligned. */
+    .el-rank {
+      flex: none;
+      min-width: 2.2em;
+      justify-content: flex-end;
     }
     /* I25: a block, not the cells' inline-flex: a browser draws „…” only in
        a block, so a name that does not fit ends in „…” instead of a cut

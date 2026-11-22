@@ -8,6 +8,7 @@ import { setLocale } from '../src/lib/locale.svelte'
 
 vi.mock('../src/lib/api', () => ({
   fetchEntryList: vi.fn(),
+  fetchEntryRanks: vi.fn(),
   deleteRegistration: vi.fn(),
   fetchAdminEntryDetails: vi.fn(),
   fetchEventSeasonEndYear: vi.fn(),
@@ -15,13 +16,14 @@ vi.mock('../src/lib/api', () => ({
 }))
 import {
   fetchEntryList,
+  fetchEntryRanks,
   deleteRegistration,
   fetchAdminEntryDetails,
   fetchEventSeasonEndYear,
   updateRegistrationAsAdmin,
 } from '../src/lib/api'
 import EntryList from '../src/components/EntryList.svelte'
-import type { RegistrationEntry } from '../src/lib/types'
+import type { EntryRank, RegistrationEntry } from '../src/lib/types'
 
 const mockFetchEntryList = vi.mocked(fetchEntryList)
 
@@ -37,6 +39,9 @@ beforeEach(() => {
   // event's season; by default there are none to show.
   vi.mocked(fetchAdminEntryDetails).mockResolvedValue([])
   vi.mocked(fetchEventSeasonEndYear).mockResolvedValue(2027)
+  // FR-175: by default the event's box is not ticked, so there are no ranks
+  // and every list renders exactly as before.
+  vi.mocked(fetchEntryRanks).mockResolvedValue([])
 })
 
 describe('EntryList', () => {
@@ -1101,5 +1106,202 @@ describe('EntryList — I25 a phone row with a long name', () => {
   it('a visitor\'s row stays one line', async () => {
     const v = await renderRem({ canRemove: false })
     expect(v.c.querySelector('tbody tr.el-adminrow')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-175 — the ranking place, once weapon, category and gender are chosen
+// (ELRANK.11–20). Plan doc/plans/seeding-by-organiser-ranking-2026-11-22.html,
+// release 2, step 4. Invented entries (SEL). Épée V2 men: ŻAK Adam (1),
+// KOWAL Jan (3), NOWAK Piotr (6); alphabetically KOWAL, NOWAK, ŻAK.
+// ---------------------------------------------------------------------------
+const mockRanks = vi.mocked(fetchEntryRanks)
+const READ = '2026-11-23T05:41:00Z'
+
+function rank(id: number, weapon: EntryRank['enum_weapon'], category: EntryRank['enum_age_category'],
+  place: number | null, seed: number | null, ranking: 'EVF' | 'SPWS' = 'EVF'): EntryRank {
+  return {
+    id_registration: id, enum_weapon: weapon, enum_age_category: category, int_rank: place,
+    int_seed_order: seed, txt_ranking: ranking, ts_ranking_read: ranking === 'EVF' ? READ : null,
+  }
+}
+
+// ŻAK and NOWAK share 3rd place; the seed order puts ŻAK first. KOWAL Jan is
+// unranked in épée and 7th in sabre. Women's épée V1: KOWAL Anna 12th.
+const RANKS: EntryRank[] = [
+  rank(1, 'EPEE', 'V2', 3, 1),
+  rank(6, 'EPEE', 'V2', 3, 2),
+  rank(3, 'EPEE', 'V2', null, null),
+  rank(3, 'SABRE', 'V2', 7, 1),
+  rank(4, 'EPEE', 'V1', 12, 1),
+  rank(6, 'FOIL', 'V2', null, null),
+]
+
+async function renderRanked(ranks: EntryRank[] = RANKS, rows: RegistrationEntry[] = SEL) {
+  mockRanks.mockResolvedValue(ranks)
+  const v = await renderSel(rows)
+  await waitFor(() => expect(mockRanks).toHaveBeenCalledWith(3))
+  const three = async (weapon = 'EPEE', category = 'V2', gender = 'M') => {
+    await v.pick(v.weapon, weapon)
+    await v.pick(v.category, category)
+    await v.pick(v.gender, gender)
+  }
+  const rankCells = () => Array.from(v.c.querySelectorAll('tbody td.el-rank')).map((td) => td.textContent?.trim())
+  const header = () => Array.from(v.c.querySelectorAll('thead th')).map((th) => th.textContent?.trim())
+  const rankLegend = () => v.c.querySelector('.el-rank-legend')?.textContent?.trim() ?? null
+  return { ...v, three, rankCells, header, rankLegend }
+}
+
+describe('EntryList — the ranking place (FR-175)', () => {
+  afterEach(() => setLocale('pl'))
+
+  // ELRANK.11
+  it('ELRANK.11: with no ranks the list is as before whatever the filters', async () => {
+    const v = await renderRanked([])
+    await v.three()
+    expect(v.c.querySelector('.el-rank')).toBeNull()
+    expect(renderedNames(v.c)).toEqual(['KOWAL Jan', 'NOWAK Piotr', 'ŻAK Adam'])
+    expect(v.rankLegend()).toBeNull()
+  })
+
+  // ELRANK.12
+  it('ELRANK.12: one or two of the three filters chosen: no „#”, alphabetical', async () => {
+    const v = await renderRanked()
+    await v.pick(v.weapon, 'EPEE')
+    await v.pick(v.category, 'V2')
+    expect(v.c.querySelector('.el-rank')).toBeNull()
+    await v.pick(v.category, '')
+    await v.pick(v.gender, 'M')
+    expect(v.c.querySelector('.el-rank')).toBeNull()
+    expect(renderedNames(v.c)).toEqual(['KOWAL Jan', 'lis Paweł', 'NOWAK Piotr', 'ŻAK Adam'])
+  })
+
+  // ELRANK.13
+  it('ELRANK.13: all three chosen: „#” is the first column and each row starts with its place', async () => {
+    const v = await renderRanked()
+    await v.three()
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    expect(v.rankCells()).toEqual(['3', '3', '–'])
+    v.c.querySelectorAll('tbody tr').forEach((tr) => expect(tr.querySelector('td')?.classList.contains('el-rank')).toBe(true))
+  })
+
+  // ELRANK.14
+  it('ELRANK.14: the rows are in seed order, a shared place as seeded, the unranked after them alphabetically', async () => {
+    const v = await renderRanked([rank(6, 'EPEE', 'V2', 3, 2), rank(1, 'EPEE', 'V2', 3, 1)])
+    await v.three()
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    expect(renderedNames(v.c)).toEqual(['ŻAK Adam', 'NOWAK Piotr', 'KOWAL Jan'])
+    // Only ŻAK ranked: the other two keep the alphabet after him.
+    const w = await renderRanked([rank(1, 'EPEE', 'V2', 9, 1)])
+    await w.three()
+    await waitFor(() => expect(w.header()[0]).toBe('#'))
+    expect(renderedNames(w.c)).toEqual(['ŻAK Adam', 'KOWAL Jan', 'NOWAK Piotr'])
+    expect(w.rankCells()).toEqual(['9', '–', '–'])
+  })
+
+  // ELRANK.15
+  it('ELRANK.15: an entry in two weapons shows the place of the chosen weapon', async () => {
+    const v = await renderRanked()
+    await v.three('SABRE', 'V2', 'M')
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    expect(renderedNames(v.c)).toEqual(['KOWAL Jan'])
+    expect(v.rankCells()).toEqual(['7'])
+    await v.pick(v.weapon, 'EPEE')
+    expect(renderedNames(v.c)).toEqual(['ŻAK Adam', 'NOWAK Piotr', 'KOWAL Jan'])
+    expect(v.rankCells()).toEqual(['3', '3', '–'])
+  })
+
+  // ELRANK.16
+  it('ELRANK.16: a rank row of another category is not used', async () => {
+    // NOWAK's place is on the V1 list, but the list shows him under V2.
+    const v = await renderRanked([rank(1, 'EPEE', 'V2', 4, 1), rank(6, 'EPEE', 'V1', 2, 1)])
+    await v.three()
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    expect(renderedNames(v.c)).toEqual(['ŻAK Adam', 'KOWAL Jan', 'NOWAK Piotr'])
+    expect(v.rankCells()).toEqual(['4', '–', '–'])
+  })
+
+  // ELRANK.17
+  it('ELRANK.17: three filters chosen and no rank row for any listed entry: no „#”', async () => {
+    const v = await renderRanked()
+    await v.three('EPEE', 'V0', 'M')
+    expect(renderedNames(v.c)).toEqual(['lis Paweł'])
+    expect(v.c.querySelector('.el-rank')).toBeNull()
+    expect(v.rankLegend()).toBeNull()
+  })
+
+  // ELRANK.18
+  it('ELRANK.18: the line under the list names the ranking, in Polish and English', async () => {
+    const v = await renderRanked()
+    expect(v.rankLegend()).toBeNull()
+    await v.three()
+    await waitFor(() => expect(v.rankLegend()).toBe('# – miejsce w rankingu EVF (stan na 23 listopada 2026). Według niego ustala się rozstawienie do grup.'))
+    setLocale('en')
+    await waitFor(() => expect(v.rankLegend()).toBe('# – place on the EVF ranking (as of 23 November 2026). Pools are seeded in this order.'))
+  })
+
+  it('ELRANK.18: EVF without a read date, and our ranking', async () => {
+    const v = await renderRanked([{ ...rank(1, 'EPEE', 'V2', 1, 1), ts_ranking_read: null }])
+    await v.three()
+    await waitFor(() => expect(v.rankLegend()).toBe('# – miejsce w rankingu EVF. Według niego ustala się rozstawienie do grup.'))
+    const w = await renderRanked([rank(1, 'EPEE', 'V2', 1, 1, 'SPWS')])
+    await w.three()
+    await waitFor(() => expect(w.rankLegend()).toBe('# – miejsce w rankingu SPWS. Według niego ustala się rozstawienie do grup.'))
+    setLocale('en')
+    await waitFor(() => expect(w.rankLegend()).toBe('# – place on the SPWS ranking. Pools are seeded in this order.'))
+  })
+
+  // ELRANK.19
+  it('ELRANK.19: clearing a filter or „Wyczyść filtry” returns the alphabet; the search keeps „#”; the tiles count as before', async () => {
+    const plain = await renderRanked([])
+    await plain.three()
+    const tilesWithout = plain.tiles()
+    plain.unmount()
+
+    const v = await renderRanked()
+    await v.three()
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    expect(v.tiles()).toEqual(tilesWithout)
+    await v.type('a')
+    expect(renderedNames(v.c)).toEqual(['ŻAK Adam', 'NOWAK Piotr', 'KOWAL Jan'])
+    expect(v.header()[0]).toBe('#')
+    await v.type('')
+    await v.pick(v.gender, '')
+    expect(v.c.querySelector('.el-rank')).toBeNull()
+    expect(renderedNames(v.c)).toEqual(['KOWAL Jan', 'NOWAK Piotr', 'ŻAK Adam'])
+    await v.pick(v.gender, 'M')
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    await fireEvent.click(v.c.querySelector('button.el-clear-all') as HTMLButtonElement)
+    expect(v.c.querySelector('.el-rank')).toBeNull()
+    expect(renderedNames(v.c)[0]).toBe('ĆWIK Marek')
+  })
+
+  it('ELRANK.19: the country filter keeps „#” and the order', async () => {
+    const withCountry = SEL.map((r) => ({ ...r, txt_country: r.id_registration === 3 ? 'GER' : 'POL' }))
+    const v = await renderRanked(RANKS, withCountry)
+    await v.three()
+    await waitFor(() => expect(v.header()[0]).toBe('#'))
+    await fireEvent.change(v.c.querySelector('select[name="countryFilter"]') as HTMLSelectElement, { target: { value: 'POL' } })
+    expect(renderedNames(v.c)).toEqual(['ŻAK Adam', 'NOWAK Piotr'])
+    expect(v.rankCells()).toEqual(['3', '3'])
+  })
+
+  // ELRANK.20
+  it('ELRANK.20: the administrator\'s rows carry the same cell, and an edit reads the ranks again', async () => {
+    mockRanks.mockResolvedValue(RANKS)
+    mockUpdate.mockResolvedValue(undefined)
+    const v = await renderEdit()
+    await waitFor(() => expect(mockRanks).toHaveBeenCalledTimes(1))
+    const pick = (name: string, value: string) =>
+      fireEvent.change(v.c.querySelector(`select[name="${name}"]`) as HTMLSelectElement, { target: { value } })
+    await pick('weaponFilter', 'EPEE')
+    await pick('categoryFilter', 'V2')
+    await pick('genderFilter', 'M')
+    await waitFor(() => expect(v.c.querySelectorAll('tbody td.el-rank')).toHaveLength(3))
+    expect(Array.from(v.c.querySelectorAll('thead th')).map((th) => th.textContent?.trim())[0]).toBe('#')
+    await fireEvent.click(v.editOf('ŻAK Adam'))
+    await fireEvent.click(v.c.querySelector('button.ee-save') as HTMLButtonElement)
+    await waitFor(() => expect(v.editDialog()).toBeNull())
+    await waitFor(() => expect(mockRanks).toHaveBeenCalledTimes(2))
   })
 })

@@ -14,6 +14,8 @@ vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
   fetchEventForRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
+  // FR-175: no ranks, as for an event whose box is not ticked.
+  fetchEntryRanks: vi.fn(() => Promise.resolve([])),
 }))
 import { fetchEventForRegistration, fetchEntryList } from '../src/lib/api'
 import EntryListElement from '../src/ce/EntryListElement.svelte'

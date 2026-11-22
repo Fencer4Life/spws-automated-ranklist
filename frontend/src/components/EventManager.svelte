@@ -102,6 +102,15 @@
                     onchange={(e) => { draftUseSpwsRegistration = e.currentTarget.checked; onToggleSpwsRegistration() }} />
                   {t('event_use_spws_registration_label')}
                 </label>
+                <!-- FR-175: the entry list may show the ranking place. Only with
+                     our registration; unticking that switches this off too. -->
+                <label class="toggle-label">
+                  <input data-field="form-show-seed" type="checkbox"
+                    bind:checked={draftShowSeed}
+                    disabled={!draftUseSpwsRegistration} />
+                  {t('event_show_seed_label')}
+                </label>
+                <p class="show-seed-hint" data-field="form-show-seed-hint">{t('event_show_seed_hint')}</p>
                 <label>{t('event_entry_fee_2w_label')}
                   <input data-field="form-entry-fee-2w" type="number" bind:value={draftEntryFee2w} />
                 </label>
@@ -420,7 +429,7 @@
   import { t } from '../lib/locale.svelte'
   import { isBlank, isValidIban } from '../lib/iban'
   import { getEventDisplayStatus } from '../lib/eventStatus'
-  import { requestDispatch, setEventSourceOverride } from '../lib/api'
+  import { requestDispatch, setEventSourceOverride, fetchEventShowSeed } from '../lib/api'
   import { assetUrl } from '../lib/assetBase'
 
   // ADR-041: Per-event dispatch status, rendered inline below each event-row.
@@ -604,6 +613,9 @@
     oncreate = (_evt: Record<string, unknown>) => {},
     onupdate = (_id: number, _evt: Record<string, unknown>) => {},
     onupdatestatus = (_id: number, _status: string) => {},
+    // FR-175: the event's "show the ranking place" switch, written apart from
+    // the event's fields as its status is.
+    onupdateshowseed = (_id: number, _show: boolean) => {},
     ondelete = (_id: number) => {},
     ondeletetournament = (_id: number) => {},
     onedittournament = (_id: number, _params: Record<string, unknown>) => {},
@@ -629,6 +641,7 @@
     oncreate?: (evt: Record<string, unknown>) => void
     onupdate?: (id: number, evt: Record<string, unknown>) => void
     onupdatestatus?: (id: number, status: string) => void
+    onupdateshowseed?: (id: number, show: boolean) => void
     ondelete?: (id: number) => void
     ondeletetournament?: (id: number) => void
     onedittournament?: (id: number, params: Record<string, unknown>) => void
@@ -658,6 +671,10 @@
   let draftUseSpwsRegistration = $state(false)
   let draftEntryFee2w: number | null = $state(null)
   let draftEntryFee3w: number | null = $state(null)
+  // FR-175 — the "show the ranking place" switch. It is not in vw_calendar
+  // (per environment, never synced), so the form reads it when it opens.
+  let draftShowSeed = $state(false)
+  let storedShowSeed = false
   // ADR-079 amend — entry-list URL, derived alongside draftRegistration when the
   // SPWS-registration toggle is on (see onToggleSpwsRegistration).
   let draftUrlEntryList = $state('')
@@ -688,6 +705,8 @@
     } else {
       draftRegistration = ''
       draftUrlEntryList = ''
+      // FR-175: the ranking place goes with our registration.
+      draftShowSeed = false
     }
   }
   let draftUrlEvent = $state('')
@@ -896,6 +915,8 @@
     draftEntryFee = null
     draftCurrency = 'PLN'
     draftUseSpwsRegistration = false
+    draftShowSeed = false
+    storedShowSeed = false
     draftEntryFee2w = null
     draftEntryFee3w = null
     draftUrlEvent = ''
@@ -930,6 +951,16 @@
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
     draftUseSpwsRegistration = event.bool_use_spws_registration ?? false
+    draftShowSeed = false
+    storedShowSeed = false
+    // The answer may come after the form moved to another event: keep it only
+    // while this event's form is still the open one.
+    const openedId = event.id_event
+    void fetchEventShowSeed(openedId).then((show) => {
+      if (editingId !== openedId) return
+      draftShowSeed = show
+      storedShowSeed = show
+    })
     draftEntryFee2w = event.num_entry_fee_2w ?? null
     draftEntryFee3w = event.num_entry_fee_3w ?? null
     draftUrlEvent = event.url_event ?? ''
@@ -1027,6 +1058,12 @@
       if (originalEvent && draftStatus !== originalEvent.enum_status) {
         onupdatestatus(editingId, draftStatus)
       }
+      // FR-175: what the box means is "on with our registration"; send it only
+      // when that differs from what is stored.
+      const showSeed = draftUseSpwsRegistration && draftShowSeed
+      if (showSeed !== storedShowSeed) {
+        onupdateshowseed(editingId, showSeed)
+      }
     } else {
       oncreate(params)
     }
@@ -1092,6 +1129,17 @@
     flex-direction: row !important;
     align-items: center;
     gap: 6px !important;
+  }
+  /* FR-175 — the hint under the "show the ranking place" box. It takes no
+     width of its own (contain: inline-size), so it wraps inside the section's
+     width instead of widening it, and the form keeps its layout. A whole-pixel
+     line height keeps everything below it on whole pixels. */
+  .show-seed-hint {
+    margin: -4px 0 0 22px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #666;
+    contain: inline-size;
   }
   /* Phase 3 — Skeletons collapsible panel at bottom. */
   .skel-panel {
