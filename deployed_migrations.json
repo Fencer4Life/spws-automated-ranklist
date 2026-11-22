@@ -254,8 +254,8 @@
     "schema_fingerprint": "682109319a2164902b5c58176c715b34"
   },
   "prod": {
-    "last_updated": "2026-11-22T10:27:28Z",
-    "last_sha": "7af1760892bf2bdb94c98a62c2f7e30d252698cc",
+    "last_updated": "2026-11-22T12:34:31Z",
+    "last_sha": "0f5018faf843e925e614fd24f4c4da09153fc7f9",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -502,8 +502,9 @@
       "20261122000002_roster_nationality_from_evf.sql",
       "20261122000003_registration_admin_edit_roster.sql",
       "20261122000004_fold_name_all_letters.sql",
-      "20261122000005_registration_name_suggestions.sql"
+      "20261122000005_registration_name_suggestions.sql",
+      "20261122000006_evf_ranking_places_and_seed_ranks.sql"
     ],
-    "schema_fingerprint": "fa574da512fc84cafb81fccec323fae7"
+    "schema_fingerprint": "682109319a2164902b5c58176c715b34"
   }
 }
