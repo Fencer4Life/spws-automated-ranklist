@@ -78,6 +78,14 @@ export interface ExportEntryRow {
   num_rank_points?: number | null
   /** FR-169: the entry's declared fencing code; null (or absent) writes POL. */
   txt_country?: string | null
+  /**
+   * FR-174: the ranking the seed comes from: EVF for an event EVF organises,
+   * SPWS otherwise. Optional because the page is published before PROD's
+   * migration is approved, and the earlier function sends neither field.
+   */
+  txt_ranking?: 'EVF' | 'SPWS' | null
+  /** FR-174: when the EVF places were read; null for SPWS or before any read. */
+  ts_ranking_read?: string | null
 }
 
 /** One row of fn_ftl_roster — the organizer's pick-list for one weapon. */

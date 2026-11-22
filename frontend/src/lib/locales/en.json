@@ -774,6 +774,8 @@
   "ftl_lang_en": "English",
   "ftl_close": "Close",
   "ftl_archive_taken_at": "Entry list as at",
+  "ftl_seed_source_evf": "Seeded by the EVF ranking as of {date}.",
+  "ftl_seed_source_evf_none": "Seeded by the EVF ranking: the ranking has not been read yet.",
   "ftl_pick": "Choose an event — only those with entries that have not happened yet are listed:",
   "ftl_pick_meta": "{n} entered",
   "ftl_preparing": "Preparing…",

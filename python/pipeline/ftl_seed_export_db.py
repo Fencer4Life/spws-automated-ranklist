@@ -106,6 +106,18 @@ class FtlSeedExporter:
             }
         return rankings, scores, ranks
 
+    def organizer_code(self, id_event: int) -> str | None:
+        """The code of the event's organiser ('EVF', 'SPWS', …), or None."""
+        resp = (
+            self._sb.table("tbl_event")
+            .select("tbl_organizer(txt_code)")
+            .eq("id_event", id_event)
+            .execute()
+        )
+        rows = resp.data if isinstance(resp.data, list) else []
+        org = rows[0].get("tbl_organizer") if rows else None
+        return org.get("txt_code") if isinstance(org, dict) else None
+
     def build_bundle(
         self,
         id_event: int,
@@ -118,7 +130,16 @@ class FtlSeedExporter:
         """Fetch inputs and build {filename: xml} — the mix-all plus its DE
         files for every weapon with registrants. `event_code` is
         tbl_event.txt_code in full ('PPW1-2026-2027'); `weapons` is the event's
-        declared weapon set (tbl_event arr_weapons)."""
+        declared weapon set (tbl_event arr_weapons).
+
+        FR-174 (I29): an event EVF organises is seeded by the EVF ranking, which
+        only the download page's database rule reads (fn_event_seed_ranks). This
+        generator reads our ranking, so it refuses such an event."""
+        if self.organizer_code(id_event) == "EVF":
+            raise ValueError(
+                f"{event_code} is organised by EVF and is seeded by the EVF ranking: "
+                "build its files on the download page (fn_ftl_export_entries), not here"
+            )
         registrations = self.fetch_registrations(id_event)
         fetched = {w: self.fetch_weapon_rankings(w, season) for w in weapons}
         return build_event_mixall_files(

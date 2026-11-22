@@ -371,3 +371,41 @@ describe('FtlExport', () => {
     expect(close.getAttribute('aria-label')).toBe('Close')
   })
 })
+
+// FR-174 — an event EVF organises is seeded by the EVF ranking; the page names
+// it and the day it was read. Any other event's page is unchanged.
+describe('FtlExport — the ranking an EVF event is seeded by (EVFSEED.23–24)', () => {
+  beforeEach(() => setLocale('pl'))
+
+  const evfRows = (read: string | null): ExportEntryRow[] =>
+    ROWS.map((r) => ({ ...r, txt_ranking: 'EVF', ts_ranking_read: read }))
+  const line = (c: HTMLElement) => c.querySelector('[data-field="ftl-seed-source"]')
+
+  it('EVFSEED.23 names the EVF ranking and the day it was read, in Polish and English', async () => {
+    const { container } = render(FtlExport, {
+      props: props({ selectedId: 85, entries: evfRows('2026-12-06T05:42:10Z') }),
+    })
+    expect(line(container)?.textContent?.trim()).toBe('Rozstawienie według rankingu EVF, stan na 6 grudnia 2026.')
+    setLocale('en')
+    await tick()
+    expect(line(container)?.textContent?.trim()).toBe('Seeded by the EVF ranking as of 6 December 2026.')
+  })
+
+  it('EVFSEED.23 says when the EVF ranking has not been read yet', () => {
+    const { container } = render(FtlExport, { props: props({ selectedId: 85, entries: evfRows(null) }) })
+    expect(line(container)?.textContent?.trim()).toBe(
+      'Rozstawienie według rankingu EVF: ranking nie został jeszcze wczytany.',
+    )
+  })
+
+  it('EVFSEED.24 an event of ours shows no such line', () => {
+    const ours = ROWS.map((r) => ({ ...r, txt_ranking: 'SPWS' as const, ts_ranking_read: null }))
+    const { container } = render(FtlExport, { props: props({ entries: ours }) })
+    expect(line(container)).toBeNull()
+  })
+
+  it('EVFSEED.24 rows from the earlier function (no ranking named) show no such line', () => {
+    const { container } = render(FtlExport, { props: props() })
+    expect(line(container)).toBeNull()
+  })
+})

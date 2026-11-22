@@ -1,4 +1,4 @@
-"""The monthly read of the EVF ranking: given names (FR-167) and ranked fencers (FR-171).
+"""The read of the EVF ranking: given names (FR-167), ranked fencers (FR-171), places (FR-174).
 
 The registration form asks a newcomer whether the two name fields are reversed
 when the surname box holds a known given name and the given-name box does not.
@@ -10,9 +10,15 @@ names only.
 Since FR-171 the same read also keeps each ranked fencer's EVF id, surname,
 given name, gender, category and country in tbl_evf_ranking_fencer (inserted or
 updated by EVF id, never deleted), so an entry without a country can be filled
-from it (python/tools/fill_registration_country.py). Never points, place or
-birth date. Run monthly by .github/workflows/evf-ranking-sync.yml; a new EVF
-name appears only when a new fencer first scores at a circuit event.
+from it (python/tools/fill_registration_country.py). Never a birth date.
+
+Since FR-174 it also keeps each ranked fencer's place and points per weapon in
+tbl_evf_ranking_place, replaced in full by a read that brought all 24 lists and
+untouched otherwise; an event EVF organises is seeded from them
+(fn_event_seed_ranks). .github/workflows/evf-ranking-sync.yml runs it every
+morning with --if-due: it reads only when fn_evf_ranking_read_due names a
+reason (seven days after an EVF event, the day before an EVF event with our
+registration, or 31 days after the last read).
 
 Since FR-172, after the ranked fencers each environment's roster is kept to them:
 a roster fencer with exactly one EVF match takes EVF's country
@@ -22,6 +28,7 @@ Usage::
 
     python -m python.tools.extract_evf_given_names            # CERT and PROD
     python -m python.tools.extract_evf_given_names --env prod # one environment
+    python -m python.tools.extract_evf_given_names --env prod --if-due  # only when a read is due
     python -m python.tools.extract_evf_given_names --local    # LOCAL only (rehearsal)
     python -m python.tools.extract_evf_given_names --dry-run  # print the SQL only
     python -m python.tools.extract_evf_given_names --migration PATH  # given names as a migration
@@ -30,6 +37,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -45,6 +53,12 @@ from python.tools import unify_roster_nationality as roster
 # category_id 1-4: the 24 lists of the EVF ranking.
 WEAPON_IDS = range(1, 7)
 CATEGORY_IDS = range(1, 5)
+
+# EVF weapon_id 1-3 men's foil, épée, sabre; 4-6 women's (FR-174).
+WEAPON_OF = {1: "FOIL", 2: "EPEE", 3: "SABRE", 4: "FOIL", 5: "EPEE", 6: "SABRE"}
+
+# FR-174: NULL when no read is due; otherwise the reason.
+DUE_SQL = "SELECT fn_evf_ranking_read_due() AS due"
 
 Query = Callable[[str, str, str], list[dict[str, Any]]]
 LocalQuery = Callable[[str], list[dict[str, Any]]]
@@ -156,6 +170,42 @@ def build_fencer_upsert_sql(fencers: Sequence[Mapping[str, Any]]) -> str:
     )
 
 
+def ranking_places(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """One row per fencer and weapon: the place and points on that list (FR-174).
+
+    Raises ValueError unless all 24 lists are present and every row has a place
+    of 1 or more and a number of points: a partial read must change nothing."""
+    out: list[dict[str, Any]] = []
+    lists: set[tuple[str, str, int]] = set()
+    for row in rows:
+        weapon = WEAPON_OF[int(row["weapon"])]
+        gender, category = str(row["gender"]), int(row["cat"])
+        place, points = int(row["pos"]), float(row["points"])
+        if place < 1:
+            raise ValueError(f"place {place} on {weapon}/{gender}/{category}")
+        lists.add((weapon, gender, category))
+        out.append(
+            {
+                "id": str(row["id"]),
+                "weapon": weapon,
+                "gender": gender,
+                "category": category,
+                "place": place,
+                "points": points,
+            }
+        )
+    if len(lists) != 24:
+        raise ValueError(f"{len(lists)} of 24 lists")
+    return out
+
+
+def build_places_sql(places: Sequence[Mapping[str, Any]]) -> str:
+    """One call that replaces every stored place, or none: the database checks
+    the 24 lists again (fn_replace_evf_ranking_places)."""
+    payload = json.dumps(list(places), ensure_ascii=False)
+    return f"SELECT fn_replace_evf_ranking_places({_q(payload)}::jsonb) AS n"
+
+
 def read_ranking(client: RankingClient) -> list[dict[str, Any]]:
     """The 24 lists' rows, each tagged with its list: EVF rows carry no gender
     or category, so both come from the list read (weapon_id 1-3 men's, 4-6
@@ -179,7 +229,7 @@ def _fail(notify: Notify, why: str) -> NoReturn:
 
 def _statements(
     client: RankingClient, notify: Notify
-) -> tuple[list[str], list[dict[str, Any]], str, str]:
+) -> tuple[list[str], list[dict[str, Any]], str, str, str]:
     try:
         rows = read_ranking(client)
     except Exception as exc:  # noqa: BLE001 — any refusal is reported, never swallowed
@@ -188,7 +238,23 @@ def _statements(
     if not names:
         _fail(notify, "the EVF ranking returned no names")
     fencers = ranking_fencers(rows)
-    return names, fencers, build_insert_sql(names), build_fencer_upsert_sql(fencers)
+    # FR-174: an incomplete read writes nothing at all, not even the names.
+    try:
+        places = ranking_places(rows)
+    except ValueError as exc:
+        _fail(notify, f"the EVF ranking is incomplete ({exc})")
+    return (
+        names,
+        fencers,
+        build_insert_sql(names),
+        build_fencer_upsert_sql(fencers),
+        build_places_sql(places),
+    )
+
+
+def _one_n(rows: list[dict[str, Any]]) -> int:
+    """The `n` column of fn_replace_evf_ranking_places' one-row answer."""
+    return int(rows[0].get("n") or 0) if rows else 0
 
 
 def _one_j(rows: list[dict[str, Any]]) -> str:
@@ -199,12 +265,18 @@ def _one_j(rows: list[dict[str, Any]]) -> str:
 
 
 def run(
-    client: RankingClient, query: Query, token: str, refs: Mapping[str, str], notify: Notify
+    client: RankingClient,
+    query: Query,
+    token: str,
+    refs: Mapping[str, str],
+    notify: Notify,
+    reason: str | None = None,
 ) -> dict[str, dict[str, int]]:
     """Read the 24 lists; send each environment the unseen given names, then the
-    ranked fencers, then keep its roster's nationality to them (FR-172); report
-    once, with the counts per environment and every roster change."""
-    names, fencers, names_sql, fencers_sql = _statements(client, notify)
+    ranked fencers, then their places (FR-174), then keep its roster's
+    nationality to them (FR-172); report once, with the counts per environment,
+    every roster change and, when given, why the read ran."""
+    names, fencers, names_sql, fencers_sql, places_sql = _statements(client, notify)
     report: dict[str, dict[str, int]] = {}
     lines: list[str] = []
     for env, ref in refs.items():
@@ -216,6 +288,10 @@ def run(
             kept = len(query(ref, token, fencers_sql))
         except Exception as exc:  # noqa: BLE001
             _fail(notify, f"{env} refused the ranked fencers ({exc})")
+        try:
+            placed = _one_n(query(ref, token, places_sql))
+        except Exception as exc:  # noqa: BLE001
+            _fail(notify, f"{env} refused the places ({exc})")
 
         def env_query(sql: str, ref: str = ref) -> str:
             return _one_j(query(ref, token, sql))
@@ -224,14 +300,21 @@ def run(
             changes, changed = roster.unify(env_query, apply=True)
         except Exception as exc:  # noqa: BLE001
             _fail(notify, f"{env} refused the roster's countries ({exc})")
-        report[env] = {"names": added, "fencers": kept, "roster": len(changed)}
+        report[env] = {
+            "names": added,
+            "fencers": kept,
+            "places": placed,
+            "roster": len(changed),
+        }
         lines += [f"{env}: {line}" for line in roster.describe(changes, changed)]
     new = ", ".join(f"{env}: {r['names']}" for env, r in report.items())
     kept_all = ", ".join(f"{env}: {r['fencers']}" for env, r in report.items())
+    placed_all = ", ".join(f"{env}: {r['places']}" for env, r in report.items())
     unified = ", ".join(f"{env}: {r['roster']}" for env, r in report.items())
+    head = f"EVF ranking read ({reason}):" if reason else "EVF ranking:"
     notify(
-        f"EVF ranking: {len(names)} given names, {len(fencers)} fencers read; "
-        f"new given names — {new}; fencers kept — {kept_all}; "
+        f"{head} {len(names)} given names, {len(fencers)} fencers read; "
+        f"new given names — {new}; fencers kept — {kept_all}; places kept — {placed_all}; "
         f"roster countries changed — {unified}" + "".join(f"\n{line}" for line in lines)
     )
     return report
@@ -243,8 +326,12 @@ def run_local(client: RankingClient, query: LocalQuery) -> dict[str, dict[str, i
     def say(message: str) -> None:
         print(message)
 
-    _names, _fencers, names_sql, fencers_sql = _statements(client, say)
-    report = {"names": len(query(names_sql)), "fencers": len(query(fencers_sql))}
+    _names, _fencers, names_sql, fencers_sql, places_sql = _statements(client, say)
+    report = {
+        "names": len(query(names_sql)),
+        "fencers": len(query(fencers_sql)),
+        "places": _one_n(query(places_sql)),
+    }
 
     def local_j(sql: str) -> str:
         return _one_j(query(sql))
@@ -256,9 +343,33 @@ def run_local(client: RankingClient, query: LocalQuery) -> dict[str, dict[str, i
     return {"LOCAL": report}
 
 
+def run_if_due(
+    make_client: Callable[[], RankingClient],
+    query: Query,
+    token: str,
+    refs: Mapping[str, str],
+    notify: Notify,
+) -> dict[str, dict[str, int]] | None:
+    """FR-174: ask each environment whether a read is due; when none says so,
+    stop before EVF is asked anything, without a message. Otherwise read, and
+    report why."""
+    reasons: list[str] = []
+    for env, ref in refs.items():
+        try:
+            rows = query(ref, token, DUE_SQL)
+        except Exception as exc:  # noqa: BLE001
+            _fail(notify, f"{env} could not say whether a read is due ({exc})")
+        due = rows[0].get("due") if rows else None
+        if due:
+            reasons.append(str(due))
+    if not reasons:
+        print("not due")
+        return None
+    return run(make_client(), query, token, refs, notify, reason="; ".join(reasons))
+
+
 def _local_query(sql: str) -> list[dict[str, Any]]:
     """LOCAL through its container (never a host psql); one JSON row per returned row."""
-    import json
     import subprocess
 
     wrapped = f"WITH w AS ({sql}) SELECT coalesce(jsonb_agg(w), '[]')::text FROM w;"
@@ -308,7 +419,10 @@ def refs_for(env: str | None, environ: Mapping[str, str]) -> dict[str, str]:
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="The EVF ranking's given names (FR-167) and ranked fencers (FR-171) into CERT and PROD."
+        description=(
+            "The EVF ranking's given names (FR-167), ranked fencers (FR-171) and places (FR-174) "
+            "into CERT and PROD."
+        )
     )
     _ = parser.add_argument("--dry-run", action="store_true", help="print the SQL; write nothing")
     _ = parser.add_argument("--local", action="store_true", help="write LOCAL only (a rehearsal)")
@@ -318,7 +432,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     _ = parser.add_argument(
         "--migration", type=Path, help="write the names as a migration file and stop"
     )
+    _ = parser.add_argument(
+        "--if-due",
+        action="store_true",
+        help="read only when the environment says a read is due (FR-174; needs --env)",
+    )
     args = parser.parse_args(argv)
+    if args.if_due and not args.env:
+        parser.error("--if-due needs --env")
 
     from python.scrapers._supabase import _management_query, _telegram
     from python.scrapers.evf_results import EvfApiClient
@@ -329,7 +450,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     def notify(message: str) -> None:
         _telegram(bot, chat, message)
 
-    client = EvfApiClient(request_delay=1.0)
+    def make_client() -> RankingClient:
+        return EvfApiClient(request_delay=1.0)
+
+    client = make_client()
     if args.local:
         print(run_local(client, _local_query))
         return
@@ -349,6 +473,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     if not token or not all(refs.values()):
         need = ", ".join(f"SUPABASE_{n}_REF" for n in refs)
         _fail(notify, f"SUPABASE_ACCESS_TOKEN and {need} are required")
+    if args.if_due:
+        print(run_if_due(make_client, _management_query, token, refs, notify))
+        return
     added = run(client, _management_query, token, refs, notify)
     print(added)
 

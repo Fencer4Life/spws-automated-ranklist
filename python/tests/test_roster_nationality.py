@@ -187,6 +187,8 @@ def test_rnat_13_the_read_takes_the_active_season_and_the_ranking() -> None:
 # RNAT.14 — the monthly job keeps the roster unified and reports each change.
 # ---------------------------------------------------------------------------
 def test_rnat_14_run_unifies_each_environment_after_the_fencers_and_reports() -> None:
+    """Amended by FR-174 (EVFSEED.19): the places are sent after the ranked
+    fencers and before the roster rule."""
     import json
 
     from python.tools import extract_evf_given_names as job
@@ -206,6 +208,8 @@ def test_rnat_14_run_unifies_each_environment_after_the_fencers_and_reports() ->
             return [{"txt_name": "Norbert"}]
         if sql.startswith("INSERT INTO tbl_evf_ranking_fencer"):
             return [{"id_evf": "u1"}]
+        if sql.startswith("SELECT fn_replace_evf_ranking_places"):
+            return [{"n": 24}]
         if sql.startswith("SELECT jsonb_build_object"):
             return [{"j": json.dumps(data)}]
         return [{"j": json.dumps([{"id_fencer": 5, "old": "POL", "txt_nationality": "HUN"}])}]
@@ -218,15 +222,26 @@ def test_rnat_14_run_unifies_each_environment_after_the_fencers_and_reports() ->
         notify=messages.append,
     )
     kinds = [
-        s.split(" ")[0] + " " + s.split(" ")[2] if s.startswith("INSERT") else s.split(" ")[0]
+        s.split(" ")[0] + " " + s.split(" ")[2]
+        if s.startswith("INSERT")
+        else s.split("(")[0]
+        if s.startswith("SELECT fn_replace")
+        else s.split(" ")[0]
         for _, s in sent
     ]
     assert (
         kinds
-        == ["INSERT tbl_common_given_name", "INSERT tbl_evf_ranking_fencer", "SELECT", "WITH"] * 2
+        == [
+            "INSERT tbl_common_given_name",
+            "INSERT tbl_evf_ranking_fencer",
+            "SELECT fn_replace_evf_ranking_places",
+            "SELECT",
+            "WITH",
+        ]
+        * 2
     )
-    assert [r for r, _ in sent] == ["cert-ref"] * 4 + ["prod-ref"] * 4
-    assert report["PROD"] == {"names": 1, "fencers": 1, "roster": 1}
+    assert [r for r, _ in sent] == ["cert-ref"] * 5 + ["prod-ref"] * 5
+    assert report["PROD"] == {"names": 1, "fencers": 1, "places": 24, "roster": 1}
     assert len(messages) == 1
     assert "roster countries" in messages[0]
     assert "5 ALCSER Norbert POL→HUN" in messages[0]
@@ -265,6 +280,8 @@ def test_rnat_15_env_picks_one_environment() -> None:
 
 
 def test_rnat_15_the_workflow_runs_cert_then_prod_in_their_write_lanes() -> None:
+    """Amended by FR-174 (EVFSEED.22): each run line also passes $IF_DUE, which
+    is --if-due on a scheduled run and empty on a run started by hand."""
     wf = yaml.safe_load(
         (REPO / ".github/workflows/evf-ranking-sync.yml").read_text(encoding="utf-8")
     )
@@ -275,7 +292,10 @@ def test_rnat_15_the_workflow_runs_cert_then_prod_in_their_write_lanes() -> None
     assert jobs["prod"]["needs"] == "cert"
     for name, ref in (("cert", "SUPABASE_CERT_REF"), ("prod", "SUPABASE_PROD_REF")):
         run_step = next(s for s in jobs[name]["steps"] if s.get("id") == "sync")
-        assert run_step["run"] == f"python -m python.tools.extract_evf_given_names --env {name}"
+        assert (
+            run_step["run"]
+            == f"python -m python.tools.extract_evf_given_names --env {name} $IF_DUE"
+        )
         assert ref in run_step["env"]
         install = next(s for s in jobs[name]["steps"] if s.get("name") == "Install dependencies")
         assert "rapidfuzz" in install["run"]  # the matcher's name folding
