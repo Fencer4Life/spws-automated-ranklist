@@ -71,7 +71,7 @@ CREATE TEMP TABLE p (label TEXT PRIMARY KEY, j JSONB);
 INSERT INTO p VALUES ('plan', jsonb_build_object('event_code', 'PPW9-2095-2096', 'ops', jsonb_build_array(
   jsonb_build_object('op', 'insert_fencer', 'id_fencer', 98310, 'fencer', jsonb_build_object(
     'txt_surname', 'APPLYNEW', 'txt_first_name', 'Nowy', 'int_birth_year', 2051,
-    'bool_birth_year_estimated', TRUE, 'txt_nationality', 'PL', 'enum_gender', 'M')),
+    'bool_birth_year_estimated', TRUE, 'txt_nationality', 'POL', 'enum_gender', 'M')),
   jsonb_build_object('op', 'update_fencer_birth_year', 'id_fencer', 98301, 'birth_year', 2049, 'estimated', FALSE),
   jsonb_build_object('op', 'find_or_create_tournament', 'ref', -1, 'event_id', :ev, 'weapon', 'SABRE', 'gender', 'M',
     'category', 'V1', 'date', '2095-10-10', 'tournament_type', 'PPW', 'url_results', 'https://www.fencingtimelive.com/events/results/APPLY1'),
@@ -86,7 +86,7 @@ INSERT INTO p VALUES ('plan', jsonb_build_object('event_code', 'PPW9-2095-2096',
 -- The live run: the same writes made directly, measured, then undone.
 SAVEPOINT live;
 INSERT INTO tbl_fencer (id_fencer, txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated, txt_nationality, enum_gender)
-VALUES (98310, 'APPLYNEW', 'Nowy', 2051, TRUE, 'PL', 'M');
+VALUES (98310, 'APPLYNEW', 'Nowy', 2051, TRUE, 'POL', 'M');
 SELECT fn_update_fencer_birth_year(98301, 2049, FALSE);
 -- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT fn_ingest_tournament_results(

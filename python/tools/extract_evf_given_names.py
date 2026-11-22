@@ -14,9 +14,14 @@ from it (python/tools/fill_registration_country.py). Never points, place or
 birth date. Run monthly by .github/workflows/evf-ranking-sync.yml; a new EVF
 name appears only when a new fencer first scores at a circuit event.
 
+Since FR-172, after the ranked fencers each environment's roster is kept to them:
+a roster fencer with exactly one EVF match takes EVF's country
+(python/tools/unify_roster_nationality.py), and every change is reported.
+
 Usage::
 
     python -m python.tools.extract_evf_given_names            # CERT and PROD
+    python -m python.tools.extract_evf_given_names --env prod # one environment
     python -m python.tools.extract_evf_given_names --local    # LOCAL only (rehearsal)
     python -m python.tools.extract_evf_given_names --dry-run  # print the SQL only
     python -m python.tools.extract_evf_given_names --migration PATH  # given names as a migration
@@ -33,6 +38,8 @@ from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, NoReturn, Protocol
+
+from python.tools import unify_roster_nationality as roster
 
 # EVF weapon_id 1-6 (men's foil, épée, sabre; women's foil, épée, sabre) ×
 # category_id 1-4: the 24 lists of the EVF ranking.
@@ -184,13 +191,22 @@ def _statements(
     return names, fencers, build_insert_sql(names), build_fencer_upsert_sql(fencers)
 
 
+def _one_j(rows: list[dict[str, Any]]) -> str:
+    """The `j` column of a one-row answer (the roster rule's statements)."""
+    if not rows or "j" not in rows[0]:
+        raise RuntimeError("no answer")
+    return str(rows[0]["j"])
+
+
 def run(
     client: RankingClient, query: Query, token: str, refs: Mapping[str, str], notify: Notify
 ) -> dict[str, dict[str, int]]:
     """Read the 24 lists; send each environment the unseen given names, then the
-    ranked fencers; report once, with both counts per environment."""
+    ranked fencers, then keep its roster's nationality to them (FR-172); report
+    once, with the counts per environment and every roster change."""
     names, fencers, names_sql, fencers_sql = _statements(client, notify)
     report: dict[str, dict[str, int]] = {}
+    lines: list[str] = []
     for env, ref in refs.items():
         try:
             added = len(query(ref, token, names_sql))
@@ -200,12 +216,23 @@ def run(
             kept = len(query(ref, token, fencers_sql))
         except Exception as exc:  # noqa: BLE001
             _fail(notify, f"{env} refused the ranked fencers ({exc})")
-        report[env] = {"names": added, "fencers": kept}
+
+        def env_query(sql: str, ref: str = ref) -> str:
+            return _one_j(query(ref, token, sql))
+
+        try:
+            changes, changed = roster.unify(env_query, apply=True)
+        except Exception as exc:  # noqa: BLE001
+            _fail(notify, f"{env} refused the roster's countries ({exc})")
+        report[env] = {"names": added, "fencers": kept, "roster": len(changed)}
+        lines += [f"{env}: {line}" for line in roster.describe(changes, changed)]
     new = ", ".join(f"{env}: {r['names']}" for env, r in report.items())
     kept_all = ", ".join(f"{env}: {r['fencers']}" for env, r in report.items())
+    unified = ", ".join(f"{env}: {r['roster']}" for env, r in report.items())
     notify(
         f"EVF ranking: {len(names)} given names, {len(fencers)} fencers read; "
-        f"new given names — {new}; fencers kept — {kept_all}"
+        f"new given names — {new}; fencers kept — {kept_all}; "
+        f"roster countries changed — {unified}" + "".join(f"\n{line}" for line in lines)
     )
     return report
 
@@ -217,7 +244,16 @@ def run_local(client: RankingClient, query: LocalQuery) -> dict[str, dict[str, i
         print(message)
 
     _names, _fencers, names_sql, fencers_sql = _statements(client, say)
-    return {"LOCAL": {"names": len(query(names_sql)), "fencers": len(query(fencers_sql))}}
+    report = {"names": len(query(names_sql)), "fencers": len(query(fencers_sql))}
+
+    def local_j(sql: str) -> str:
+        return _one_j(query(sql))
+
+    changes, changed = roster.unify(local_j, apply=True)
+    for line in roster.describe(changes, changed):
+        print(f"LOCAL: {line}")
+    report["roster"] = len(changed)
+    return {"LOCAL": report}
 
 
 def _local_query(sql: str) -> list[dict[str, Any]]:
@@ -263,12 +299,22 @@ def migration_text(names: Sequence[str]) -> str:
     )
 
 
+def refs_for(env: str | None, environ: Mapping[str, str]) -> dict[str, str]:
+    """The environments one run writes: --env cert or prod names one (its job
+    holds that environment's write lane); without it, both."""
+    names = {"cert": ["CERT"], "prod": ["PROD"]}.get(env or "", ["CERT", "PROD"])
+    return {n: environ.get(f"SUPABASE_{n}_REF", "") for n in names}
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="The EVF ranking's given names (FR-167) and ranked fencers (FR-171) into CERT and PROD."
     )
     _ = parser.add_argument("--dry-run", action="store_true", help="print the SQL; write nothing")
     _ = parser.add_argument("--local", action="store_true", help="write LOCAL only (a rehearsal)")
+    _ = parser.add_argument(
+        "--env", choices=("cert", "prod"), help="write one environment (default: both)"
+    )
     _ = parser.add_argument(
         "--migration", type=Path, help="write the names as a migration file and stop"
     )
@@ -298,13 +344,11 @@ def main(argv: Sequence[str] | None = None) -> None:
             print(build_fencer_upsert_sql(ranking_fencers(rows)))
         return
 
-    refs = {
-        "CERT": os.environ.get("SUPABASE_CERT_REF", ""),
-        "PROD": os.environ.get("SUPABASE_PROD_REF", ""),
-    }
+    refs = refs_for(args.env, os.environ)
     token = supabase_access_token()
     if not token or not all(refs.values()):
-        _fail(notify, "SUPABASE_ACCESS_TOKEN, SUPABASE_CERT_REF and SUPABASE_PROD_REF are required")
+        need = ", ".join(f"SUPABASE_{n}_REF" for n in refs)
+        _fail(notify, f"SUPABASE_ACCESS_TOKEN and {need} are required")
     added = run(client, _management_query, token, refs, notify)
     print(added)
 

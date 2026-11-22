@@ -41,7 +41,7 @@ BEGIN
 
   FOR k IN 1..2 LOOP
     INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-    VALUES ('PROV-F' || k, 'Test', 'PL', 1980, 'M') RETURNING id_fencer INTO v_f;
+    VALUES ('PROV-F' || k, 'Test', 'POL', 1980, 'M') RETURNING id_fencer INTO v_f;
     INSERT INTO prov_ids VALUES ('f' || k, v_f);
   END LOOP;
 END $fx$;

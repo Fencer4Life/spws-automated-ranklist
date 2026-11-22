@@ -14,7 +14,7 @@ DECLARE
   v_fencer_id INT;
 BEGIN
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated, txt_nationality)
-  VALUES ('BIRTHTEST', 'Alpha', 1980, TRUE, 'PL')
+  VALUES ('BIRTHTEST', 'Alpha', 1980, TRUE, 'POL')
   RETURNING id_fencer INTO v_fencer_id;
 END;
 $setup$;

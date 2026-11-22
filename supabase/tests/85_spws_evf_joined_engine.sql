@@ -634,7 +634,7 @@ BEGIN
 
   FOR i IN 1..16 LOOP
     INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-    VALUES ('SE27-' || i, 'Test', CASE WHEN i = 12 THEN 'CZ' ELSE 'PL' END,
+    VALUES ('SE27-' || i, 'Test', CASE WHEN i = 12 THEN 'CZE' ELSE 'POL' END,
             CASE WHEN i IN (12, 16) THEN 1950 WHEN i = 15 THEN 1977 ELSE 1970 END,
             (CASE WHEN i = 15 THEN 'F' ELSE 'M' END)::enum_gender_type)
     RETURNING id_fencer INTO v_id;
@@ -738,7 +738,7 @@ BEGIN
       FOR k IN 1..length(r.ord) LOOP
         CONTINUE WHEN substr(r.ord, k, 1) <> v_digit;
         INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-        VALUES ('JB27-' || r.id || '-' || k, 'Test', 'PL', 1970, 'M') RETURNING id_fencer INTO v_f;
+        VALUES ('JB27-' || r.id || '-' || k, 'Test', 'POL', 1970, 'M') RETURNING id_fencer INTO v_f;
         INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t, k);
       END LOOP;
     END LOOP;
@@ -1071,7 +1071,7 @@ BEGIN
   SELECT id_season INTO v_s26 FROM tbl_season WHERE txt_code = 'SPWS-2025-2026';
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('SE27-17', 'Test', 'PL', 1970, 'M') RETURNING id_fencer INTO v_f;
+  VALUES ('SE27-17', 'Test', 'POL', 1970, 'M') RETURNING id_fencer INTO v_f;
   SELECT id_tournament INTO v_t25 FROM tbl_tournament WHERE txt_code = 'SE27-PPW25-E';
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t25, 2);
   -- Dated yesterday: a previous-season result is carried while the event's end

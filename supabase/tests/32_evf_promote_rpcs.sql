@@ -96,7 +96,7 @@ BEGIN
 
   -- BY=1980 → age 46 in 2026 → V1 (40-49), matches the V1 tournament below.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, enum_gender, txt_nationality)
-  VALUES ('Test32Fencer', 'Adam', 1980, 'M', 'PL')
+  VALUES ('Test32Fencer', 'Adam', 1980, 'M', 'POL')
   RETURNING id_fencer INTO v_fencer;
 
   INSERT INTO tbl_tournament (txt_code, id_event, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament)

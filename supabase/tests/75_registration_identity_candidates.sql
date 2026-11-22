@@ -553,7 +553,7 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year,
                         bool_birth_year_estimated, enum_gender, txt_nationality)
-VALUES ('SPŁAWA-NEYMAN', 'PGTAP75Maciej', 1991, FALSE, 'M', 'PL');
+VALUES ('SPŁAWA-NEYMAN', 'PGTAP75Maciej', 1991, FALSE, 'M', 'POL');
 
 SELECT is(
   (SELECT count(*)::INT FROM fn_registration_identity_candidates(

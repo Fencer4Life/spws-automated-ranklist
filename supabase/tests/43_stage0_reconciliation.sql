@@ -21,12 +21,12 @@ BEGIN
   -- Estimated fencer in the WRONG band (BY 1991 → V0), to be re-estimated to V2.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year,
                           bool_birth_year_estimated, txt_nationality)
-  VALUES ('RECONEST', 'Alpha', 1991, TRUE, 'PL');
+  VALUES ('RECONEST', 'Alpha', 1991, TRUE, 'POL');
 
   -- CONFIRMED fencer in the WRONG band (BY 1991 → V0), to be downgraded to V3.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year,
                           bool_birth_year_estimated, txt_nationality)
-  VALUES ('RECONCONF', 'Beta', 1991, FALSE, 'PL');
+  VALUES ('RECONCONF', 'Beta', 1991, FALSE, 'POL');
 END;
 $setup$;
 

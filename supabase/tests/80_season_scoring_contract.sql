@@ -1087,10 +1087,10 @@ BEGIN
   RETURNING id_tournament INTO v_tourn;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES (p_code || '-F1', 'Tester', 'PL', EXTRACT(YEAR FROM p_dt_end)::INT - 55, 'M')
+  VALUES (p_code || '-F1', 'Tester', 'POL', EXTRACT(YEAR FROM p_dt_end)::INT - 55, 'M')
   RETURNING id_fencer INTO v_fencer1;
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES (p_code || '-F2', 'Tester', 'PL', EXTRACT(YEAR FROM p_dt_end)::INT - 55, 'M')
+  VALUES (p_code || '-F2', 'Tester', 'POL', EXTRACT(YEAR FROM p_dt_end)::INT - 55, 'M')
   RETURNING id_fencer INTO v_fencer2;
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
@@ -1613,7 +1613,7 @@ BEGIN
   $j$::jsonb WHERE id_season = v_season_best;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RankBest', 'Tester', 'PL', 1990, 'M') RETURNING id_fencer INTO v_fencer_best;
+  VALUES ('RankBest', 'Tester', 'POL', 1990, 'M') RETURNING id_fencer INTO v_fencer_best;
 
   PERFORM pg_temp.rank_add_result(v_season_best, v_org, 'RB1', 'PPW', 'EPEE', 'M', 'V2', v_fencer_best, 30);
   PERFORM pg_temp.rank_add_result(v_season_best, v_org, 'RB2', 'PPW', 'EPEE', 'M', 'V2', v_fencer_best, 20);
@@ -1630,7 +1630,7 @@ BEGIN
   $j$::jsonb WHERE id_season = v_season_always;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RankAlways', 'Tester', 'PL', 1990, 'M') RETURNING id_fencer INTO v_fencer_always;
+  VALUES ('RankAlways', 'Tester', 'POL', 1990, 'M') RETURNING id_fencer INTO v_fencer_always;
 
   PERFORM pg_temp.rank_add_result(v_season_always, v_org, 'RA1', 'MPW', 'EPEE', 'M', 'V2', v_fencer_always, 5);
   PERFORM pg_temp.rank_add_result(v_season_always, v_org, 'RA2', 'MPW', 'EPEE', 'M', 'V2', v_fencer_always, 7);
@@ -1702,7 +1702,7 @@ BEGIN
 
   -- 2047 - 1992 = 55 -> V2.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RankGroupsV2', 'Tester', 'PL', 1992, 'M') RETURNING id_fencer INTO v_fencer1;
+  VALUES ('RankGroupsV2', 'Tester', 'POL', 1992, 'M') RETURNING id_fencer INTO v_fencer1;
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-PPW', 'PPW', 'EPEE', 'M', 'V2', v_fencer1, 10);
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-PEW', 'PEW', 'EPEE', 'M', 'V2', v_fencer1, 15);
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-PPS', 'PPS', 'EPEE', 'M', 'V2', v_fencer1, 8);
@@ -1710,7 +1710,7 @@ BEGIN
   -- 2047 - 2012 = 35 -> V0. Only an spws-group result; no PEW/PPS at all --
   -- V0 has no EVF equivalent, exactly as design §06 describes.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RankGroupsV0', 'Tester', 'PL', 2012, 'M') RETURNING id_fencer INTO v_fencer_v0;
+  VALUES ('RankGroupsV0', 'Tester', 'POL', 2012, 'M') RETURNING id_fencer INTO v_fencer_v0;
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-V0-PPW', 'PPW', 'EPEE', 'M', 'V0', v_fencer_v0, 12);
 END $rksg$;
 -- pgt-ignore-end plpgsql_check
@@ -1812,7 +1812,7 @@ BEGIN
 
   -- 2049 - 1994 = 55 -> V2.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RankLegacy', 'Tester', 'PL', 1994, 'M') RETURNING id_fencer INTO v_fencer;
+  VALUES ('RankLegacy', 'Tester', 'POL', 1994, 'M') RETURNING id_fencer INTO v_fencer;
 
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PPW1', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 40);
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PPW2', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 30);
@@ -1902,7 +1902,7 @@ BEGIN
   -- 2052 - 1997 = 55 -> V2 (category resolved against the CURRENT/carrying
   -- season's end year, per the existing rolling convention).
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('RankPzszCarry', 'Tester', 'PL', 1997, 'M') RETURNING id_fencer INTO v_fencer;
+  VALUES ('RankPzszCarry', 'Tester', 'POL', 1997, 'M') RETURNING id_fencer INTO v_fencer;
 
   v_prev_event := pg_temp.rank_add_result(v_prev, v_org, 'CARRYPOS-PREV', 'PPS', 'EPEE', 'M', 'V2', v_fencer, 20);
 
@@ -2026,7 +2026,7 @@ BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
   -- 2056 - 2000 = 56 -> V2.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('PublishPpwOnly', 'Tester', 'PL', 2000, 'M') RETURNING id_fencer INTO v_fencer;
+  VALUES ('PublishPpwOnly', 'Tester', 'POL', 2000, 'M') RETURNING id_fencer INTO v_fencer;
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'PUB-PPWONLY', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 40);
 
   RETURN v_season;
@@ -2071,7 +2071,7 @@ BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
   -- 2058 - 2000 = 58 -> V2.
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('PublishFull', 'Tester', 'PL', 2000, 'M') RETURNING id_fencer INTO v_fencer;
+  VALUES ('PublishFull', 'Tester', 'POL', 2000, 'M') RETURNING id_fencer INTO v_fencer;
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'PUB-FULL', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 33);
 
   RETURN v_season;

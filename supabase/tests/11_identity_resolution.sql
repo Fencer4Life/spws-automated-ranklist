@@ -57,15 +57,15 @@ BEGIN
 
   -- Create 3 known fencers (need distinct fencer per result due to unique constraint)
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('IDENTFENCER', 'Alpha', 1970, 'PL')
+  VALUES ('IDENTFENCER', 'Alpha', 1970, 'POL')
   RETURNING id_fencer INTO v_fencer1;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('IDENTFENCER', 'Beta', 1972, 'PL')
+  VALUES ('IDENTFENCER', 'Beta', 1972, 'POL')
   RETURNING id_fencer INTO v_fencer2;
 
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, txt_nationality)
-  VALUES ('IDENTFENCER', 'Gamma', 1968, 'PL')
+  VALUES ('IDENTFENCER', 'Gamma', 1968, 'POL')
   RETURNING id_fencer INTO v_fencer3;
 
   -- Ingest 3 results: one PENDING, one UNMATCHED, one AUTO_MATCHED

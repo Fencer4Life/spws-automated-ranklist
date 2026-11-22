@@ -50,7 +50,7 @@ UPDATE sd_roster SET j = j || '{"txt_club": "KS Seed"}' WHERE (j->>'id_fencer'):
 UPDATE sd_roster SET j = j || '{"txt_first_name": "ADAM"}' WHERE (j->>'id_fencer')::INT = 97101;
 INSERT INTO sd_roster
 SELECT jsonb_build_object('id_fencer', 97105, 'txt_surname', 'SEEDE', 'txt_first_name', 'EWA',
-                          'int_birth_year', 1965, 'txt_nationality', 'PL', 'bool_birth_year_estimated', false,
+                          'int_birth_year', 1965, 'txt_nationality', 'POL', 'bool_birth_year_estimated', false,
                           'enum_gender', 'F', 'json_name_aliases', '[]'::jsonb,
                           'json_revoked_aliases', '[]'::jsonb, 'json_user_confirmed_aliases', '[]'::jsonb,
                           'ts_created', now(), 'ts_updated', now());

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="64d217029c51aa10dfebc4879546e8d3924b4d1756f8410cc350947b9c0eb2ab">
+<meta name="doc-source-sha256" content="a728f445de8799499ec9a0c2b5ffbe55e902764dd41986441728ae9f25236993">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1194 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1218 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#the-roster-s-nationality-one-spelling-kept-to-the-evf-ranking-rnat">The roster&#x27;s nationality: one spelling, kept to the EVF ranking (RNAT.*)</a></li><li class="depth-2"><a href="#an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -826,7 +826,7 @@
 <td>FR-115</td>
 <td><strong>Self-healing recompute</strong> (NEW design): a master-data change auto-triggers <code>RECOMPUTE_DOMESTIC</code> — re-derive V-cats + re-score the affected <strong>event</strong> from stored FK-linked results (no source, no re-match). Event-granular (relocation crosses brackets); column-aware CDC trigger + <code>tbl_recompute_queue</code> + debounced worker; convergent (Commit effects=live ⇒ no re-trigger).</td>
 <td>ADR-072</td>
-<td>pgTAP 44.1–44.8 (column-aware trigger enqueues on BY/nationality, no-op on name; dedup coalesce; watermark); N4.1–N4.6 (recompute re-partitions by governed BY, boundary-crossing, twice==once); N5.1–N5.4 (debounce/claim/quiescence); <strong>deterministic CLAIMED recovery</strong> — <code>claim_recompute_batch</code> reclaims orphaned CLAIMED rows (PENDING+CLAIMED, single-writer; no stale-claim timeout, ADR-072 amend 2026-06-26) in <code>test_db_connector.py</code>; N9.1–N9.7 (test_recompute_persist.py): RECOMPUTE Commit write-back re-partitions by (weapon, gender, governed-V-cat), relocates across brackets, clears emptied brackets, skips BY-null rows; INTL.RECOMP.01–04 (an international result stays in its stored tournament with its N and place, ADR-105); RECOMP.PROV.01–05 + pgTAP 87 RECOMP.PROV.RPC.01–05 (the stored scraped name, confidence and match method are written back verbatim, ADR-072 amend 2026-10-01; N9.6 amended); N5.7 (worker --drain CLI for the recompute-drain.yml scheduler); live LOCAL heal E2E (BY correction → CDC enqueue → debounced worker → fencer relocated V2→V3 + V2 re-scored on new field, no human action)</td>
+<td>pgTAP 44.1–44.8 (column-aware trigger enqueues on BY, no-op on name and, since FR-172 (44.8 amended), on nationality; dedup coalesce; watermark); N4.1–N4.6 (recompute re-partitions by governed BY, boundary-crossing, twice==once); N5.1–N5.4 (debounce/claim/quiescence); <strong>deterministic CLAIMED recovery</strong> — <code>claim_recompute_batch</code> reclaims orphaned CLAIMED rows (PENDING+CLAIMED, single-writer; no stale-claim timeout, ADR-072 amend 2026-06-26) in <code>test_db_connector.py</code>; N9.1–N9.7 (test_recompute_persist.py): RECOMPUTE Commit write-back re-partitions by (weapon, gender, governed-V-cat), relocates across brackets, clears emptied brackets, skips BY-null rows; INTL.RECOMP.01–04 (an international result stays in its stored tournament with its N and place, ADR-105); RECOMP.PROV.01–05 + pgTAP 87 RECOMP.PROV.RPC.01–05 (the stored scraped name, confidence and match method are written back verbatim, ADR-072 amend 2026-10-01; N9.6 amended); N5.7 (worker --drain CLI for the recompute-drain.yml scheduler); live LOCAL heal E2E (BY correction → CDC enqueue → debounced worker → fencer relocated V2→V3 + V2 re-scored on new field, no human action)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1162,6 +1162,13 @@
 <td>FR-167, FR-169, ADR-079</td>
 <td>EVFCTRY.01–08</td>
 <td>Covered (released 2026-11-22, main fc63f0f5, CERT + PROD)</td>
+</tr>
+<tr>
+<td>FR-172</td>
+<td><strong>The roster's nationality is one spelling and is kept to the EVF ranking.</strong> <code>tbl_fencer.txt_nationality</code> is a three-letter code, POL for Poland (never PL): the column defaults to POL and refuses anything else, and every path that creates a fencer folds the source's code the same way. The EVF parity check counts POL fencers (I26). The 25 fencers decided on 2026-11-22 hold their codes (20 EVF's country, four POL, one USA), and one fencer's 2024/25 and 2025/26 nationality is an administrator's POL. Each month, after the EVF ranking is read, a roster fencer with a birth year who matches exactly one ranked fencer (folded name, same gender, an EVF category its birth year gives in the active season or the one before) takes EVF's country when it is a fencing code (never OTH), each write naming the fencer's id and current value, and every change is reported on Telegram; CERT and PROD run in their write lanes. A nationality change queues no recompute. Plan signed 2026-11-22 (<code>doc/plans/roster-nationality-from-evf-2026-11-22.html</code>, rev 3, N1–N9).</td>
+<td>FR-171, ADR-106, ADR-072</td>
+<td>RNAT.01–16, 44.8</td>
+<td>Implemented (awaiting release)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -6300,6 +6307,134 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="the-roster-s-nationality-one-spelling-kept-to-the-evf-ranking-rnat">The roster's nationality: one spelling, kept to the EVF ranking (RNAT.*)</h2>
+<p>FR-172. Plan signed 2026-11-22 (<code>doc/plans/roster-nationality-from-evf-2026-11-22.html</code>, rev 3; N1–N9, „All as recommended”, after the user's own marks on N3 and N4); IDs registered before any code. Measured first, read-only on PROD: 373 roster fencers, 123 matching exactly one EVF ranked fencer; 20 held PL (the column default) where EVF and their own results name another country; PL 346 against POL 23 (I14); the parity check counted PL only (I26). Before building, a nationality change was found to queue a rescore of 51 closed-season events, which N8 removed. The rule run read-only against PROD proposed exactly the 20 of N1.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Kind</th>
+<th>Test</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RNAT.01</td>
+<td><code>tbl_fencer.txt_nationality</code> defaults to POL.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.02</td>
+<td>The column refuses anything but three capital letters (PL and a word are refused).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.03</td>
+<td>No roster fencer holds PL or any other value that is not a three-letter code.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.04</td>
+<td><code>fn_event_results_for_parity</code> returns a POL fencer's result (I26).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.05</td>
+<td>A fencer split from an alias without a nationality is POL.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.06</td>
+<td>The 25 fencers decided on 2026-11-22 hold their codes (N1, N4).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.07</td>
+<td>Fencer 140's 2024/25 and 2025/26 nationality is an administrator's POL, and a refresh from the season's results keeps it (N3, N7).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/136_roster_nationality.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.08</td>
+<td>A nationality change queues no recompute; a birth-year change still does (N8; test 44.8 amended).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/44_cdc_recompute_dedup.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.09</td>
+<td>A new fencer's nationality is the source's three-letter code, PL folded to POL, and POL when the source printed none or no code.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.10</td>
+<td>No Python path creates a fencer as PL; promote plans a new fencer with POL.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.11</td>
+<td>A roster fencer matching exactly one ranked fencer (folded name, gender, EVF category of the active season or the one before) takes EVF's country.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.12</td>
+<td>Several ranked fencers, a category or gender disagreement, OTH or another non-code, no birth year, or the same country change nothing; a stored PL reads as POL.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.13</td>
+<td>The write names each fencer's id and current value and returns the rows it changed; the read takes the active season, the roster, the ranking and the fencing codes.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.14</td>
+<td>The monthly run keeps each environment's roster after the ranked fencers and reports every change on Telegram; with nothing to change it writes nothing (RFNAME.24, RFNAME.26, EVFCTRY.04 amended).</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code>, <code>python/tests/test_given_names_sync.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.15</td>
+<td><code>--env</code> writes one environment; the workflow runs CERT then PROD in <code>cert-write</code> and <code>prod-write</code> and installs the matcher's name folding.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RNAT.16</td>
+<td>The seed export writes an administrator's season nationality (the results rebuild the others), and the current seed carries the decisions of 2026-11-22.</td>
+<td>pytest</td>
+<td><code>python/tests/test_roster_nationality.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</h2>
 <p>FR-170. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 4 of 4; D2 A, D5 A); IDs registered before any code. Checked on LOCAL first: <code>tbl_registration</code>'s one policy („Admin all registrations”) lets a signed-in user read and update every column and gives a visitor no row; the name-form, roster-name and year-range triggers fire on update; the country refers to <code>tbl_fencing_country</code>; <code>tbl_fencer</code>'s birth year is readable. So no migration is expected, and RFADM.09–12 prove it. On 22 Nov the user added that a linked entry's correction also reaches the roster (sheet §05, R1–R3 A) and approved I25 A; that brought migration <code>20261122000003</code> (<code>fn_update_registration_as_admin</code>), through which the dialog now saves, and RFADM.16–25, registered with the sheet before their code. Released 2026-11-22 as main f3f57bca: CI run 44999000359 and Release run 44999138783 passed first time (rebased onto FR-171, so the roster test is <code>135_…</code> and the migration <code>20261122000003</code>); the user approved PROD. Checked read-only on CERT and PROD: <code>fn_update_registration_as_admin</code> exists, SECURITY DEFINER, executable by <code>authenticated</code> and not by <code>anon</code>; no ADMIN nationality row and no entry changed (CERT 90 entries, PROD 196); the live bundle calls the function.</p>
 <div class="tablewrap"><table>
@@ -6559,5 +6694,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>64d217029c51aa10dfebc4879546e8d3924b4d1756f8410cc350947b9c0eb2ab</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a728f445de8799499ec9a0c2b5ffbe55e902764dd41986441728ae9f25236993</code></footer>
 </div></body></html>

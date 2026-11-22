@@ -323,5 +323,7 @@ def test_seed_export_includes_birth_year_and_gender(tmp_path, monkeypatch):
     sql = (tmp_path / "supabase" / "seed_phase5_increments.sql").read_text()
     assert "1974" in sql
     assert "'F'" in sql
-    # NULL nationality should fall back to PL
-    assert "'PL'" in sql
+    # NULL nationality falls back to the roster's default, POL (amended by
+    # FR-172, plan roster-nationality-from-evf rev 3, N2 A: never PL).
+    assert "'POL'" in sql
+    assert "'PL'" not in sql

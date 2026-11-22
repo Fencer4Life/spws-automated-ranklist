@@ -64,7 +64,7 @@ BEGIN
   -- 2000 -> age (v_yr_start+1)-2000, always in the V2/V3 band for the offsets
   -- this file uses (n=1..9 -> season end 2061..2069 -> age 61..69 -> V3).
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
-  VALUES ('PzszSenior' || p_n, 'Tester', 'PL', 2000, 'M') RETURNING id_fencer INTO out_fencer;
+  VALUES ('PzszSenior' || p_n, 'Tester', 'POL', 2000, 'M') RETURNING id_fencer INTO out_fencer;
 END $setup$;
 
 -- Sets int_participant_count directly, not via fn_ingest_tournament_results

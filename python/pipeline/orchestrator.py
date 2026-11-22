@@ -26,7 +26,7 @@ from python.matcher.pipeline import (
     resolve_tournament_results,
 )
 from python.pipeline import stages
-from python.pipeline.international_admission import fold_federation
+from python.pipeline.international_admission import fold_federation, roster_nationality
 from python.pipeline.types import HaltError, Overrides, PipelineContext
 from python.scrapers.fencingtime_xml import (
     detect_categories_from_altname,
@@ -351,7 +351,7 @@ def _process_category(
                     new_id = db.insert_fencer(
                         {
                             **ac_data,
-                            "txt_nationality": r.get("country", "PL"),
+                            "txt_nationality": roster_nationality(r.get("country")),
                         }
                     )
                 else:
@@ -406,7 +406,7 @@ def _process_category(
                 new_id = db.insert_fencer(
                     {
                         **ac_data,
-                        "txt_nationality": r.get("country", "PL"),
+                        "txt_nationality": roster_nationality(r.get("country")),
                     }
                 )
             else:
