@@ -43,6 +43,8 @@ vi.mock('../src/lib/api', () => ({
   matchRegistrationFencer: vi.fn(),
   createRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
+  // FR-175: no ranks, as for an event whose box is not ticked.
+  fetchEntryRanks: vi.fn(() => Promise.resolve([])),
   deleteRegistration: vi.fn(),
   // FR-170: a signed-in list also reads each entry's details and the season.
   fetchAdminEntryDetails: vi.fn(async () => []),

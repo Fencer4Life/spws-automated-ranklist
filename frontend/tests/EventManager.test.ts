@@ -9,10 +9,12 @@ vi.mock('../src/lib/api', () => ({
   requestDispatch: vi.fn(),
   setEventSourceOverride: vi.fn(() => Promise.resolve()),
   reingestEvent: vi.fn(() => Promise.resolve({ ok: true })),
+  fetchEventShowSeed: vi.fn(() => Promise.resolve(false)),
 }))
-import { requestDispatch, setEventSourceOverride } from '../src/lib/api'
+import { requestDispatch, setEventSourceOverride, fetchEventShowSeed } from '../src/lib/api'
 const mockRequestDispatch = vi.mocked(requestDispatch)
 const mockSetSourceOverride = vi.mocked(setEventSourceOverride)
+const mockFetchShowSeed = vi.mocked(fetchEventShowSeed)
 
 import EventManager from '../src/components/EventManager.svelte'
 import { setAssetBase } from '../src/lib/assetBase'
@@ -1553,5 +1555,95 @@ describe('EventManager — payment account', () => {
     const source = container.querySelector('[data-field="form-payment-source"]') as HTMLElement
     expect(source).not.toBeNull()
     expect(source.textContent?.trim()).not.toBe('')
+  })
+})
+
+describe('EventManager — show the ranking place (FR-175)', () => {
+  // The first mock event (id 10) with our registration on or off.
+  function seedProps(registrationOn: boolean, extra: Record<string, unknown> = {}) {
+    return {
+      events: MOCK_EVENTS.map((e, i) => (i === 0 ? { ...e, bool_use_spws_registration: registrationOn } : e)),
+      seasons: MOCK_SEASONS,
+      organizers: MOCK_ORGANIZERS,
+      tournaments: MOCK_TOURNAMENTS,
+      selectedSeasonId: 1,
+      isAdmin: true,
+      oncreate: vi.fn(),
+      onupdate: vi.fn(),
+      onupdatestatus: vi.fn(),
+      ...extra,
+    }
+  }
+  const box = (c: HTMLElement) => c.querySelector('[data-field="form-show-seed"]') as HTMLInputElement
+  const settle = () => new Promise((r) => setTimeout(r, 0))
+
+  beforeEach(() => {
+    mockFetchShowSeed.mockReset()
+    mockFetchShowSeed.mockResolvedValue(false)
+  })
+
+  // ELRANK.09
+  it('ELRANK.09: the box sits in the "Rejestracja SPWS" section and shows the stored value', async () => {
+    mockFetchShowSeed.mockResolvedValue(true)
+    const { container } = render(EventManager, { props: seedProps(true) })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await settle()
+    const section = container.querySelector('[data-field="spws-registration-section"]')!
+    expect(section.querySelector('[data-field="form-show-seed"]')).not.toBeNull()
+    expect(mockFetchShowSeed).toHaveBeenCalledWith(10)
+    expect(box(container).checked).toBe(true)
+    expect(box(container).disabled).toBe(false)
+  })
+
+  it('ELRANK.09: the box is disabled while our registration is off', async () => {
+    const { container } = render(EventManager, { props: seedProps(false) })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await settle()
+    expect(box(container).disabled).toBe(true)
+  })
+
+  // ELRANK.10
+  it('ELRANK.10: saving without a change does not call onupdateshowseed', async () => {
+    const onupdateshowseed = vi.fn()
+    const { container } = render(EventManager, { props: seedProps(true, { onupdateshowseed }) })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await settle()
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdateshowseed).not.toHaveBeenCalled()
+  })
+
+  it('ELRANK.10: ticking the box and saving sends it on', async () => {
+    const onupdateshowseed = vi.fn()
+    const { container } = render(EventManager, { props: seedProps(true, { onupdateshowseed }) })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await settle()
+    await fireEvent.click(box(container))
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdateshowseed).toHaveBeenCalledWith(10, true)
+  })
+
+  it('ELRANK.10: switching our registration off sends the ranking place off too', async () => {
+    mockFetchShowSeed.mockResolvedValue(true)
+    const onupdateshowseed = vi.fn()
+    const { container } = render(EventManager, { props: seedProps(true, { onupdateshowseed }) })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    await settle()
+    await fireEvent.click(container.querySelector('[data-field="form-use-spws-registration"]')!)
+    expect(box(container).checked).toBe(false)
+    expect(box(container).disabled).toBe(true)
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdateshowseed).toHaveBeenCalledWith(10, false)
+  })
+
+  it('ELRANK.10: a new event has no box (registration is switched on later), reads and sends nothing', async () => {
+    const onupdateshowseed = vi.fn()
+    const oncreate = vi.fn()
+    const { container } = render(EventManager, { props: seedProps(true, { onupdateshowseed, oncreate }) })
+    await fireEvent.click(container.querySelector('[data-field="add-event-btn"]')!)
+    await settle()
+    expect(mockFetchShowSeed).not.toHaveBeenCalled()
+    expect(box(container)).toBeNull()
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+    expect(onupdateshowseed).not.toHaveBeenCalled()
   })
 })

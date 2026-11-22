@@ -140,7 +140,9 @@ if [ -f "$RTM" ]; then
   # 173 since 2026-11-22: +FR-174 (an event's seed files follow its
   #   organiser's ranking; the EVF read keeps places). Registered as Planned
   #   before code (plan seeding-by-organiser-ranking, release 1).
-  EXPECTED=173
+  # 174 since 2026-11-22: +FR-175 (the entry list can show the ranking place,
+  #   switched per event; plan seeding-by-organiser-ranking, release 2).
+  EXPECTED=174
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

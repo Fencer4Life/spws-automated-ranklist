@@ -65,12 +65,15 @@ read -r -d '' ALLOWLIST <<'EOF' || true
 'fn_ftl_export_entries','fn_ftl_export_events','fn_ftl_roster',
 'fn_today','fn_active_season_id','bool_active',
 'fn_name_without_title','fn_registration_name_check',
-'fn_registration_name_suggestions','fn_set_registration_name_source'
+'fn_registration_name_suggestions','fn_set_registration_name_source',
+'fn_registration_entry_ranks'
 EOF
-# The second-to-last line holds the FR-167 additions of 2026-11-21 (the title
-# rule the lookups call, and the name check's two answers); the last line the
-# FR-173 additions of 2026-11-22 (the name list under SURNAME, and the record of
-# how a name arrived). Both are justified at 52.7.
+# The third-to-last line holds the FR-167 additions of 2026-11-21 (the title
+# rule the lookups call, and the name check's two answers); the second-to-last
+# the FR-173 additions of 2026-11-22 (the name list under SURNAME, and the record
+# of how a name arrived); the last the FR-175 addition of 2026-11-22 (each
+# start's ranking place for the entry list, only when the event's switch is on).
+# All are justified at 52.7.
 # The five names on the 'fn_registration_identity_candidates' and
 # 'fn_ftl_export_entries' lines are the 2026-09-12 additions: the
 # identity block (ADR-093) and the public FTL export page (ADR-080 amendment).

@@ -27,6 +27,9 @@ import {
   fetchEventSeasonEndYear,
   fetchNameSuggestions,
   setRegistrationNameSource,
+  fetchEntryRanks,
+  fetchEventShowSeed,
+  updateEventShowSeed,
 } from '../src/lib/api'
 
 beforeEach(() => {
@@ -378,5 +381,61 @@ describe('fetchEventSeasonEndYear (FR-170: the dialog\'s year range)', () => {
   it('returns null for an unknown event', async () => {
     chain({ data: null, error: null })
     expect(await fetchEventSeasonEndYear(3)).toBeNull()
+  })
+})
+
+describe('fetchEntryRanks (FR-175, ELRANK.07)', () => {
+  it('asks for the event\'s ranks and returns its rows', async () => {
+    const rows = [
+      { id_registration: 4, enum_weapon: 'EPEE', enum_age_category: 'V2', int_rank: 3, int_seed_order: 1, txt_ranking: 'EVF', ts_ranking_read: '2026-11-23T05:41:00Z' },
+    ]
+    mockRpc.mockResolvedValue({ data: rows, error: null })
+    expect(await fetchEntryRanks(9)).toEqual(rows)
+    expect(mockRpc).toHaveBeenCalledWith('fn_registration_entry_ranks', { p_id_event: 9 })
+  })
+
+  it('reads an error as no ranks, never as a broken list', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'function fn_registration_entry_ranks does not exist' } })
+    expect(await fetchEntryRanks(9)).toEqual([])
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    expect(await fetchEntryRanks(9)).toEqual([])
+  })
+})
+
+describe('fetchEventShowSeed / updateEventShowSeed (FR-175, ELRANK.08)', () => {
+  function readChain(result: { data: unknown; error: unknown }) {
+    const maybeSingle = vi.fn().mockResolvedValue(result)
+    const eq = vi.fn().mockReturnValue({ maybeSingle })
+    const select = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ select })
+    return { select, eq }
+  }
+
+  it('reads the event\'s switch', async () => {
+    const c = readChain({ data: { bool_show_seed: true }, error: null })
+    expect(await fetchEventShowSeed(9)).toBe(true)
+    expect(mockFrom).toHaveBeenCalledWith('tbl_event')
+    expect(c.select).toHaveBeenCalledWith('bool_show_seed')
+    expect(c.eq).toHaveBeenCalledWith('id_event', 9)
+  })
+
+  it('reads an error or a missing event as off', async () => {
+    readChain({ data: null, error: { message: 'boom' } })
+    expect(await fetchEventShowSeed(9)).toBe(false)
+    readChain({ data: null, error: null })
+    expect(await fetchEventShowSeed(9)).toBe(false)
+  })
+
+  it('writes the switch, and throws when the database refuses', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null })
+    const update = vi.fn().mockReturnValue({ eq })
+    mockFrom.mockReturnValue({ update })
+    await updateEventShowSeed(9, true)
+    expect(mockFrom).toHaveBeenCalledWith('tbl_event')
+    expect(update).toHaveBeenCalledWith({ bool_show_seed: true })
+    expect(eq).toHaveBeenCalledWith('id_event', 9)
+
+    eq.mockResolvedValue({ error: { message: 'permission denied' } })
+    await expect(updateEventShowSeed(9, false)).rejects.toMatchObject({ message: 'permission denied' })
   })
 })

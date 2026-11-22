@@ -1,0 +1,70 @@
+<body>
+<div class="wrap">
+  <p class="eyebrow">FR-175 · release 2 · picture sheet</p>
+  <h1>The ranking place on the entry list</h1>
+  <p class="dek">Main against this branch, pixel for pixel. <b>Every state that must not change is identical to main (@@SAME_OK@@ of @@SAME_TOTAL@@, 0 pixels).</b> The new look shows only with the box ticked and weapon, category and gender all chosen. The event form gains one box and one hint line; nothing else in it moves except by that height.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>branch claude/entry-list-shows-ranking-place</span>
+    <span class="pill"><span class="dot"></span>approved by the user 2026-11-22 („Approve both”), with the ADR-079 amendment</span>
+  </div>
+
+  <section>
+    <p class="kicker">01 · What you decide</p>
+    <h2>Two sign-offs before the push (both given 2026-11-22)</h2>
+    <ol class="steps">
+      <li><b>This sheet.</b> The new look (section 03 and 04) and the proof that nothing else changed (02).</li>
+      <li><b>The ADR-079 amendment of 2026-11-22 (FR-175)</b>, the per-event switch, the three-filter rule, „#”, the seed order, what a visitor may read. Accepted on your word.</li>
+    </ol>
+    <div class="note accent"><p class="lede">Recommendation</p><p>Approve both. Nothing here goes beyond the signed plan; the four places where the build differs from the plan's text are listed in section 05, each as a correction the plan's own intent required.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Must not change</p>
+    <h2>Identical to main: @@SAME_OK@@ of @@SAME_TOTAL@@</h2>
+    <p>The entry list on the standalone page and in the calendar's modal, desktop (1280) and phone (375), Polish and English. Main and this branch were built for production (<code>vite.config.ce.ts</code>) and photographed by the same script with software drawing; each build twice, and the two runs are identical (@@N_EL@@ of @@N_EL@@ images each), so any difference below is the change itself. All data is invented (the 76-entry roster of the 17 Nov sheet); no database is read.</p>
+    <div class="tablewrap"><table><thead><tr><th>State</th><th>Where</th><th>Main vs branch</th></tr></thead><tbody>
+@@ROWS_SAME@@
+    </tbody></table></div>
+    <p>The standalone page in Polish, one copy each (main and branch are the same pixels):</p>
+    <div class="grid">
+@@FIGS_SAME@@
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The new look</p>
+    <h2>„#” first, the list in seed order, a line naming the ranking</h2>
+    <p>With the box ticked and épée, V2 and men chosen. Places follow the seed order; the 2nd and 3rd fencers share 2nd place; every fourth fencer has no place and stands after the ranked ones, alphabetically, with a dash. For an EVF event the line under the list names the EVF ranking and the date it was read; for an event of ours, our ranking. The tiles count the same rows as before.</p>
+    <div class="tablewrap"><table><thead><tr><th>State</th><th>Where</th><th>Main vs branch</th></tr></thead><tbody>
+@@ROWS_NEW@@
+    </tbody></table></div>
+@@PAIRS_NEW@@
+  </section>
+
+  <section>
+    <p class="kicker">04 · The event form</p>
+    <h2>One box and one hint in „Rejestracja SPWS”</h2>
+    <p>The administrator's form, mounted outside the signed-in application with two invented events and photographed from main and from this branch (each twice, identical: @@N_FORM@@ of @@N_FORM@@). Each pair is mapped row by row: rows above the new box must be identical in place, every row below identical by exactly the inserted height.</p>
+    <div class="tablewrap"><table><thead><tr><th>State</th><th>Width</th><th>Row map</th></tr></thead><tbody>
+@@ROWS_FORM@@
+    </tbody></table></div>
+@@PAIRS_FORM@@
+  </section>
+
+  <section>
+    <p class="kicker">05 · Found while building</p>
+    <h2>Issues, each fixed here</h2>
+    <ul>
+      <li><b>I31 — the security page was stale.</b> <code>doc/handbook/reference/security-posture.html</code> said 33 visitor-callable functions; the allowlist held 37 before this change (FR-167 and FR-173 added four and the page was not updated). It now lists all 38, the four in a row of their own.</li>
+      <li><b>I32 — the hint widened the form.</b> The first build let the hint's one long line set the section's width, so on desktop the section no longer fitted beside the other fields and the whole form reflowed. Caught by this sheet; the hint now takes no width of its own (<code>contain: inline-size</code>) and wraps inside the section, and a whole-pixel line height keeps the rows below on whole pixels.</li>
+      <li><b>The plan's save rule, corrected.</b> The plan sent the switch only when the box changed. Unticking our registration without touching the box would then have left the switch on in the database, and switching registration back on later would have shown the places again. The form now compares „registration on and box ticked” with what is stored, and unticking registration also unticks the box (ELRANK.10).</li>
+      <li><b>A new event's form has no box.</b> The plan said a new event starts with the box off; the create form has no „Rejestracja SPWS” section at all (registration is switched on later, in the edit form), so it has no box, reads nothing and sends nothing (ELRANK.10).</li>
+      <li><b>The migration, to the house pattern.</b> The column is added last, as the one statement holding the table lock (as FR-172 and FR-173 do), so the SQL check finds nothing; the function is PL/pgSQL so it can be created before the column. Behaviour as planned (ELRANK.01–06, 22 assertions).</li>
+      <li><b>The mirror test proves it ran.</b> A first version checked only that the switch was untouched, which would also pass if the mirror did nothing; each call now also renames the event and checks the new name arrived.</li>
+    </ul>
+  </section>
+
+  <p class="foot">picture sheet · FR-175 · 22 Nov 2026 · generated by entry-list-ranking-place-sheet/tools/build_sheet.py from capture.cjs and capture_form.cjs · plan doc/plans/seeding-by-organiser-ranking-2026-11-22.html rev 1, release 2</p>
+</div>
+</body>
+</html>

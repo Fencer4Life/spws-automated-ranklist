@@ -200,6 +200,7 @@
       oncreate={handleCreateEvent}
       onupdate={handleUpdateEvent}
       onupdatestatus={handleUpdateEventStatus}
+      onupdateshowseed={handleUpdateEventShowSeed}
       ondelete={handleDeleteEvent}
       ondeletetournament={handleDeleteTournament}
       onedittournament={handleEditTournament}
@@ -358,6 +359,7 @@
     createEvent,
     updateEvent,
     updateEventStatus,
+    updateEventShowSeed,
     deleteEventCascade,
     fetchScoringConfig,
     fetchScoringEngines,
@@ -1644,6 +1646,16 @@
     try {
       await updateEventStatus(id, status)
       await reloadCalendar()
+    } catch (e: unknown) {
+      error = e instanceof Error ? e.message : String(e)
+    }
+  }
+
+  // FR-175 — the "show the ranking place" switch. It is not in vw_calendar, so
+  // the calendar needs no reload; a refusal is reported as any other save is.
+  async function handleUpdateEventShowSeed(id: number, show: boolean) {
+    try {
+      await updateEventShowSeed(id, show)
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }

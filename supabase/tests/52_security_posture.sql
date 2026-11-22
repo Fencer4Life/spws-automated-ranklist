@@ -203,6 +203,14 @@ SELECT set_eq(
     -- fixed words (RFAC.12).
     'fn_registration_name_suggestions',
     'fn_set_registration_name_source',
+    -- FR-175 (2026-11-22). fn_registration_entry_ranks is SECURITY DEFINER over
+    -- fn_event_seed_ranks, which is not itself on this list: it reads the EVF
+    -- places kept in tbl_evf_ranking_place, which a visitor cannot read. What it
+    -- publishes is each start's place in a public ranking (ours on the ranklist,
+    -- EVF's on EVF's own site) and its seed order, only for an event whose
+    -- administrator switched bool_show_seed on and whose registration is ours.
+    -- No birth year, no points, no fencer id (ELRANK.05); STABLE, writes nothing.
+    'fn_registration_entry_ranks',
     -- fn_confirm_registration_identity is the one genuinely new capability on
     -- this surface: it is SECURITY DEFINER and it can write tbl_fencer, which
     -- deliberately reverses ADR-079's read-only-birth-year invariant. It is

@@ -676,6 +676,20 @@ export interface RegistrationEntry {
   txt_country?: string | null
 }
 
+// FR-175 — one start (entry × weapon) with its place in the organiser's
+// ranking (fn_registration_entry_ranks). Rows come only for an event whose
+// administrator ticked "show the ranking place"; an unranked start has null
+// rank and seed order. Never a birth year, points or a fencer id.
+export interface EntryRank {
+  id_registration: number
+  enum_weapon: WeaponType
+  enum_age_category: AgeCategory
+  int_rank: number | null
+  int_seed_order: number | null
+  txt_ranking: 'EVF' | 'SPWS'
+  ts_ranking_read: string | null
+}
+
 // FR-170 — what a signed-in administrator reads about an entry beyond the
 // public list: the declared year, club and country, the link, and the linked
 // fencer's roster year (null for a newcomer).
