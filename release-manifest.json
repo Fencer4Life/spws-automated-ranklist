@@ -1,18 +1,18 @@
 {
   "version": "0.1.0",
-  "sha": "0f5018faf843e925e614fd24f4c4da09153fc7f9",
-  "created": "2026-11-22T12:33:24Z",
-  "schema_fingerprint": "682109319a2164902b5c58176c715b34",
+  "sha": "7d20234b8bb75ce4e4bc7e00b5483404ca61cf96",
+  "created": "2026-11-22T13:33:31Z",
+  "schema_fingerprint": "42787ce087bc722cb5863fa89291f7df",
   "migrations": {
-    "total": 247,
+    "total": 248,
     "new_since_last": [
-      "20261122000006_evf_ranking_places_and_seed_ranks.sql"
+      "20261122000007_entry_list_ranks.sql"
     ]
   },
   "tests": {
     "pgtap": {
-      "files": 140,
-      "assertions": 1850
+      "files": 141,
+      "assertions": 1872
     },
     "pytest": {
       "files": 183
@@ -23,9 +23,9 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-11-22T12:33:25Z",
-      "sha": "0f5018faf843e925e614fd24f4c4da09153fc7f9",
-      "schema_fingerprint": "682109319a2164902b5c58176c715b34"
+      "at": "2026-11-22T13:33:33Z",
+      "sha": "7d20234b8bb75ce4e4bc7e00b5483404ca61cf96",
+      "schema_fingerprint": "42787ce087bc722cb5863fa89291f7df"
     },
     "prod": {
       "at": "2026-11-22T12:34:31Z",
