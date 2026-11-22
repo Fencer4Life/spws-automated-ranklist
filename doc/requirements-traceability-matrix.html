@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="1cdedafe8f6ac64f40171e9a27f2e68d4cca05d2d8a5faed4d47d95c05f2e55e">
+<meta name="doc-source-sha256" content="167fb5f804aca29f69ac9b612a686128111bfc7a58c785027aaad9e297de4ed8">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1154,7 +1154,7 @@
 <td><strong>The EVF ranking's countries are kept, and an entry without a country is filled from them.</strong> The monthly read of the 24 EVF ranking lists keeps, besides the given names (FR-167), each ranked fencer's EVF id, surname, given name, gender, category and country in <code>tbl_evf_ranking_fencer</code> on CERT and PROD; never points, place or birth date, and a visitor cannot read it. A tool fills the country of an event's entries that have none: an entry takes a country only when exactly one ranked fencer has its name (titles, case and diacritics folded), the gender is the same and the EVF category agrees with the declared year; a code that is not a fencing code (EVF's <code>OTH</code>) is never written, and a stored country is never overwritten. It shows what it would set first and writes only with <code>--apply</code>. Setting a country links nothing: identity still rests on the birth year. Plan signed 2026-11-21 (<code>doc/plans/evf-ranking-country-lomianki-2026-11-21.html</code>, rev 1, „All as recommended”: D1–D6 A).</td>
 <td>FR-167, FR-169, ADR-079</td>
 <td>EVFCTRY.01–08</td>
-<td>Implemented (awaiting release)</td>
+<td>Covered (released 2026-11-22, main fc63f0f5, CERT + PROD)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -6222,7 +6222,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking's countries fill entries without one (EVFCTRY.*)</h2>
-<p>FR-171. Plan signed 2026-11-21 (<code>doc/plans/evf-ranking-country-lomianki-2026-11-21.html</code>, rev 1; D1–D6 A); IDs registered before any code. Measured first, read-only: the public EVF ranking carries the country on every row (40 values, <code>OTH</code> on 148 of 3,003) and no birth date on any; of Łomianki's 105 PROD entries, 84 match exactly one ranked fencer by name, all 84 with the same gender and an agreeing category. Rehearsed on LOCAL 2026-11-22 with a live read (2,680 ranked fencers) and Łomianki's 105 PROD entries copied in: the dry run proposed the plan's 80 entries and codes, a second run after <code>--apply</code> proposed none; LOCAL cleaned afterwards. The rehearsal found that EVF ids are UUIDs and that rows carry no gender or category (the list's own), both pinned by tests.</p>
+<p>FR-171. Plan signed 2026-11-21 (<code>doc/plans/evf-ranking-country-lomianki-2026-11-21.html</code>, rev 1; D1–D6 A); IDs registered before any code. Measured first, read-only: the public EVF ranking carries the country on every row (40 values, <code>OTH</code> on 148 of 3,003) and no birth date on any; of Łomianki's 105 PROD entries, 84 match exactly one ranked fencer by name, all 84 with the same gender and an agreeing category. Rehearsed on LOCAL 2026-11-22 with a live read (2,680 ranked fencers) and Łomianki's 105 PROD entries copied in: the dry run proposed the plan's 80 entries and codes, a second run after <code>--apply</code> proposed none; LOCAL cleaned afterwards. The rehearsal found that EVF ids are UUIDs and that rows carry no gender or category (the list's own), both pinned by tests. Released 2026-11-22 as main fc63f0f5: CI run 44965013724 and Release run 44965172591 passed first time, the user approved PROD; CERT checked read-only (the table empty, UUID-keyed, row security on, no visitor or signed-in read). The renamed job was dispatched once (run 44965518608): PROD holds 2,680 ranked fencers, 40 countries. The PROD dry run for PEW5efs-2026-2027 proposed the plan's 80 entries and codes exactly; on the user's word („Yes, apply”) <code>--apply</code> set those 80, and the public entry list (<code>vw_registration_entry_list</code>) shows a country for 81 of 105 entries (the 80 and the one a fencer chose).</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -6239,56 +6239,56 @@
 <td><code>tbl_evf_ranking_fencer</code> exists with row security on; a visitor and a signed-in user read nothing from it.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/134_evf_ranking_fencer.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.02</td>
 <td>The monthly read keeps per ranked fencer exactly the EVF id, surname, given name, gender, category and country, as read (<code>OTH</code> included); never points, place or birth date; a fencer on several lists is one row.</td>
 <td>pytest</td>
 <td><code>python/tests/test_given_names_sync.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.03</td>
 <td>Its statement inserts a new fencer and updates a known one by EVF id; it never deletes.</td>
 <td>pytest</td>
 <td><code>python/tests/test_given_names_sync.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.04</td>
 <td>One run sends the given names and the fencers to each environment and reports both counts per environment on Telegram; a refused write alerts and exits non-zero; <code>--local</code> writes LOCAL only.</td>
 <td>pytest</td>
 <td><code>python/tests/test_given_names_sync.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.05</td>
 <td>The workflow, renamed <code>evf-ranking-sync.yml</code>, still runs monthly off the hour against CERT and PROD (RFNAME.27 amended).</td>
 <td>pytest</td>
 <td><code>python/tests/test_given_names_sync.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.06</td>
 <td>An entry takes a country only from exactly one ranked fencer of its name (titles, case, diacritics folded), of the same gender, whose EVF category agrees with the declared year in the event's season or the one before; several fencers, a gender or category disagreement, or a code outside <code>tbl_fencing_country</code> give nothing.</td>
 <td>pytest</td>
 <td><code>python/tests/test_fill_registration_country.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.07</td>
 <td>Without <code>--apply</code> the tool writes nothing and prints, per entry, what it would set and why not; the event is named by its exact code.</td>
 <td>pytest</td>
 <td><code>python/tests/test_fill_registration_country.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 <tr>
 <td>EVFCTRY.08</td>
 <td>With <code>--apply</code> one statement sets the countries, only on entries that still have none, and returns each row it changed; a stored country is never overwritten.</td>
 <td>pytest</td>
 <td><code>python/tests/test_fill_registration_country.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fc63f0f5)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6361,5 +6361,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>1cdedafe8f6ac64f40171e9a27f2e68d4cca05d2d8a5faed4d47d95c05f2e55e</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>167fb5f804aca29f69ac9b612a686128111bfc7a58c785027aaad9e297de4ed8</code></footer>
 </div></body></html>
