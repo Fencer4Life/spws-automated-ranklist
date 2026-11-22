@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a87c181071ef9fff441d77f9829da883b19ad9a196c46913b074d7d7ba2c3ba7">
+<meta name="doc-source-sha256" content="42fe40e25e2cf6db674f426a8a16919ad45f07926b087b872186785bd6d7a531">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1175,7 +1175,7 @@
 <td><strong>The registration form offers a name list under SURNAME.</strong> From the second typed letter, at most eight people whose name starts with what was typed (Polish letters folded, either name first) are offered from our fencer table, the EVF ranking and earlier entries of people on neither; each row shows the name, the age category, the country and where it comes from, and marks a person already entered in the event. A pick fills surname, given name, gender, country and an empty club box, and opens the year grid on the category's decade; <strong>it never shows or fills a birth year</strong>: every person gives their own, which is the only check on an entry. „Dalej” runs the identity check as before. The entry records how its name arrived. Plan signed 2026-11-22 (<code>doc/plans/registration-name-list-under-surname-2026-11-22.html</code>, rev 1).</td>
 <td>FR-167, FR-171, ADR-079</td>
 <td>RFAC.01–30, RFAC.34–35</td>
-<td>Implemented (awaiting release)</td>
+<td>Covered (released 2026-11-22, main 7af17608, CERT + PROD)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -6651,224 +6651,224 @@
 <td>One typed letter, an empty or NULL text, or an unknown event returns no row.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.02</td>
 <td>Two letters return the roster fencer whose surname starts with them, with gender, country, club and category.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.03</td>
 <td>Typing without Polish letters and in lower case finds a name written with them.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.04</td>
 <td>Typing the start of the given name, or „surname given”, or „given surname”, finds the person.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.05</td>
 <td>A person in our table and on the EVF ranking (same gender) is returned once, from our table.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.06</td>
 <td>An EVF row carries its country and category; OTH comes back as no country.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.07</td>
 <td>An earlier entrant on neither list is returned once as ENTRY, a title ignored; an entrant on a list is not returned as ENTRY.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.08</td>
 <td>Never more than 8 rows; surname matches first; our table, then EVF, then entries; alphabetical within.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.09</td>
 <td>A person entered in the asked event is flagged; asked for another event, not.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.10</td>
 <td>The result has exactly the eight named columns, none a birth year or an id; a fencer without a year has no category.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.11</td>
 <td>A visitor may call the function and still has no grant on <code>tbl_evf_ranking_fencer</code>.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.12</td>
 <td><code>txt_name_source</code> defaults to TYPED and refuses another word; the write sets it with the entry's edit handle and refuses a wrong or NULL handle and an unknown word.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.13</td>
 <td><code>fetchNameSuggestions</code> calls the function with the event and the text and maps the eight columns.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.14</td>
 <td><code>setRegistrationNameSource</code> calls the write with id, handle and source, and throws on an error.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.15</td>
 <td><code>vcatDecade</code> gives the decade holding most of the category's years; null without a category or season.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/birthYearRange.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.16</td>
 <td>With a hint and no year the year grid opens on the hinted decade; with a valid year, on its own; without a hint, as before.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/YearPicker.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.17</td>
 <td><code>focusBox()</code> focuses the year input and opens the grid.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/YearPicker.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.18</td>
 <td>No request for one letter; one request 200 ms after the last of several keystrokes.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.19</td>
 <td>Rows show name, category, country and source; an entered person shows the mark; no row shows a year.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.20</td>
 <td>A click on a row picks it and closes the list; the pick's own text starts no new request.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.21</td>
 <td>Arrow keys move the highlight and wrap; Enter picks; Escape closes; the ARIA attributes follow.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.22</td>
 <td>A late answer to an earlier request is dropped.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.23</td>
 <td>A failed request shows no list and no error.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.24</td>
 <td>The surname input keeps its name, carries <code>autocomplete=&quot;off&quot;</code> and reports input and blur to the form.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/NameSuggest.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.25</td>
 <td>A pick fills surname, given name, gender and country; the year stays empty; no weapon is ticked.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.26</td>
 <td>A pick fills an empty club box and leaves a typed one; no country or a non-fencing code leaves the country box.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.27</td>
 <td>After a pick the year grid is open on the category's decade with the focus in the year box.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.28</td>
 <td>After a pick „Dalej” runs today's exact match with the picked name and the given year; an entered person opens no entry.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.29</td>
 <td>A saved entry whose names are still the picked ones records the source; otherwise nothing; a failed record does not stop the entry. The administrator's dialog shows the source.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code>, <code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.30</td>
 <td>With the list never used the form behaves as before (the autofill expectation amended for D9).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.34</td>
 <td>The PROD → CERT copy of an event's entries reads how each name arrived (I28).</td>
 <td>pytest</td>
 <td><code>python/tests/test_promotion_refresh.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 <tr>
 <td>RFAC.35</td>
 <td><code>fn_replace_event_registrations</code> keeps how each copied name arrived; a row without it reads TYPED (I28).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7af17608)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6978,5 +6978,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a87c181071ef9fff441d77f9829da883b19ad9a196c46913b074d7d7ba2c3ba7</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>42fe40e25e2cf6db674f426a8a16919ad45f07926b087b872186785bd6d7a531</code></footer>
 </div></body></html>
