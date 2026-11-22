@@ -12,7 +12,12 @@
         isNextUpcoming={shown.id_event === model.nextUpcoming?.id_event}
         onopenregistration={openRegistrationModal}
         onopenentrylist={openEntryListModal}
+        {isAdmin}
+        onopenrevenue={openRevenueReport}
       />
+    {/if}
+    {#if revenueError}
+      <p class="calendar-error" role="alert">{revenueError}</p>
     {/if}
   {:else}
     <div class="no-events">{t('no_results')}</div>
@@ -98,6 +103,9 @@
   import CalendarBarrel from './CalendarBarrel.svelte'
   import EventCard from './EventCard.svelte'
   import RegistrationModal from './RegistrationModal.svelte'
+  import { fetchEventReportToken, issueEventReportToken } from '../lib/api'
+  import { assetUrl } from '../lib/assetBase'
+  import { reportUrl } from '../lib/revenueReport'
 
   let {
     events = [] as CalendarEvent[],
@@ -188,6 +196,28 @@
   let regModalEventName = $state('')
   let regModalRegistrationOpen = $state(true)
 
+  // FR-176 — the administrator's pill opens the event's revenue forecast. The
+  // tab is opened at once, inside the click: a browser blocks a tab opened
+  // after waiting for the network. Then the event's key is read, or created
+  // when there is none, and the tab is pointed at the report. On a failure the
+  // tab is closed and the message shown.
+  let revenueError = $state('')
+
+  async function openRevenueReport(ev: CalendarEvent) {
+    revenueError = ''
+    const tab = window.open('', '_blank')
+    try {
+      const token = (await fetchEventReportToken(ev.id_event)) ?? (await issueEventReportToken(ev.id_event))
+      const base = new URL(assetUrl('register.html'), window.location.href).href
+      const url = reportUrl(base, ev.txt_code, token)
+      if (tab) tab.location.href = url
+      else window.location.assign(url)
+    } catch (e) {
+      tab?.close()
+      revenueError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
   function openEntryListModal(ev: CalendarEvent) {
     regModalEventCode = ev.txt_code
     regModalEventId = ev.id_event
@@ -258,5 +288,12 @@
     color: #888;
     padding: 32px 0;
     font-size: 14px;
+  }
+  /* FR-176 — the revenue pill's failure, under the card. */
+  .calendar-error {
+    margin: 8px 0 0;
+    color: #a3261b;
+    font-size: 13px;
+    line-height: 18px;
   }
 </style>

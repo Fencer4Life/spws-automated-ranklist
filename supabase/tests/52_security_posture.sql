@@ -211,6 +211,17 @@ SELECT set_eq(
     -- administrator switched bool_show_seed on and whose registration is ours.
     -- No birth year, no points, no fencer id (ELRANK.05); STABLE, writes nothing.
     'fn_registration_entry_ranks',
+    -- FR-176 (2026-11-22). fn_event_revenue_report is SECURITY DEFINER and
+    -- answers only the holder of an event's live report key: the key is checked
+    -- inside (NULL for no key, an unknown, a replaced or another event's key),
+    -- so a visitor without it learns nothing, not even that the event exists.
+    -- With the key it returns what the public entry list already shows (name,
+    -- gender, age category, weapons) and what vw_calendar already publishes
+    -- (the fees); the one thing it adds is the sum. Never a birth year, club,
+    -- e-mail hash, edit token, country or fencer id (REVFC.08); STABLE, writes
+    -- nothing. fn_issue_event_report_token and fn_registration_fee are not on
+    -- this list: a visitor cannot call them (REVFC.10).
+    'fn_event_revenue_report',
     -- fn_confirm_registration_identity is the one genuinely new capability on
     -- this surface: it is SECURITY DEFINER and it can write tbl_fencer, which
     -- deliberately reverses ADR-079's read-only-birth-year invariant. It is

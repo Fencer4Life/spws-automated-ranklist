@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event revenue forecast · brainstorm</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink)}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.rec{color:var(--good);background:var(--good-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .mock{border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);padding:22px 24px;margin:20px 0}
+  .mock h4{font-family:var(--serif);font-size:24px;margin:0 0 2px}
+  .mock .sub{color:var(--faint);font-size:15px;margin:0 0 14px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}
+  .tile{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
+  .tile .k{font-size:13px;color:var(--faint);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+  .tile .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .btn{display:inline-block;font-size:15px;font-weight:700;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface-2);margin-right:6px}
+  .btn.pri{background:var(--accent);color:#fff;border-color:transparent}
+  .field{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+  .field .url{flex:1 1 280px;font-family:var(--mono);font-size:14px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:640px){.wrap{padding:36px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Brainstorm · rev 1 · 22 Nov 2026</p>
+  <h1>Event revenue forecast</h1>
+  <p class="dek">A report an organiser opens from a link: <b>what the entries declared so far add up to in fees</b>, in total and by weapon and gender, with an elegant printable spreadsheet. Nothing is built. Ten decisions below, each with my recommendation; answer „all as recommended” or name the ones to change.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>awaits your answers R1–R10</span>
+    <span class="pill"><span class="dot"></span>no code written</span>
+  </div>
+
+  <section>
+    <p class="kicker">01 · What I found</p>
+    <h2>Four facts that shape the design</h2>
+    <ul>
+      <li><b>The fee rule already exists, in one place in the browser.</b> The registration form quotes by weapon count: one weapon → <code>num_entry_fee</code>, two → <code>num_entry_fee_2w</code>, three → <code>num_entry_fee_3w</code>, in the event's currency (<code>RegistrationForm.svelte</code>). The report must use the same rule, so I move it into the database as the one source.</li>
+      <li><b>We record declarations, not payments.</b> Nothing in the system knows who paid. The report can only say „declared”; it is a forecast, and it must say so on its face.</li>
+      <li><b>Our spreadsheet module cannot style anything.</b> <code>frontend/src/lib/export.ts</code> uses the free SheetJS library, which writes values only: no fonts, colours, borders, column widths or page setup in an .ods. An elegant, printable sheet needs a different writer (R8).</li>
+      <li><b>A link that guards something needs a key.</b> The entry list is public; revenue is not. The organiser's download page already works this way: a long random key in the link, checked inside the database, revocable (<code>tbl_ftl_export_token</code>, ADR-095). That key covers all events and is created by hand; this report needs one per event, created from the admin screen.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The report</p>
+    <h2>What the organiser sees</h2>
+    <div class="mock">
+      <h4>Prognoza przychodu · PEW5 Łomianki</h4>
+      <p class="sub">12–13 grudnia 2026 · stan na 22 listopada 2026, 14:05 · na podstawie zgłoszeń, nie wpłat · <span class="btn">PL | EN</span> <span class="btn pri">Pobierz .ods</span></p>
+      <div class="tiles">
+        <div class="tile"><div class="k">Zgłoszonych</div><div class="v">105</div></div>
+        <div class="tile"><div class="k">Startów</div><div class="v">120</div></div>
+        <div class="tile"><div class="k">Przychód</div><div class="v">7 950 EUR</div></div>
+      </div>
+      <div class="tablewrap"><table><thead><tr><th>Zgłoszenie</th><th class="num">Osób</th><th class="num">Opłata</th><th class="num">Razem</th></tr></thead><tbody>
+        <tr><td>1 broń</td><td class="num">91</td><td class="num">70</td><td class="num">6 370</td></tr>
+        <tr><td>2 bronie</td><td class="num">13</td><td class="num">110</td><td class="num">1 430</td></tr>
+        <tr><td>3 bronie</td><td class="num">1</td><td class="num">150</td><td class="num">150</td></tr>
+        <tr><td><b>Razem</b></td><td class="num"><b>105</b></td><td class="num"></td><td class="num"><b>7 950</b></td></tr>
+      </tbody></table></div>
+      <div class="tablewrap"><table><thead><tr><th>Broń</th><th class="num">Kobiety · starty</th><th class="num">Kobiety · przychód</th><th class="num">Mężczyźni · starty</th><th class="num">Mężczyźni · przychód</th><th class="num">Razem</th></tr></thead><tbody>
+        <tr><td>Szpada</td><td class="num">16</td><td class="num">1 045</td><td class="num">47</td><td class="num">3 120</td><td class="num">4 165</td></tr>
+        <tr><td>Floret</td><td class="num">7</td><td class="num">440</td><td class="num">18</td><td class="num">1 150</td><td class="num">1 590</td></tr>
+        <tr><td>Szabla</td><td class="num">9</td><td class="num">600</td><td class="num">23</td><td class="num">1 595</td><td class="num">2 195</td></tr>
+        <tr><td><b>Razem</b></td><td class="num"><b>32</b></td><td class="num"><b>2 085</b></td><td class="num"><b>88</b></td><td class="num"><b>5 865</b></td><td class="num"><b>7 950</b></td></tr>
+      </tbody></table></div>
+      <p class="sub">Invented numbers. A third block, by decision R4, lists each entry with its weapons and fee.</p>
+    </div>
+    <p>The page is assembled when it is opened and again when „Pobierz .ods” is pressed, so it is always the list as it stands that minute. It follows the look of the entry list page and has the PL/EN switch.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Where the link lives</p>
+    <h2>My proposal for the UI</h2>
+    <p>Two places do two different jobs, so I recommend both, each small:</p>
+    <h3>A · The home: the event form, „Rejestracja SPWS” section</h3>
+    <p>This is where the entry-list link already sits, read-only, for copying. The report link goes right under it. It is the natural place to <em>create and manage</em> a link: the administrator is already deciding how registration works for this event.</p>
+    <div class="mock">
+      <p class="sub">Rejestracja SPWS</p>
+      <p style="margin:0 0 4px;font-size:15px">URL listy zgłoszeń (auto)</p>
+      <div class="field"><span class="url">https://…/register.html?event=PEW5efs-2026-2027&amp;view=list</span></div>
+      <p style="margin:10px 0 4px;font-size:15px">Link do prognozy przychodu (dla organizatora)</p>
+      <div class="field"><span class="url">https://…/register.html?event=PEW5efs-2026-2027&amp;view=revenue&amp;k=7c1e…</span><span class="btn pri">Kopiuj</span><span class="btn">Otwórz</span><span class="btn">Nowy link</span></div>
+      <p class="sub" style="margin:4px 0 0">Każdy, kto ma ten link, widzi prognozę. „Nowy link” unieważnia poprzedni.</p>
+    </div>
+    <p>Before a link exists the row shows one button, „Utwórz link”. „Nowy link” asks first, because the old one stops working for whoever holds it.</p>
+    <h3>B · The shortcut: the event card in „Znajdź zawody”, signed-in only</h3>
+    <p>On PROD the administrator works from the calendar. A signed-in administrator's card gets one more pill beside „Lista zgłoszonych”: <b>„Prognoza przychodu”</b>, which opens the report in a new tab (creating the link if none exists). A visitor never sees the pill. This is for <em>looking</em>; copying and replacing the link stay in the form.</p>
+    <div class="note accent"><p class="lede">Why not only the card</p><p>The card is a public surface with one line of pills; link management (copy, replace, the warning) does not fit there and would crowd it. Why not only the form: on PROD the form is two screens away from where the administrator watches entries arrive.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Decisions</p>
+    <h2>R1–R10</h2>
+    <div class="tablewrap"><table><thead><tr><th>#</th><th>Question</th><th>Options</th></tr></thead><tbody>
+      <tr><td>R1</td><td><b>What counts.</b></td><td><span class="chip rec">A · recommended</span> Every entry on the list at that minute, at the fee of its weapon count. Labelled „na podstawie zgłoszeń, nie wpłat”. One figure, no no-show scenarios.<br><span class="chip plain">B</span> Add a „pessimistic” figure with an assumed no-show rate. Rejected for now: an invented percentage, not data.</td></tr>
+      <tr><td>R2</td><td><b>A fee tier that is not set</b> (an entry with two weapons at an event with no two-weapon price).</td><td><span class="chip rec">A · recommended</span> Count it as one-weapon fee × number of weapons, and say so in a note on the report naming how many entries it touched. With no base fee either, the report shows the counts and „brak opłaty w ustawieniach wydarzenia” instead of money.<br><span class="chip plain">B</span> Count such entries as zero and flag them.</td></tr>
+      <tr><td>R3</td><td><b>Splitting one entry's fee across its weapons</b>, for the weapon × gender table. A two-weapon entry pays one amount.</td><td><span class="chip rec">A · recommended</span> Equal shares (110 for épée + sabre → 55 each), so the table adds up exactly to the total. Stated under the table.<br><span class="chip plain">B</span> Full one-weapon price to the first weapon, the rest to the others. Adds up too, but the order of weapons is arbitrary.</td></tr>
+      <tr><td>R4</td><td><b>The list of entries with each fee</b> as a third block and second sheet (name, gender, category, weapons, fee).</td><td><span class="chip rec">A · recommended</span> Include it. The names, weapons and categories are already public on the entry list; the organiser needs it to tick off incoming transfers. Never a birth year, e-mail or club.<br><span class="chip plain">B</span> Totals only.</td></tr>
+      <tr><td>R5</td><td><b>Who may open it.</b></td><td><span class="chip rec">A · recommended</span> A key per event, in the link, checked in the database; a wrong, replaced or missing key shows an empty „link nieaktywny” page, never an error. Kept in its own table that only a signed-in administrator can read (not on the event row, which visitors can read).<br><span class="chip plain">B</span> Reuse the organiser download page's key. Rejected: that key opens every event, and is made by hand.</td></tr>
+      <tr><td>R6</td><td><b>Where in the UI.</b></td><td><span class="chip rec">A + B · recommended</span> The form row as the home, the signed-in pill on the card as the shortcut (section 03).<br><span class="chip plain">A only</span> / <span class="chip plain">B only</span></td></tr>
+      <tr><td>R7</td><td><b>Where the page is served.</b></td><td><span class="chip rec">A · recommended</span> The same public page as the form and the entry list: <code>register.html?event=…&amp;view=revenue&amp;k=…</code>. One more view of an existing page, shareable exactly like the other two links, no WordPress work.<br><span class="chip plain">B</span> A new page of its own on weteraniszermierki.pl.</td></tr>
+      <tr><td>R8</td><td><b>The spreadsheet.</b> The current module cannot style.</td><td><span class="chip rec">A · recommended</span> Write the .ods ourselves for this report: a small module that builds the sheet with the report's look (title block, coloured header rows, borders, money format with the currency, column widths) and a page setup for print (A4 portrait, margins, fitted to the page width, a footer with the event, the date and page numbers). Totals are live <code>SUM</code> formulas, so an organiser who changes a fee sees the totals follow. One small, well-known packing library (<code>fflate</code>, about 8 kB) is added to make the file. The existing ranking exports are untouched.<br><span class="chip plain">B</span> Keep SheetJS: values in a plain grid. Does not meet „elegant, printable”.<br><span class="chip plain">C</span> Buy SheetJS Pro for styles. A licence cost, and still no page setup control we can test.</td></tr>
+      <tr><td>R9</td><td><b>Which events get it.</b></td><td><span class="chip rec">A · recommended</span> Events with our registration on. The row in the form is disabled without it, like the ranking-place box.<br><span class="chip plain">B</span> Every event.</td></tr>
+      <tr><td>R10</td><td><b>Later (out of scope now, as you said):</b> cost per weapon, judges, pistes, medals, medics.</td><td><span class="chip rec">A · recommended</span> Build nothing for it now, but shape the data so it can grow: the database gives one row per start (entry × weapon) with gender and category, which is exactly what those forecasts will count.</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · How it would be built</p>
+    <h2>Outline, for the detailed plan after your answers</h2>
+    <ul>
+      <li><b>Database:</b> a table of report keys (event, key, created, replaced-at; administrators only); a function for the administrator to create or replace an event's key; one visitor-callable function that takes the event and the key and returns each entry with its weapons, gender, category and fee by the one fee rule, or nothing for a bad key. Added to the visitor allowlist with its justification. The registration form keeps quoting as today; a test pins both to the same rule.</li>
+      <li><b>Page:</b> a new <code>RevenueReport</code> component shown by <code>register.html</code> for <code>view=revenue</code>; the grouping (tiers, weapon × gender) is one pure module with its own tests, used by both the page and the spreadsheet so they cannot disagree.</li>
+      <li><b>Spreadsheet:</b> a new module beside <code>export.ts</code>; tests read the produced file back (structure, formulas, styles, page setup), and I open it in LibreOffice and print to PDF for the picture sheet.</li>
+      <li><b>Admin:</b> the row in <code>EventManager.svelte</code>; the pill in <code>EventCard.svelte</code> behind the signed-in flag.</li>
+      <li><b>As always:</b> requirement FR-176 with its tests registered first, each test seen failing; a picture sheet for the form, the card and the report (existing states identical); an ADR amendment draft (ADR-079 for the report and its key; ADR-095 names the second kind of key); handbook pages; preflight; release on your word.</li>
+    </ul>
+    <div class="note warn"><p class="lede">One thing to know</p><p>A link with a key can be forwarded. Whoever receives it sees the forecast until an administrator presses „Nowy link”. That is the same trade the organiser download page makes, and why replacing the link is one click.</p></div>
+  </section>
+
+  <p class="foot">brainstorm · event revenue forecast · 22 Nov 2026 · rev 1 · sources read: RegistrationForm.svelte (fee rule), frontend/src/lib/export.ts and package.json (SheetJS, values only), EventManager.svelte (Rejestracja SPWS section), EventCard.svelte (pills), migration 20260912000004 (tbl_ftl_export_token), ADR-095, handbook registration-lifecycle and security-posture</p>
+</div>
+</body>
+</html>

@@ -122,6 +122,34 @@
                 <label>{t('event_entry_list_url_label')}
                   <input data-field="form-entry-list-url" type="text" bind:value={draftUrlEntryList} readonly />
                 </label>
+                <!-- FR-176: the organiser's revenue forecast link. Active only when
+                     the STORED event has our registration on; the key is created,
+                     copied, opened and replaced here, never by saving the form. -->
+                <div class="revenue-link" data-field="form-revenue-link">
+                  <span class="revenue-link-label">{t('rev_link_label')}</span>
+                  {#if !event.bool_use_spws_registration}
+                    <p class="revenue-hint">{t('rev_link_inactive')}</p>
+                  {:else}
+                    {#if revenueToken}
+                      <input data-field="form-revenue-url" type="text" value={revenueUrl} readonly />
+                      <div class="revenue-buttons">
+                        <button type="button" data-field="form-revenue-copy" onclick={copyRevenueLink}>
+                          {revenueCopied ? t('rev_link_copied') : t('rev_link_copy')}
+                        </button>
+                        <a data-field="form-revenue-open" href={revenueUrl} target="_blank" rel="noopener noreferrer">{t('rev_link_open')}</a>
+                        <button type="button" data-field="form-revenue-new" disabled={revenueBusy} onclick={replaceRevenueLink}>{t('rev_link_new')}</button>
+                      </div>
+                    {:else}
+                      <div class="revenue-buttons">
+                        <button type="button" data-field="form-revenue-create" disabled={revenueBusy} onclick={issueRevenueLink}>{t('rev_link_create')}</button>
+                      </div>
+                    {/if}
+                    <p class="revenue-hint">{t('rev_link_hint')}</p>
+                  {/if}
+                  {#if revenueError}
+                    <p class="field-error" data-field="form-revenue-error">{revenueError}</p>
+                  {/if}
+                </div>
                 <!-- Payment override. Leaving these empty is the normal case and
                      must not read as an error: the event then shows its
                      organizer's default account. -->
@@ -429,7 +457,8 @@
   import { t } from '../lib/locale.svelte'
   import { isBlank, isValidIban } from '../lib/iban'
   import { getEventDisplayStatus } from '../lib/eventStatus'
-  import { requestDispatch, setEventSourceOverride, fetchEventShowSeed } from '../lib/api'
+  import { requestDispatch, setEventSourceOverride, fetchEventShowSeed, fetchEventReportToken, issueEventReportToken } from '../lib/api'
+  import { reportUrl } from '../lib/revenueReport'
   import { assetUrl } from '../lib/assetBase'
 
   // ADR-041: Per-event dispatch status, rendered inline below each event-row.
@@ -709,6 +738,53 @@
       draftShowSeed = false
     }
   }
+  // FR-176 — the revenue forecast link. The key lives in tbl_event_report_token,
+  // not in the event row: the form reads it when it opens, and only the block's
+  // buttons create or replace it (saving the form never touches it).
+  let revenueToken = $state<string | null>(null)
+  let revenueCode = $state('')
+  let revenueBusy = $state(false)
+  let revenueCopied = $state(false)
+  let revenueError = $state('')
+  let revenueCopiedTimer: ReturnType<typeof setTimeout> | undefined
+  const revenueUrl = $derived(
+    revenueToken
+      ? reportUrl(new URL(assetUrl('register.html'), window.location.href).href, revenueCode, revenueToken)
+      : '',
+  )
+
+  async function issueRevenueLink() {
+    if (editingId == null) return
+    const id = editingId
+    revenueBusy = true
+    revenueError = ''
+    try {
+      const token = await issueEventReportToken(id)
+      if (editingId === id) revenueToken = token
+    } catch (e) {
+      if (editingId === id) revenueError = e instanceof Error ? e.message : String(e)
+    } finally {
+      revenueBusy = false
+    }
+  }
+
+  function replaceRevenueLink() {
+    if (!confirm(t('rev_link_replace_confirm'))) return
+    void issueRevenueLink()
+  }
+
+  async function copyRevenueLink() {
+    revenueError = ''
+    try {
+      await navigator.clipboard.writeText(revenueUrl)
+      revenueCopied = true
+      clearTimeout(revenueCopiedTimer)
+      revenueCopiedTimer = setTimeout(() => (revenueCopied = false), 2000)
+    } catch (e) {
+      revenueError = e instanceof Error ? e.message : String(e)
+    }
+  }
+
   let draftUrlEvent = $state('')
   let draftUrlEvent2 = $state('')
   let draftUrlEvent3 = $state('')
@@ -961,6 +1037,18 @@
       draftShowSeed = show
       storedShowSeed = show
     })
+    // FR-176: the event's report key, with the same guard against a form that
+    // has moved on to another event.
+    revenueToken = null
+    revenueCode = event.txt_code
+    revenueCopied = false
+    revenueError = ''
+    if (event.bool_use_spws_registration) {
+      void fetchEventReportToken(openedId).then((token) => {
+        if (editingId !== openedId) return
+        revenueToken = token
+      })
+    }
     draftEntryFee2w = event.num_entry_fee_2w ?? null
     draftEntryFee3w = event.num_entry_fee_3w ?? null
     draftUrlEvent = event.url_event ?? ''
@@ -1136,6 +1224,61 @@
      line height keeps everything below it on whole pixels. */
   .show-seed-hint {
     margin: -4px 0 0 22px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #666;
+    contain: inline-size;
+  }
+  /* FR-176 — the revenue forecast link. Nothing in it sets the section's
+     width (I32): the input may shrink, the buttons wrap, the hint takes no
+     width of its own, and line heights are whole pixels. */
+  .revenue-link {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .revenue-link-label {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .revenue-link input {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .revenue-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  /* The three controls are whole pixels tall (22px), so nothing below the
+     block lands on a fraction of a pixel. „Otwórz” is a link (it opens a new
+     tab) dressed as its two neighbours. */
+  .revenue-buttons button,
+  .revenue-buttons a {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
+    border: 1px solid #767676;
+    border-radius: 3px;
+    background: #efefef;
+    color: #000;
+    font: inherit;
+    font-size: 13px;
+    line-height: 18px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .revenue-buttons button:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+  .revenue-hint {
+    margin: 0;
     font-size: 12px;
     line-height: 16px;
     color: #666;

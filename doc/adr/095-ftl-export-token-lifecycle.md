@@ -1,10 +1,24 @@
 # ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service
 
-**Status:** Draft (proposed 2026-09-13; awaiting sign-off)
+**Status:** Draft (proposed 2026-09-13; awaiting sign-off). **Amended 2026-11-22 (FR-176, signed off 2026-11-22; the amendment is in force though the ADR's own 2026-09-13 decision stays a draft):** a second kind of key, per event, for the revenue forecast.
 **Date:** 2026-09-13
 **Amends:** [ADR-080](080-clean-roster-ftl-seeding.md) §(h) — corrects the slug it cites (`/pliki-startowe/?k=<uuid>` was drafted but never published) to the real path, and replaces its one-line "gives us something to rotate when a link goes astray — one `UPDATE`" with the full, worked procedure below.
 **Relates to:** [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (the capability-link pattern this token follows, unchanged by this decision), [ADR-083](083-server-enforced-authorization.md) (the `auth.role() = 'authenticated'` grant convention this reuses), [ADR-093](093-registration-as-birth-year-source.md) (`IdentityProposals.svelte`, the UI precedent cited in §7)
 **Source:** `supabase/migrations/20260912000004_ftl_export_entries.sql`, `frontend/src/ce/FtlExportElement.svelte`, `scripts/cloud-sql.sh`, `scripts/wp_publish_page.py`, `.claude/skills/ftl-token-rotate/SKILL.md`, `.claude/skills/cloud-db-ops/SKILL.md`
+
+## Amendment (2026-11-22, FR-176 — a second kind of key: the event's revenue forecast)
+
+**Status:** Accepted (signed off by the user 2026-11-22, „Approve, release”, with the picture sheet `doc/plans/event-revenue-forecast-sheet-2026-11-22.html`). Plan `doc/plans/event-revenue-forecast-2026-11-22.html` (rev 3, signed 2026-11-22); ADR-079's amendment of the same date says what the key opens.
+
+**Decision.** The revenue forecast is opened by its own key, kept in `tbl_event_report_token` (`uuid_token`, `id_event`, `ts_created`, `ts_revoked`). Unlike the FTL export token, it is:
+
+- *per event*: a key opens one event's report and never another's (REVFC.05);
+- *self-service for a signed-in administrator*: the event form's „Rejestracja SPWS” section shows „Link do prognozy przychodu (dla organizatora)” with „Utwórz link”, and, once a key exists, the link with „Kopiuj”, „Otwórz” and „Nowy link”; the event card offers a signed-in administrator a „Prognoza przychodu” pill that opens the report with the existing key or a new one. Both call `fn_issue_event_report_token(event)`, `SECURITY DEFINER`, refused to anyone not signed in and to an event without our registration;
+- *replaced, never deleted*: issuing again stamps the live key's `ts_revoked` and inserts a new one; a partial unique index keeps one live key per event (REVFC.02, REVFC.03). The replaced row stays as a record.
+
+Row security lets a signed-in administrator read the table and nobody write it directly; a visitor holds no grant on it. A visitor may call only `fn_event_revenue_report`, which checks the key inside (52.7 allowlist, 39 names). Saving the event form never touches the key. The FTL export token, its table and the manual procedure above are unchanged.
+
+**Alternatives considered.** *Reuse the FTL export token*: rejected, because that token is per organiser and opens every event's export; an organiser's revenue link must open one event. *Delete a replaced key*: rejected, as for the FTL token: stamping keeps the record of what was handed out.
 
 ## Context
 

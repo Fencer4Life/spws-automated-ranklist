@@ -27,10 +27,11 @@ names() {  # every 'fn_...' quoted name in a file, one per line, sorted unique
 
 # 52.7's allowlist is the ARRAY[...] immediately preceding the assertion label
 # '52.7: the anon-EXECUTEable function set equals the documented allowlist'.
-# Slice the file at that label and take the names from the tail above it, so
-# fn_ names used by OTHER assertions in the same file are not swept in.
-PGTAP=$(awk '/anon-EXECUTEable function set equals/{exit} {print}' \
-  supabase/tests/52_security_posture.sql | tail -140 | grep -oE "'(fn_[a-z0-9_]+|bool_active)'" | tr -d "'" | sort -u)
+# Slice the file at that label and take the names from the last ARRAY[ above it
+# (not a fixed number of lines: the justifications make the array longer with
+# every addition, I33), so fn_ names used by OTHER assertions are not swept in.
+PGTAP=$(awk '/anon-EXECUTEable function set equals/{printf "%s", buf; exit} /ARRAY\[/{buf=""} {buf=buf $0 "\n"}' \
+  supabase/tests/52_security_posture.sql | grep -oE "'(fn_[a-z0-9_]+|bool_active)'" | tr -d "'" | sort -u)
 DEPLOY=$(awk '/^read -r -d/,/^EOF$/' scripts/check-security-posture.sh \
   | grep -oE "'(fn_[a-z0-9_]+|bool_active)'" | tr -d "'" | sort -u)
 

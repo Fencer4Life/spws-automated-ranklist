@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue forecast · two tabs, page prints like the file</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  /* This sheet's pictures. */
+  figure{margin:0}
+  figure img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#0b1220}
+  figcaption{font-size:15px;color:var(--faint);margin:6px 0 0;font-family:var(--mono)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px;margin:20px 0}
+  .pair{margin:30px 0;padding-top:16px;border-top:1px solid var(--line)}
+  .pairhead{font-weight:800;margin:0 0 10px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .foot{font-family:var(--mono);font-size:13px;color:var(--faint);margin-top:60px}
+  details{margin:14px 0}
+  summary{cursor:pointer;font-weight:700}
+  .cols3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;align-items:start}
+  @media (max-width:640px){.cols{grid-template-columns:1fr}.wrap{padding:36px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">FR-176 · change to the signed plan · rev 2 · 22 Nov 2026</p>
+  <h1>Two tabs in the file; the page prints like the file</h1>
+  <p class="dek">Rev 1 of this page misread you and is withdrawn: <b>the report page keeps its entries below the summary.</b> The change concerns the .ods (summary on one tab, entries on the next, no roster) and the page's print, which should come out basically as the file's print does. <b>Nothing is changed yet.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>branch claude/event-revenue-forecast · e376faf6, not pushed</span>
+    <span class="pill"><span class="dot"></span>SIGNED by the user in chat 2026-11-22 („Sign off, Q1 A”)</span>
+  </div>
+
+  <section>
+    <p class="kicker">01 · What I understand now</p>
+    <h2>Three points</h2>
+    <ol class="steps">
+      <li><b>The report page stays as built</b>: the summary, then the entries table below it, with the columns you like.</li>
+      <li><b>The .ods has two tabs.</b> „Prognoza” (the summary) and „Zgłoszenia” (that same entries table: Lp. · Nazwisko i imię · Płeć · Kat. · Szpada · Floret · Szabla · Broni · Opłata, total row). Both exist today and stay exactly as on the picture sheet. <b>The third tab, „Lista” / “Entry roster”, is deleted</b>, with its tick and payment boxes: the entries tab is what you meant by it.</li>
+      <li><b>Printing the page gives basically what printing the file gives</b> (new work, section 02).</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The page's print</p>
+    <h2>What „the same” will mean, concretely</h2>
+    <div class="tablewrap"><table><thead><tr><th>On paper</th><th>The file today</th><th>The page, after this change</th></tr></thead><tbody>
+      <tr><td>Paper</td><td>A4 portrait, 15 mm margins</td><td>the same</td></tr>
+      <tr><td>Page 1</td><td>the summary: head, three figures, both tables, notes</td><td>the same blocks, alone on page 1</td></tr>
+      <tr><td>Entries</td><td>start on a new page; the header row repeats on every page; striped; total row</td><td>start on a new page; the header repeats; a row is never split; striped; <b>a total row is added to the page's table</b> („Razem”, weapons, fee), on screen too</td></tr>
+      <tr><td>Column widths</td><td>44·24·32·24·32·24 mm and 10·62·12·12·16·16·16·14·22 mm (180 mm)</td><td>the same millimetres in print; the tier table four columns wide, as in the file</td></tr>
+      <tr><td>Fonts, colours</td><td>Georgia title, Arial, the navy header fill, hairlines, total fill</td><td>the same; background colours are forced to print</td></tr>
+      <tr><td>Not printed</td><td>—</td><td>the language switch, „Pobierz .ods”, the card's shadow and grey surround</td></tr>
+      <tr><td>Footer</td><td>event · title and „stan na …” · „Strona X z Y”</td><td>see Q1</td></tr>
+    </tbody></table></div>
+    <p>What will still differ, and why: the spacing of thousands („7950,00” in a browser, „7 950,00” in a Polish LibreOffice: each program's own number rule), and line heights by a fraction of a millimetre, so a long list may break pages one row earlier or later. Hence „basically”.</p>
+    <h3>Q1 · The footer with page numbers</h3>
+    <div class="note accent"><p class="lede">Recommendation: A</p>
+    <p><b>A</b> — the page prints the file's footer (event · title and „stan na …” · „Strona X z Y”). Chrome and Edge can do this; Firefox and Safari cannot, and print without it. </p>
+    <p><b>B</b> — no footer from the page in any browser.</p>
+    <p>Either way a browser may add its own header and footer line, which shows the link <i>with the key</i>; that is the „Headers and footers” box in the print dialog. I will check whether A makes Chrome drop its own line and state the result on the picture sheet.</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · What changes in the build</p>
+    <h2>Tests first, then the code</h2>
+    <div class="tablewrap"><table><thead><tr><th>Where</th><th>Change</th></tr></thead><tbody>
+      <tr><td><code>revenueReportOds.test.ts</code></td><td>REVFC.22: <b>two</b> sheets, forecast then entries. REVFC.24: widths and the repeating header on two sheets. REVFC.31 (the roster) is retired and its tests deleted with the sheet. Seen failing first.</td></tr>
+      <tr><td><code>revenueReportOds.ts</code>, <code>pl.json</code>, <code>en.json</code></td><td><code>rosterSheet</code> and the words only it used are removed. The forecast and entries sheets are untouched.</td></tr>
+      <tr><td><code>RevenueReportPage.test.ts</code></td><td>New REVFC.32: the entries table has its total row; the entries section is marked to start a new printed page; the print rules (A4, 15 mm, the footer's three texts with the event's name escaped) are installed for the document while the report is shown and removed when it is not.</td></tr>
+      <tr><td><code>RevenueReport.svelte</code></td><td>The total row; the print styles of section 02. The page rule and footer are installed in the document itself, because a rule inside the element cannot set the paper.</td></tr>
+      <tr><td>Proof on paper</td><td>A new tool prints the page from Chrome to PDF, for 14 and for 105 entries, PL and EN, and checks: A4; the summary alone on page 1; entries from page 2; the header row on every entries page; the page count beside LibreOffice's for the same data. The pictures go on the sheet <b>side by side with the file's print</b>.</td></tr>
+      <tr><td>LibreOffice proof</td><td><code>ods_check</code> without the roster checks; it gains the 105-entry entries tab: header on every page, A4.</td></tr>
+      <tr><td>Documents</td><td>RTM (REVFC.31 Retired, REVFC.32 new, FR-176's text), the ADR-079 draft (two tabs; the page prints like the file), handbook, the picture sheet rebuilt (I34 falls away with the roster).</td></tr>
+    </tbody></table></div>
+    <h3>What stays exactly as it is</h3>
+    <ul>
+      <li>The database and its tests; the key; the event form's link block; the card's pill.</li>
+      <li>The page on screen, except the added total row under the entries.</li>
+      <li>The entry list, the registration form and the visitor's card: proven pixel-identical to main again.</li>
+    </ul>
+    <p>Done means as before: every changed test seen failing first, the whole suite green, <code>scripts/preflight.sh</code> „All gates passed”, a commit on the branch, the rebuilt picture sheet. Then I stop; no push.</p>
+  </section>
+  <p class="foot">change plan rev 2 · FR-176 · 22 Nov 2026 · amends doc/plans/event-revenue-forecast-2026-11-22.html rev 3 (section 04 sheet 3; section 05 print) on the user's word · rev 1 (entries off the page) withdrawn: it misread the request · no code written</p>
+
+</div>
+</body>
+</html>

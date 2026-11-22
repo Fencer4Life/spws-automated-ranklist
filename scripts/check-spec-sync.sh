@@ -142,7 +142,9 @@ if [ -f "$RTM" ]; then
   #   before code (plan seeding-by-organiser-ranking, release 1).
   # 174 since 2026-11-22: +FR-175 (the entry list can show the ranking place,
   #   switched per event; plan seeding-by-organiser-ranking, release 2).
-  EXPECTED=174
+  # 175 since 2026-11-22: +FR-176 (the event revenue forecast, a report of
+  #   declared fees opened by a per-event key; plan event-revenue-forecast).
+  EXPECTED=175
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

@@ -50,8 +50,11 @@ vi.mock('../src/lib/api', () => ({
   fetchAdminEntryDetails: vi.fn(async () => []),
   fetchEventSeasonEndYear: vi.fn(async () => 2027),
   updateRegistrationAsAdmin: vi.fn(),
+  // FR-176: the revenue forecast pill's key (none by default).
+  fetchEventReportToken: vi.fn(() => Promise.resolve(null)),
+  issueEventReportToken: vi.fn(),
 }))
-import { fetchEventForRegistration, fetchEntryList } from '../src/lib/api'
+import { fetchEventForRegistration, fetchEntryList, fetchEventReportToken, issueEventReportToken } from '../src/lib/api'
 
 const mockFetchEvent = vi.mocked(fetchEventForRegistration)
 const mockFetchEntryList = vi.mocked(fetchEntryList)
@@ -434,5 +437,64 @@ describe('CalendarView weapon filter', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
     expect([...container.querySelectorAll('.scope-filter-btn')].map((b) => b.textContent!.trim()))
       .toEqual(['SPWS', 'EVF+'])
+  })
+})
+
+// FR-176 — the revenue forecast pill opens the report in a new tab (REVFC.28–29).
+// The keys are invented.
+describe('CalendarView — the revenue forecast pill', () => {
+  const KEY_A = '11111111-2222-4333-8444-555555555555'
+  const KEY_B = '66666666-7777-4888-8999-000000000000'
+  const event = () => makeEvent({
+    id_event: 77, txt_code: 'PPW4-2026-2027', dt_start: '2026-12-12', dt_end: '2026-12-13',
+    enum_status: 'SCHEDULED', bool_use_spws_registration: true,
+    url_entry_list: 'https://host/register.html?event=PPW4-2026-2027&view=list',
+  })
+  const reportAt = (key: string) => `${new URL('register.html', window.location.href).href}?event=PPW4-2026-2027&view=revenue&k=${key}`
+
+  function fakeTab() {
+    const tab = { location: { href: '' }, close: vi.fn() }
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window)
+    return { tab, open }
+  }
+
+  it('REVFC.28: the public calendar shows no pill', () => {
+    const { container } = render(CalendarView, { props: { events: [event()] } })
+    expect(container.querySelector('.entry-list-link')).not.toBeNull()
+    expect(container.querySelector('.revenue-link')).toBeNull()
+  })
+
+  it('REVFC.29: the pill opens a tab at once and points it at the report with the existing key', async () => {
+    vi.mocked(fetchEventReportToken).mockResolvedValue(KEY_A)
+    const { tab, open } = fakeTab()
+    const { container } = render(CalendarView, { props: { events: [event()], isAdmin: true } })
+    await fireEvent.click(container.querySelector('.revenue-link') as HTMLAnchorElement)
+    expect(open).toHaveBeenCalledWith('', '_blank')
+    await waitFor(() => expect(tab.location.href).toBe(reportAt(KEY_A)))
+    expect(fetchEventReportToken).toHaveBeenCalledWith(77)
+    expect(issueEventReportToken).not.toHaveBeenCalled()
+    open.mockRestore()
+  })
+
+  it('REVFC.29: with no key it creates one', async () => {
+    vi.mocked(fetchEventReportToken).mockResolvedValue(null)
+    vi.mocked(issueEventReportToken).mockResolvedValue(KEY_B)
+    const { tab, open } = fakeTab()
+    const { container } = render(CalendarView, { props: { events: [event()], isAdmin: true } })
+    await fireEvent.click(container.querySelector('.revenue-link') as HTMLAnchorElement)
+    await waitFor(() => expect(tab.location.href).toBe(reportAt(KEY_B)))
+    expect(issueEventReportToken).toHaveBeenCalledWith(77)
+    open.mockRestore()
+  })
+
+  it('REVFC.29: a failure closes the tab and shows the error', async () => {
+    vi.mocked(fetchEventReportToken).mockResolvedValue(null)
+    vi.mocked(issueEventReportToken).mockRejectedValue(new Error('REPORT_TOKEN_ADMIN_ONLY'))
+    const { tab, open } = fakeTab()
+    const { container, findByRole } = render(CalendarView, { props: { events: [event()], isAdmin: true } })
+    await fireEvent.click(container.querySelector('.revenue-link') as HTMLAnchorElement)
+    expect((await findByRole('alert')).textContent).toContain('REPORT_TOKEN_ADMIN_ONLY')
+    expect(tab.close).toHaveBeenCalled()
+    open.mockRestore()
   })
 })
