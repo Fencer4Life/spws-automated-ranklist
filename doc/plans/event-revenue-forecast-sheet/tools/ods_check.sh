@@ -23,11 +23,16 @@ cat > "$OUT/lo-profile/user/registrymodifications.xcu" <<'XCU'
 <item oor:path="/org.openoffice.Office.Calc/Formula/Load"><prop oor:name="OOXMLRecalcMode" oor:op="fuse"><value>0</value></prop></item>
 </oor:items>
 XCU
-for f in "$OUT"/*-poison.ods "$OUT"/roster-x.ods; do
+for f in "$OUT"/*-poison.ods; do
   "$SOFFICE" -env:UserInstallation="$PROFILE" --headless --convert-to xlsx --outdir "$OUT/xlsx" "$f" >/dev/null 2>&1
 done
-for f in "$OUT"/*-forecast.ods "$OUT"/*-entries.ods "$OUT"/*-roster.ods; do
+for f in "$OUT"/*-forecast.ods "$OUT"/*-entries.ods; do
   "$SOFFICE" -env:UserInstallation="$PROFILE" --headless --convert-to pdf --outdir "$OUT/pdf" "$f" >/dev/null 2>&1
 done
 node "$HERE/ods_check.cjs" "$OUT"
 echo "files in $OUT"
+# The page's print beside the file's (change plan rev 2): needs a CE build.
+if [ -n "${DIST_CE:-}" ]; then
+  node "$HERE/print_check.cjs" "$ROOT/frontend" "$OUT" "$DIST_CE"
+  "$ROOT/.venv/bin/python" "$HERE/print_check.py" "$OUT"
+fi

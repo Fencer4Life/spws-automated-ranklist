@@ -8,13 +8,15 @@ usage: python build_sheet.py <captures dir> <sheet dir> <output .html>
                         card (must not change), the report page (branch only)
   fm-main / fm-branch   capture.cjs form: the event form's three states
   cd-branch             capture.cjs card: the card as administrator and visitor
-  ods/png               LibreOffice's PDF pages of the sample .ods (ods_check.sh)
+  ods/                  ods_check.sh's output (with DIST_CE): png/pdf LibreOffice's
+                        pages, png/chrome Chrome's print of the page, print_check.out
 Every verdict on the sheet is computed here from the images: run-to-run
 equality of each build, main = branch for what must not change, and a row map
 of the event form at the inserted height.
 """
 
 import html
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -135,18 +137,35 @@ def main() -> None:
                 figs.append(fig(copy(CAP / "pg-branch-a" / n, n), f"{width} · {'Polish' if lang == 'pl' else 'English'}"))
         report.append(f'<div class="pair"><p class="pairhead">{html.escape(text)}</p><div class="cols">{"".join(figs)}</div></div>')
 
-    # --- the .ods, printed by LibreOffice, beside the page ------------------------
+    # --- the page's print beside the file's (change plan rev 2) ----------------
+    # <captures>/ods: ods_check.sh with DIST_CE set; pdf/ LibreOffice, chrome/ Chrome.
     ods = CAP / "ods" / "png"
     printed: list[str] = []
-    for lang, label in (("pl", "Polish"), ("en", "English")):
-        page = fig(copy(CAP / "pg-branch-a" / f"report__desktop__{lang}__1-full.png", f"beside-page-{lang}.png"), f"The page · {label}")
-        sheets = [fig(copy(ods / f"full-{lang}-{s}-p1.png", f"ods-full-{lang}-{s}.png"), f"Printed .ods · {s} · {label}") for s in ("forecast", "entries", "roster")]
-        printed.append(f'<div class="pair"><p class="pairhead">{label}: the page and the three printed sheets</p><div class="cols">{page}{"".join(sheets)}</div></div>')
-    missing = fig(copy(ods / "missing-pl-forecast-p1.png", "ods-missing-pl-forecast.png"), "Missing tiers: the formula 2 × C11 and its note")
-    empty = fig(copy(ods / "empty-pl-forecast-p1.png", "ods-empty-pl-forecast.png"), "No entries: zeros, no error cells")
-    printed.append(f'<div class="pair"><p class="pairhead">Two edge cases</p><div class="cols">{missing}{empty}</div></div>')
-    big = [fig(copy(ods / f"big-pl-roster-p{i}.png", f"ods-big-roster-p{i}.png"), f"105 entries · roster · page {i} of 4") for i in range(1, 5)]
-    printed.append(f'<div class="pair"><p class="pairhead">The roster for 105 entries: four A4 pages, the head on each</p><div class="cols">{"".join(big)}</div></div>')
+    checks = [json.loads(line) for line in (CAP / "ods" / "print_check.out").read_text().splitlines() if line.startswith("{")]
+    pages_of = {c["case"]: c for c in checks if "case" in c}
+    shows_link = next(c["browser_footer_shows_link"] for c in checks if "browser_footer_shows_link" in c)
+
+    def side(case: str, label: str) -> str:
+        page = [fig(copy(ods / "chrome" / f"{case}-p{i}.png", f"print-page-{case}-p{i}.png"), f"The page, printed by Chrome · page {i}")
+                for i in range(1, pages_of[case]["page_pages"] + 1)]
+        f_pages = [fig(copy(ods / "pdf" / f"{case}-forecast-p1.png", f"print-file-{case}-forecast.png"), "The file, printed by LibreOffice · tab 1")]
+        f_pages += [fig(copy(ods / "pdf" / f"{case}-entries-p{i}.png", f"print-file-{case}-entries-p{i}.png"), f"The file · tab 2 · page {i}")
+                    for i in range(1, pages_of[case]["file_entries_pages"] + 1)]
+        return (f'<div class="pair"><p class="pairhead">{html.escape(label)} — page: {pages_of[case]["page_pages"]} pages, '
+                f'file: {pages_of[case]["file_pages"]} pages</p>'
+                f'<h3>The page</h3><div class="cols3">{"".join(page)}</div>'
+                f'<h3>The file</h3><div class="cols3">{"".join(f_pages)}</div></div>')
+
+    printed.append(side("full-pl", "12 entries, Polish"))
+    printed.append(side("full-en", "12 entries, English"))
+    printed.append(side("big-pl", "105 entries, Polish"))
+    missing = fig(copy(ods / "pdf" / "missing-pl-forecast-p1.png", "ods-missing-pl-forecast.png"), "The file: missing tiers, the formula 2 × C11 and its note")
+    empty = fig(copy(ods / "chrome" / "empty-pl-p2.png", "print-page-empty-p2.png"), "The page, no entries: page 2")
+    empty_f = fig(copy(ods / "pdf" / "empty-pl-entries-p1.png", "print-file-empty-entries.png"), "The file, no entries: tab 2")
+    printed.append(f'<div class="pair"><p class="pairhead">Edge cases</p><div class="cols3">{missing}{empty}{empty_f}</div></div>')
+    count_rows = "\n".join(
+        f"<tr><td>{html.escape(c)}</td><td>{v['page_pages']}</td><td>{v['file_forecast_pages']} + {v['file_entries_pages']}</td></tr>"
+        for c, v in pages_of.items())
 
     # --- the event form -------------------------------------------------------------
     form_rows: list[str] = []
@@ -185,6 +204,8 @@ def main() -> None:
         "@@N_FM@@": str(counts["fm-main"]), "@@N_CD@@": str(counts["cd-branch"]),
         "@@ROWS_SAME@@": "\n".join(same_rows), "@@FIGS_SAME@@": "\n".join(same_figs),
         "@@REPORT@@": "\n".join(report), "@@PRINTED@@": "\n".join(printed),
+        "@@COUNTS@@": count_rows, "@@SHOWS_LINK@@": "printed the link" if shows_link else "did not print the link",
+        "@@COUNTS@@": count_rows, "@@SHOWS_LINK@@": "printed the link" if shows_link else "did not print the link",
         "@@ROWS_FORM@@": "\n".join(form_rows), "@@PAIRS_FORM@@": "\n".join(form_pairs), "@@CARDS@@": "\n".join(cards),
     }.items():
         body = body.replace(k, v)

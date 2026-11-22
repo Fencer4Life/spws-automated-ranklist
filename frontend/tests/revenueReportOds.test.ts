@@ -1,4 +1,6 @@
-// FR-176 — the revenue forecast as a designed, printable .ods (REVFC.21–25, 31).
+// FR-176 — the revenue forecast as a designed, printable .ods (REVFC.21–25).
+// Two tabs: the forecast and the entries (the roster tab, REVFC.31, was removed
+// on the user's word of 2026-11-22: the entries tab is what was meant by it).
 // The file is a zip of XML parts; these tests unzip it and read the XML, so
 // structure, values, formulas, styles and page setup are all checked as the
 // spreadsheet program will see them. The formulas' RESULTS are proven separately
@@ -143,11 +145,11 @@ describe('REVFC.21 — the file is a spreadsheet zip', () => {
   })
 })
 
-describe('REVFC.22 — three sheets whose values are the model\'s', () => {
+describe('REVFC.22 — two sheets whose values are the model\'s', () => {
   it('names the sheets by language, in order', () => {
-    expect(sheets(loadContent().content).map((s) => attr(s, 'table:name'))).toEqual(['Prognoza', 'Zgłoszenia', 'Lista'])
+    expect(sheets(loadContent().content).map((s) => attr(s, 'table:name'))).toEqual(['Prognoza', 'Zgłoszenia'])
     expect(sheets(loadContent(undefined, undefined, 'en').content).map((s) => attr(s, 'table:name')))
-      .toEqual(['Forecast', 'Entries', 'Roster'])
+      .toEqual(['Forecast', 'Entries'])
   })
   it('the forecast head states the title, event, dates and the as-of line', () => {
     const [f] = sheets(loadContent().content)
@@ -255,13 +257,12 @@ describe('REVFC.23 — the formulas stand in their cells', () => {
 })
 
 describe('REVFC.24 — design and print', () => {
-  it('the columns add up to 180 mm on all three sheets', () => {
+  it('the columns add up to 180 mm on both sheets', () => {
     const { content } = loadContent()
-    const [f, e, r] = sheets(content)
+    const [f, e] = sheets(content)
     expect(columnWidthsMm(content, f)).toEqual([44, 24, 32, 24, 32, 24])
     expect(columnWidthsMm(content, e)).toEqual([10, 62, 12, 12, 16, 16, 16, 14, 22])
-    expect(columnWidthsMm(content, r)).toEqual([14, 70, 18, 18, 18, 24, 18])
-    for (const t of [f, e, r]) expect(columnWidthsMm(content, t).reduce((a, b) => a + b, 0)).toBe(180)
+    for (const t of [f, e]) expect(columnWidthsMm(content, t).reduce((a, b) => a + b, 0)).toBe(180)
   })
   it('the header, the total and the figures carry their fills and borders', () => {
     const { content } = loadContent()
@@ -292,8 +293,8 @@ describe('REVFC.24 — design and print', () => {
   })
   it('every money cell shrinks to fit its fixed column, so a large total never shows ### (I35)', () => {
     const { content } = loadContent()
-    const [f, e, r] = sheets(content)
-    for (const [sheet, ref] of [[f, 'E7'], [f, 'D14'], [f, 'F21'], [e, 'I2'], [e, 'I6'], [r, 'F3'], [r, 'F7']] as const) {
+    const [f, e] = sheets(content)
+    for (const [sheet, ref] of [[f, 'E7'], [f, 'D14'], [f, 'F21'], [e, 'I2'], [e, 'I6']] as const) {
       expect(attr(props(content, cellAt(sheet, ref).getAttribute('table:style-name'), 'style:table-cell-properties'), 'style:shrink-to-fit')).toBe('true')
     }
   })
@@ -323,11 +324,13 @@ describe('REVFC.24 — design and print', () => {
       expect(attr(styleEl(content, t.getAttribute('table:style-name')), 'style:master-page-name')).toBe('Report')
     }
   })
-  it('the header rows repeat on the entries and roster sheets', () => {
-    const [, e, r] = sheets(loadContent().content)
+  it('the header row repeats on the entries sheet, whose print range is its own columns', () => {
+    const [f, e] = sheets(loadContent().content)
     expect(e.getElementsByTagName('table:table-header-rows')).toHaveLength(1)
     expect(e.getElementsByTagName('table:table-header-rows')[0].getElementsByTagName('table:table-row')).toHaveLength(1)
-    expect(r.getElementsByTagName('table:table-header-rows')[0].getElementsByTagName('table:table-row')).toHaveLength(2)
+    expect(f.getElementsByTagName('table:table-header-rows')).toHaveLength(0)
+    // four entries: header, rows 2..5, total in row 6
+    expect(e.getAttribute('table:print-ranges')).toBe(`'Zgłoszenia'.A1:'Zgłoszenia'.I6`)
   })
 })
 
@@ -340,11 +343,9 @@ describe('REVFC.25 — escaping, a missing tier, nothing at all', () => {
     const p = parts(build(m, head))
     expect(p['content.xml']).toContain('&amp;')
     expect(p['content.xml']).not.toContain('<SONS>')
-    const [f, e, r] = sheets(xml(p['content.xml']))
+    const [f, e] = sheets(xml(p['content.xml']))
     expect(textOf(cellAt(f, 'A2'))).toBe(`A & B <C> "D" 'E'`)
     expect(textOf(cellAt(e, 'B2'))).toBe(`O'BRIEN & <SONS> "Q" Al`)
-    expect(textOf(cellAt(r, 'B3'))).toBe(`O'BRIEN & <SONS> "Q" Al`)
-    expect(textOf(cellAt(r, 'A1'))).toContain(`A & B <C> "D" 'E'`)
     expect(xml(p['styles.xml']).getElementsByTagName('style:footer')[0].textContent).toContain(`A & B <C> "D" 'E'`)
     expect(xml(p['meta.xml']).getElementsByTagName('dc:title')[0].textContent).toContain(`A & B <C> "D" 'E'`)
   })
@@ -381,111 +382,12 @@ describe('REVFC.25 — escaping, a missing tier, nothing at all', () => {
   it('no entries still gives a valid file: header and total, zeros', () => {
     const m = buildRevenueModel(raw({ entries: [] }))
     const { content } = loadContent(m)
-    const [f, e, r] = sheets(content)
+    const [f, e] = sheets(content)
+    expect(sheets(content)).toHaveLength(2)
     expect(rowsOf(e)).toHaveLength(1 + 1 + 1) // header, one empty row, total
     expect(formula(cellAt(f, 'B11'))).toBe(`of:=COUNTIF([$'Zgłoszenia'.$H$2:.$H$2];1)`)
     expect(num(cellAt(f, 'A7'))).toBe(0)
     expect(num(cellAt(f, 'E7'))).toBe(0)
     expect(textOf(cellAt(e, 'B3'))).toBe('Razem')
-    expect(rowsOf(r).length).toBeGreaterThanOrEqual(4)
-  })
-})
-
-describe('REVFC.31 — the roster sheet', () => {
-  const m = () => buildRevenueModel(raw())
-  const last = 3 + 4 - 1 // entries from row 3: rows 3..6
-  it('has seven columns in order, with their headers', () => {
-    const [, , r] = sheets(loadContent(m()).content)
-    const head = rowsOf(r)[1]
-    // „Wpłata potw.”, as the plan's A4 mock: „potwierdzona” does not fit 18 mm and broke mid-word (I34)
-    expect(cellsOf(head).map(textOf)).toEqual(['✓', 'NAZWISKO Imię', '1 broń', '2 bronie', '3 bronie', 'Opłata', 'Wpłata potw.'])
-    expect(attr(props(loadContent(m()).content, cellsOf(head)[6].getAttribute('table:style-name'), 'style:text-properties'), 'fo:font-size')).toBe('9pt')
-    const [, , re] = sheets(loadContent(m(), undefined, 'en').content)
-    expect(cellsOf(rowsOf(re)[1]).map(textOf)).toEqual(['✓', 'SURNAME Name', '1 weapon', '2 weapons', '3 weapons', 'Fee', 'Payment confirmed'])
-  })
-  it('the first head row names the list, the event, the dates and the as-of time', () => {
-    const [, , r] = sheets(loadContent(m()).content)
-    const a1 = cellAt(r, 'A1')
-    expect(a1.getAttribute('table:number-columns-spanned')).toBe('7')
-    expect(textOf(a1)).toBe('Lista zgłoszonych · PEW5 Łomianki · 12–13 grudnia 2026 · stan na 22 listopada 2026, 14:05')
-  })
-  it('one row per entry in the entries sheet\'s order, the tick in the weapon count\'s column', () => {
-    const [, e, r] = sheets(loadContent(m()).content)
-    const names = [3, 4, 5, 6].map((row) => textOf(cellAt(r, `B${row}`)))
-    expect(names).toEqual([2, 3, 4, 5].map((row) => textOf(cellAt(e, `B${row}`))))
-    // KOWALSKI 2 weapons, NOWAK 1, WIERZBA 3, ZIELIŃSKI 1
-    const ticks = (row: number) => ['C', 'D', 'E'].map((c) => cellAt(r, `${c}${row}`).getAttribute('office:value'))
-    expect(ticks(3)).toEqual([null, '1', null])
-    expect(ticks(4)).toEqual(['1', null, null])
-    expect(ticks(5)).toEqual([null, null, '1'])
-    expect(ticks(6)).toEqual(['1', null, null])
-  })
-  it('the tick is shown by a number style that holds only that text', () => {
-    const { content } = loadContent(m())
-    const [, , r] = sheets(content)
-    const data = styleEl(content, cellAt(r, 'D3').getAttribute('table:style-name')).getAttribute('style:data-style-name')
-    const ns = Array.from(content.getElementsByTagName('number:number-style')).find((n) => n.getAttribute('style:name') === data)!
-    expect(ns.textContent).toBe('✓')
-    expect(ns.getElementsByTagName('number:number')).toHaveLength(0)
-  })
-  it('the fee refers to the entries sheet; A and G are empty boxes', () => {
-    const [, , r] = sheets(loadContent(m()).content)
-    expect(formula(cellAt(r, 'F3'))).toBe("of:=[$'Zgłoszenia'.I2]")
-    expect(formula(cellAt(r, 'F6'))).toBe("of:=[$'Zgłoszenia'.I5]")
-    expect(num(cellAt(r, 'F3'))).toBe(110)
-    for (const row of [3, 4, 5, 6]) {
-      for (const c of ['A', 'G']) {
-        const cell = cellAt(r, `${c}${row}`)
-        expect(cell.getAttribute('office:value-type')).toBeNull()
-        expect(textOf(cell)).toBe('')
-      }
-    }
-  })
-  it('the total row and the confirmed-payments line carry their formulas', () => {
-    const [, , r] = sheets(loadContent(m()).content)
-    const t = last + 1
-    expect(textOf(cellAt(r, `B${t}`))).toBe('Razem')
-    expect(formula(cellAt(r, `C${t}`))).toBe(`of:=SUM([.C3:.C${last}])`)
-    expect(formula(cellAt(r, `D${t}`))).toBe(`of:=SUM([.D3:.D${last}])`)
-    expect(formula(cellAt(r, `E${t}`))).toBe(`of:=SUM([.E3:.E${last}])`)
-    expect(formula(cellAt(r, `F${t}`))).toBe(`of:=SUM([.F3:.F${last}])`)
-    expect([num(cellAt(r, `C${t}`)), num(cellAt(r, `D${t}`)), num(cellAt(r, `E${t}`)), num(cellAt(r, `F${t}`))]).toEqual([2, 1, 1, 400])
-    const p = t + 1
-    expect(textOf(cellAt(r, `A${p}`))).toBe('Wpłaty potwierdzone:')
-    expect(formula(cellAt(r, `C${p}`))).toBe(`of:=COUNTA([.G3:.G${last}])`)
-    expect(formula(cellAt(r, `F${p}`))).toBe(`of:=SUMIF([.G3:.G${last}];"<>";[.F3:.F${last}])`)
-    expect([num(cellAt(r, `C${p}`)), num(cellAt(r, `F${p}`))]).toEqual([0, 0])
-  })
-  it('rows are 7 mm, the two head rows 9 and 10 mm and they repeat', () => {
-    const { content } = loadContent(m())
-    const [, , r] = sheets(content)
-    const h = (row: Element) => mm(attr(props(content, row.getAttribute('table:style-name'), 'style:table-row-properties'), 'style:row-height'))
-    const rows = rowsOf(r)
-    expect([h(rows[0]), h(rows[1])]).toEqual([9, 10])
-    expect([2, 3, 4, 5].map((i) => h(rows[i]))).toEqual([7, 7, 7, 7])
-    expect(r.getElementsByTagName('table:table-header-rows')[0].getElementsByTagName('table:table-row')).toHaveLength(2)
-  })
-  it('the print range is A1:G of the last row, and the name cell shrinks to fit', () => {
-    const { content } = loadContent(m())
-    const [, , r] = sheets(content)
-    const t = last + 2 // the confirmed line is the last row
-    expect(r.getAttribute('table:print-ranges')).toBe(`'Lista'.A1:'Lista'.G${t}`)
-    const name = props(content, cellAt(r, 'B3').getAttribute('table:style-name'), 'style:table-cell-properties')
-    expect(name?.getAttribute('style:shrink-to-fit')).toBe('true')
-    expect(name?.getAttribute('fo:wrap-option')).not.toBe('wrap')
-  })
-  it('every body cell is boxed with hairlines and the roster is not striped', () => {
-    const { content } = loadContent(m())
-    const [, , r] = sheets(content)
-    for (const c of ['A', 'B', 'C', 'F', 'G']) {
-      const p = props(content, cellAt(r, `${c}4`).getAttribute('table:style-name'), 'style:table-cell-properties')
-      expect(p?.getAttribute('fo:border')).toBe('0.5pt solid #C9D1DC')
-      expect(p?.getAttribute('fo:background-color')).toBeNull()
-    }
-  })
-  it('with no entries the sheet keeps its head, one empty row and the total', () => {
-    const [, , r] = sheets(loadContent(buildRevenueModel(raw({ entries: [] }))).content)
-    expect(formula(cellAt(r, 'C4'))).toBe('of:=SUM([.C3:.C3])')
-    expect(textOf(cellAt(r, 'B4'))).toBe('Razem')
   })
 })

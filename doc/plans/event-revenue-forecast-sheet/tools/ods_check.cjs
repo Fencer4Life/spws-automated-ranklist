@@ -1,5 +1,6 @@
 // FR-176 — the proof by LibreOffice. Usage: node ods_check.cjs <dir>
 // <dir> holds the samples (make_sample.cjs) and what soffice made of them.
+// Two tabs since 2026-11-22: the forecast and the entries.
 // Stored values in the *-poison.ods files were overwritten with -1, so a value
 // that comes back right was RECALCULATED by LibreOffice from the formula, which
 // proves the formulas and not only their text.
@@ -20,9 +21,10 @@ const val = (ws, ref) => (ws[ref] ? ws[ref].v : undefined)
 for (const [name, { model, lang }] of Object.entries(expected)) {
   const file = path.join(dir, 'xlsx', `${name}-poison.xlsx`)
   const wb = XLSX.readFile(file)
-  const [f, e, r] = wb.SheetNames.map((n) => wb.Sheets[n])
+  const [f, e] = wb.SheetNames.map((n) => wb.Sheets[n])
+  eq('two sheets', wb.SheetNames.length, 2)
   console.log(`${name}: sheets ${wb.SheetNames.join(' / ')}`)
-  for (const ws of [f, e, r]) for (const [k, c] of Object.entries(ws)) if (k[0] !== '!' && c.t === 'e') { failures++; console.log(`  FAIL error cell ${k}: ${c.w}`) }
+  for (const ws of [f, e]) for (const [k, c] of Object.entries(ws)) if (k[0] !== '!' && c.t === 'e') { failures++; console.log(`  FAIL error cell ${k}: ${c.w}`) }
   const m = model
   const tierRev = m.tiers.reduce((s, t) => s + t.total, 0)
   eq('A7 entries', val(f, 'A7'), m.totals.entries)
@@ -51,27 +53,13 @@ for (const [name, { model, lang }] of Object.entries(expected)) {
   m.entries.forEach((en, i) => {
     eq(`entries H${i + 2}`, val(e, `H${i + 2}`), en.weapons.length)
     eq(`entries I${i + 2}`, val(e, `I${i + 2}`), en.fee ?? 0)
-    eq(`roster F${i + 3}`, val(r, `F${i + 3}`), en.fee ?? 0)
   })
   const nEntries = Math.max(1, m.entries.length)
   const sumStarts = m.entries.reduce((s, en) => s + en.weapons.length, 0)
   const sumFee = m.entries.reduce((s, en) => s + (en.fee ?? 0), 0)
   eq('entries total H', val(e, `H${nEntries + 2}`), sumStarts)
   eq('entries total I', val(e, `I${nEntries + 2}`), sumFee)
-  const tot = 2 + nEntries + 1
-  for (const [col, n] of [['C', 1], ['D', 2], ['E', 3]]) eq(`roster ${col}${tot}`, val(r, `${col}${tot}`), m.entries.filter((en) => en.weapons.length === n).length)
-  eq(`roster F${tot}`, val(r, `F${tot}`), sumFee)
-  eq(`roster paid count`, val(r, `C${tot + 1}`), 0)
-  eq(`roster paid sum`, val(r, `F${tot + 1}`), 0)
 }
-
-// Typing „x” into column G of two roster rows counts those two entries as paid.
-const x = expected['full-pl']
-const wb = XLSX.readFile(path.join(dir, 'xlsx', 'roster-x.xlsx'))
-const r = wb.Sheets[wb.SheetNames[2]]
-const tot = 2 + x.model.entries.length + 1
-eq('typed x: paid count', val(r, `C${tot + 1}`), 2)
-eq('typed x: paid sum', val(r, `F${tot + 1}`), (x.model.entries[0].fee ?? 0) + (x.model.entries[1].fee ?? 0))
 
 // The printed pages.
 function pdf(file) {
@@ -80,7 +68,8 @@ function pdf(file) {
   const box = /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(t)
   return { pages, w: Number(box[1]), h: Number(box[2]) }
 }
-for (const [file, want] of [['big-pl-roster.pdf', 4], ['full-pl-forecast.pdf', 1], ['big-pl-forecast.pdf', 1], ['empty-pl-roster.pdf', 1]]) {
+// The entries tab of 105 entries is checked page by page by print_check.py.
+for (const [file, want] of [['full-pl-forecast.pdf', 1], ['big-pl-forecast.pdf', 1], ['full-pl-entries.pdf', 1], ['empty-pl-entries.pdf', 1]]) {
   const p = pdf(path.join(dir, 'pdf', file))
   eq(`${file} pages`, p.pages, want)
   eq(`${file} A4 width pt`, Math.round(p.w), 595)

@@ -53,9 +53,13 @@ const cases: Record<string, { raw: RevenueReportRaw; lang: 'pl' | 'en' }> = {
   'empty-pl': { raw: sample(0, full), lang: 'pl' },
 }
 const expected: Record<string, unknown> = {}
+const raws: Record<string, unknown> = {}
 for (const [name, { raw, lang }] of Object.entries(cases)) {
   const model = buildRevenueModel(raw)
   writeFileSync(`${out}/${name}.ods`, buildRevenueOds(model, lang === 'en' ? headEn : head, lang))
   expected[name] = { lang, model }
+  raws[name] = { lang, raw }
 }
 writeFileSync(`${out}/expected.json`, JSON.stringify(expected))
+// The same answers, for print_check.cjs to print the page from Chrome.
+writeFileSync(`${out}/raw.json`, JSON.stringify(raws))

@@ -45,6 +45,7 @@
         <h3>{t('rev_by_tiers')}</h3>
         <div class="rr-scroll">
           <table class="rr-table rr-narrow" data-testid="rev-tiers">
+            <colgroup><col style="--mm: 44" /><col style="--mm: 24" /><col style="--mm: 32" /><col style="--mm: 24" /></colgroup>
             <thead>
               <tr>
                 <th>{t('rev_th_entry')}</th>
@@ -58,8 +59,8 @@
                 <tr>
                   <td>{t(`rev_tier_${tier.weapons}`)}</td>
                   <td class="num">{tier.entries}</td>
-                  <td class="num">{tier.fee == null ? '' : money(tier.fee)}</td>
-                  <td class="num">{money(tier.total)}</td>
+                  <td class="num fit" style={fit(tier.fee == null ? '' : money(tier.fee), 32)}>{tier.fee == null ? '' : money(tier.fee)}</td>
+                  <td class="num fit" style={fit(money(tier.total), 24)}>{money(tier.total)}</td>
                 </tr>
               {/each}
             </tbody>
@@ -68,7 +69,7 @@
                 <td>{t('rev_total')}</td>
                 <td class="num">{model.totals.entries}</td>
                 <td></td>
-                <td class="num">{money(tierRevenue)}</td>
+                <td class="num fit" style={fit(money(tierRevenue), 24)}>{money(tierRevenue)}</td>
               </tr>
             </tfoot>
           </table>
@@ -79,6 +80,7 @@
         <h3>{t('rev_by_weapon')}</h3>
         <div class="rr-scroll">
           <table class="rr-table" data-testid="rev-weapons">
+            <colgroup><col style="--mm: 44" /><col style="--mm: 24" /><col style="--mm: 32" /><col style="--mm: 24" /><col style="--mm: 32" /><col style="--mm: 24" /></colgroup>
             <thead>
               <tr>
                 <th>{t('rev_th_weapon')}</th>
@@ -94,10 +96,10 @@
                 <tr>
                   <td>{t(`rev_w_${w.weapon}`)}</td>
                   <td class="num">{w.F.starts}</td>
-                  <td class="num">{money(w.F.revenue)}</td>
+                  <td class="num fit" style={fit(money(w.F.revenue), 32)}>{money(w.F.revenue)}</td>
                   <td class="num">{w.M.starts}</td>
-                  <td class="num">{money(w.M.revenue)}</td>
-                  <td class="num">{money(w.total)}</td>
+                  <td class="num fit" style={fit(money(w.M.revenue), 32)}>{money(w.M.revenue)}</td>
+                  <td class="num fit" style={fit(money(w.total), 24)}>{money(w.total)}</td>
                 </tr>
               {/each}
             </tbody>
@@ -105,10 +107,10 @@
               <tr>
                 <td>{t('rev_total')}</td>
                 <td class="num">{model.totals.F.starts}</td>
-                <td class="num">{money(model.totals.F.revenue)}</td>
+                <td class="num fit" style={fit(money(model.totals.F.revenue), 32)}>{money(model.totals.F.revenue)}</td>
                 <td class="num">{model.totals.M.starts}</td>
-                <td class="num">{money(model.totals.M.revenue)}</td>
-                <td class="num">{money(model.totals.F.revenue + model.totals.M.revenue)}</td>
+                <td class="num fit" style={fit(money(model.totals.M.revenue), 32)}>{money(model.totals.M.revenue)}</td>
+                <td class="num fit" style={fit(money(model.totals.F.revenue + model.totals.M.revenue), 24)}>{money(model.totals.F.revenue + model.totals.M.revenue)}</td>
               </tr>
             </tfoot>
           </table>
@@ -129,13 +131,15 @@
         {/if}
       </section>
 
-      <section>
+      <!-- In print the entries start a new page, as the file's second tab does. -->
+      <section class="rr-new-page">
         <h3>{t('rev_entries_title')}</h3>
         {#if model.entries.length === 0}
           <p class="rr-empty">{t('rev_no_entries')}</p>
         {:else}
           <div class="rr-scroll">
             <table class="rr-table rr-entries" data-testid="rev-entries">
+              <colgroup><col style="--mm: 10" /><col style="--mm: 62" /><col style="--mm: 12" /><col style="--mm: 12" /><col style="--mm: 16" /><col style="--mm: 16" /><col style="--mm: 16" /><col style="--mm: 14" /><col style="--mm: 22" /></colgroup>
               <thead>
                 <tr>
                   <th class="num">{t('rev_th_no')}</th>
@@ -147,7 +151,7 @@
                   <th class="num">{t('rev_th_fee')}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="rr-rows">
                 {#each model.entries as e, i (e.id)}
                   <tr>
                     <td class="num">{i + 1}</td>
@@ -156,9 +160,20 @@
                     <td class="mid">{e.category ?? ''}</td>
                     {#each WEAPONS as w (w)}<td class="mid">{e.weapons.includes(w) ? '✓' : ''}</td>{/each}
                     <td class="mid">{e.weapons.length}</td>
-                    <td class="num">{e.fee == null ? money(0) : money(e.fee)}</td>
+                    <td class="num fit" style={fit(money(e.fee ?? 0), 22)}>{money(e.fee ?? 0)}</td>
                   </tr>
                 {/each}
+              </tbody>
+              <!-- The file's total row. A second tbody, not a tfoot: a browser
+                   repeats a tfoot on every printed page. -->
+              <tbody class="rr-total">
+                <tr>
+                  <td></td>
+                  <td>{t('rev_total')}</td>
+                  <td></td><td></td><td></td><td></td><td></td>
+                  <td class="mid">{model.totals.starts}</td>
+                  <td class="num fit" style={fit(money(model.totals.revenue), 22)}>{money(model.totals.revenue)}</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -209,6 +224,12 @@
     return `${day}, ${time}`
   })
 
+  // Print shrinks a money text to fit its column, as the file's cells do (I42):
+  // the cell carries its column's width in mm and its text's length.
+  function fit(text: string, mm: number): string {
+    return `--mm: ${mm}; --chars: ${text.length}`
+  }
+
   function money(value: number): string {
     if (!model?.hasFees) return '—'
     return `${formatMoney(value, lang)} ${model.currency}`
@@ -242,6 +263,29 @@
     return () => {
       cancelled = true
     }
+  })
+
+  // Print. A rule inside this element cannot set the paper or the page footer
+  // (the element lives in a shadow tree), so while the report shows, the
+  // document itself carries them: A4 with the file's 15 mm margins and the
+  // file's footer (event · title and „stan na …” · page X of Y). Chrome and
+  // Edge print the footer; a browser that does not know page-margin boxes
+  // ignores them and prints the rest.
+  const cssText = (s: string) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\n\r\f]/g, ' ')}"`
+  $effect(() => {
+    if (phase !== 'ready' || !event || !model) return
+    const foot = 'font: 8pt Arial, sans-serif; color: #6b7482;'
+    const style = document.createElement('style')
+    style.setAttribute('data-spws-revenue-print', '')
+    style.textContent =
+      `@page { size: A4 portrait; margin: 15mm;\n` +
+      `  @bottom-left { content: ${cssText(event.txt_name)}; ${foot} }\n` +
+      `  @bottom-center { content: ${cssText(`${t('rev_title')} · ${t('rev_stan_na', { when: asOf })}`)}; ${foot} }\n` +
+      `  @bottom-right { content: ${cssText(`${t('rev_page')} `)} counter(page) ${cssText(` ${t('rev_page_of')} `)} counter(pages); ${foot} }\n` +
+      `}\n` +
+      `@media print { html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; } }\n`
+    document.head.appendChild(style)
+    return () => style.remove()
   })
 
   // The file is of the minute it is downloaded: the report is read again, the
@@ -422,8 +466,14 @@
     border-top: 2px solid var(--rr-accent);
     border-bottom: 0;
   }
-  .rr-entries tbody tr:nth-child(even) td {
+  .rr-entries tbody.rr-rows tr:nth-child(even) td {
     background: var(--rr-stripe);
+  }
+  .rr-table tbody.rr-total td {
+    background: var(--rr-total);
+    font-weight: 700;
+    border-top: 2px solid var(--rr-accent);
+    border-bottom: 0;
   }
   .rr-table .num {
     text-align: right;
@@ -456,23 +506,116 @@
       overflow-wrap: anywhere;
     }
   }
+  /* Print: basically what the .ods prints. The paper (A4, 15 mm) and the footer
+     are set for the document by the script above; here the summary keeps page 1,
+     the entries start a new page with their header on every page, the columns
+     take the file's millimetres (180 mm in all), and the fills are printed. */
   @media print {
     .rr-page {
       background: #fff;
       padding: 0;
       min-height: 0;
+      font-size: 10pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .rr-card {
       box-shadow: none;
+      border-radius: 0;
       max-width: none;
+      width: 180mm;
+      margin: 0;
       padding: 0;
     }
     .rr-bar {
       display: none;
     }
-    @page {
-      size: A4;
-      margin: 15mm;
+    .rr-head h1 {
+      font-size: 20pt;
+      margin-top: 0;
+    }
+    .rr-head h2 {
+      font-size: 13pt;
+    }
+    .rr-asof {
+      font-size: 9pt;
+    }
+    .rr-value {
+      font-size: 16pt;
+    }
+    .rr-label {
+      font-size: 8pt;
+    }
+    h3 {
+      font-size: 11pt;
+      break-after: avoid;
+    }
+    .rr-new-page {
+      break-before: page;
+    }
+    .rr-new-page h3 {
+      margin-top: 0;
+    }
+    .rr-scroll {
+      overflow: visible;
+    }
+    .rr-table {
+      table-layout: fixed;
+      width: 180mm;
+    }
+    .rr-narrow {
+      width: 124mm;
+      min-width: 0;
+    }
+    .rr-table col {
+      width: calc(var(--mm) * 1mm);
+    }
+    .rr-table thead {
+      display: table-header-group;
+    }
+    .rr-table tr {
+      break-inside: avoid;
+    }
+    /* The file's row heights: 6 mm a row, 7 mm a header (more when its
+       words wrap), so a list breaks into pages as the file does. */
+    .rr-table th,
+    .rr-table td {
+      padding: 0 1.5mm;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+    .rr-table td {
+      height: 6mm;
+    }
+    .rr-table th {
+      height: 7mm;
+      padding-top: 0.8mm;
+      padding-bottom: 0.8mm;
+    }
+    .rr-table th {
+      white-space: normal;
+    }
+    .rr-notes p {
+      font-size: 8pt;
+    }
+    /* An Arial money text averages about 0.53 em a character (0.58 bold): the
+       text keeps 10 pt while it fits the column less its padding, and shrinks
+       only below that (I42), so „150,00 EUR” stays as large as in the file. */
+    .rr-table td.fit {
+      font-size: min(10pt, calc((var(--mm) * 1mm - 3mm) / (var(--chars) * 0.53)));
+    }
+    .rr-table tfoot td.fit,
+    .rr-table tbody.rr-total td.fit {
+      font-size: min(10pt, calc((var(--mm) * 1mm - 3mm) / (var(--chars) * 0.58)));
+    }
+    /* Fill whole rows, not cells, so no hairline gap shows between cells. */
+    .rr-table thead tr {
+      background: var(--rr-accent);
+    }
+    .rr-table tfoot tr,
+    .rr-table tbody.rr-total tr {
+      background: var(--rr-total);
     }
   }
 </style>

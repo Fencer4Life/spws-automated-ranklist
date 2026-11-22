@@ -1,4 +1,4 @@
-// FR-176 — the event revenue forecast page (REVFC.17–20). The organiser opens
+// FR-176 — the event revenue forecast page (REVFC.17–20, 32). The organiser opens
 // register.html?event=…&view=revenue&k=<key>; the page reads the event and the
 // report, and offers the designed .ods. Every person and the key are invented.
 
@@ -77,7 +77,7 @@ describe('REVFC.17 — the report', () => {
     const weapons = testid('rev-weapons').querySelectorAll('tbody tr')
     expect(cellsOf(weapons[0])).toEqual(['Szpada', '2', '120,00 EUR', '1', '55,00 EUR', '175,00 EUR'])
     expect(cellsOf(testid('rev-weapons').querySelector('tfoot tr')!)).toEqual(['Razem', '4', '220,00 EUR', '3', '180,00 EUR', '400,00 EUR'])
-    const entries = testid('rev-entries').querySelectorAll('tbody tr')
+    const entries = testid('rev-entries').querySelectorAll('tbody.rr-rows tr')
     expect(entries).toHaveLength(4)
     expect(cellsOf(entries[0])).toEqual(['1', 'KOWALSKI Jan', 'M', 'V2', '✓', '✓', '', '2', '110,00 EUR'])
     expect(cellsOf(entries[1])[2]).toBe('K')
@@ -91,7 +91,7 @@ describe('REVFC.17 — the report', () => {
     expect(screen.getByText(/^12\s–\s13 December 2026 · Łomianki$/)).toBeTruthy()
     expect(testid('rev-fig-revenue').textContent).toBe('400.00 EUR')
     expect(cellsOf(testid('rev-tiers').querySelectorAll('tbody tr')[1])).toEqual(['2 weapons', '1', '110.00 EUR', '110.00 EUR'])
-    expect(cellsOf(testid('rev-entries').querySelectorAll('tbody tr')[1])[2]).toBe('F')
+    expect(cellsOf(testid('rev-entries').querySelectorAll('tbody.rr-rows tr')[1])[2]).toBe('F')
   })
 })
 
@@ -178,5 +178,82 @@ describe('REVFC.20 — the download', () => {
     // the screen shows the minute of the file
     expect(testid('rev-fig-entries').textContent).toBe('5')
     click.mockRestore()
+  })
+})
+
+// The page prints basically as the .ods does (change plan rev 2, signed
+// 2026-11-22, Q1 = A): A4 with 15 mm margins, the summary alone on page 1, the
+// entries from a new page with the file's column widths, total row and footer.
+// What a browser really prints is proven by tools/print_check (Chrome to PDF).
+describe('REVFC.32 — the page prints like the file', () => {
+  const printStyle = () => document.head.querySelector('style[data-spws-revenue-print]')
+  const widths = (id: string) => Array.from(testid(id).querySelectorAll('col')).map((c) => (c as HTMLElement).style.getPropertyValue('--mm'))
+
+  it('the entries table ends with the file\'s total row', async () => {
+    render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Prognoza przychodu')
+    const total = testid('rev-entries').querySelectorAll('tbody.rr-total tr')
+    expect(total).toHaveLength(1)
+    expect(cellsOf(total[0])).toEqual(['', 'Razem', '', '', '', '', '', '7', '400,00 EUR'])
+    // not a tfoot: a browser repeats a tfoot on every printed page
+    expect(testid('rev-entries').querySelector('tfoot')).toBeNull()
+  })
+
+  it('the entries start a new printed page; the tables carry the file\'s column widths', async () => {
+    render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Prognoza przychodu')
+    expect(testid('rev-entries').closest('section')!.classList.contains('rr-new-page')).toBe(true)
+    expect(testid('rev-tiers').closest('section')!.classList.contains('rr-new-page')).toBe(false)
+    expect(widths('rev-tiers')).toEqual(['44', '24', '32', '24'])
+    expect(widths('rev-weapons')).toEqual(['44', '24', '32', '24', '32', '24'])
+    expect(widths('rev-entries')).toEqual(['10', '62', '12', '12', '16', '16', '16', '14', '22'])
+  })
+
+  it('installs the paper and the file\'s footer for the document while the report shows', async () => {
+    const view = render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Prognoza przychodu')
+    const css = printStyle()?.textContent ?? ''
+    expect(css).toContain('size: A4 portrait')
+    expect(css).toContain('margin: 15mm')
+    expect(css).toContain('@bottom-left { content: "PEW5 Łomianki"')
+    expect(css).toContain('@bottom-center { content: "Prognoza przychodu · stan na 22 listopada 2026, 14:05"')
+    expect(css).toContain('@bottom-right { content: "Strona " counter(page) " z " counter(pages)')
+    view.unmount()
+    expect(printStyle()).toBeNull()
+  })
+
+  it('the footer follows the language, and an event name cannot break out of its text', async () => {
+    setLocale('en')
+    mockEvent.mockResolvedValue({ ...EVENT, txt_name: 'A "B" \\C' } as never)
+    render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Revenue forecast')
+    const css = printStyle()?.textContent ?? ''
+    expect(css).toContain('@bottom-left { content: "A \\"B\\" \\\\C"')
+    expect(css).toContain('@bottom-right { content: "Page " counter(page) " of " counter(pages)')
+    expect(css).toMatch(/@bottom-center \{ content: "Revenue forecast · as of 22 November 2026, 14:05"/)
+  })
+
+  it('every money cell knows its column\'s width and its text\'s length, so print can shrink it to fit (I42)', async () => {
+    render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Prognoza przychodu')
+    const fit = (el: Element) => [(el as HTMLElement).style.getPropertyValue('--mm'), (el as HTMLElement).style.getPropertyValue('--chars')]
+    const total = testid('rev-entries').querySelector('tbody.rr-total tr')!.querySelectorAll('td')
+    expect(fit(total[8])).toEqual(['22', '10']) // „400,00 EUR”
+    const tierTotal = testid('rev-tiers').querySelector('tfoot tr')!.querySelectorAll('td')
+    expect(fit(tierTotal[3])).toEqual(['24', '10'])
+    const tierFee = testid('rev-tiers').querySelector('tbody tr')!.querySelectorAll('td')
+    expect(fit(tierFee[2])).toEqual(['32', '9']) // „70,00 EUR”
+    const weaponRow = testid('rev-weapons').querySelector('tbody tr')!.querySelectorAll('td')
+    expect([fit(weaponRow[2]), fit(weaponRow[4]), fit(weaponRow[5])]).toEqual([['32', '10'], ['32', '9'], ['24', '10']])
+    const entry = testid('rev-entries').querySelector('tbody.rr-rows tr')!.querySelectorAll('td')
+    expect(fit(entry[8])).toEqual(['22', '10'])
+    expect(testid('rev-entries').querySelectorAll('td.fit')).toHaveLength(5)
+  })
+
+  it('a link that is not active installs nothing', async () => {
+    mockReport.mockResolvedValue(null)
+    render(RevenueReport, { eventCode: 'PEW5', token: KEY })
+    await screen.findByText('Ten link nie jest aktywny. Poproś administratora o nowy.')
+    expect(printStyle()).toBeNull()
   })
 })

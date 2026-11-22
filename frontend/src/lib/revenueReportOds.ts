@@ -7,8 +7,8 @@
 // that also carries its computed value (a viewer that does not recalculate
 // shows the same numbers).
 //
-// Three sheets, one design (plan section 04): the forecast on one A4 page, the
-// entries, and a roster to print and tick by hand. Money is written unrounded.
+// Two sheets, one design (plan section 04, as changed 2026-11-22): the forecast
+// on one A4 page and the entries on their own tab. Money is written unrounded.
 
 import { zipSync, strToU8 as encode } from 'fflate'
 import type { RevenueModel } from './revenueReport'
@@ -64,14 +64,10 @@ function words(lang: Lang) {
     noteShare: w('rev_note_share'),
     noteMissing: (n: number, count: number) => w('rev_note_missing', { n, count }),
     noteNoFee: w('rev_note_no_fee'),
-    sheets: [w('rev_sheet_forecast'), w('rev_sheet_entries'), w('rev_sheet_roster')] as const,
+    sheets: [w('rev_sheet_forecast'), w('rev_sheet_entries')] as const,
     entriesHead: [w('rev_th_no'), w('rev_th_name'), w('rev_th_gender'), w('rev_th_cat'),
       ...WEAPONS.map((x) => w(`rev_w_${x}`)), w('rev_th_weapons'), w('rev_th_fee')],
     gender: { F: w('rev_g_F'), M: w('rev_g_M') },
-    rosterTitle: w('rev_roster_title'),
-    // „Wpłata potw.” as in the plan's A4 mock: „potwierdzona” does not fit 18 mm (I34).
-    rosterHead: ['✓', w('rev_th_roster_name'), w('rev_tier_1'), w('rev_tier_2'), w('rev_tier_3'), w('rev_th_fee'), w('rev_th_paid')],
-    confirmed: w('rev_confirmed'),
     page: w('rev_page'),
     of: w('rev_page_of'),
   }
@@ -119,7 +115,6 @@ interface CellSpec {
   align?: 'start' | 'end' | 'center'
   valign?: 'middle'
   wrap?: boolean
-  shrink?: boolean
   upper?: boolean
   num?: 'money' | 'int' | 'tick'
   border?: string
@@ -180,7 +175,7 @@ class Styles {
       if (s.wrap) cellProps += ' fo:wrap-option="wrap"'
       else cellProps += ' fo:wrap-option="no-wrap"'
       // Money always shrinks to fit: the column widths are fixed to fill A4 (I35).
-      if (s.shrink || s.num === 'money') cellProps += ' style:shrink-to-fit="true"'
+      if (s.num === 'money') cellProps += ' style:shrink-to-fit="true"'
       let textProps = ` style:font-name="${s.font ?? 'Arial'}" fo:font-size="${s.size ?? 10}pt" fo:color="${s.color ?? INK}"`
       if (s.bold) textProps += ' fo:font-weight="bold"'
       if (s.italic) textProps += ' fo:font-style="italic"'
@@ -196,7 +191,6 @@ class Styles {
 
 interface Cell {
   text?: string
-  rich?: string
   num?: number
   formula?: string
   style: string
@@ -210,9 +204,6 @@ function cell(c: Cell): string {
   let body = ''
   if (c.num !== undefined) {
     attrs += ` office:value-type="float" office:value="${c.num}"`
-  } else if (c.rich !== undefined) {
-    attrs += ' office:value-type="string"'
-    body = `<text:p>${c.rich}</text:p>`
   } else if (c.text !== undefined && c.text !== '') {
     attrs += ' office:value-type="string"'
     body = `<text:p>${xml(c.text)}</text:p>`
@@ -238,7 +229,7 @@ interface Ctx {
   lang: Lang
   t: ReturnType<typeof words>
   styles: Styles
-  names: readonly [string, string, string]
+  names: readonly [string, string]
   /** The last entry row on the entries sheet (at least 2). */
   n: number
 }
@@ -421,7 +412,9 @@ function entriesSheet(x: Ctx): string {
   ]))
 
   return (
-    `<table:table table:name="${xml(x.names[1])}" table:style-name="ta1">` +
+    // The print range is the table itself, so a note typed far to the right
+    // does not add pages.
+    `<table:table table:name="${xml(x.names[1])}" table:style-name="ta1" table:print-ranges="'${xml(x.names[1])}'.A1:'${xml(x.names[1])}'.I${x.n + 1}">` +
     columns(S, [10, 62, 12, 12, 16, 16, 16, 14, 22]) +
     `<table:table-header-rows>${header}</table:table-header-rows>` +
     out.join('') +
@@ -429,84 +422,9 @@ function entriesSheet(x: Ctx): string {
   )
 }
 
-function rosterSheet(x: Ctx): string {
-  const { model: m, t, head: h, styles: S } = x
-  const forecast = x.names[1]
-  const out: string[] = []
-
-  // The page head, repeated on every printed page.
-  const titleStyle = S.cell({ font: 'Georgia', size: 13, bold: true, color: ACCENT })
-  const titleRich =
-    `${xml(`${t.rosterTitle} · ${h.eventName}`)}` +
-    `<text:span text:style-name="T1">${xml(` · ${h.dates} · ${t.stanNa(h.asOf)}`)}</text:span>`
-  const headRow1 = row(S, 9, [cell({ rich: titleRich, style: titleStyle, span: 7 })])
-  const head: CellSpec = { fill: ACCENT, color: '#FFFFFF', bold: true, size: 9, wrap: true, align: 'center', border: HAIR }
-  const heads: CellSpec[] = [head, { ...head, align: 'start' }, head, head, head, { ...head, align: 'end' }, head]
-  const headRow2 = row(S, 10, t.rosterHead.map((c, i) => cell({ text: c, style: S.cell(heads[i]) })))
-
-  const box: CellSpec = { border: HAIR }
-  const bodyRows = m.entries.length ? m.entries : [null]
-  bodyRows.forEach((e, i) => {
-    const entryRow = i + 2
-    const centre: CellSpec = { ...box, align: 'center' }
-    const tick = (col: number) =>
-      e && e.weapons.length === col
-        ? cell({ num: 1, style: S.cell({ ...centre, num: 'tick' }) })
-        : cell({ style: S.cell(centre) })
-    out.push(row(S, 7, [
-      cell({ style: S.cell(box) }),
-      cell(e ? { text: e.name, style: S.cell({ ...box, shrink: true }) } : { style: S.cell({ ...box, shrink: true }) }),
-      tick(1),
-      tick(2),
-      tick(3),
-      e
-        ? cell({ formula: `of:=[${q(forecast)}.I${entryRow}]`, num: e.fee ?? 0, style: S.cell({ ...box, align: 'end', num: 'money' }) })
-        : cell({ style: S.cell({ ...box, align: 'end', num: 'money' }) }),
-      cell({ style: S.cell(box) }),
-    ]))
-  })
-
-  const last = 2 + bodyRows.length
-  const total: CellSpec = { fill: TOTAL_FILL, bold: true, border: HAIR, top: RULE }
-  const tierCount = (n: number) => m.entries.filter((e) => e.weapons.length === n).length
-  const sumFees = m.entries.reduce((s, e) => s + (e.fee ?? 0), 0)
-  const sum = (col: string, v: number, num: 'int' | 'money') =>
-    cell({ formula: `of:=SUM([.${col}3:.${col}${last}])`, num: v, style: S.cell({ ...total, align: num === 'int' ? 'center' : 'end', num }) })
-  out.push(row(S, 7, [
-    cell({ style: S.cell(total) }),
-    cell({ text: t.total, style: S.cell(total) }),
-    sum('C', tierCount(1), 'int'),
-    sum('D', tierCount(2), 'int'),
-    sum('E', tierCount(3), 'int'),
-    sum('F', sumFees, 'money'),
-    cell({ style: S.cell(total) }),
-  ]))
-
-  // What the organiser can use on screen: anything typed in column G counts that entry as paid.
-  const rg = (col: string) => `[.${col}3:.${col}${last}]`
-  const plain: CellSpec = { bold: true }
-  out.push(row(S, 7, [
-    cell({ text: t.confirmed, style: S.cell(plain), span: 2 }),
-    cell({ formula: `of:=COUNTA(${rg('G')})`, num: 0, style: S.cell({ ...plain, align: 'center', num: 'int' }) }),
-    cell({ style: S.cell(plain) }),
-    cell({ style: S.cell(plain) }),
-    cell({ formula: `of:=SUMIF(${rg('G')};"<>";${rg('F')})`, num: 0, style: S.cell({ ...plain, align: 'end', num: 'money' }) }),
-    cell({ style: S.cell(plain) }),
-  ]))
-
-  const name = x.names[2]
-  return (
-    `<table:table table:name="${xml(name)}" table:style-name="ta1" table:print-ranges="'${xml(name)}'.A1:'${xml(name)}'.G${last + 2}">` +
-    columns(S, [14, 70, 18, 18, 18, 24, 18]) +
-    `<table:table-header-rows>${headRow1}${headRow2}</table:table-header-rows>` +
-    out.join('') +
-    '</table:table>'
-  )
-}
-
 // --- the parts ----------------------------------------------------------------
 function contentXml(x: Ctx): string {
-  const sheets = forecastSheet(x) + entriesSheet(x) + rosterSheet(x)
+  const sheets = forecastSheet(x) + entriesSheet(x)
   const money = ` ${xml(x.model.currency)}`
   const numberStyles =
     `<number:number-style style:name="N-money"><number:number number:decimal-places="2" number:min-decimal-places="2" number:min-integer-digits="1" number:grouping="true"/><number:text>${money}</number:text></number:number-style>` +
@@ -520,7 +438,6 @@ function contentXml(x: Ctx): string {
     numberStyles +
     x.styles.toXml() +
     '<style:style style:name="ta1" style:family="table" style:master-page-name="Report"><style:table-properties table:display="true" style:writing-mode="lr-tb"/></style:style>' +
-    `<style:style style:name="T1" style:family="text"><style:text-properties style:font-name="Arial" fo:font-size="9pt" fo:font-weight="normal" fo:color="${NOTES}"/></style:style>` +
     '</office:automatic-styles>' +
     `<office:body><office:spreadsheet>${sheets}</office:spreadsheet></office:body>` +
     '</office:document-content>'
