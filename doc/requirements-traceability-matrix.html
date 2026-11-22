@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a728f445de8799499ec9a0c2b5ffbe55e902764dd41986441728ae9f25236993">
+<meta name="doc-source-sha256" content="a0152d33b7bd7f975f90f678cc0e5121ee6b740a9022fc7f44b8cabc4087b937">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1168,7 +1168,7 @@
 <td><strong>The roster's nationality is one spelling and is kept to the EVF ranking.</strong> <code>tbl_fencer.txt_nationality</code> is a three-letter code, POL for Poland (never PL): the column defaults to POL and refuses anything else, and every path that creates a fencer folds the source's code the same way. The EVF parity check counts POL fencers (I26). The 25 fencers decided on 2026-11-22 hold their codes (20 EVF's country, four POL, one USA), and one fencer's 2024/25 and 2025/26 nationality is an administrator's POL. Each month, after the EVF ranking is read, a roster fencer with a birth year who matches exactly one ranked fencer (folded name, same gender, an EVF category its birth year gives in the active season or the one before) takes EVF's country when it is a fencing code (never OTH), each write naming the fencer's id and current value, and every change is reported on Telegram; CERT and PROD run in their write lanes. A nationality change queues no recompute. Plan signed 2026-11-22 (<code>doc/plans/roster-nationality-from-evf-2026-11-22.html</code>, rev 3, N1–N9).</td>
 <td>FR-171, ADR-106, ADR-072</td>
 <td>RNAT.01–16, 44.8</td>
-<td>Implemented (awaiting release)</td>
+<td>Covered (released 2026-11-22, main 7a3429c5, CERT + PROD)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -6325,112 +6325,112 @@
 <td><code>tbl_fencer.txt_nationality</code> defaults to POL.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.02</td>
 <td>The column refuses anything but three capital letters (PL and a word are refused).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.03</td>
 <td>No roster fencer holds PL or any other value that is not a three-letter code.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.04</td>
 <td><code>fn_event_results_for_parity</code> returns a POL fencer's result (I26).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.05</td>
 <td>A fencer split from an alias without a nationality is POL.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.06</td>
 <td>The 25 fencers decided on 2026-11-22 hold their codes (N1, N4).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.07</td>
 <td>Fencer 140's 2024/25 and 2025/26 nationality is an administrator's POL, and a refresh from the season's results keeps it (N3, N7).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/136_roster_nationality.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.08</td>
 <td>A nationality change queues no recompute; a birth-year change still does (N8; test 44.8 amended).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/44_cdc_recompute_dedup.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.09</td>
 <td>A new fencer's nationality is the source's three-letter code, PL folded to POL, and POL when the source printed none or no code.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.10</td>
 <td>No Python path creates a fencer as PL; promote plans a new fencer with POL.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.11</td>
 <td>A roster fencer matching exactly one ranked fencer (folded name, gender, EVF category of the active season or the one before) takes EVF's country.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.12</td>
 <td>Several ranked fencers, a category or gender disagreement, OTH or another non-code, no birth year, or the same country change nothing; a stored PL reads as POL.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.13</td>
 <td>The write names each fencer's id and current value and returns the rows it changed; the read takes the active season, the roster, the ranking and the fencing codes.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.14</td>
 <td>The monthly run keeps each environment's roster after the ranked fencers and reports every change on Telegram; with nothing to change it writes nothing (RFNAME.24, RFNAME.26, EVFCTRY.04 amended).</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code>, <code>python/tests/test_given_names_sync.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.15</td>
 <td><code>--env</code> writes one environment; the workflow runs CERT then PROD in <code>cert-write</code> and <code>prod-write</code> and installs the matcher's name folding.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 <tr>
 <td>RNAT.16</td>
 <td>The seed export writes an administrator's season nationality (the results rebuild the others), and the current seed carries the decisions of 2026-11-22.</td>
 <td>pytest</td>
 <td><code>python/tests/test_roster_nationality.py</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main 7a3429c5)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6694,5 +6694,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a728f445de8799499ec9a0c2b5ffbe55e902764dd41986441728ae9f25236993</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a0152d33b7bd7f975f90f678cc0e5121ee6b740a9022fc7f44b8cabc4087b937</code></footer>
 </div></body></html>
