@@ -128,7 +128,10 @@ if [ -f "$RTM" ]; then
   #   chosen from a decade grid). Registered as Planned before code (release 2).
   # 168 since 2026-11-21: +FR-169 (a declared country, its flag on the entry
   #   list and a „Kraj” filter). Registered as Planned before code (release 3).
-  EXPECTED=168
+  # 169 since 2026-11-22: +FR-171 (the EVF ranking's countries fill entries
+  #   without one). FR-170 (release 4) is on its own branch; whichever lands
+  #   second adds its one. Registered as Planned before code.
+  EXPECTED=169
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else
