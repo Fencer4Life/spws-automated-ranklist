@@ -135,7 +135,9 @@ if [ -f "$RTM" ]; then
   #   Registered as Planned before code (release 4); landed after FR-171.
   # 171 since 2026-11-22: +FR-172 (the roster's nationality, one spelling,
   #   kept to the EVF ranking); landed after FR-170.
-  EXPECTED=171
+  # 172 since 2026-11-22: +FR-173 (the name list under the registration
+  #   form's SURNAME box). Registered as Planned before code.
+  EXPECTED=172
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

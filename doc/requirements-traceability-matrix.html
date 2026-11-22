@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="9d385761d52759729f18f1d413acdd05d425233ec81cd7a3419fcbe0114da019">
+<meta name="doc-source-sha256" content="a87c181071ef9fff441d77f9829da883b19ad9a196c46913b074d7d7ba2c3ba7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1228 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1268 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#the-roster-s-nationality-one-spelling-kept-to-the-evf-ranking-rnat">The roster&#x27;s nationality: one spelling, kept to the EVF ranking (RNAT.*)</a></li><li class="depth-2"><a href="#an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</a></li><li class="depth-2"><a href="#name-folding-repaired-every-accented-letter-folds-to-its-base-i27-rfac-31-33">Name folding repaired: every accented letter folds to its base (I27, RFAC.31–33)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#the-roster-s-nationality-one-spelling-kept-to-the-evf-ranking-rnat">The roster&#x27;s nationality: one spelling, kept to the EVF ranking (RNAT.*)</a></li><li class="depth-2"><a href="#an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</a></li><li class="depth-2"><a href="#the-name-list-under-surname-rfac-01-30-rfac-34-35">The name list under SURNAME (RFAC.01–30, RFAC.34–35)</a></li><li class="depth-2"><a href="#name-folding-repaired-every-accented-letter-folds-to-its-base-i27-rfac-31-33">Name folding repaired: every accented letter folds to its base (I27, RFAC.31–33)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1158,7 +1158,7 @@
 </tr>
 <tr>
 <td>FR-171</td>
-<td><strong>The EVF ranking's countries are kept, and an entry without a country is filled from them.</strong> The monthly read of the 24 EVF ranking lists keeps, besides the given names (FR-167), each ranked fencer's EVF id, surname, given name, gender, category and country in <code>tbl_evf_ranking_fencer</code> on CERT and PROD; never points, place or birth date, and a visitor cannot read it. A tool fills the country of an event's entries that have none: an entry takes a country only when exactly one ranked fencer has its name (titles, case and diacritics folded), the gender is the same and the EVF category agrees with the declared year; a code that is not a fencing code (EVF's <code>OTH</code>) is never written, and a stored country is never overwritten. It shows what it would set first and writes only with <code>--apply</code>. Setting a country links nothing: identity still rests on the birth year. Plan signed 2026-11-21 (<code>doc/plans/evf-ranking-country-lomianki-2026-11-21.html</code>, rev 1, „All as recommended”: D1–D6 A).</td>
+<td><strong>The EVF ranking's countries are kept, and an entry without a country is filled from them.</strong> The monthly read of the 24 EVF ranking lists keeps, besides the given names (FR-167), each ranked fencer's EVF id, surname, given name, gender, category and country in <code>tbl_evf_ranking_fencer</code> on CERT and PROD; never points, place or birth date, and a visitor cannot read it (since FR-173 a visitor reads at most eight of its names, with country and category, through <code>fn_registration_name_suggestions</code>, and still holds no grant on the table). A tool fills the country of an event's entries that have none: an entry takes a country only when exactly one ranked fencer has its name (titles, case and diacritics folded), the gender is the same and the EVF category agrees with the declared year; a code that is not a fencing code (EVF's <code>OTH</code>) is never written, and a stored country is never overwritten. It shows what it would set first and writes only with <code>--apply</code>. Setting a country links nothing: identity still rests on the birth year. Plan signed 2026-11-21 (<code>doc/plans/evf-ranking-country-lomianki-2026-11-21.html</code>, rev 1, „All as recommended”: D1–D6 A).</td>
 <td>FR-167, FR-169, ADR-079</td>
 <td>EVFCTRY.01–08</td>
 <td>Covered (released 2026-11-22, main fc63f0f5, CERT + PROD)</td>
@@ -1169,6 +1169,13 @@
 <td>FR-171, ADR-106, ADR-072</td>
 <td>RNAT.01–16, 44.8</td>
 <td>Covered (released 2026-11-22, main 7a3429c5, CERT + PROD)</td>
+</tr>
+<tr>
+<td>FR-173</td>
+<td><strong>The registration form offers a name list under SURNAME.</strong> From the second typed letter, at most eight people whose name starts with what was typed (Polish letters folded, either name first) are offered from our fencer table, the EVF ranking and earlier entries of people on neither; each row shows the name, the age category, the country and where it comes from, and marks a person already entered in the event. A pick fills surname, given name, gender, country and an empty club box, and opens the year grid on the category's decade; <strong>it never shows or fills a birth year</strong>: every person gives their own, which is the only check on an entry. „Dalej” runs the identity check as before. The entry records how its name arrived. Plan signed 2026-11-22 (<code>doc/plans/registration-name-list-under-surname-2026-11-22.html</code>, rev 1).</td>
+<td>FR-167, FR-171, ADR-079</td>
+<td>RFAC.01–30, RFAC.34–35</td>
+<td>Implemented (awaiting release)</td>
 </tr>
 <tr>
 <td>NFR-15</td>
@@ -5852,7 +5859,7 @@
 </tr>
 <tr>
 <td>RFNAME.15</td>
-<td>The surname box is marked <code>family-name</code> and the given-name box <code>given-name</code> for the browser's autofill.</td>
+<td>The given-name box is marked <code>given-name</code> for the browser's autofill; the surname box was marked <code>family-name</code> until FR-173 (D9, RFAC.24) switched the browser's list off there, since it carries the name list (test amended 2026-11-22).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/RegistrationForm.test.ts</code></td>
 <td>Released (2026-11-21, main 1918b0ed)</td>
@@ -6626,6 +6633,246 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="the-name-list-under-surname-rfac-01-30-rfac-34-35">The name list under SURNAME (RFAC.01–30, RFAC.34–35)</h2>
+<p>FR-173. Plan signed 2026-11-22 (<code>doc/plans/registration-name-list-under-surname-2026-11-22.html</code>, rev 1, Part B; business part from <code>doc/plans/registration-autocomplete-brainstorm-2026-11-22.html</code> rev 2, D1–D12, P1–P4). IDs registered before any code. Measured first on PROD, read-only: 373 roster fencers, 2,680 on the EVF ranking (123 on both); of the 196 entries made so far, the list would have offered the right person to 178. The user's rule: every person gives their own birth year, which is the only check on an entry.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Kind</th>
+<th>Test</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RFAC.01</td>
+<td>One typed letter, an empty or NULL text, or an unknown event returns no row.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.02</td>
+<td>Two letters return the roster fencer whose surname starts with them, with gender, country, club and category.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.03</td>
+<td>Typing without Polish letters and in lower case finds a name written with them.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.04</td>
+<td>Typing the start of the given name, or „surname given”, or „given surname”, finds the person.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.05</td>
+<td>A person in our table and on the EVF ranking (same gender) is returned once, from our table.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.06</td>
+<td>An EVF row carries its country and category; OTH comes back as no country.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.07</td>
+<td>An earlier entrant on neither list is returned once as ENTRY, a title ignored; an entrant on a list is not returned as ENTRY.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.08</td>
+<td>Never more than 8 rows; surname matches first; our table, then EVF, then entries; alphabetical within.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.09</td>
+<td>A person entered in the asked event is flagged; asked for another event, not.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.10</td>
+<td>The result has exactly the eight named columns, none a birth year or an id; a fencer without a year has no category.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.11</td>
+<td>A visitor may call the function and still has no grant on <code>tbl_evf_ranking_fencer</code>.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.12</td>
+<td><code>txt_name_source</code> defaults to TYPED and refuses another word; the write sets it with the entry's edit handle and refuses a wrong or NULL handle and an unknown word.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.13</td>
+<td><code>fetchNameSuggestions</code> calls the function with the event and the text and maps the eight columns.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/api.registration.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.14</td>
+<td><code>setRegistrationNameSource</code> calls the write with id, handle and source, and throws on an error.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/api.registration.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.15</td>
+<td><code>vcatDecade</code> gives the decade holding most of the category's years; null without a category or season.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/birthYearRange.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.16</td>
+<td>With a hint and no year the year grid opens on the hinted decade; with a valid year, on its own; without a hint, as before.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/YearPicker.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.17</td>
+<td><code>focusBox()</code> focuses the year input and opens the grid.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/YearPicker.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.18</td>
+<td>No request for one letter; one request 200 ms after the last of several keystrokes.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.19</td>
+<td>Rows show name, category, country and source; an entered person shows the mark; no row shows a year.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.20</td>
+<td>A click on a row picks it and closes the list; the pick's own text starts no new request.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.21</td>
+<td>Arrow keys move the highlight and wrap; Enter picks; Escape closes; the ARIA attributes follow.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.22</td>
+<td>A late answer to an earlier request is dropped.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.23</td>
+<td>A failed request shows no list and no error.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.24</td>
+<td>The surname input keeps its name, carries <code>autocomplete=&quot;off&quot;</code> and reports input and blur to the form.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/NameSuggest.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.25</td>
+<td>A pick fills surname, given name, gender and country; the year stays empty; no weapon is ticked.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/RegistrationForm.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.26</td>
+<td>A pick fills an empty club box and leaves a typed one; no country or a non-fencing code leaves the country box.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/RegistrationForm.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.27</td>
+<td>After a pick the year grid is open on the category's decade with the focus in the year box.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/RegistrationForm.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.28</td>
+<td>After a pick „Dalej” runs today's exact match with the picked name and the given year; an entered person opens no entry.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/RegistrationForm.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.29</td>
+<td>A saved entry whose names are still the picked ones records the source; otherwise nothing; a failed record does not stop the entry. The administrator's dialog shows the source.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/RegistrationForm.test.ts</code>, <code>frontend/tests/EntryEdit.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.30</td>
+<td>With the list never used the form behaves as before (the autofill expectation amended for D9).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/RegistrationForm.test.ts</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.34</td>
+<td>The PROD → CERT copy of an event's entries reads how each name arrived (I28).</td>
+<td>pytest</td>
+<td><code>python/tests/test_promotion_refresh.py</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+<tr>
+<td>RFAC.35</td>
+<td><code>fn_replace_event_registrations</code> keeps how each copied name arrived; a row without it reads TYPED (I28).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/138_registration_name_suggestions.sql</code></td>
+<td>Implemented (awaiting release)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="name-folding-repaired-every-accented-letter-folds-to-its-base-i27-rfac-31-33">Name folding repaired: every accented letter folds to its base (I27, RFAC.31–33)</h2>
 <p>Part A of plan <code>doc/plans/registration-name-list-under-surname-2026-11-22.html</code> (rev 1, signed 2026-11-22). No new requirement: it repairs the folding that ADR-093's identity lookup and FR-167's name check already rely on. <code>fn_fold_name</code> (migration <code>20260925000001</code>) had lost three letters from its letter table, so its two strings were 70 and 72 letters long and every letter after Ę folded to the wrong one (measured on PROD: ę unfolded, ó → N, ś → O, Á → Z). A name typed with its accents still matched; typed without them it did not. Migration <code>20261122000004_fold_name_all_letters.sql</code> folds by NFD, as <code>frontend/src/lib/foldName.ts</code> and the Python matcher do, and writes <code>tbl_common_given_name</code>'s stored keys again.</p>
 <div class="tablewrap"><table>
@@ -6644,21 +6891,21 @@
 <td>Every Polish letter and every accented letter found in our data folds to its base letter, in capitals.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/137_fold_name_all_letters.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fbfe20f7)</td>
 </tr>
 <tr>
 <td>RFAC.32</td>
 <td>A name typed without accents folds like the same name with them; spaces and hyphens fold as before.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/137_fold_name_all_letters.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fbfe20f7)</td>
 </tr>
 <tr>
 <td>RFAC.33</td>
 <td>The stored given-name keys follow the repaired folding, and a known given name typed without its accents is known.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/137_fold_name_all_letters.sql</code></td>
-<td>Implemented (awaiting release)</td>
+<td>Released (2026-11-22, main fbfe20f7)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6731,5 +6978,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>9d385761d52759729f18f1d413acdd05d425233ec81cd7a3419fcbe0114da019</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a87c181071ef9fff441d77f9829da883b19ad9a196c46913b074d7d7ba2c3ba7</code></footer>
 </div></body></html>

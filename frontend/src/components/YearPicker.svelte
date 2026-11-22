@@ -12,6 +12,7 @@
 <div class="yp" bind:this={wrap}>
   <label class="reg-lbl" for="reg-birth-year">{t('reg_birth_year')}</label>
   <input
+    bind:this={box}
     id="reg-birth-year"
     name="birthYear"
     type="text"
@@ -60,7 +61,12 @@
     year = $bindable(null),
     range,
     vcat = null,
-  }: { year: number | null; range: YearRange; vcat?: string | null } = $props()
+    // FR-173 (D12): after a pick from the name list, the decade of the
+    // person's age category. The year is still the fencer's own to give.
+    hintDecade = null,
+  }: { year: number | null; range: YearRange; vcat?: string | null; hintDecade?: number | null } = $props()
+
+  let box = $state<HTMLInputElement | null>(null)
 
   let wrap = $state<HTMLDivElement | null>(null)
   let text = $state(year == null ? '' : String(year))
@@ -82,8 +88,16 @@
   }
 
   function openGrid() {
-    decade = clampDecade(decadeOf(inRange(year, range) ? (year as number) : range.max + 30 - 50))
+    if (inRange(year, range)) decade = clampDecade(decadeOf(year as number))
+    else if (hintDecade != null) decade = clampDecade(hintDecade)
+    else decade = clampDecade(decadeOf(range.max + 30 - 50))
     open = true
+  }
+
+  // FR-173: the form moves the focus here after a pick, with the grid open.
+  export function focusBox() {
+    box?.focus()
+    openGrid()
   }
 
   function onInput(e: Event) {

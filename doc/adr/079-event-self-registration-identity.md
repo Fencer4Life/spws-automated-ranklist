@@ -6,6 +6,32 @@
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
 **Current behavior:** [Registration lifecycle](../handbook/reference/registration-lifecycle.html) — the handbook walkthrough of this decision as built, following one registration from the administrator enabling it to the row being purged after ingestion, with the failure at each stage and the screens as they appear. Read that for *what the system does*; read this ADR for *why it does it*.
 
+## Amendment (2026-11-22, FR-173 — a name list under SURNAME; the birth year stays the entrant's own)
+
+**Status:** Accepted (signed off by the user 2026-11-22, with the picture sheet). Plan `doc/plans/registration-name-list-under-surname-2026-11-22.html` (rev 1, signed in chat 2026-11-22, P1–P4 A); the business decisions D1–D12 are in `doc/plans/registration-autocomplete-brainstorm-2026-11-22.html` (rev 2).
+
+**Context.** Measured read-only on PROD on 22 Nov 2026: our fencer table holds 373 fencers, the EVF ranking (FR-171) 2,680, 123 of them on both. Of the 196 entries made so far, 127 were linked by an exact name and year; 6 had the name of a fencer we hold but another year; 42 were people known only to the EVF ranking (49 entries come from abroad); 3 had their two names exchanged; 18 were on neither list. A list offered while the surname is typed would have offered the right person to 178 of them. The name matching under all of this had a damaged letter table (I27, repaired the same day by migration `20261122000004`), so a name typed without its accents was not found.
+
+**Decision.**
+
+1. **The list (D1, D3, D8).** From the second typed letter, 200 ms after the last keystroke, the form asks `fn_registration_name_suggestions` (migration `20261122000005`) for at most eight people whose „surname given name” or „given name surname” starts with what was typed, Polish letters and case folded (`fn_fold_name`). It draws on `tbl_fencer`, then the EVF ranking (a person on both comes once, from our table), then earlier entries of people on neither. Each row shows the name, the age category in the event's season, the country and where the person comes from. The filter runs in the database: a visitor never receives the whole list, and `tbl_evf_ranking_fencer` keeps no grant to a visitor.
+2. **The birth year stays the entrant's own (D2, the user's rule).** The list never shows a birth year and a pick never fills one. The year a person gives is the only check that stands between an entry and somebody else changing it, a known trade-off the user keeps. The function returns no birth year and no id (RFAC.10).
+3. **A pick (D4–D6, D12).** A pick fills surname, given name (in the name form of the 2026-11-21 amendment), gender, country when it is a fencing code, and the club when the box is empty; it ticks no weapon. The cursor moves to the year box, whose grid opens on the decade of the person's age category; every other decade stays one tap away.
+4. **„Dalej” is unchanged (P1).** The exact match, the reversed-name and year questions, the consent and the save run as before on the name and the year the entrant gives. A pick links nobody by itself.
+5. **A person already entered (D7, the user's rule).** The row carries „już na liście”; the pick opens nothing. The earlier entry is reached on „Dalej” by name and year, as before.
+6. **How the name arrived (D10, P2).** `tbl_registration.txt_name_source` holds TYPED, ROSTER, EVF or ENTRY. After a new entry is saved, the form records the source with `fn_set_registration_name_source`, authorised by that entry's edit token, when both names are still the ones the pick wrote; a failure leaves TYPED and never stops the entry. The administrator's „Edytuj” shows it as one read-only line. The PROD → CERT copy of an event's entries (`python/pipeline/promotion/refresh.py`, `fn_replace_event_registrations`) carries it, so CERT and a LOCAL mirror show the same (I28, found while building; RFAC.34–35).
+7. **The browser's own list (D9)** is switched off on the surname box only; the given-name box keeps `autocomplete="given-name"` (RFNAME.15 amended).
+8. **Not in this work (D11).** The administrator's „Edytuj” offers no list: a linked entry's name is locked there on purpose.
+
+**Alternatives considered.**
+
+1. **The whole list sent to the page once** (D3 B). Instant, but every visitor's browser would hold about 2,930 names with countries and categories. Rejected.
+2. **The pick fills the birth year** (the brainstorm's rev 1). Rejected by the user: the year is the only check on an entry, so it must come from the person entering.
+3. **The year question narrowed to the picked fencer** (P1 B). Deferred: it changes the question ladder, which exists so that software never chooses between namesakes; its own plan if wanted.
+4. **The source written by the saving function** (P2 B). Rejected: a 13th argument and a full rewrite of `fn_create_registration`, the function every entry depends on, for one optional column.
+
+**Consequences.** New: migration `20261122000005_registration_name_suggestions.sql`; `frontend/src/components/NameSuggest.svelte`; `supabase/tests/138_registration_name_suggestions.sql` (RFAC.01–12); `frontend/tests/NameSuggest.test.ts`, `frontend/tests/YearPicker.test.ts`. Changed: `RegistrationForm.svelte` (the surname box, the pick, the source after the save), `YearPicker.svelte` (`hintDecade`, `focusBox`), `EntryEdit.svelte` (the source line), `fn_replace_event_registrations` and `refresh.py` (the copy keeps the source), `api.ts`, `types.ts`, `birthYearRange.ts` (`vcatDecade`), both locale files, the anon allowlist (52.7, `check-security-posture.sh`). FR-171's „read by the jobs only” no longer holds: the EVF table has one visitor-facing reader, which returns no birth date (EVF publishes none) and at most eight rows. The picture sheet `doc/plans/registration-name-list-sheet-2026-11-22.html` shows the form unchanged until two letters are typed.
+
 ## Amendment (2026-11-22, FR-171 — an entry without a country takes it from the EVF ranking)
 
 **Status:** Accepted (signed off by the user 2026-11-22).

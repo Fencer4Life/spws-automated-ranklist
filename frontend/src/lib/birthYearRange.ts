@@ -38,3 +38,15 @@ export function isYearRefusal(error: unknown): boolean {
   const message = (error as { message?: unknown } | null)?.message
   return typeof message === 'string' && message.includes('REG_BIRTH_YEAR_OUT_OF_RANGE')
 }
+
+// FR-173 (D12): the decade the year grid opens on after a pick from the name
+// list. A category is ten birth years (V1 in a season ending 2027: 1978–1987,
+// birthYearToVcat in birthYearEstimate.ts); the grid shows calendar decades, so
+// it opens on the one that holds most of them. The year itself is always the
+// fencer's own: this only chooses where the grid starts (tests RFAC.15).
+const CATEGORY_UPPER_AGE: Record<string, number> = { V0: 39, V1: 49, V2: 59, V3: 69, V4: 79 }
+
+export function vcatDecade(vcat: string | null | undefined, seasonEndYear: number | null | undefined): number | null {
+  if (!vcat || seasonEndYear == null || !(vcat in CATEGORY_UPPER_AGE)) return null
+  return decadeOf(seasonEndYear - CATEGORY_UPPER_AGE[vcat] + 4)
+}

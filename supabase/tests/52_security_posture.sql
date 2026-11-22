@@ -190,6 +190,19 @@ SELECT set_eq(
     -- (RFNAME.19).
     'fn_name_without_title',
     'fn_registration_name_check',
+    -- FR-173 (2026-11-22). fn_registration_name_suggestions is SECURITY
+    -- DEFINER and is the first visitor-facing reader of tbl_evf_ranking_fencer,
+    -- which still has no grant to anon. It returns at most 8 rows for two or
+    -- more typed letters, and per row only what the public ranking, the EVF
+    -- ranking or the public entry list already shows (name, gender, country,
+    -- age category, club, source, whether entered): never a birth year, never
+    -- an id (RFAC.10), so it reads nothing a visitor cannot read today and
+    -- cannot be used to list a table in one call. fn_set_registration_name_source
+    -- writes one TEXT column of one registration, gated on that row's
+    -- uuid_edit_token as fn_update_registration is, and only to one of four
+    -- fixed words (RFAC.12).
+    'fn_registration_name_suggestions',
+    'fn_set_registration_name_source',
     -- fn_confirm_registration_identity is the one genuinely new capability on
     -- this surface: it is SECURITY DEFINER and it can write tbl_fencer, which
     -- deliberately reverses ADR-079's read-only-birth-year invariant. It is

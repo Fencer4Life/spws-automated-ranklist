@@ -37,6 +37,8 @@
     {#if linked}
       <p class="ee-locked">{t('reg_admin_edit_locked')}</p>
     {/if}
+    <!-- FR-173 (D10): how the name arrived, read only. -->
+    <p class="ee-name-source">{t('entry_edit_name_source', { source: t(nameSourceKey) })}</p>
 
     <div class="reg-grid2">
       <label class="reg-fld">
@@ -126,6 +128,13 @@
   // (the list opens a new dialog per entry), so reading it once is intended.
   // svelte-ignore state_referenced_locally
   const linked = detail.id_fencer != null
+  const NAME_SOURCE_KEY: Record<string, string> = {
+    TYPED: 'entry_edit_name_source_typed',
+    ROSTER: 'entry_edit_name_source_roster',
+    EVF: 'entry_edit_name_source_evf',
+    ENTRY: 'entry_edit_name_source_entry',
+  }
+  const nameSourceKey = $derived(NAME_SOURCE_KEY[detail.txt_name_source] ?? NAME_SOURCE_KEY.TYPED)
   // svelte-ignore state_referenced_locally
   let surname = $state(entry.txt_surname)
   // svelte-ignore state_referenced_locally
@@ -240,6 +249,11 @@
     margin: 0 0 12px;
   }
   .ee-locked {
+    margin: -4px 0 12px;
+    font-size: 0.8em;
+    color: #8894a8;
+  }
+  .ee-name-source {
     margin: -4px 0 12px;
     font-size: 0.8em;
     color: #8894a8;

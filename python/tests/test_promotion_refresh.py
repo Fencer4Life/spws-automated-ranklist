@@ -305,6 +305,11 @@ class TestTransports:
         assert "txt_country" in rf.REGISTRATION_COLUMNS
         assert "r.txt_country" in rf.registrations_sql("PPW1-2026-2027")
 
+    def test_rfac_34_the_copy_reads_how_the_name_arrived(self):
+        """RFAC.34 (FR-173, I28) — the PROD → CERT copy carries how the entry's name arrived."""
+        assert "txt_name_source" in rf.REGISTRATION_COLUMNS
+        assert "r.txt_name_source" in rf.registrations_sql("PPW1-2026-2027")
+
     def test_an_event_code_is_an_exact_code(self):
         """PROMO.REFRESH.18 — nothing but a code reaches the SQL text."""
         for bad in ("PPW1'; DROP TABLE tbl_fencer; --", "PPW1 2026", "", "PPW1%"):

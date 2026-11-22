@@ -84,6 +84,8 @@ REGISTRATION_COLUMNS: tuple[str, ...] = (
     "txt_ftl_name",
     "txt_club",
     "txt_country",
+    # FR-173 (I28): how the name arrived (TYPED, ROSTER, EVF, ENTRY).
+    "txt_name_source",
     "id_fencer",
 )
 

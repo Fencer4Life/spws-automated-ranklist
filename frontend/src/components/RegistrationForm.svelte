@@ -53,12 +53,13 @@
     {/if}
 
     <div class="reg-grid2">
-      <label class="reg-fld">
-        <span class="reg-lbl">{t('reg_surname')}</span>
+      <div class="reg-fld">
+        <label class="reg-lbl" for="reg-surname">{t('reg_surname')}</label>
         <!-- FR-167: no text-transform here. onSurnameInput already writes the
-             capitals, and a title must show in its own form („Dr. KOVÁCS”). -->
-        <input name="surname" autocomplete="family-name" value={surname} oninput={onSurnameInput} onblur={writeNameForm} />
-      </label>
+             capitals, and a title must show in its own form („Dr. KOVÁCS”).
+             FR-173: the box carries the name list (NameSuggest owns the input). -->
+        <NameSuggest value={surname} eventId={event?.id_event ?? null} oninput={onSurnameInput} onblur={writeNameForm} onpick={onPickSuggestion} />
+      </div>
       <label class="reg-fld">
         <span class="reg-lbl">{t('reg_first_name')}</span>
         <input name="firstName" autocomplete="given-name" bind:value={firstName} onblur={writeNameForm} />
@@ -72,7 +73,7 @@
         </select>
       </label>
       <div class="reg-fld">
-        <YearPicker bind:year={birthYear} range={yearRange} {vcat} />
+        <YearPicker bind:this={yearPicker} bind:year={birthYear} range={yearRange} {vcat} hintDecade={yearHintDecade} />
       </div>
     </div>
 
@@ -279,14 +280,16 @@
     updateRegistration,
     fetchEntryList,
     checkRegistrationName,
+    setRegistrationNameSource,
   } from '../lib/api'
   import { canonicalGivenName, normaliseNames, surnameWithoutTitle } from '../lib/registrationName'
   import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
-  import { birthYearRange, inRange, isYearRefusal } from '../lib/birthYearRange'
+  import { birthYearRange, inRange, isYearRefusal, vcatDecade } from '../lib/birthYearRange'
   import YearPicker from './YearPicker.svelte'
   import CountryPicker from './CountryPicker.svelte'
-  import { DEFAULT_COUNTRY } from '../lib/fencingCountries'
+  import NameSuggest from './NameSuggest.svelte'
+  import { DEFAULT_COUNTRY, isFencingCountry } from '../lib/fencingCountries'
   import { WEAPON_PL } from '../lib/orgPayment'
   import type {
     RegistrationEventInfo,
@@ -294,6 +297,8 @@
     WeaponType,
     IdentityCandidate,
     IdentityAction,
+    NameSource,
+    NameSuggestion,
   } from '../lib/types'
 
   // v1.1 (2026-09-13, ADR-079 open item 2): the club field is now actually
@@ -495,6 +500,32 @@
     surname = n.surname
     firstName = n.firstName
   }
+
+  // FR-173 — a pick from the name list under SURNAME. It fills the names (in
+  // the same name form as typing), gender, country and an empty club box, and
+  // moves to the year box with the grid on the category's decade. It NEVER
+  // fills the year: every person gives their own, which is the only check on
+  // an entry (the user's rule, D2). „Dalej” then runs today's check unchanged.
+  let picked = $state<{ source: NameSource; surname: string; firstName: string } | null>(null)
+  let yearHintDecade = $state<number | null>(null)
+  let yearPicker = $state<{ focusBox: () => void } | null>(null)
+
+  function onPickSuggestion(s: NameSuggestion) {
+    const n = normaliseNames(s.surname, s.firstName)
+    surname = n.surname
+    firstName = n.firstName
+    gender = s.gender
+    if (s.country && isFencingCountry(s.country)) country = s.country
+    if (s.club && club.trim() === '') club = s.club
+    picked = { source: s.source, surname: n.surname, firstName: n.firstName }
+    yearHintDecade = vcatDecade(s.vcat, seasonEndYear)
+    yearPicker?.focusBox()
+  }
+
+  // The pick still stands only while both names are what it wrote.
+  const nameSource = $derived<NameSource | 'TYPED'>(
+    picked && picked.surname === surname && picked.firstName === firstName ? picked.source : 'TYPED',
+  )
 
   // The two fields exchanged, a title staying in front of the new surname.
   function swappedNames(): { surname: string; firstName: string } {
@@ -852,6 +883,17 @@
           // Intentionally silent — see above.
         }
         pendingIdentity = null
+      }
+
+      // FR-173 (D10): how the name arrived, for a name still as the pick wrote
+      // it. Like the replay above it comes after the entry is stored and a
+      // failure is swallowed: the entry then reads TYPED.
+      if (nameSource !== 'TYPED') {
+        try {
+          await setRegistrationNameSource(id, token, nameSource)
+        } catch {
+          // Intentionally silent — see above.
+        }
       }
 
       step = 'payment'
