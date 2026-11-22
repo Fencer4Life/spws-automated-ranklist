@@ -22,14 +22,14 @@ const NEWCOMER: RegistrationEntry = {
   arr_weapons: ['EPEE'], enum_age_category: 'V0', txt_country: 'GBR',
 }
 const NEWCOMER_DETAIL: AdminEntryDetail = {
-  id_registration: 9, int_birth_year: 1990, txt_club: 'London FC', txt_country: 'GBR', id_fencer: null, roster_birth_year: null,
+  id_registration: 9, int_birth_year: 1990, txt_club: 'London FC', txt_country: 'GBR', id_fencer: null, txt_name_source: 'EVF', roster_birth_year: null,
 }
 const LINKED: RegistrationEntry = {
   id_registration: 4, id_event: 3, txt_surname: 'NOWAK', txt_first_name: 'Piotr', enum_gender: 'M',
   arr_weapons: ['SABRE'], enum_age_category: 'V1', txt_country: null,
 }
 const LINKED_DETAIL: AdminEntryDetail = {
-  id_registration: 4, int_birth_year: 1980, txt_club: null, txt_country: null, id_fencer: 12, roster_birth_year: 1984,
+  id_registration: 4, int_birth_year: 1980, txt_club: null, txt_country: null, id_fencer: 12, txt_name_source: 'TYPED', roster_birth_year: 1984,
 }
 
 function open(entry = NEWCOMER, detail = NEWCOMER_DETAIL) {
@@ -49,6 +49,22 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 afterEach(() => setLocale('pl'))
+
+describe('EntryEdit — how the name arrived (FR-173, RFAC.29)', () => {
+  it('shows one line naming where the entry\'s name came from', () => {
+    const v = open()
+    expect(v.text('.ee-name-source')).toBe('Nazwisko: z rankingu EVF')
+    v.unmount()
+    const w = open(LINKED, LINKED_DETAIL)
+    expect(w.text('.ee-name-source')).toBe('Nazwisko: wpisane ręcznie')
+  })
+
+  it('shows the line in English', () => {
+    setLocale('en')
+    const v = open()
+    expect(v.text('.ee-name-source')).toBe('Name: from the EVF ranking')
+  })
+})
 
 describe('EntryEdit — opens with the entry (RFADM.02)', () => {
   it('shows every declared field with the entry\'s values', () => {

@@ -1,0 +1,158 @@
+<meta charset="utf-8">
+<title>Name list under SURNAME · picture sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0 28px;align-items:start}
+.shot{margin:0;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.shot img{width:100%;height:auto;display:block;border-radius:4px}
+.shot figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Registration form · Name list under SURNAME (FR-173) · Picture sheet</p>
+  <h1>Before and after, for your approval before any push</h1>
+  <p class="dek">Two builds of the page, main and this branch, captured on LOCAL with software drawing. <b>The two runs of the before build agree on 8 of 8 pictures, and the after build is identical to before on 8 of 8</b>: the form looks exactly as it does today until someone types two letters in SURNAME. The list and the form after a pick are new. The administrator's dialog gains one line. Every name in the list is invented and served by the capture tool; no real person's name is on this page.</p>
+  <div class="meta"><span class="pill warn"><span class="dot"></span>Awaits your approval in chat</span><span class="pill">LOCAL · software raster</span></div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Unchanged</p>
+    <h2>The form as everyone sees it today</h2>
+    <table><thead><tr><th>Picture</th><th>Two before runs: differing pixels</th><th>Before vs after: differing pixels</th></tr></thead><tbody><tr><td>1-empty__desktop__en.png</td><td>0</td><td>0</td></tr><tr><td>1-empty__desktop__pl.png</td><td>0</td><td>0</td></tr><tr><td>1-empty__phone__en.png</td><td>0</td><td>0</td></tr><tr><td>1-empty__phone__pl.png</td><td>0</td><td>0</td></tr><tr><td>2-typed__desktop__en.png</td><td>0</td><td>0</td></tr><tr><td>2-typed__desktop__pl.png</td><td>0</td><td>0</td></tr><tr><td>2-typed__phone__en.png</td><td>0</td><td>0</td></tr><tr><td>2-typed__phone__pl.png</td><td>0</td><td>0</td></tr></tbody></table>
+    <h3>the empty form · desktop · PL</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/before/1-empty__desktop__pl.png" alt="before · desktop" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before · desktop</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/1-empty__desktop__pl.png" alt="after · desktop" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after · desktop</figcaption></figure></div><h3>the empty form · phone · PL</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/before/1-empty__phone__pl.png" alt="before · phone" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before · phone</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/1-empty__phone__pl.png" alt="after · phone" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after · phone</figcaption></figure></div><h3>the form filled by typing · desktop · PL</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/before/2-typed__desktop__pl.png" alt="before · desktop" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before · desktop</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/2-typed__desktop__pl.png" alt="after · desktop" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after · desktop</figcaption></figure></div><h3>the form filled by typing · phone · PL</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/before/2-typed__phone__pl.png" alt="before · phone" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before · phone</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/2-typed__phone__pl.png" alt="after · phone" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after · phone</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · New</p>
+    <h2>The list, and the form after a pick</h2>
+    <table><thead><tr><th>Capture</th><th>Rows</th><th>Year after the pick</th><th>Focus</th><th>Grid opens on</th><th>Weapons ticked</th><th>Browser list on SURNAME</th><th>Page errors</th></tr></thead><tbody><tr><td>desktop__pl</td><td>5</td><td>(empty)</td><td>birthYear</td><td>1980 – 1989</td><td>0</td><td>off</td><td>0</td></tr><tr><td>desktop__en</td><td>5</td><td>(empty)</td><td>birthYear</td><td>1980 – 1989</td><td>0</td><td>off</td><td>0</td></tr><tr><td>phone__pl</td><td>5</td><td>(empty)</td><td>birthYear</td><td>1980 – 1989</td><td>0</td><td>off</td><td>0</td></tr><tr><td>phone__en</td><td>5</td><td>(empty)</td><td>birthYear</td><td>1980 – 1989</td><td>0</td><td>off</td><td>0</td></tr></tbody></table>
+    <p>After the pick: NOWAK Anna, gender F, club „KS Przykład”; <b>the year stays empty</b> and the grid opens on the decade of her category (V1 in 2026/27).</p>
+    <h3>the list open after „NOW” · PL</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/after/3-list__desktop__pl.png" alt="desktop · PL" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">desktop · PL</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/3-list__phone__pl.png" alt="phone · PL" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">phone · PL</figcaption></figure></div><h3>the list open after „NOW” · EN</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/after/3-list__desktop__en.png" alt="desktop · EN" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">desktop · EN</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/3-list__phone__en.png" alt="phone · EN" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">phone · EN</figcaption></figure></div><h3>right after picking NOWAK Anna · PL</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/after/4-picked__desktop__pl.png" alt="desktop · PL" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">desktop · PL</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/4-picked__phone__pl.png" alt="phone · PL" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">phone · PL</figcaption></figure></div><h3>right after picking NOWAK Anna · EN</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/after/4-picked__desktop__en.png" alt="desktop · EN" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">desktop · EN</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/after/4-picked__phone__en.png" alt="phone · EN" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">phone · EN</figcaption></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The administrator's dialog</p>
+    <h2>One line more: how the name arrived</h2>
+    <p>Captured with release 4's tool on LOCAL's throwaway ZZ entries (seeded and removed by the run). The dialog is one line taller, so it sits a few pixels higher; every difference is inside the dialog's box, and the page behind it is unchanged.</p>
+    <table><thead><tr><th>Picture</th><th>Differing pixels</th><th>Box</th></tr></thead><tbody><tr><td>dialog__desktop__en__1-newcomer.png</td><td>74941</td><td>[410, 260, 870, 740]</td></tr><tr><td>dialog__desktop__en__2-refused.png</td><td>75602</td><td>[410, 244, 870, 756]</td></tr><tr><td>dialog__desktop__en__3-linked.png</td><td>75779</td><td>[410, 238, 870, 762]</td></tr><tr><td>dialog__desktop__en__4-roster-change.png</td><td>79374</td><td>[410, 211, 870, 789]</td></tr><tr><td>dialog__desktop__pl__1-newcomer.png</td><td>77229</td><td>[410, 260, 870, 740]</td></tr><tr><td>dialog__desktop__pl__2-refused.png</td><td>77516</td><td>[410, 244, 870, 756]</td></tr><tr><td>dialog__desktop__pl__3-linked.png</td><td>77807</td><td>[410, 238, 870, 762]</td></tr><tr><td>dialog__desktop__pl__4-roster-change.png</td><td>80822</td><td>[410, 211, 870, 789]</td></tr><tr><td>dialog__phone__pl__1-newcomer.png</td><td>76790</td><td>[16, 99, 359, 713]</td></tr><tr><td>dialog__phone__pl__2-refused.png</td><td>78989</td><td>[16, 83, 359, 729]</td></tr><tr><td>dialog__phone__pl__3-linked.png</td><td>78089</td><td>[16, 76, 359, 736]</td></tr><tr><td>dialog__phone__pl__4-roster-change.png</td><td>82402</td><td>[16, 57, 359, 755]</td></tr></tbody></table>
+    <h3>dialog__desktop__pl__1-newcomer</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/dialog-before/dialog__desktop__pl__1-newcomer.png" alt="before" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/dialog-after/dialog__desktop__pl__1-newcomer.png" alt="after" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after</figcaption></figure></div><h3>dialog__desktop__pl__3-linked</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/dialog-before/dialog__desktop__pl__3-linked.png" alt="before" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/dialog-after/dialog__desktop__pl__3-linked.png" alt="after" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after</figcaption></figure></div><h3>dialog__phone__pl__3-linked</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px"><figure style="margin:0"><img src="registration-name-list-sheet/dialog-before/dialog__phone__pl__3-linked.png" alt="before" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">before</figcaption></figure><figure style="margin:0"><img src="registration-name-list-sheet/dialog-after/dialog__phone__pl__3-linked.png" alt="after" loading="lazy" style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:6px"><figcaption style="font-size:12px;opacity:.75">after</figcaption></figure></div>
+  </section>
+  <p class="foot">picture sheet · FR-173 · 22 Nov 2026 · tools in registration-name-list-sheet/tools (reg.cjs, build_sheet.py) and release 4's proof.cjs and diff.py · after build = branch claude/registration-name-list-under-surname, before = main fbfe20f7</p>
+</div>

@@ -936,9 +936,9 @@ const mockUpdate = vi.mocked(updateRegistrationAsAdmin)
 // ŻAK Adam a newcomer; NOWAK Piotr linked, the roster says another year;
 // KOWAL Jan linked, the same year.
 const DETAILS = [
-  { id_registration: 1, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, roster_birth_year: null },
-  { id_registration: 6, int_birth_year: 1980, txt_club: 'AZS', txt_country: null, id_fencer: 12, roster_birth_year: 1984 },
-  { id_registration: 3, int_birth_year: 1972, txt_club: null, txt_country: null, id_fencer: 13, roster_birth_year: 1972 },
+  { id_registration: 1, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, txt_name_source: 'TYPED', roster_birth_year: null },
+  { id_registration: 6, int_birth_year: 1980, txt_club: 'AZS', txt_country: null, id_fencer: 12, txt_name_source: 'TYPED', roster_birth_year: 1984 },
+  { id_registration: 3, int_birth_year: 1972, txt_club: null, txt_country: null, id_fencer: 13, txt_name_source: 'TYPED', roster_birth_year: 1972 },
 ]
 
 async function renderEdit(props: Record<string, unknown> = {}) {

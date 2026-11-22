@@ -14,6 +14,8 @@ vi.mock('../src/lib/api', () => ({
   updateRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
   checkRegistrationName: vi.fn(),
+  fetchNameSuggestions: vi.fn(),
+  setRegistrationNameSource: vi.fn(),
 }))
 import {
   fetchEventForRegistration,
@@ -24,13 +26,15 @@ import {
   updateRegistration,
   fetchEntryList,
   checkRegistrationName,
+  fetchNameSuggestions,
+  setRegistrationNameSource,
 } from '../src/lib/api'
 vi.mock('../src/lib/editToken', () => ({ newEditToken: vi.fn() }))
 import { newEditToken } from '../src/lib/editToken'
 import { setLocale, t } from '../src/lib/locale.svelte'
 import en from '../src/lib/locales/en.json'
 import RegistrationForm from '../src/components/RegistrationForm.svelte'
-import type { RegistrationEventInfo } from '../src/lib/types'
+import type { NameSuggestion, RegistrationEventInfo } from '../src/lib/types'
 
 const mockFetchEvent = vi.mocked(fetchEventForRegistration)
 const mockMatch = vi.mocked(matchRegistrationFencer)
@@ -41,6 +45,8 @@ const mockEntryList = vi.mocked(fetchEntryList)
 const mockUpdate = vi.mocked(updateRegistration)
 const mockNewToken = vi.mocked(newEditToken)
 const mockNameCheck = vi.mocked(checkRegistrationName)
+const mockSuggest = vi.mocked(fetchNameSuggestions)
+const mockSetSource = vi.mocked(setRegistrationNameSource)
 
 const BASE_EVENT: RegistrationEventInfo = {
   id_event: 3,
@@ -92,6 +98,10 @@ beforeEach(() => {
   // today's name check. RFNAME.10-14 opt into the reversed-fields answer.
   mockNameCheck.mockResolvedValue({ surnameIsGivenName: false, givenNameKnown: true })
   mockNewToken.mockReturnValue('tok-generated-0123456789abcdef')
+  // FR-173: the name list finds nobody unless a test opts in, so every test
+  // written before it sees today's form.
+  mockSuggest.mockResolvedValue([])
+  mockSetSource.mockResolvedValue(undefined)
   Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
 })
 
@@ -1230,11 +1240,13 @@ describe('RegistrationForm — FR-167 names (RFNAME.10–16)', () => {
     await waitFor(() => expect(mockMatch).toHaveBeenLastCalledWith('Dr. SZABÓ', 'Orsolya', 1974))
   })
 
-  it("RFNAME.15 marks the two name boxes for the browser's autofill", async () => {
+  // Amended by FR-173 (D9): the surname box carries our own name list, so the
+  // browser's list is switched off there; the given-name box keeps it.
+  it("RFNAME.15 marks the given-name box for the browser's autofill, and the surname box off (FR-173 D9)", async () => {
     mockFetchEvent.mockResolvedValue(BASE_EVENT)
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await findByText('IV Puchar Polski Weteranów')
-    expect(container.querySelector('input[name="surname"]')?.getAttribute('autocomplete')).toBe('family-name')
+    expect(container.querySelector('input[name="surname"]')?.getAttribute('autocomplete')).toBe('off')
     expect(container.querySelector('input[name="firstName"]')?.getAttribute('autocomplete')).toBe('given-name')
   })
 
@@ -1491,5 +1503,133 @@ describe('RegistrationForm — FR-169 country (RFCTRY.04, RFCTRY.27)', () => {
     } finally {
       setLocale('pl')
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-173 — the name list under SURNAME (RFAC.25–30, plan registration-name-
+// list-under-surname rev 1). A pick fills the boxes; the year is always the
+// fencer's own; „Dalej” runs today's check.
+// ---------------------------------------------------------------------------
+describe('RegistrationForm — the name list under SURNAME (FR-173, RFAC.25–30)', () => {
+  const ANNA: NameSuggestion = {
+    surname: 'NOWAK', firstName: 'Anna', gender: 'F', country: 'HUN', vcat: 'V1', club: 'AZS', source: 'ROSTER', entered: false,
+  }
+
+  async function openForm() {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    const r = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await r.findByText('IV Puchar Polski Weteranów')
+    const field = (name: string) => r.container.querySelector(`[name="${name}"]`) as HTMLInputElement
+    return { ...r, field }
+  }
+
+  async function pick(container: HTMLElement, row: NameSuggestion) {
+    mockSuggest.mockResolvedValue([row])
+    const surname = container.querySelector('input[name="surname"]') as HTMLInputElement
+    await fireEvent.input(surname, { target: { value: 'NOW' } })
+    await waitFor(() => expect(container.querySelector('[role="option"]')).not.toBeNull())
+    await fireEvent.click(container.querySelector('[role="option"]') as HTMLElement)
+  }
+
+  async function giveYearAndWeapon(container: HTMLElement, year = '1981') {
+    await fireEvent.input(container.querySelector('input[name="birthYear"]') as HTMLInputElement, { target: { value: year } })
+    await fireEvent.click(container.querySelector('input[type="checkbox"][value="EPEE"]') as HTMLInputElement)
+  }
+
+  async function submitThroughConsent(container: HTMLElement, findByText: (t: RegExp | string) => Promise<HTMLElement>) {
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await findByText(t('reg_payment_confirmed'))
+  }
+
+  it('RFAC.25 a pick fills surname, given name, gender and country; the year stays empty; no weapon is ticked', async () => {
+    const { container, field } = await openForm()
+    await pick(container, ANNA)
+    expect(field('surname').value).toBe('NOWAK')
+    expect(field('firstName').value).toBe('Anna')
+    expect((container.querySelector('select[name="gender"]') as HTMLSelectElement).value).toBe('F')
+    expect(container.querySelector('.cp-code')?.textContent).toBe('HUN')
+    expect(field('birthYear').value).toBe('')
+    for (const w of ['EPEE', 'FOIL', 'SABRE']) {
+      expect((container.querySelector(`input[type="checkbox"][value="${w}"]`) as HTMLInputElement).checked).toBe(false)
+    }
+  })
+
+  it('RFAC.26 a pick fills an empty club box and leaves a typed one; no country or a non-fencing code leaves the country box', async () => {
+    const a = await openForm()
+    await pick(a.container, { ...ANNA, country: null })
+    expect((a.container.querySelector('input[placeholder]') as HTMLInputElement).value).toBe('AZS')
+    expect(a.container.querySelector('.cp-code')?.textContent).toBe('POL')
+    a.unmount()
+
+    const b = await openForm()
+    const club = b.container.querySelector('input[placeholder]') as HTMLInputElement
+    await fireEvent.input(club, { target: { value: 'Mój klub' } })
+    await pick(b.container, { ...ANNA, country: 'XXX' })
+    expect(club.value).toBe('Mój klub')
+    expect(b.container.querySelector('.cp-code')?.textContent).toBe('POL')
+  })
+
+  it("RFAC.27 after a pick the year grid is open on the category's decade with the focus in the year box", async () => {
+    const { container, field } = await openForm()
+    await pick(container, ANNA)
+    await waitFor(() => expect(document.activeElement).toBe(field('birthYear')))
+    expect(container.querySelector('.reg-yeargrid-decade')?.textContent?.trim()).toBe('1980 – 1989')
+  })
+
+  it("RFAC.28 after a pick „Dalej” runs today's exact match with the picked name and the given year; an entered person opens no entry", async () => {
+    mockMatch.mockResolvedValue(null)
+    const { container, findByText } = await openForm()
+    await pick(container, { ...ANNA, entered: true })
+    await giveYearAndWeapon(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(mockMatch).toHaveBeenCalledWith('NOWAK', 'Anna', 1981))
+    await passNameCheck(container)
+    await findByText(/RODO/)
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  it('RFAC.29 a saved entry whose names are still the picked ones records the source', async () => {
+    mockMatch.mockResolvedValue(5)
+    mockCreate.mockResolvedValue(201)
+    const { container, findByText } = await openForm()
+    await pick(container, { ...ANNA, source: 'EVF' })
+    await giveYearAndWeapon(container)
+    await submitThroughConsent(container, findByText)
+    expect(mockSetSource).toHaveBeenCalledWith(201, 'tok-generated-0123456789abcdef', 'EVF')
+  })
+
+  it('RFAC.29 a name changed after the pick records nothing', async () => {
+    mockMatch.mockResolvedValue(5)
+    mockCreate.mockResolvedValue(202)
+    const { container, findByText, field } = await openForm()
+    await pick(container, ANNA)
+    await fireEvent.input(field('firstName'), { target: { value: 'Anita' } })
+    await giveYearAndWeapon(container)
+    await submitThroughConsent(container, findByText)
+    expect(mockSetSource).not.toHaveBeenCalled()
+  })
+
+  it('RFAC.29 a failed record of a picked name does not stop the entry', async () => {
+    mockMatch.mockResolvedValue(5)
+    mockCreate.mockResolvedValue(203)
+    mockSetSource.mockRejectedValue(new Error('offline'))
+    const { container, findByText } = await openForm()
+    await pick(container, ANNA)
+    await giveYearAndWeapon(container)
+    await submitThroughConsent(container, findByText)
+    expect(mockSetSource).toHaveBeenCalledWith(203, 'tok-generated-0123456789abcdef', 'ROSTER')
+  })
+
+  it('RFAC.30 with the list never used the form records nothing and behaves as before', async () => {
+    mockMatch.mockResolvedValue(5)
+    mockCreate.mockResolvedValue(204)
+    const { container, findByText } = await openForm()
+    await fillIdentity(container)
+    await submitThroughConsent(container, findByText)
+    expect(mockSetSource).not.toHaveBeenCalled()
   })
 })

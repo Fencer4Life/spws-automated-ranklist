@@ -34,6 +34,8 @@ import type {
   AdminEntryUpdate,
   IdentityCandidate,
   IdentityCandidateKind,
+  NameSource,
+  NameSuggestion,
   ConfirmIdentityParams,
   IdentityProposal,
   FtlExportEvent,
@@ -548,6 +550,53 @@ export async function checkRegistrationName(surname: string, firstName: string):
   }
 }
 
+// FR-173 — the name list under SURNAME: at most 8 people for two or more typed
+// letters, filtered in the database (fn_registration_name_suggestions), so a
+// visitor never receives the whole list. No birth year, no id (pgTAP RFAC.10).
+export async function fetchNameSuggestions(eventId: number, typed: string): Promise<NameSuggestion[]> {
+  const { data, error } = await getClient().rpc('fn_registration_name_suggestions', {
+    p_id_event: eventId,
+    p_typed: typed,
+  })
+  if (error) throw error
+  return ((data ?? []) as RawNameSuggestion[]).map((r) => ({
+    surname: r.txt_surname,
+    firstName: r.txt_first_name,
+    gender: r.enum_gender,
+    country: r.txt_country,
+    vcat: r.enum_age_category,
+    club: r.txt_club,
+    source: r.txt_source,
+    entered: r.bool_entered,
+  }))
+}
+
+// FR-173 — records how a new entry's name arrived, after the entry is saved,
+// authorised by that entry's own edit handle (pgTAP RFAC.12).
+export async function setRegistrationNameSource(
+  idRegistration: number,
+  editToken: string,
+  source: NameSource | 'TYPED',
+): Promise<void> {
+  const { error } = await getClient().rpc('fn_set_registration_name_source', {
+    p_id_registration: idRegistration,
+    p_edit_token: editToken,
+    p_source: source,
+  })
+  if (error) throw error
+}
+
+interface RawNameSuggestion {
+  txt_surname: string
+  txt_first_name: string
+  enum_gender: GenderType
+  txt_country: string | null
+  enum_age_category: string | null
+  txt_club: string | null
+  txt_source: NameSource
+  bool_entered: boolean
+}
+
 interface RawIdentityCandidate {
   id_fencer: number
   txt_surname: string
@@ -710,7 +759,7 @@ export async function deleteRegistration(id: number): Promise<void> {
 export async function fetchAdminEntryDetails(eventId: number): Promise<AdminEntryDetail[]> {
   const { data, error } = await getClient()
     .from('tbl_registration')
-    .select('id_registration, int_birth_year, txt_club, txt_country, id_fencer, tbl_fencer(int_birth_year)')
+    .select('id_registration, int_birth_year, txt_club, txt_country, id_fencer, txt_name_source, tbl_fencer(int_birth_year)')
     .eq('id_event', eventId)
   if (error) throw error
   type Row = Omit<AdminEntryDetail, 'roster_birth_year'> & { tbl_fencer: { int_birth_year: number | null } | null }

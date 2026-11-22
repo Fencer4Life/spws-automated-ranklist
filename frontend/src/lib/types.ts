@@ -558,6 +558,27 @@ export interface IdentityCandidate {
   kind: IdentityCandidateKind
 }
 
+// FR-173 — one person in the name list under the form's SURNAME box. Where the
+// person comes from: our fencer table, the EVF ranking, or an earlier entry of
+// someone on neither. Never a birth year and never an id: every person gives
+// their own year, which is the only check on an entry.
+export type NameSource = 'ROSTER' | 'EVF' | 'ENTRY'
+
+export interface NameSuggestion {
+  surname: string
+  firstName: string
+  gender: GenderType
+  // A fencing code, or null (EVF's OTH, or not known).
+  country: string | null
+  // 'V0'…'V4' in the event's season, or null when no year is held.
+  vcat: string | null
+  // Our fencer table only.
+  club: string | null
+  source: NameSource
+  // Already entered in this event.
+  entered: boolean
+}
+
 // The three answers on the D prompt, and the only actions
 // fn_confirm_registration_identity accepts.
 //   ADOPT_DECLARED   — "it is me, my year is right": corrects the MASTER row.
@@ -664,6 +685,8 @@ export interface AdminEntryDetail {
   txt_club: string | null
   txt_country: string | null
   id_fencer: number | null
+  // FR-173: how the name arrived ('TYPED', 'ROSTER', 'EVF', 'ENTRY').
+  txt_name_source: string
   roster_birth_year: number | null
 }
 

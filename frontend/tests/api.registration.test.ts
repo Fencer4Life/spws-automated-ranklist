@@ -25,6 +25,8 @@ import {
   fetchAdminEntryDetails,
   updateRegistrationAsAdmin,
   fetchEventSeasonEndYear,
+  fetchNameSuggestions,
+  setRegistrationNameSource,
 } from '../src/lib/api'
 
 beforeEach(() => {
@@ -52,6 +54,50 @@ describe('matchRegistrationFencer (FR-124, exact-only form-side router)', () => 
   it('throws on RPC error', async () => {
     mockRpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
     await expect(matchRegistrationFencer('X', 'Y', 1980)).rejects.toThrow()
+  })
+})
+
+describe('fetchNameSuggestions (FR-173, RFAC.13)', () => {
+  it('calls fn_registration_name_suggestions with the event and the text and maps the eight columns', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { txt_surname: 'NOWAK', txt_first_name: 'Anna', enum_gender: 'F', txt_country: 'POL', enum_age_category: 'V2',
+          txt_club: 'AZS', txt_source: 'ROSTER', bool_entered: true },
+        { txt_surname: 'NOVÁK', txt_first_name: 'Petr', enum_gender: 'M', txt_country: null, enum_age_category: null,
+          txt_club: null, txt_source: 'EVF', bool_entered: false },
+      ],
+      error: null,
+    })
+    const rows = await fetchNameSuggestions(3, 'NOW')
+    expect(mockRpc).toHaveBeenCalledWith('fn_registration_name_suggestions', { p_id_event: 3, p_typed: 'NOW' })
+    expect(rows).toEqual([
+      { surname: 'NOWAK', firstName: 'Anna', gender: 'F', country: 'POL', vcat: 'V2', club: 'AZS', source: 'ROSTER', entered: true },
+      { surname: 'NOVÁK', firstName: 'Petr', gender: 'M', country: null, vcat: null, club: null, source: 'EVF', entered: false },
+    ])
+  })
+
+  it('returns no rows for an empty answer and throws on an error', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    expect(await fetchNameSuggestions(3, 'NO')).toEqual([])
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
+    await expect(fetchNameSuggestions(3, 'NO')).rejects.toThrow()
+  })
+})
+
+describe('setRegistrationNameSource (FR-173, RFAC.14)', () => {
+  it('calls fn_set_registration_name_source with the id, the edit handle and the source', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null })
+    await setRegistrationNameSource(7, 'tok-1', 'EVF')
+    expect(mockRpc).toHaveBeenCalledWith('fn_set_registration_name_source', {
+      p_id_registration: 7,
+      p_edit_token: 'tok-1',
+      p_source: 'EVF',
+    })
+  })
+
+  it('throws on an error', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'REG_NAME_SOURCE_REFUSED' } })
+    await expect(setRegistrationNameSource(7, 'tok-1', 'EVF')).rejects.toThrow()
   })
 })
 
@@ -246,21 +292,22 @@ describe('fetchAdminEntryDetails (FR-170, RFADM.15)', () => {
     return { select, eq }
   }
 
-  it('reads the declared year, club, country, link and the roster\'s year in one request', async () => {
+  // FR-173 (RFAC.29) amends this read: it also brings how the name arrived.
+  it('reads the declared year, club, country, link, name source and the roster\'s year in one request', async () => {
     const c = chain({
       data: [
-        { id_registration: 4, int_birth_year: 1980, txt_club: 'AZS', txt_country: 'POL', id_fencer: 12, tbl_fencer: { int_birth_year: 1984 } },
-        { id_registration: 5, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, tbl_fencer: null },
+        { id_registration: 4, int_birth_year: 1980, txt_club: 'AZS', txt_country: 'POL', id_fencer: 12, txt_name_source: 'ROSTER', tbl_fencer: { int_birth_year: 1984 } },
+        { id_registration: 5, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, txt_name_source: 'TYPED', tbl_fencer: null },
       ],
       error: null,
     })
     const rows = await fetchAdminEntryDetails(3)
     expect(mockFrom).toHaveBeenCalledWith('tbl_registration')
-    expect(c.select).toHaveBeenCalledWith('id_registration, int_birth_year, txt_club, txt_country, id_fencer, tbl_fencer(int_birth_year)')
+    expect(c.select).toHaveBeenCalledWith('id_registration, int_birth_year, txt_club, txt_country, id_fencer, txt_name_source, tbl_fencer(int_birth_year)')
     expect(c.eq).toHaveBeenCalledWith('id_event', 3)
     expect(rows).toEqual([
-      { id_registration: 4, int_birth_year: 1980, txt_club: 'AZS', txt_country: 'POL', id_fencer: 12, roster_birth_year: 1984 },
-      { id_registration: 5, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, roster_birth_year: null },
+      { id_registration: 4, int_birth_year: 1980, txt_club: 'AZS', txt_country: 'POL', id_fencer: 12, txt_name_source: 'ROSTER', roster_birth_year: 1984 },
+      { id_registration: 5, int_birth_year: 1975, txt_club: null, txt_country: null, id_fencer: null, txt_name_source: 'TYPED', roster_birth_year: null },
     ])
   })
 
