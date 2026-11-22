@@ -114,6 +114,13 @@
         {#if takenAt}· {t('ftl_archive_taken_at')}: {takenAt}{/if}
       </span>
     </div>
+    <!-- FR-174: an event EVF organises is seeded by the EVF ranking; the page
+         says so and when it was read. Any other event shows nothing here. -->
+    {#if seedRanking === 'EVF'}
+      <p class="ftl-seed-source" data-field="ftl-seed-source">
+        {seedReadDate ? t('ftl_seed_source_evf', { date: seedReadDate }) : t('ftl_seed_source_evf_none')}
+      </p>
+    {/if}
 
     {#each groups as group (group.weapon)}
       <div class="ftl-acc" class:open={open[group.weapon]} data-field="ftl-weapon-group">
@@ -274,6 +281,19 @@
       }
     }).filter((g) => g.files.length > 0),
   )
+
+  // FR-174: every row of one event names the same ranking and read time.
+  const seedRanking = $derived(entries[0]?.txt_ranking ?? null)
+  const seedReadDate = $derived.by(() => {
+    const read = entries[0]?.ts_ranking_read
+    if (!read) return ''
+    return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'pl-PL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Europe/Warsaw',
+    }).format(new Date(read))
+  })
 
   function formatDate(iso: string | null): string {
     if (!iso) return ''
@@ -570,6 +590,15 @@
   .ftl-meta {
     color: #8894a8;
     font-size: 0.9rem;
+  }
+
+  /* FR-174: the ranking an EVF event is seeded by, under the actions. */
+  .ftl-seed-source {
+    margin: -6px 0 16px;
+    color: #8894a8;
+    font-size: 0.9rem;
+    /* A whole number of pixels, so everything below moves by whole pixels. */
+    line-height: 20px;
   }
 
   /* Accordion */

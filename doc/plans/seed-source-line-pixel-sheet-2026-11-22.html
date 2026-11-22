@@ -1,0 +1,168 @@
+<meta charset="utf-8">
+<title>Seed-source line · picture sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0 28px;align-items:start}
+.shot{margin:0;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.shot img{width:100%;height:auto;display:block;border-radius:4px}
+.shot figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+</style>
+<div class="wrap">
+  <p class="eyebrow">FR-174 · Release 1 · Picture sheet</p>
+  <h1>The download page names the EVF ranking</h1>
+  <p class="dek">The only visible change of release 1: on the download page of an event EVF organises, one line under „Pobierz wszystko” says which ranking the files are seeded by and when it was read. <b>An event of ours is pixel-identical to main in all four views.</b> Your approval in chat is needed before any push.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Awaits your approval</span>
+    <span class="pill">12 views: 3 states × desktop 1280 / phone 375 × PL / EN</span>
+    <span class="pill">Invented people; no database read</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · How it was made</p>
+    <h2>Two builds, one fixture, software drawing</h2>
+    <ul>
+      <li>Two custom-element builds: main (<code>origin/main</code> b2e38947) and this branch. Each is served to Playwright through <code>route()</code>; the download page is mounted as <code>&lt;spws-ftl-export&gt;</code>; every data request is answered from the fixture in <code>seed-source-line-sheet/tools/ftl.cjs</code> (invented people), every other host is blocked.</li>
+      <li>Software drawing with fixed settings. <b>Main was captured twice first: 12 of 12 identical</b>, so the capture itself does not move.</li>
+      <li>Compared with <code>pixdiff.cjs</code> (in place) and <code>seed-source-line-sheet/tools/rowdiff.cjs</code> (each row below the new line against the after-row shifted by the line's height). Raw results: <code>seed-source-line-sheet/pixdiff.json</code>, <code>seed-source-line-sheet/rowdiff.jsonl</code>.</li>
+      <li>The line has a whole-pixel height (20 px) so everything below it moves by whole pixels; a first capture with the inherited fractional height left the text below on sub-pixel positions, and was corrected before this sheet.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Every view</p>
+    <h2>Result per state, width and language</h2>
+    <table><thead><tr><th>State</th><th>Width</th><th>Lang</th><th>Result</th></tr></thead><tbody><tr><td>An event of ours (SPWS ranking)</td><td>desktop</td><td>EN</td><td><b style="color:#1a7f37">identical</b> (0 pixels differ)</td></tr><tr><td>An event of ours (SPWS ranking)</td><td>desktop</td><td>PL</td><td><b style="color:#1a7f37">identical</b> (0 pixels differ)</td></tr><tr><td>An event of ours (SPWS ranking)</td><td>phone</td><td>EN</td><td><b style="color:#1a7f37">identical</b> (0 pixels differ)</td></tr><tr><td>An event of ours (SPWS ranking)</td><td>phone</td><td>PL</td><td><b style="color:#1a7f37">identical</b> (0 pixels differ)</td></tr><tr><td>EVF event, ranking read on 6 Dec 2026</td><td>desktop</td><td>EN</td><td>one new line, page 30 px taller; above it identical; below it identical shifted by 30 px except <b>39</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking read on 6 Dec 2026</td><td>desktop</td><td>PL</td><td>one new line, page 30 px taller; above it identical; below it identical shifted by 30 px except <b>80</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking read on 6 Dec 2026</td><td>phone</td><td>EN</td><td>one new line, page 50 px taller; above it identical; below it identical shifted by 50 px except <b>80</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking read on 6 Dec 2026</td><td>phone</td><td>PL</td><td>one new line, page 50 px taller; above it identical; below it identical shifted by 50 px except <b>42</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking not read yet</td><td>desktop</td><td>EN</td><td>one new line, page 30 px taller; above it identical; below it identical shifted by 30 px except <b>39</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking not read yet</td><td>desktop</td><td>PL</td><td>one new line, page 30 px taller; above it identical; below it identical shifted by 30 px except <b>80</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking not read yet</td><td>phone</td><td>EN</td><td>one new line, page 50 px taller; above it identical; below it identical shifted by 50 px except <b>80</b> anti-aliased pixels on rounded corners</td></tr><tr><td>EVF event, ranking not read yet</td><td>phone</td><td>PL</td><td>one new line, page 50 px taller; above it identical; below it identical shifted by 50 px except <b>42</b> anti-aliased pixels on rounded corners</td></tr></tbody></table>
+    <p>The few differing pixels below the line sit only on the curved edges of the weapon boxes, the step-number circles and the card's bottom corners: the same shapes drawn one line lower round off a handful of edge pixels differently. No text, no colour and no layout differs.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · The new line</p>
+    <h2>Before and after</h2>
+    <figure style="margin:18px 0"><figcaption style="margin-bottom:8px"><b>EVF event, ranking read — desktop, Polish</b> · <code>2-evf-read__desktop__pl.png</code></figcaption><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><div class="kicker">Before (main)</div><img src="seed-source-line-sheet/before/2-evf-read__desktop__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div><div style="flex:1;min-width:260px"><div class="kicker">After (this branch)</div><img src="seed-source-line-sheet/after/2-evf-read__desktop__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div></div></figure>
+    <figure style="margin:18px 0"><figcaption style="margin-bottom:8px"><b>EVF event, ranking read — desktop, English</b> · <code>2-evf-read__desktop__en.png</code></figcaption><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><div class="kicker">Before (main)</div><img src="seed-source-line-sheet/before/2-evf-read__desktop__en.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div><div style="flex:1;min-width:260px"><div class="kicker">After (this branch)</div><img src="seed-source-line-sheet/after/2-evf-read__desktop__en.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div></div></figure>
+    <figure style="margin:18px 0"><figcaption style="margin-bottom:8px"><b>EVF event, ranking read — phone, Polish (the line wraps to two lines)</b> · <code>2-evf-read__phone__pl.png</code></figcaption><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><div class="kicker">Before (main)</div><img src="seed-source-line-sheet/before/2-evf-read__phone__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div><div style="flex:1;min-width:260px"><div class="kicker">After (this branch)</div><img src="seed-source-line-sheet/after/2-evf-read__phone__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div></div></figure>
+    <figure style="margin:18px 0"><figcaption style="margin-bottom:8px"><b>EVF event, ranking not read yet — desktop, Polish</b> · <code>3-evf-none__desktop__pl.png</code></figcaption><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><div class="kicker">Before (main)</div><img src="seed-source-line-sheet/before/3-evf-none__desktop__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div><div style="flex:1;min-width:260px"><div class="kicker">After (this branch)</div><img src="seed-source-line-sheet/after/3-evf-none__desktop__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div></div></figure>
+    <figure style="margin:18px 0"><figcaption style="margin-bottom:8px"><b>An event of ours — desktop, Polish (identical)</b> · <code>1-ours__desktop__pl.png</code></figcaption><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:260px"><div class="kicker">Before (main)</div><img src="seed-source-line-sheet/before/1-ours__desktop__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div><div style="flex:1;min-width:260px"><div class="kicker">After (this branch)</div><img src="seed-source-line-sheet/after/1-ours__desktop__pl.png" style="width:100%;border:1px solid rgba(128,128,128,.4)"></div></div></figure>
+  </section>
+
+  <p class="foot">picture sheet · FR-174 release 1 · 22 Nov 2026 · plan doc/plans/seeding-by-organiser-ranking-2026-11-22.html · captures in doc/plans/seed-source-line-sheet/</p>
+</div>

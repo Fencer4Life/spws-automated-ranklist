@@ -3,6 +3,8 @@
 # PEW4efs-2025-2026 R1: A — KUZMICHOVA Svitalina → KUZMICHOVA Svitlana 1972
 # 2026-11-21: roster birth year corrected 1971 → 1972 on CERT and PROD, as she declared it
 # (plan doc/plans/registration-form-names-year-country-2026-11-21.html §02).
+# 2026-11-22: the administrator corrected the roster's year on PROD again; the key
+# names her by name alone (one fencer bears it), so it holds on CERT and PROD.
 identity:
 - scraped_name: KUZMICHOVA Svitalina
-  fencer: {surname: KUZMICHOVA, first_name: Svitlana, birth_year: 1972}
+  fencer: {surname: KUZMICHOVA, first_name: Svitlana}

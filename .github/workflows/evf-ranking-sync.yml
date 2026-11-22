@@ -11,7 +11,11 @@ name: EVF Ranking Sync (given names + ranked fencers + roster countries → CERT
 # ranked fencer's EVF id, names, gender, category and country in
 # tbl_evf_ranking_fencer (insert or update by EVF id, never delete), from which
 # an entry without a country is filled (python/tools/fill_registration_country.py).
-# Never points, place or birth date (python/tools/extract_evf_given_names.py).
+# Never a birth date (python/tools/extract_evf_given_names.py).
+#
+# FR-174. It also keeps each ranked fencer's place and points per weapon in
+# tbl_evf_ranking_place, replaced in full only by a read that brought all 24
+# lists. An event EVF organises is seeded from them (fn_event_seed_ranks).
 #
 # FR-172. Then each environment's roster is kept to the ranking: a roster fencer
 # with exactly one EVF match (folded name, gender, the category its birth year
@@ -19,9 +23,14 @@ name: EVF Ranking Sync (given names + ranked fencers + roster countries → CERT
 # Every change is reported on Telegram. A nationality change queues no
 # recompute (nothing that scores reads it).
 #
-# WHY MONTHLY. A new EVF name appears only when a new fencer first scores at a
-# circuit event; a name missing for a few weeks costs at most one question that
-# the fencer dismisses. Each run asks the EVF site 24 times, one second apart.
+# WHEN IT READS (FR-174). It wakes every day at 05:41 UTC and asks each
+# database whether a read is due (fn_evf_ranking_read_due): seven days after an
+# EVF event (time for EVF to update its ranking), the day before an EVF event
+# that uses our registration, or 31 days after the last read. Not due: it stops
+# before EVF is asked anything, without a message. A failed read leaves the
+# last read where it was, so the read is due again the next morning. A run
+# started by hand always reads. Each read asks the EVF site 24 times, one
+# second apart.
 #
 # WHY TWO JOBS. Since FR-172 the job writes tbl_fencer, which ingest (CERT) and
 # promote (PROD) read and write. Each environment's run therefore holds that
@@ -32,7 +41,7 @@ name: EVF Ranking Sync (given names + ranked fencers + roster countries → CERT
 
 on:
   schedule:
-    - cron: '41 5 3 * *'   # the 3rd of each month, off the hour (WFCRON.01)
+    - cron: '41 5 * * *'   # every day, off the hour (WFCRON.01); reads only when due
   workflow_dispatch:
 
 # ADR-083: least-privilege GITHUB_TOKEN.
@@ -69,7 +78,9 @@ jobs:
           SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python -m python.tools.extract_evf_given_names --env cert
+          # FR-174: a scheduled run reads only when a read is due.
+          IF_DUE: ${{ github.event_name == 'schedule' && '--if-due' || '' }}
+        run: python -m python.tools.extract_evf_given_names --env cert $IF_DUE
 
       # A failed install before the sync leaves it no chance to alert (WFALERT.01).
       - name: Notify setup failure
@@ -109,7 +120,8 @@ jobs:
           SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python -m python.tools.extract_evf_given_names --env prod
+          IF_DUE: ${{ github.event_name == 'schedule' && '--if-due' || '' }}
+        run: python -m python.tools.extract_evf_given_names --env prod $IF_DUE
 
       - name: Notify setup failure
         if: failure() && steps.sync.outcome != 'failure'

@@ -1,0 +1,70 @@
+[
+ {
+  "name": "1-ours__desktop__en.png",
+  "size": "1264x1447",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "1-ours__desktop__pl.png",
+  "size": "1264x1490",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "1-ours__phone__en.png",
+  "size": "359x2623",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "1-ours__phone__pl.png",
+  "size": "359x2580",
+  "diff": 0,
+  "firstRow": -1,
+  "box": null
+ },
+ {
+  "name": "2-evf-read__desktop__en.png",
+  "size": "1264x1447 vs 1264x1477",
+  "diff": null
+ },
+ {
+  "name": "2-evf-read__desktop__pl.png",
+  "size": "1264x1490 vs 1264x1520",
+  "diff": null
+ },
+ {
+  "name": "2-evf-read__phone__en.png",
+  "size": "359x2623 vs 359x2673",
+  "diff": null
+ },
+ {
+  "name": "2-evf-read__phone__pl.png",
+  "size": "359x2580 vs 359x2630",
+  "diff": null
+ },
+ {
+  "name": "3-evf-none__desktop__en.png",
+  "size": "1264x1447 vs 1264x1477",
+  "diff": null
+ },
+ {
+  "name": "3-evf-none__desktop__pl.png",
+  "size": "1264x1490 vs 1264x1520",
+  "diff": null
+ },
+ {
+  "name": "3-evf-none__phone__en.png",
+  "size": "359x2623 vs 359x2673",
+  "diff": null
+ },
+ {
+  "name": "3-evf-none__phone__pl.png",
+  "size": "359x2580 vs 359x2630",
+  "diff": null
+ }
+]

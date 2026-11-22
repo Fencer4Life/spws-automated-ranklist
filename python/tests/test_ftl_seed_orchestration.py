@@ -25,6 +25,7 @@ import zipfile
 from unittest.mock import MagicMock
 
 import defusedxml.ElementTree as ET
+import pytest
 
 from python.pipeline.ftl_seed_export import (
     assemble_mixall_subrankings,
@@ -285,6 +286,41 @@ def test_exporter_fetch_registrations_queries_event():
     rows = exp.fetch_registrations(42)
     sb.table.assert_called_with("tbl_registration")
     assert rows[0]["txt_surname"] == "Kowalski"
+
+
+def test_evfseed_25_the_exporter_refuses_an_event_evf_organises():
+    """FR-174 (I29): an event EVF organises is seeded by the EVF ranking, which
+    only the database rule behind the download page knows (fn_event_seed_ranks).
+    This generator reads our ranking, so it refuses such an event instead of
+    seeding it the other way."""
+    from python.pipeline.ftl_seed_export_db import FtlSeedExporter
+
+    sb = MagicMock()
+    sb.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
+        {"tbl_organizer": {"txt_code": "EVF"}}
+    ]
+    with pytest.raises(ValueError, match="download page"):
+        _ = FtlSeedExporter(sb).build_bundle(
+            id_event=85, weapons=["EPEE"], event_code="PEW5efs-2026-2027", season_end_year=SEY
+        )
+    sb.rpc.assert_not_called()
+
+
+def test_evfseed_25_the_exporter_builds_an_event_of_ours_as_before():
+    from python.pipeline.ftl_seed_export_db import FtlSeedExporter
+
+    sb = MagicMock()
+    sb.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
+        {"tbl_organizer": {"txt_code": "SPWS"}}
+    ]
+    sb.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value.data = [
+        _reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"]),
+    ]
+    sb.rpc.return_value.execute.return_value.data = [{"rank": 1, "id_fencer": 1}]
+    files = FtlSeedExporter(sb).build_bundle(
+        id_event=42, weapons=["EPEE"], event_code="PPW5-2025-2026", season_end_year=SEY
+    )
+    assert any("POOLS-MIXED" in k for k in files)
 
 
 def test_exporter_build_bundle_wires_rankings_and_returns_files():
