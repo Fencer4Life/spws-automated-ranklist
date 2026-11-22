@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="db3604723b7d088512615d94271747c7e3892f8c2b6233c673938e3b13b75029">
+<meta name="doc-source-sha256" content="64d217029c51aa10dfebc4879546e8d3924b4d1756f8410cc350947b9c0eb2ab">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1154,7 +1154,7 @@
 <td><strong>A signed-in administrator edits an entry.</strong> On the entry list reached from the admin calendar (the route of FR-166's „Usuń”), each row carries „Edytuj” beside „Usuń”; a visitor sees neither. The dialog opens with the entry's declared surname, given name, gender, birth year, weapons, club and country, and saves every one of them (D2 A). A linked entry's name is locked, because the roster's name is what the database keeps for it. For a linked entry the dialog shows the roster's birth year beside the declared one, and the signed-in list marks an entry where they differ with ≠ (D5 A); a newcomer's entry shows neither. The form's rules hold for the administrator: the name form, the year range, the country list. A refused save keeps the dialog open with the reason. An edit never links or unlinks the entry and never touches the consent record or the fencer's edit link. For a linked entry only, what the save changed reaches the roster in the same transaction: the birth year, marked as confirmed; the gender; the country as the event season's <code>ADMIN</code> row in <code>tbl_fencer_nationality</code>, never <code>tbl_fencer.txt_nationality</code>; the club stays the entry's own (R1–R3 A, the user's addition of 22 Nov). Before „Zapisz” the dialog shows the roster's new year and any category change. One SECURITY DEFINER function, <code>fn_update_registration_as_admin</code>, signed-in users only, writes both. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 4); sheet <code>doc/plans/registration-admin-edit-release-4-pixel-sheet-2026-11-21.html</code> approved 22 Nov (I25 A, R1–R3 A).</td>
 <td>ADR-079, ADR-093, FR-166, FR-167, FR-168, FR-169</td>
 <td>RFADM.01–25</td>
-<td>Planned (release 4 of 4)</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>FR-171</td>
@@ -6301,7 +6301,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</h2>
-<p>FR-170. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 4 of 4; D2 A, D5 A); IDs registered before any code. Checked on LOCAL first: <code>tbl_registration</code>'s one policy („Admin all registrations”) lets a signed-in user read and update every column and gives a visitor no row; the name-form, roster-name and year-range triggers fire on update; the country refers to <code>tbl_fencing_country</code>; <code>tbl_fencer</code>'s birth year is readable. So no migration is expected, and RFADM.09–12 prove it. On 22 Nov the user added that a linked entry's correction also reaches the roster (sheet §05, R1–R3 A) and approved I25 A; that brought migration <code>20261122000003</code> (<code>fn_update_registration_as_admin</code>), through which the dialog now saves, and RFADM.16–25, registered with the sheet before their code.</p>
+<p>FR-170. Plan signed 2026-11-21 (<code>doc/plans/registration-form-names-year-country-2026-11-21.html</code>, rev 10, release 4 of 4; D2 A, D5 A); IDs registered before any code. Checked on LOCAL first: <code>tbl_registration</code>'s one policy („Admin all registrations”) lets a signed-in user read and update every column and gives a visitor no row; the name-form, roster-name and year-range triggers fire on update; the country refers to <code>tbl_fencing_country</code>; <code>tbl_fencer</code>'s birth year is readable. So no migration is expected, and RFADM.09–12 prove it. On 22 Nov the user added that a linked entry's correction also reaches the roster (sheet §05, R1–R3 A) and approved I25 A; that brought migration <code>20261122000003</code> (<code>fn_update_registration_as_admin</code>), through which the dialog now saves, and RFADM.16–25, registered with the sheet before their code. Released 2026-11-22 as main f3f57bca: CI run 44999000359 and Release run 44999138783 passed first time (rebased onto FR-171, so the roster test is <code>135_…</code> and the migration <code>20261122000003</code>); the user approved PROD. Checked read-only on CERT and PROD: <code>fn_update_registration_as_admin</code> exists, SECURITY DEFINER, executable by <code>authenticated</code> and not by <code>anon</code>; no ADMIN nationality row and no entry changed (CERT 90 entries, PROD 196); the live bundle calls the function.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -6318,175 +6318,175 @@
 <td>„Edytuj” shows beside „Usuń” on every row only while an administrator is signed in (<code>canRemove</code>); a visitor's list has no action column, as before.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.02</td>
 <td>The dialog opens with the entry's declared values: surname, given name, gender, birth year, weapons, club and country.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.03</td>
 <td>A linked entry's surname and given name are locked, with the note that they come from the fencer roster; a newcomer's are editable.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.04</td>
 <td>„Zapisz” sends only the declared fields, never the link, the consent or the edit token; a linked entry's save sends no name.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.05</td>
 <td>A save that the database confirms closes the dialog, reloads the list and shows „Zapisano zmiany: <name>”; an update that returns no row counts as a failure.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.06</td>
 <td>A refused save keeps the dialog and the typed values, with the reason: the year's range line for a year refusal, „Takie zgłoszenie już istnieje” for a duplicate entry, the general failure otherwise.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.07</td>
 <td>Escape, „Anuluj” and a click on the backdrop close the dialog and change nothing.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.08</td>
 <td>Signing out (the list loses <code>canRemove</code>) closes an open dialog.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.09</td>
 <td>A signed-in administrator can read an entry's declared birth year, club, country and link, and update the declared fields; a visitor can do neither.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.10</td>
 <td>An administrator's update leaves the link, the consent version and time, and the edit token as they were.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.11</td>
 <td>The rules hold for an administrator's update: a newcomer's name takes the name form, a linked entry keeps the roster's name, a year outside the range is refused, an unknown country is refused.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.12</td>
 <td>Renaming a newcomer into another newcomer's identity in the same event is refused, and both entries stay as they were.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/133_registration_admin_edit.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.13</td>
 <td>D5: a linked entry's dialog shows the roster's birth year beside the declared one, with ≠ when they differ.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.14</td>
 <td>D5: the signed-in list marks an entry whose declared year differs from the roster's; equal years, a newcomer and a visitor's list show no mark.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.15</td>
 <td>D5: the administrator reads the roster's year with the entry in one request (<code>fetchAdminEntryDetails</code>), and a newcomer's entry has none.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.16</td>
 <td>A changed birth year of a linked entry reaches the roster, marked as confirmed, the entry holds it, and every event the fencer has a result in is queued for recompute.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.17</td>
 <td>A field the save did not change is not copied: saving a club leaves the roster's year as it is although the declared year differs; the club never reaches the roster.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.18</td>
 <td>A newcomer's edit changes the entry only and the entry stays unlinked.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.19</td>
 <td>A changed gender of a linked entry reaches the roster.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.20</td>
 <td>A changed country lands in the event season's <code>ADMIN</code> row of <code>tbl_fencer_nationality</code>; <code>tbl_fencer.txt_nationality</code> is not written.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.21</td>
 <td>A refused save (a country that is not a fencing country) writes neither the entry nor the roster.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.22</td>
 <td>A visitor cannot call <code>fn_update_registration_as_admin</code>.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/135_registration_admin_edit_roster.sql</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.23</td>
 <td><code>updateRegistrationAsAdmin</code> saves through <code>fn_update_registration_as_admin</code>, sending a newcomer's names, empty club and country as none, and reports a refusal.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/api.registration.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.24</td>
 <td>Before „Zapisz”, a linked entry's dialog shows the roster's year it will get („w bazie: 1975 → 1965”) and, when the category changes, „Zmieni kategorię w bazie: V2 → V3; …”; a newcomer, an unchanged year or a year equal to the roster's shows neither.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryEdit.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 <tr>
 <td>RFADM.25</td>
 <td>I25: on a phone a name too long for its row ends in „…”, keeps its chips on its line, and a signed-in row puts its actions on a line of their own.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EntryList.test.ts</code></td>
-<td>Planned</td>
+<td>Released (2026-11-22, main f3f57bca)</td>
 </tr>
 </tbody>
 </table></div>
@@ -6559,5 +6559,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>db3604723b7d088512615d94271747c7e3892f8c2b6233c673938e3b13b75029</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>64d217029c51aa10dfebc4879546e8d3924b4d1756f8410cc350947b9c0eb2ab</code></footer>
 </div></body></html>
