@@ -191,7 +191,11 @@ SEND_HARNESS = r"""
 const vm = require('vm');
 const fs = require('fs');
 const src = fs.readFileSync(process.argv[1], 'utf8');
-const fn = src.match(/function sendTelegramMessage\(props, message\) \{[\s\S]*?\n\}\n/)[0];
+const pick = (name) => {
+  const m = src.match(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}\\n'));
+  return m ? m[0] : '';
+};
+const fn = pick('telegramFetch') + pick('sendTelegramMessage');
 const answers = JSON.parse(process.argv[2]);
 const calls = [];
 const logs = [];
@@ -366,3 +370,147 @@ def test_GAS_SYNC_04_one_setup_starts_both_timers():
         {"fn": "checkTelegramCommands", "everyMinutes": 5, "created": True},
         {"fn": "dispatchScheduledSync", "everyHours": 1, "created": True},
     ]
+
+
+# --------------------------------------------------------------------------
+# GAS.POLL.01-03, GAS.SEND.03 — a short network error is not a failure, and no
+# error text carries the bot token (mailbox errors plan of 2026-11-28, E1, E2, D1 A)
+# --------------------------------------------------------------------------
+
+TOKEN = "123456:harness-token"
+
+POLL_HARNESS = r"""
+const vm = require('vm');
+const fs = require('fs');
+const src = fs.readFileSync(process.argv[1], 'utf8');
+const pick = (name) => {
+  const m = src.match(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}\\n'));
+  return m ? m[0] : '';
+};
+const args = JSON.parse(process.argv[2]);
+const token = args.props.TELEGRAM_BOT_TOKEN;
+const store = Object.assign({}, args.props);
+const answers = args.answers.slice();
+const out = { runs: [], logs: [], handled: [], sent: [], urls: [] };
+const ctx = {
+  PropertiesService: { getScriptProperties: () => ({
+    getProperty: (k) => (k in store ? store[k] : null),
+    setProperty: (k, v) => { store[k] = String(v); },
+  }) },
+  UrlFetchApp: { fetch: (url, opts) => {
+    out.urls.push(url);
+    const a = answers.shift();
+    if (a.raise) { throw new Error(a.raise.split('<TOKEN>').join(token)); }
+    return { getResponseCode: () => a.code, getContentText: () => a.body };
+  } },
+  Logger: { log: (m) => out.logs.push(String(m)) },
+  handleCommand: (props, command, arg) => { out.handled.push(command); return 'ok'; },
+  sendTelegramMessage: (props, message) => { out.sent.push(message); },
+};
+vm.createContext(ctx);
+const fn = args.send
+  ? pick('telegramFetch') + pick('sendTelegramMessage')
+  : pick('telegramFetch') + pick('checkTelegramCommands');
+vm.runInContext(fn, ctx);
+for (let i = 0; i < args.runs; i++) {
+  try {
+    if (args.send) { ctx.sendTelegramMessage(ctx.PropertiesService.getScriptProperties(), 'hi'); }
+    else { ctx.checkTelegramCommands(); }
+    out.runs.push({ ok: true });
+  } catch (e) {
+    out.runs.push({ ok: false, error: String((e && e.message) || e) });
+  }
+}
+out.store = store;
+console.log(JSON.stringify(out));
+"""
+
+ADDRESS_UNAVAILABLE = (
+    "Exception: Address unavailable: "
+    "https://api.telegram.org/bot<TOKEN>/getUpdates?offset=8&timeout=0"
+)
+
+
+def _poll(answers: list[dict[str, Any]], runs: int = 1, send: bool = False, **props: str) -> Any:
+    store = {"TELEGRAM_BOT_TOKEN": TOKEN, "TELEGRAM_CHAT_ID": "42", "TELEGRAM_LAST_UPDATE": "7"}
+    store.update(props)
+    args = {"props": store, "answers": answers, "runs": runs, "send": send}
+    out = subprocess.run(
+        ["node", "-e", POLL_HARNESS, str(BOT), json.dumps(args)],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    ).stdout
+    return json.loads(out)
+
+
+def _no_token(got: Any) -> None:
+    text = json.dumps({k: v for k, v in got.items() if k not in ("store", "urls")})
+    assert TOKEN not in text
+
+
+def test_GAS_POLL_01_a_network_error_of_one_read_ends_the_run_quietly():
+    """GAS.POLL.01: Apps Script throws "Address unavailable" for a network error even
+    with muteHttpExceptions, and Google mails each such run as a failure, quoting the
+    request URL with the bot token. One failed read now ends the run without an error;
+    the next run reads the same commands, because TELEGRAM_LAST_UPDATE is unchanged."""
+    got = _poll([{"raise": ADDRESS_UNAVAILABLE}])
+    assert got["runs"] == [{"ok": True}]
+    assert got["store"]["TELEGRAM_LAST_UPDATE"] == "7"
+    assert got["store"]["TELEGRAM_FAILED_READS"] == "1"
+    assert got["handled"] == [] and got["sent"] == []
+    assert any("Address unavailable" in line for line in got["logs"])
+    _no_token(got)
+
+
+def test_GAS_POLL_02_the_twelfth_failed_read_in_a_row_fails_the_run_without_the_token():
+    """GAS.POLL.02 (D1 A): twelve failed reads in a row, one hour of 5-minute runs,
+    fail the run, so Google still mails a real outage. A refusal by Telegram (a
+    revoked token answers 401) is a failed read too. No error text holds the token."""
+    got = _poll(
+        [{"raise": ADDRESS_UNAVAILABLE}, {"raise": ADDRESS_UNAVAILABLE}],
+        runs=2,
+        TELEGRAM_FAILED_READS="10",
+    )
+    assert got["runs"][0] == {"ok": True}
+    assert got["runs"][1]["ok"] is False
+    assert "12" in got["runs"][1]["error"]
+    assert "Address unavailable" in got["runs"][1]["error"]
+    _no_token(got)
+
+    refused = _poll(
+        [{"code": 401, "body": '{"ok":false,"error_code":401,"description":"Unauthorized"}'}],
+        TELEGRAM_FAILED_READS="11",
+    )
+    assert refused["runs"][0]["ok"] is False
+    assert "Unauthorized" in refused["runs"][0]["error"]
+    _no_token(refused)
+
+
+def test_GAS_POLL_03_a_good_read_sets_the_count_of_failed_reads_to_zero():
+    """GAS.POLL.03: a read that Telegram answers starts the count again, and the
+    commands it brings are handled as before."""
+    update = {"update_id": 8, "message": {"text": "status PPW1", "chat": {"id": 42}}}
+    body = json.dumps({"ok": True, "result": [update]})
+    got = _poll([{"code": 200, "body": body}], TELEGRAM_FAILED_READS="5")
+    assert got["runs"] == [{"ok": True}]
+    assert got["store"]["TELEGRAM_FAILED_READS"] == "0"
+    assert got["store"]["TELEGRAM_LAST_UPDATE"] == "8"
+    assert got["handled"] == ["status"]
+    assert got["sent"] == ["ok"]
+
+
+def test_GAS_SEND_03_a_failed_send_gives_an_error_without_the_token():
+    """GAS.SEND.03: a network error of a send is raised with the token removed, and
+    one function, telegramFetch, is the only place that writes Telegram's address."""
+    sendmessage_down = ADDRESS_UNAVAILABLE.replace("getUpdates?offset=8&timeout=0", "sendMessage")
+    got = _poll([{"raise": sendmessage_down}], send=True)
+    assert got["runs"][0]["ok"] is False
+    assert "Address unavailable" in got["runs"][0]["error"]
+    _no_token(got)
+    src = _source()
+    assert src.count("api.telegram.org") == 1
+    assert re.search(
+        r"function telegramFetch\(token, method, options\) \{[^}]*api\.telegram\.org", src
+    )

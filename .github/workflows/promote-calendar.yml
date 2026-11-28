@@ -106,7 +106,8 @@ jobs:
         if: failure()
         env:
           LABEL: ${{ inputs.label }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="${LABEL} calendar promote FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${LABEL} calendar promote FAILED. Check: ${RUN_URL}"

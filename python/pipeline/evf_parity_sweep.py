@@ -58,6 +58,9 @@ class CheckCounters:
     no_results: int = 0
     ambiguous: int = 0
     errors: list[str] = field(default_factory=list)
+    # The same failed reads for the public run log: the event and the error's type,
+    # never its message, which can quote a row (EVFCHK.11, as LOG.PRIV.05).
+    error_kinds: list[str] = field(default_factory=list)
     still_empty: list[str] = field(default_factory=list)
     ambiguous_lines: list[str] = field(default_factory=list)
     unplaced_lines: list[str] = field(default_factory=list)
@@ -234,6 +237,9 @@ def run_check(
             )
         except Exception as exc:  # noqa: BLE001 -- reported, every event counted as unread
             c.errors.extend(f"{e['txt_code']}: EVF events not listed ({exc})" for e, _ in held)
+            c.error_kinds.extend(
+                f"{e['txt_code']}: EVF events not listed ({type(exc).__name__})" for e, _ in held
+            )
             held = []
 
     for event, ours in held:
@@ -272,6 +278,7 @@ def run_check(
                 c.matched += 1
         except Exception as exc:  # noqa: BLE001 -- one event never stops another
             c.errors.append(f"{code}: {exc}")
+            c.error_kinds.append(f"{code}: {type(exc).__name__}")
 
     if notifier is not None:
         notifier.info(_summary(c, evf_empty_stop_days))
@@ -316,6 +323,11 @@ def main() -> int:
         max_age_days=args.max_age_days,
         evf_empty_stop_days=args.evf_empty_stop_days,
     )
+    # A failed read used to reach Telegram only, so the run log said "errors=1" and
+    # nothing more (EVFCHK.11; mailbox errors plan 2026-11-28, E4). The public log
+    # names the event and the error's type; Telegram keeps the whole text.
+    for kind in c.error_kinds:
+        print(f"Read failed: {kind}")
     print(
         f"checked={c.checked} matched={c.matched} differ={c.differ} empty={c.empty} "
         f"no_results={c.no_results} ambiguous={c.ambiguous} errors={len(c.errors)}"

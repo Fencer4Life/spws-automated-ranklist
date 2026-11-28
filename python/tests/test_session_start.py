@@ -254,6 +254,70 @@ def test_new_worktree_links_the_primarys_env(setup: Setup):
     assert git("status", "--porcelain", cwd=new) == ""
 
 
+# --- frontend packages follow the worker's own lock file ---------------------
+# Mailbox errors plan of 2026-11-28, E8, D7 A: a worker linked the primary's
+# frontend/node_modules, and the primary checkout was older than the commit that
+# added fflate, so vitest and svelte-check failed in every new worker.
+
+
+def _lock_on_main(setup: Setup, text: str) -> None:
+    """Commit frontend/package-lock.json on origin/main and fetch it."""
+    seed = setup.tmp / "seed"
+    (seed / "frontend").mkdir(exist_ok=True)
+    (seed / "frontend" / "package-lock.json").write_text(text)
+    git("add", "frontend/package-lock.json", cwd=seed)
+    git("commit", "-q", "-m", "lock", cwd=seed)
+    git("push", "-q", "origin", "main", cwd=seed)
+    git("fetch", "-q", "origin", cwd=setup.primary)
+
+
+def _primary_packages(setup: Setup, lock: str) -> None:
+    (setup.primary / "frontend" / "node_modules").mkdir(parents=True)
+    (setup.primary / "frontend" / "package-lock.json").write_text(lock)
+
+
+def test_a_worker_installs_its_own_packages_when_the_lock_files_differ(setup: Setup):
+    """SS.19 — when the primary's frontend/package-lock.json differs from the worker's,
+    the worker gets no link: npm ci installs the worker's own packages, the worktree
+    stays clean, and the session-start report says so."""
+    _lock_on_main(setup, '{"lock": "main"}\n')
+    _primary_packages(setup, '{"lock": "older"}\n')
+    install = "mkdir node_modules && touch node_modules/.from-npm-ci"
+    out = run(setup, setup.primary, env={"SPWS_NPM_CI_CMD": install})
+    new = next(Path(p) for p in worktree_paths(setup) if "session-" in p)
+    modules = new / "frontend" / "node_modules"
+    assert modules.is_dir() and not modules.is_symlink()
+    assert (modules / ".from-npm-ci").exists()
+    assert git("status", "--porcelain", cwd=new) == ""
+    assert "frontend/node_modules: installed with npm ci" in context(out)
+
+
+def test_a_worker_links_the_primarys_packages_when_the_lock_files_match(setup: Setup):
+    """SS.20 — equal lock files keep the link, and npm ci does not run."""
+    _lock_on_main(setup, '{"lock": "main"}\n')
+    _primary_packages(setup, '{"lock": "main"}\n')
+    out = run(setup, setup.primary, env={"SPWS_NPM_CI_CMD": "touch ../npm-ci-ran"})
+    new = next(Path(p) for p in worktree_paths(setup) if "session-" in p)
+    modules = new / "frontend" / "node_modules"
+    assert modules.is_symlink()
+    assert modules.resolve() == (setup.primary / "frontend" / "node_modules").resolve()
+    assert not (new / "npm-ci-ran").exists()
+    assert "npm ci" not in context(out)
+
+
+def test_a_failed_npm_ci_is_reported_and_the_session_starts(setup: Setup):
+    """SS.21 — a failed npm ci, for example without a network, leaves no link, names
+    the command to run in the report, and does not stop the session start."""
+    _lock_on_main(setup, '{"lock": "main"}\n')
+    _primary_packages(setup, '{"lock": "older"}\n')
+    out = run(setup, setup.primary, env={"SPWS_NPM_CI_CMD": "echo 'npm ERR! network' >&2; exit 1"})
+    new = next(Path(p) for p in worktree_paths(setup) if "session-" in p)
+    assert not os.path.lexists(new / "frontend" / "node_modules")
+    text = context(out)
+    assert "frontend/node_modules: npm ci FAILED (exit 1: npm ERR! network)" in text
+    assert "npm ci" in text and str(new / "frontend") in text
+
+
 # --- cleanup ----------------------------------------------------------------
 
 

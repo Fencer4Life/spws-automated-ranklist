@@ -75,14 +75,16 @@ jobs:
         env:
           SOURCE: ${{ github.event.inputs.source }}
           REASON: ${{ github.event.inputs.reason }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Seed exported from ${SOURCE} (${REASON}). Git updated."
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Seed exported from ${SOURCE} (${REASON}). Git updated."
 
       - name: Notify failure
         if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Seed export FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Seed export FAILED. Check: ${RUN_URL}"

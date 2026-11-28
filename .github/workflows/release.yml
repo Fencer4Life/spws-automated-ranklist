@@ -249,9 +249,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=Release build FAILED: nothing was deployed. Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Release build FAILED: nothing was deployed. Check: ${RUN_URL}"
 
   # ─── Release notes ────────────────────────────────────────────────
   # The run's Summary page lists every commit on main since PROD last deployed:
@@ -297,9 +295,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=Release notes FAILED; CERT, Pages and PROD are unaffected. Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Release notes FAILED; CERT, Pages and PROD are unaffected. Check: ${RUN_URL}"
 
   # ─── Deploy Pages ─────────────────────────────────────────────────
   deploy-pages:
@@ -408,10 +404,12 @@ jobs:
       # message would then name the wrong cause (WFALERT.02).
       - name: Notify posture failure (CERT)
         if: failure() && steps.posture.outcome == 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="SECURITY POSTURE REGRESSION on CERT (ADR-083) — release halted before PROD. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "SECURITY POSTURE REGRESSION on CERT (ADR-083) — release halted before PROD. Check: ${RUN_URL}"
 
       # Every deploy records the commit it deployed, with or without migrations:
       # release-gate.sh measures the next release from .prod.last_sha (ADR-094
@@ -453,9 +451,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=Release: CERT deploy FAILED, so PROD was not deployed. Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Release: CERT deploy FAILED, so PROD was not deployed. Check: ${RUN_URL}"
 
   # ─── Deploy PROD ──────────────────────────────────────────────────
   deploy-prod:
@@ -528,10 +524,12 @@ jobs:
       # message would then name the wrong cause (WFALERT.02).
       - name: Notify posture failure (PROD)
         if: failure() && steps.posture.outcome == 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="SECURITY POSTURE REGRESSION on PROD (ADR-083). Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "SECURITY POSTURE REGRESSION on PROD (ADR-083). Check: ${RUN_URL}"
 
       # Every deploy records the commit it deployed, with or without migrations:
       # release-gate.sh measures the next release from .prod.last_sha (ADR-094
@@ -573,6 +571,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=Release: PROD deploy FAILED. Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Release: PROD deploy FAILED. Check: ${RUN_URL}"

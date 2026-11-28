@@ -216,9 +216,7 @@ jobs:
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
           MSG="Seed export after promote ${EVENT_CODE} FAILED (the promote itself committed). Check: ${RUN_URL}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"
 
   # A called, quiet promote is reported by the results sync's outcome job from
   # the ledger. The seed export's own failure line above stays: no cycle line
@@ -229,6 +227,13 @@ jobs:
     if: failure() && !inputs.quiet
     runs-on: ubuntu-24.04
     steps:
+      # The message goes through scripts/telegram-send.sh, which never prints
+      # Telegram's reply (LOG.PRIV.07-08); this job fetches only that file.
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: scripts/telegram-send.sh
+          sparse-checkout-cone-mode: false
+
       - name: Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -237,6 +242,4 @@ jobs:
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
           MSG="Promote of ${EVENT_CODE} FAILED or was refused. Check: ${RUN_URL}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"

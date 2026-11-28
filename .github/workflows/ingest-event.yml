@@ -258,9 +258,7 @@ jobs:
           ${DETAIL}
           Report ${STORED}. Run: ${RUN_URL}"
           fi
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"
 
   # ADR-119 §4 (S3): sync mode promotes a finished run whose gate passed, or a
   # run PROD is behind (promote_only). The called promote keeps its prod-write
@@ -335,6 +333,4 @@ jobs:
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
           MSG="❌ results sync: the cycle of ${EVENT_CODE} was not recorded, and the event is not paused. Check: ${RUN_URL}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"

@@ -215,7 +215,7 @@ def test_OVR_DRIFT_07_ci_reads_cert_and_preflight_reads_local():
     assert last["env"]["OVERRIDE_DRIFT"] == "${{ steps.override_drift.outcome }}"
     assert '--check "Override files=$OVERRIDE_DRIFT"' in last["run"]
     assert 'if [[ "$OVERRIDE_DRIFT" == "success" ]]; then\n  exit 0' in last["run"]
-    assert "api.telegram.org" in last["run"]
+    assert '"$GITHUB_WORKSPACE/scripts/telegram-send.sh"' in last["run"]  # LOG.PRIV.07
     preflight = (root / "scripts/preflight.sh").read_text(encoding="utf-8")
     # I21 (2026-11-21, ADR-119 amendment): preflight checks both rosters, each
     # gate named for the roster it reads, so a pass means CI's check passes too.

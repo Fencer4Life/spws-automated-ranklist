@@ -307,3 +307,34 @@ def test_EVFCHK_07_an_event_without_tournaments_has_no_results_to_compare():
     sb = _Sb({"tbl_event": [{"id_event": 501}], "tbl_tournament": [], "tbl_result": []})
     assert read_committed(sb, "PEW2efs-2026-2027") == []
     assert "tbl_result" not in sb.read
+
+
+def test_EVFCHK_11_the_run_log_names_each_failed_read(monkeypatch, capsys):
+    """EVFCHK.11 (mailbox errors plan of 2026-11-28, E4): the run of 26 Nov 2026
+    failed with "errors=1" and nothing more, because the failed read's text went only
+    to Telegram. The run log now names the event of each failed read and the error's
+    type, before the counts; the exit code stays 1. As LOG.PRIV.05 does for a
+    recorded run, the public log never carries the error's message, which can quote a
+    row; Telegram keeps the whole text."""
+    import python.pipeline.db_connector as db_connector
+    import python.pipeline.evf_parity_sweep as sweep
+
+    counters, notifier, _, _ = _run(
+        [EVENT],
+        {EVENT["txt_code"]: OURS},
+        [_evf_event(101, "2026-10-31")],
+        {101: RuntimeError("row KOWALSKI 1961 broke")},
+    )
+    assert counters.errors == ["PEW2efs-2026-2027: row KOWALSKI 1961 broke"]
+    assert counters.error_kinds == ["PEW2efs-2026-2027: RuntimeError"]
+    assert "KOWALSKI" in notifier.infos[-1]
+
+    monkeypatch.setattr(sweep, "run_check", lambda **_: counters)
+    monkeypatch.setattr(db_connector, "create_db_connector", lambda: None)
+    monkeypatch.setattr("sys.argv", ["evf_parity_sweep"])
+    assert sweep.main() == 1
+    out = capsys.readouterr().out
+    assert "Read failed: PEW2efs-2026-2027: RuntimeError" in out
+    assert "KOWALSKI" not in out and "1961" not in out
+    assert out.index("Read failed:") < out.index("checked=")
+    assert "errors=1" in out

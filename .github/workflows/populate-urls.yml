@@ -84,7 +84,4 @@ jobs:
           MSG="<b>Populate URLs: ${EVENT_CODE}</b>
           <i>Status: ${STATUS}</i>
           <pre>${OUTPUT}</pre>"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d parse_mode=HTML \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" --html "${MSG}"

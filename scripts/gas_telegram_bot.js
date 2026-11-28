@@ -7,9 +7,14 @@
  * step with the commands (GAS.HELP.01–04).
  *
  * Two functions run on timers:
- *   checkTelegramCommands() — every 5 minutes, polls Telegram getUpdates for admin commands
+ *   checkTelegramCommands() — every 5 minutes, polls Telegram getUpdates for admin commands;
+ *                             a failed read is retried by the next run, and only twelve
+ *                             in a row (one hour) fail the run (GAS.POLL.01–03)
  *   dispatchScheduledSync() — every hour, starts the results sync's hourly cycle
  *                             (ADR-119 §4, G47 A)
+ *
+ * Every request to Telegram goes through telegramFetch(), which keeps the bot token
+ * out of every error text (GAS.SEND.03).
  *
  * Setup (Script Properties):
  *   SUPABASE_PROJECT_REF   — CERT project ref; the database commands run there
@@ -21,6 +26,7 @@
  *   TELEGRAM_BOT_TOKEN     — Telegram bot token
  *   TELEGRAM_CHAT_ID       — Authorized admin chat ID
  *   TELEGRAM_LAST_UPDATE   — (auto-managed) last processed update_id
+ *   TELEGRAM_FAILED_READS  — (auto-managed) failed getUpdates reads in a row
  *
  * Deploy:
  *   1. Create GAS project linked to spws.weterani@gmail.com
@@ -39,12 +45,38 @@ function checkTelegramCommands() {
   var authorizedChat = props.getProperty('TELEGRAM_CHAT_ID');
   if (!token || !authorizedChat) return;
 
+  // Apps Script throws for a network error ("Address unavailable") and for its own
+  // server error even with muteHttpExceptions, and Google mails each such run as a
+  // failure. One failed read is not a failure: TELEGRAM_LAST_UPDATE is unchanged, so
+  // the next run reads the same commands. Twelve failed reads in a row, one hour of
+  // 5-minute runs, fail the run, so a real outage or a revoked token still reaches
+  // the failure summary (GAS.POLL.01–03; mailbox errors plan 2026-11-28, D1 A).
+  var MAX_FAILED_READS = 12;
   var lastUpdate = parseInt(props.getProperty('TELEGRAM_LAST_UPDATE') || '0', 10);
-  var url = 'https://api.telegram.org/bot' + token + '/getUpdates?offset=' + (lastUpdate + 1) + '&timeout=0';
-
-  var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  var data = JSON.parse(response.getContentText());
-  if (!data.ok || !data.result || data.result.length === 0) return;
+  var data;
+  try {
+    var response = telegramFetch(
+      token,
+      'getUpdates?offset=' + (lastUpdate + 1) + '&timeout=0',
+      { muteHttpExceptions: true }
+    );
+    data = JSON.parse(response.getContentText());
+    if (!data.ok) {
+      throw new Error('Telegram refused getUpdates (' + response.getResponseCode() + '): '
+        + (data.description || ''));
+    }
+  } catch (e) {
+    var failed = parseInt(props.getProperty('TELEGRAM_FAILED_READS') || '0', 10) + 1;
+    props.setProperty('TELEGRAM_FAILED_READS', String(failed));
+    var line = 'Telegram read failed (' + failed + ' in a row): '
+      + String((e && e.message) || e).split(token).join('***');
+    if (failed >= MAX_FAILED_READS) throw new Error(line);
+    Logger.log(line);
+    return;
+  }
+  var failedBefore = props.getProperty('TELEGRAM_FAILED_READS');
+  if (failedBefore && failedBefore !== '0') props.setProperty('TELEGRAM_FAILED_READS', '0');
+  if (!data.result || data.result.length === 0) return;
 
   for (var i = 0; i < data.result.length; i++) {
     var update = data.result[i];
@@ -501,8 +533,7 @@ function sendTelegramMessage(props, message) {
     message = message.substring(0, 4000) + '\n...(truncated)';
   }
 
-  var url = 'https://api.telegram.org/bot' + token + '/sendMessage';
-  var resp = UrlFetchApp.fetch(url, {
+  var resp = telegramFetch(token, 'sendMessage', {
     method: 'post',
     payload: { chat_id: chatId, text: message, parse_mode: 'HTML' },
     muteHttpExceptions: true,
@@ -516,7 +547,7 @@ function sendTelegramMessage(props, message) {
     var plain = message
       .replace(/<\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a)(\s[^>]*)?>/gi, '')
       .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-    resp = UrlFetchApp.fetch(url, {
+    resp = telegramFetch(token, 'sendMessage', {
       method: 'post',
       payload: { chat_id: chatId, text: plain },
       muteHttpExceptions: true,
@@ -525,6 +556,20 @@ function sendTelegramMessage(props, message) {
     body = resp.getContentText();
   }
   Logger.log('Telegram refused the reply (' + resp.getResponseCode() + '): ' + body);
+}
+
+/**
+ * One request to the Telegram Bot API. Telegram's address carries the bot token,
+ * and Apps Script quotes the whole address in a network error; Google then mails
+ * that text in its failure summary. The error leaves here with the token replaced
+ * by *** (GAS.SEND.03; mailbox errors plan 2026-11-28, E2).
+ */
+function telegramFetch(token, method, options) {
+  try {
+    return UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/' + method, options);
+  } catch (e) {
+    throw new Error(String((e && e.message) || e).split(token).join('***'));
+  }
 }
 
 

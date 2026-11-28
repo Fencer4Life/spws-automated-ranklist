@@ -193,9 +193,7 @@ jobs:
           else
             MSG="❌ CI: the override-file check did not run (${OVERRIDE_DRIFT}). Check: ${RUN_URL}"
           fi
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"
 
   test-frontend:
     name: Vitest (frontend)
