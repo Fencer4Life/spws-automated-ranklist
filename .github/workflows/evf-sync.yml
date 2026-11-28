@@ -72,10 +72,12 @@ jobs:
 
       - name: Notify failure
         if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="EVF sync FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "EVF sync FAILED. Check: ${RUN_URL}"
 
   # The CERT→PROD calendar mirror is the shared reusable workflow
   # promote-calendar.yml (one definition for every sync). It runs right after

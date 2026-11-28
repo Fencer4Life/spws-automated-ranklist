@@ -119,9 +119,7 @@ jobs:
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
           MSG="❌ results sync: the select failed, so no event was synced this hour. Check: ${RUN_URL}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"
 
   # One event at a time (max-parallel: 1); one event's failure never cancels
   # the next (fail-fast: false). A matrix built from an empty list fails its job,

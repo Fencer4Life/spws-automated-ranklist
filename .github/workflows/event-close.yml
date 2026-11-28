@@ -65,10 +65,12 @@ jobs:
 
       - name: Notify failure
         if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Daily event close FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Daily event close FAILED. Check: ${RUN_URL}"
 
   # S3 A (doc/plans/past-season-close-when-2026-11-04.html): CI and LOCAL load
   # PROD's committed seed, and pgTAP 128 reads it. When the past-season pass
@@ -125,6 +127,4 @@ jobs:
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
           MSG="Seed export after the daily close FAILED (the close itself committed). Check: ${RUN_URL}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "${MSG}"

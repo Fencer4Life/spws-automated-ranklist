@@ -119,6 +119,4 @@ jobs:
           SEASON_ACTION: ${{ github.event.inputs.action || 'promote' }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=Season skeleton ${SEASON_ACTION} ${SEASON_CODE} FAILED. Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "Season skeleton ${SEASON_ACTION} ${SEASON_CODE} FAILED. Check: ${RUN_URL}"

@@ -305,7 +305,9 @@ def _needs(job: dict[str, Any]) -> list[str]:
 
 
 def _alerts(step: dict[str, Any]) -> bool:
-    return "failure()" in str(step.get("if", "")) and "api.telegram.org" in str(step.get("run", ""))
+    """A step that runs after a failure and sends a Telegram message (LOG.PRIV.07)."""
+    run = str(step.get("run", ""))
+    return "failure()" in str(step.get("if", "")) and "scripts/telegram-send.sh" in run
 
 
 def _writes_summary(step: dict[str, Any]) -> bool:

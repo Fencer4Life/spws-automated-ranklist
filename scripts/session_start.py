@@ -63,6 +63,13 @@ GRAPHIFY_PYTHON_FALLBACK = "/Users/aleks/.local/share/uv/tools/graphifyy/bin/pyt
 # The root .env is linked, never copied: cloud-sql.sh reads it in preference to the
 # shell, and a worker without it fell back to a stale exported token (25 Oct 2026).
 SHARED_LINKS = (".venv", "frontend/node_modules", "tools/docs-search/.env", ".env")
+# A shared package folder is linked only when the target's lock file is the primary's:
+# the primary checkout can be older than main, and its frontend/node_modules then
+# lacks a package the worker's lock file names (fflate, 28 Nov 2026: vitest and
+# svelte-check failed in every new worker). Otherwise npm ci installs the target's own
+# packages (SS.19-21; mailbox errors plan 2026-11-28, E8, D7 A).
+LOCKED_LINKS = {"frontend/node_modules": "frontend/package-lock.json"}
+NPM_CI_CMD = "npm ci --no-audit --no-fund"
 # The portable baseline a new worker is seeded with — exactly the handbook's list
 # (claude-codex-collaboration, "Give each worker its own Graphify cache"). Never
 # .graphify_root, which names the source checkout, nor .graphify_python, logs or cost.
@@ -210,12 +217,14 @@ def isolate(
         )
         return None
     new = Path(match.group(1).strip())
-    seed_worktree(new, [root, primary, integration], primary)
+    seed_worktree(new, [root, primary, integration], primary, notes)
     (marks_dir(primary) / "created" / mark_key(new)).write_text(session_id)
     return new
 
 
-def seed_worktree(new: Path, graph_sources: list[Path], primary: Path) -> None:
+def seed_worktree(
+    new: Path, graph_sources: list[Path], primary: Path, notes: list[str] | None = None
+) -> None:
     """Give a new worker the newest existing graph and the primary's shared environments."""
     graphs = [
         s / "graphify-out" for s in graph_sources if (s / "graphify-out" / "graph.json").exists()
@@ -226,19 +235,52 @@ def seed_worktree(new: Path, graph_sources: list[Path], primary: Path) -> None:
         for name in GRAPH_PORTABLE:
             if (newest / name).is_file():
                 shutil.copy2(newest / name, new / "graphify-out" / name)
-    link_shared(new, primary)
+    link_shared(new, primary, notes)
 
 
-def link_shared(target: Path, primary: Path) -> list[str]:
+def same_lock(target: Path, primary: Path, lock: str) -> bool:
+    """Whether `target` and the primary hold the same lock file, byte for byte."""
+    ours, theirs = target / lock, primary / lock
+    return ours.is_file() and theirs.is_file() and ours.read_bytes() == theirs.read_bytes()
+
+
+def install_packages(folder: Path, rel: str, notes: list[str] | None) -> None:
+    """npm ci in `folder`, for a target whose lock file is not the primary's (SS.19, SS.21).
+
+    A failure is reported, never raised: the session start goes on without the link."""
+    cmd = os.environ.get("SPWS_NPM_CI_CMD", NPM_CI_CMD)
+    done = run(["bash", "-c", cmd], folder, timeout=600)
+    if notes is None:
+        return
+    if done.returncode == 0:
+        notes.append(
+            f"{rel}: installed with npm ci, because the primary's lock file differs "
+            "from this checkout's."
+        )
+    else:
+        reason = last_line(done.stderr) or last_line(done.stdout)
+        notes.append(
+            f"{rel}: npm ci FAILED (exit {done.returncode}: {reason}); "
+            f"run `npm ci` in {folder} before vitest or svelte-check."
+        )
+
+
+def link_shared(target: Path, primary: Path, notes: list[str] | None = None) -> list[str]:
     """Link each of the primary's SHARED_LINKS that `target` lacks; returns those linked.
 
     Nothing already there is replaced, a broken link included. A new worker gets the
     links from seed_worktree; the integration checkout from start(), at every session
-    start, so a preflight there reads the primary's .env too (ENVTOKEN.10-11)."""
+    start, so a preflight there reads the primary's .env too (ENVTOKEN.10-11). A
+    LOCKED_LINKS folder is linked only when the lock files match; otherwise npm ci
+    installs the target's own packages and `notes` says so (SS.19-21)."""
     linked: list[str] = []
     for rel in SHARED_LINKS:
         src, dst = primary / rel, target / rel
         if src.exists() and dst.parent.is_dir() and not os.path.lexists(dst):
+            lock = LOCKED_LINKS.get(rel)
+            if lock and not same_lock(target, primary, lock):
+                install_packages(dst.parent, rel, notes)
+                continue
             dst.symlink_to(src)
             linked.append(rel)
     # Anchored, without a trailing slash, so the SYMLINKS are ignored too: the
@@ -480,7 +522,7 @@ def start(payload: dict) -> dict:
         # Preflight runs there before every push; without the primary's .env its token
         # readers fell back to a stale token in the environment (1 Nov 2026, I1).
         try:
-            linked = link_shared(integration, primary)
+            linked = link_shared(integration, primary, notes)
         except OSError as exc:
             notes.append(f"Integration checkout: shared links NOT checked ({exc}).")
         else:

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="dd86856a2736332fdee0b9a7ffc857f0b7f732f5614198f525a1e3bbae092dbf">
+<meta name="doc-source-sha256" content="f619b35116aad529ee82c1d7563a0ea3ef21079dbea87ef8f5cbd9d4ad41131e">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1371 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>1377 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp-ce-demo">WordPress site navigation and the environment split (WP.*, CE.DEMO.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#first-names-in-capitals-and-local-s-start-lists-namecase-localsl">First names in capitals and LOCAL&#x27;s start lists (NAMECASE.*, LOCALSL.*)</a></li><li class="depth-2"><a href="#event-details-from-cert-to-prod-one-contract-for-every-calendar-scraper-calsync">Event details from CERT to PROD, one contract for every calendar scraper (CALSYNC.*)</a></li><li class="depth-2"><a href="#branch-merge-and-release-names-naming">Branch, merge and release names (NAMING.*)</a></li><li class="depth-2"><a href="#release-notes-on-every-release-run-relnotes">Release notes on every Release run (RELNOTES.*)</a></li><li class="depth-2"><a href="#ci-test-summaries-cisum">CI test summaries (CISUM.*)</a></li><li class="depth-2"><a href="#final-brackets-the-organizer-registry-and-run-names-final-engine-route-org-runname">Final brackets, the organizer registry and run names (FINAL.*, ENGINE.*, ROUTE.ORG.*, RUNNAME.*)</a></li><li class="depth-2"><a href="#one-apply-on-both-sides-and-the-promote-ledger-certapply-apply-replace-apply-reserve-ledger-run-prior">One apply on both sides and the promote ledger (CERTAPPLY.*, APPLY.REPLACE.*, APPLY.RESERVE.*, LEDGER.*, RUN.PRIOR.*)</a></li><li class="depth-2"><a href="#the-hourly-results-sync-sync">The hourly results sync (SYNC.*)</a></li><li class="depth-2"><a href="#stuck-competitions-and-repeated-name-cells-stuck-name-cells">Stuck competitions and repeated name cells (STUCK.*, NAME.CELLS.*)</a></li><li class="depth-2"><a href="#override-drift-linked-rows-and-an-event-s-weapons-ovr-drift-excluded-weapon-event">Override drift, linked rows and an event&#x27;s weapons (OVR.DRIFT.*, EXCLUDED.*, WEAPON.EVENT.*)</a></li><li class="depth-2"><a href="#source-consistency-and-the-source-re-read-src-cons-src-regr">Source consistency and the source re-read (SRC.CONS.*, SRC.REGR.*)</a></li><li class="depth-2"><a href="#each-fencer-once-and-refusals-that-say-what-they-mean-identity-once-refusal-say">Each fencer once, and refusals that say what they mean (IDENTITY.ONCE.*, REFUSAL.SAY.*)</a></li><li class="depth-2"><a href="#a-run-that-writes-nothing-says-so-plan-line">A run that writes nothing says so (PLAN.LINE.*)</a></li><li class="depth-2"><a href="#a-past-season-s-open-event-4fence-s-second-bronze-every-known-combined-bracket-a-refused-ftl-sign-in-promo-life-18-fourfence-bronze-03-07-src-regr-05-ftl-refused-01-04">A past season&#x27;s open event, 4fence&#x27;s second bronze, every known combined bracket, a refused FTL sign-in (PROMO.LIFE.18, FOURFENCE.BRONZE.03–07, SRC.REGR.05, FTL.REFUSED.01–04)</a></li><li class="depth-2"><a href="#fencingtimelive-read-under-a-daily-cap-with-one-reused-session-and-a-name-ftl-sync-ftl-01-sync-sel-06-09-sync-cycle-10-16-src-regr-10-13">FencingTimeLive read under a daily cap, with one reused session and a name (FTL.*, SYNC.FTL.01, SYNC.SEL.06–09, SYNC.CYCLE.10–16, SRC.REGR.10–13)</a></li><li class="depth-2"><a href="#the-closing-plan-of-4-november-2026-past-season-events-closed-pool-rounds-known-by-content-the-second-ftl-block-close-past-01-05-event-past-ftl-de-01-05-intl-sched-03-04-and-06-07-ftl-off-01-02-ftl-403-01-ftl-budget-10-ftl-wf-02-src-regr-14">The closing plan of 4 November 2026: past-season events closed, pool rounds known by content, the second FTL block (CLOSE.PAST.01–05, EVENT.PAST, FTL.DE.01–05, INTL.SCHED.03–04 and 06–07, FTL.OFF.01–02, FTL.403.01, FTL.BUDGET.10, FTL.WF.02, SRC.REGR.14)</a></li><li class="depth-2"><a href="#when-the-daily-close-looks-at-past-seasons-4-november-2026-close-win-01-02-close-seed-01-02-life-season-01-07">When the daily close looks at past seasons, 4 November 2026 (CLOSE.WIN.01–02, CLOSE.SEED.01–02, LIFE.SEASON.01–07)</a></li><li class="depth-2"><a href="#the-entry-list-s-tiles-show-the-selection-fold-elsel">The entry list&#x27;s tiles show the selection (FOLD.*, ELSEL.*)</a></li><li class="depth-2"><a href="#an-administrator-removes-an-entry-regdel-elrem">An administrator removes an entry (REGDEL.*, ELREM.*)</a></li><li class="depth-2"><a href="#registration-names-one-form-titles-apart-reversed-fields-caught-rfname">Registration names: one form, titles apart, reversed fields caught (RFNAME.*)</a></li><li class="depth-2"><a href="#registration-birth-year-a-decade-grid-inside-the-season-s-range-rfyear">Registration birth year: a decade grid inside the season&#x27;s range (RFYEAR.*)</a></li><li class="depth-2"><a href="#registration-country-a-pick-list-a-flag-and-a-filter-rfctry">Registration country: a pick-list, a flag and a filter (RFCTRY.*)</a></li><li class="depth-2"><a href="#the-evf-ranking-s-countries-fill-entries-without-one-evfctry">The EVF ranking&#x27;s countries fill entries without one (EVFCTRY.*)</a></li><li class="depth-2"><a href="#the-roster-s-nationality-one-spelling-kept-to-the-evf-ranking-rnat">The roster&#x27;s nationality: one spelling, kept to the EVF ranking (RNAT.*)</a></li><li class="depth-2"><a href="#an-administrator-edits-an-entry-rfadm">An administrator edits an entry (RFADM.*)</a></li><li class="depth-2"><a href="#the-name-list-under-surname-rfac-01-30-rfac-34-35">The name list under SURNAME (RFAC.01–30, RFAC.34–35)</a></li><li class="depth-2"><a href="#name-folding-repaired-every-accented-letter-folds-to-its-base-i27-rfac-31-33">Name folding repaired: every accented letter folds to its base (I27, RFAC.31–33)</a></li><li class="depth-2"><a href="#seeding-by-the-organiser-s-ranking-evfseed">Seeding by the organiser&#x27;s ranking (EVFSEED.*)</a></li><li class="depth-2"><a href="#the-entry-list-shows-the-ranking-place-elrank">The entry list shows the ranking place (ELRANK.*)</a></li><li class="depth-2"><a href="#event-revenue-forecast-revfc">Event revenue forecast (REVFC.*)</a></li><li class="depth-2"><a href="#preflight-s-whitespace-gate-sees-uncommitted-and-new-files-wsgate">Preflight&#x27;s whitespace gate sees uncommitted and new files (WSGATE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -588,7 +588,7 @@
 <td>FR-81</td>
 <td>Telegram command interface: 21 admin commands for lifecycle, review, season, ingestion, EVF, PROD reads and seed; the bot's <code>help</code> is the command list and every entry names CERT or PROD</td>
 <td>ADR-025</td>
-<td>10.16–10.22; GAS.SRC.01–04, GAS.HELP.01–04 (<code>test_gas_bot.py</code>)</td>
+<td>10.16–10.22; GAS.SRC.01–04, GAS.HELP.01–04, GAS.SEND.01–03, GAS.POLL.01–03 (<code>test_gas_bot.py</code>)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1918,6 +1918,13 @@
 <td>pytest</td>
 <td><code>python/tests/test_evf_parity_sweep.py</code></td>
 <td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>EVFCHK.11</td>
+<td>The run log names the event of each failed read and the error's type before the counts, and never the error's message, which can quote a row; Telegram keeps the whole text; the exit code stays 1 (mailbox errors plan 2026-11-28, E4).</td>
+<td>pytest</td>
+<td><code>python/tests/test_evf_parity_sweep.py</code></td>
+<td><strong>Landed</strong> (2026-11-28, LOCAL)</td>
 </tr>
 <tr>
 <td>REVCHK.01–04</td>
@@ -3401,6 +3408,13 @@
 <td><strong>Landed</strong> (2026-10-25)</td>
 </tr>
 <tr>
+<td>SS.01–21</td>
+<td>The session-start protocol (<code>scripts/session_start.py</code>): a session in a shared checkout gets its own worker cut from <code>origin/main</code>, and a resumed session or one in a worker stays (01–05); a worker gets the primary's <code>.venv</code> and <code>.env</code> as links that stay out of <code>git status</code> (06, 18); cleanup removes only a clean, merged, idle worker, and never Codex's, the session's own or a shared checkout (07–12, 16–17); the RAG is rebuilt only from a checkout not behind <code>origin/main</code> (13–14); a clean worker without commits is fast-forwarded (15); <code>frontend/node_modules</code> is linked only when the lock files match, otherwise npm ci installs the worker's own packages, and a failed npm ci is reported (19–21; mailbox errors plan 2026-11-28, E8, D7 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_session_start.py</code></td>
+<td>SS.01–18 Covered; SS.19–21 <strong>Landed</strong> (2026-11-28, LOCAL)</td>
+</tr>
+<tr>
 <td>FETOOL.00</td>
 <td>The range reader the other FETOOL checks use reads npm's grammar as the lockfile writes it: <code>||</code>, comparators, <code>^</code>, <code>~</code>, partial versions and prereleases.</td>
 <td>pytest</td>
@@ -4469,6 +4483,20 @@
 <td><strong>Released</strong> (2026-11-01, main 80e30964, CERT + PROD)</td>
 </tr>
 <tr>
+<td>LOG.PRIV.07</td>
+<td>No workflow file writes Telegram's address: each Telegram step calls <code>scripts/telegram-send.sh</code> after its job's checkout, with the bot token and the chat id in the step's env and no Telegram secret in its run body. Telegram's reply to an accepted message names the chat owner, and the run logs of this public repository are public (mailbox errors plan 2026-11-28, E5, D4 B).</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_alerts.py</code></td>
+<td><strong>Landed</strong> (2026-11-28, LOCAL)</td>
+</tr>
+<tr>
+<td>LOG.PRIV.08</td>
+<td><code>scripts/telegram-send.sh</code> prints the HTTP status of an accepted message and never Telegram's reply or the token; a refusal prints Telegram's reason, which names no one; <code>--html</code> sends HTML.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_alerts.py</code></td>
+<td><strong>Landed</strong> (2026-11-28, LOCAL)</td>
+</tr>
+<tr>
 <td>SYNC.BOT.01</td>
 <td>The Telegram bot's hourly dispatch is a scheduled cycle whose slot is the UTC hour it runs in (08 the morning cycle, 09–20 hourly, none else) and whose moment is now (G47 A).</td>
 <td>pytest</td>
@@ -4523,6 +4551,20 @@
 <td>pytest</td>
 <td><code>python/tests/test_gas_bot.py</code></td>
 <td>Covered (released 2026-11-01, main af30c76d)</td>
+</tr>
+<tr>
+<td>GAS.SEND.01–03</td>
+<td>A reply whose HTML Telegram cannot parse is sent again as plain text (01); any other refusal goes to the Apps Script log (02); a network error of a send is raised with the bot token removed, and <code>telegramFetch()</code> is the only place that writes Telegram's address (03).</td>
+<td>pytest</td>
+<td><code>python/tests/test_gas_bot.py</code></td>
+<td><strong>Landed</strong> (2026-11-28, LOCAL)</td>
+</tr>
+<tr>
+<td>GAS.POLL.01–03</td>
+<td>A network error or a Google server error of one command read ends the run without an error and leaves <code>TELEGRAM_LAST_UPDATE</code> unchanged, so the next run reads the same commands (01); twelve failed reads in a row, one hour, fail the run with an error that holds no token, and a refusal by Telegram is a failed read (02); a good read sets <code>TELEGRAM_FAILED_READS</code> to zero (03). Mailbox errors plan 2026-11-28, E1, E2, D1 A.</td>
+<td>pytest</td>
+<td><code>python/tests/test_gas_bot.py</code></td>
+<td><strong>Landed</strong> (2026-11-28, LOCAL)</td>
 </tr>
 </tbody>
 </table></div>
@@ -7600,5 +7642,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>dd86856a2736332fdee0b9a7ffc857f0b7f732f5614198f525a1e3bbae092dbf</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>f619b35116aad529ee82c1d7563a0ea3ef21079dbea87ef8f5cbd9d4ad41131e</code></footer>
 </div></body></html>

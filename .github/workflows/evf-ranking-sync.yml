@@ -90,9 +90,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=EVF ranking sync (CERT) FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "EVF ranking sync (CERT) FAILED before it started (a setup step). Check: ${RUN_URL}"
 
   prod:
     name: EVF ranking → PROD
@@ -130,6 +128,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=EVF ranking sync (PROD) FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null
+          "$GITHUB_WORKSPACE/scripts/telegram-send.sh" "EVF ranking sync (PROD) FAILED before it started (a setup step). Check: ${RUN_URL}"
